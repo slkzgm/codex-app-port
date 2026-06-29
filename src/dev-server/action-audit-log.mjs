@@ -33,6 +33,7 @@ const ACTION_AUDIT_EVENTS = new Set([
   "plugin-share-checkout-recorded",
   "plugin-uninstall-recorded",
   "process-spawn-recorded",
+  "remote-control-client-revoke-recorded",
   "remote-control-disable-recorded",
   "skills-config-write-recorded",
   "skills-extra-roots-clear-recorded",
@@ -147,7 +148,7 @@ export function sanitizeActionAuditRecord(record, { generatedAt = null } = {}) {
           ? Boolean(appServer.skillsExtraRootsTraffic)
           : false,
       remoteControlTraffic:
-        actionType === "remote-control-disable"
+        actionType === "remote-control-disable" || actionType === "remote-control-client-revoke"
           ? Boolean(appServer.remoteControlTraffic)
           : false,
       remoteEnvironmentTraffic:
@@ -237,6 +238,8 @@ function actionAuditEvent(actionType) {
       return "plugin-content-read-recorded";
     case "process-spawn":
       return "process-spawn-recorded";
+    case "remote-control-client-revoke":
+      return "remote-control-client-revoke-recorded";
     case "remote-control-disable":
       return "remote-control-disable-recorded";
     case "skills-config-write":
@@ -487,6 +490,16 @@ function sanitizeAction(action, actionType, { appServer }) {
       method: "remoteControl/disable",
       execution: safeString(action.execution, 40) ?? "completed",
       remoteControlDisable: Boolean(action.remoteControlDisable),
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: false,
+    };
+  }
+  if (actionType === "remote-control-client-revoke") {
+    return {
+      type: "remote-control-client-revoke",
+      method: "remoteControl/client/revoke",
+      execution: safeString(action.execution, 40) ?? "completed",
+      remoteControlClientRevoke: Boolean(action.remoteControlClientRevoke),
       appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
       modelTraffic: false,
     };
@@ -871,6 +884,15 @@ function sanitizeTarget(target, actionType) {
       environmentIdReturned: false,
       installationIdReturned: false,
       serverNameReturned: false,
+      rawPayloadReturned: false,
+    };
+  }
+  if (actionType === "remote-control-client-revoke") {
+    return {
+      remoteClientRefAccepted: Boolean(target.remoteClientRefAccepted),
+      remoteClientRefReturned: false,
+      clientIdReturned: false,
+      environmentIdReturned: false,
       rawPayloadReturned: false,
     };
   }
@@ -1315,6 +1337,18 @@ function sanitizeResult(result, actionType) {
       threadContentReturned: false,
     };
   }
+  if (actionType === "remote-control-client-revoke") {
+    return {
+      status: safeString(result.status, 80) ?? "revoked-with-redactions",
+      responseObject: Boolean(result.responseObject),
+      responseTopLevelKeyCount: safeCount(result.responseTopLevelKeyCount),
+      clientIdReturned: false,
+      environmentIdReturned: false,
+      rawPayloadReturned: false,
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
   if (actionType === "environment-add") {
     return {
       status: safeString(result.status, 80) ?? "added-with-redactions",
@@ -1567,6 +1601,7 @@ function sanitizeActionType(value) {
     "plugin-share-checkout",
     "plugin-uninstall",
     "process-spawn",
+    "remote-control-client-revoke",
     "remote-control-disable",
     "skills-config-write",
     "skills-extra-roots-clear",

@@ -123,6 +123,17 @@ The server binds to `127.0.0.1` by default and serves:
   `CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_DISABLE=1` plus a matching one-time
   preflight token; execution accepts no browser remote-control params and sends
   `null`, returning status/count/shape metadata only without identities
+- `/api/remote-control-clients`,
+  `/api/remote-control-client-revoke-preflight`, and
+  `/api/remote-control-client-revoke`: opt-in remote connection inventory and
+  revoke. Listing is gated by
+  `CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_CLIENT_LIST=1`, resolves the environment
+  server-side, and returns only opaque `remoteclientref-*` selectors plus counts
+  and presence booleans. Revoke is separately gated by
+  `CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_CLIENT_REVOKE=1`, consumes a matching
+  one-time preflight token, resolves the real ids only from the server-side ref
+  registry, and writes sanitized action audit metadata without returning ids,
+  names, device metadata values, cursors, tokens, or raw payloads.
 - `/api/environment-add-preflight` and `/api/environment-add`: opt-in
   `environment/add` behind `CODEX_APP_PORT_ALLOW_ENVIRONMENT_ADD=1`, an exact
   `CODEX_APP_PORT_ENVIRONMENT_ADD_ALLOWLIST` `environmentId=execServerUrl`
@@ -769,6 +780,21 @@ fields before app-server traffic, calls `remoteControl/disable` only with
 `null` params, and reduces the result to status/count/shape metadata. It does
 not return or audit raw remote-control status payloads, server names, installation
 ids, environment ids, tokens, notifications, or raw payloads.
+
+The remote-control client list endpoint is fail-closed unless
+`CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_CLIENT_LIST=1` is enabled before launch.
+It calls `remoteControl/status/read` only to resolve the current environment
+server-side, then calls `remoteControl/client/list` and stores returned
+`clientId` values in a process-local registry keyed by `remoteclientref-*`
+selectors. The browser receives only counts, refs, and device-field presence
+booleans. The matching revoke preflight accepts only a server-issued ref and
+creates a one-time confirmation token. `/api/remote-control-client-revoke` is
+fail-closed unless `CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_CLIENT_REVOKE=1` is
+enabled, consumes the token once, resolves `environmentId` and `clientId`
+server-side, calls `remoteControl/client/revoke`, marks the ref used, and writes
+sanitized action audit metadata. It does not return or audit remote client ids,
+environment ids, display names, device metadata values, cursors, tokens,
+notifications, or raw payloads.
 
 The config-value-preflight endpoint accepts only `config/value/write` intent for
 local validation. It returns key-path/value shape counts only, does not return
@@ -1692,6 +1718,13 @@ tokens, notifications, or raw payloads, that
 `remoteControl/disable` traffic with `null` params and sanitized
 status/count/shape metadata, without accepting browser params or returning
 remote-control identities, tokens, notifications, or raw payloads, that
+`/api/remote-control-clients` can execute only as opt-in remote-control client
+inventory with server-side environment resolution, opaque refs, and
+count/presence metadata, and that `/api/remote-control-client-revoke` can
+execute only as opt-in `remoteControl/client/revoke` traffic with a matching
+one-time preflight token and server-side ref resolution, without returning or
+auditing client ids, environment ids, names, device metadata values, cursors,
+tokens, notifications, or raw payloads, that
 `/api/config-value-write` can execute only as opt-in allowlisted
 `config/value/write` traffic with JSON-text values, one-time tokens, and
 `filePath`/`expectedVersion` forced to `null`, returning only count/shape

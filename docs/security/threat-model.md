@@ -389,6 +389,17 @@
   status/count/shape metadata; they must not expose raw remote-control status
   payloads, server names, installation ids, environment ids, notifications,
   preflight tokens, or raw app-server payloads.
+- Browser-facing remote-control client management must use opaque local refs.
+  `/api/remote-control-clients` may list paired clients only when
+  `CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_CLIENT_LIST=1` is enabled, must resolve
+  the environment server-side, and may expose only `remoteclientref-*` selectors,
+  counts, and presence booleans. `/api/remote-control-client-revoke` may revoke
+  only when `CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_CLIENT_REVOKE=1` is enabled,
+  must consume a matching one-time preflight token, and must resolve
+  `environmentId` and `clientId` only from the process-local ref registry.
+  Responses and action audit records must not expose client ids, environment ids,
+  names, device metadata values, cursors, notifications, preflight tokens, or raw
+  app-server payloads.
 - Browser-facing `environment/add` must be blocked by default and exact
   allowlist only. When `CODEX_APP_PORT_ALLOW_ENVIRONMENT_ADD=1` is enabled,
   `/api/environment-add` must consume a matching one-time preflight token,

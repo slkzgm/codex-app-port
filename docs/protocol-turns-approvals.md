@@ -440,6 +440,17 @@ remote-control params, calls app-server only with `null` params, and returns
 status/count/shape metadata only. Raw remote-control status payloads, server names,
 installation ids, environment ids, notifications, tokens, and raw payloads
 remain omitted from responses and action audit records.
+`remoteControl/client/list` and `remoteControl/client/revoke` are exposed only
+through the dedicated remote-client routes. Listing is disabled unless
+`CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_CLIENT_LIST=1` is set, resolves
+`environmentId` with `remoteControl/status/read` inside the server, and returns
+only opaque process-local client refs plus count and presence metadata. Revoke
+is disabled unless `CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_CLIENT_REVOKE=1` is set,
+requires a matching one-time preflight token, resolves the real `environmentId`
+and `clientId` only from the server-side registry, marks refs used after
+success, and writes sanitized action audit records. Client ids, environment ids,
+device names, device metadata values, cursors, notifications, tokens, and raw
+payloads remain omitted from responses and action audit records.
 `config/value/write` is exposed only through the dedicated local
 `/api/config-value-preflight` and `/api/config-value-write` pair. The write
 route is disabled unless `CODEX_APP_PORT_ALLOW_CONFIG_VALUE_WRITE=1` is set,

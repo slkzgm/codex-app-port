@@ -53,6 +53,8 @@ export const APP_SERVER_METHODS = Object.freeze({
   pluginShareList: "plugin/share/list",
   pluginSkillRead: "plugin/skill/read",
   pluginUninstall: "plugin/uninstall",
+  remoteControlClientList: "remoteControl/client/list",
+  remoteControlClientRevoke: "remoteControl/client/revoke",
   remoteControlDisable: "remoteControl/disable",
   remoteControlStatusRead: "remoteControl/status/read",
   skillsConfigWrite: "skills/config/write",

@@ -198,6 +198,17 @@ const elements = {
   remoteControlDisableParamsText: document.querySelector("#remote-control-disable-params-text"),
   remoteControlDisableStatusText: document.querySelector("#remote-control-disable-status-text"),
   remoteControlDisableIdentityText: document.querySelector("#remote-control-disable-identity-text"),
+  remoteClientsListButton: document.querySelector("#remote-clients-list-button"),
+  remoteClientSelect: document.querySelector("#remote-client-select"),
+  remoteClientRevokePreflightButton: document.querySelector(
+    "#remote-client-revoke-preflight-button",
+  ),
+  remoteClientRevokeButton: document.querySelector("#remote-client-revoke-button"),
+  remoteClientsStatus: document.querySelector("#remote-clients-status"),
+  remoteClientRefCount: document.querySelector("#remote-client-ref-count"),
+  remoteClientIdsText: document.querySelector("#remote-client-ids-text"),
+  remoteClientNamesText: document.querySelector("#remote-client-names-text"),
+  remoteClientRevokeText: document.querySelector("#remote-client-revoke-text"),
   environmentAddForm: document.querySelector("#environment-add-form"),
   environmentAddIdInput: document.querySelector("#environment-add-id-input"),
   environmentAddUrlInput: document.querySelector("#environment-add-url-input"),
@@ -591,6 +602,9 @@ let lastPluginUninstallPreflight = null;
 let lastSkillsConfigPreflight = null;
 let lastSkillsExtraRootsClearPreflight = null;
 let lastRemoteControlDisablePreflight = null;
+let remoteClientRefs = [];
+let selectedRemoteClientRef = null;
+let lastRemoteClientRevokePreflight = null;
 let lastEnvironmentAddPreflight = null;
 let lastTerminalCleanPreflight = null;
 let lastTerminalBackgroundTerminatePreflight = null;
@@ -650,6 +664,10 @@ elements.workspaceSelect.addEventListener("change", () => {
   lastSkillsConfigPreflight = null;
   lastSkillsExtraRootsClearPreflight = null;
   lastRemoteControlDisablePreflight = null;
+  remoteClientRefs = [];
+  selectedRemoteClientRef = null;
+  lastRemoteClientRevokePreflight = null;
+  renderRemoteClientRefs([]);
   lastEnvironmentAddPreflight = null;
   lastTerminalCleanPreflight = null;
   lastTerminalBackgroundTerminatePreflight = null;
@@ -690,6 +708,8 @@ elements.workspaceSelect.addEventListener("change", () => {
   elements.skillsConfigRunButton.disabled = true;
   elements.skillsExtraRootsClearButton.disabled = true;
   elements.remoteControlDisableButton.disabled = true;
+  elements.remoteClientRevokePreflightButton.disabled = true;
+  elements.remoteClientRevokeButton.disabled = true;
   elements.environmentAddRunButton.disabled = true;
   elements.terminalCleanButton.disabled = true;
   elements.terminalBackgroundTerminatePreflightButton.disabled = true;
@@ -1201,6 +1221,26 @@ elements.remoteControlDisableButton.addEventListener("click", () => {
   runRemoteControlDisable();
 });
 
+elements.remoteClientsListButton.addEventListener("click", () => {
+  runRemoteControlClientsList();
+});
+
+elements.remoteClientSelect.addEventListener("change", () => {
+  selectedRemoteClientRef = elements.remoteClientSelect.value || null;
+  lastRemoteClientRevokePreflight = null;
+  elements.remoteClientRevokePreflightButton.disabled = !selectedRemoteClientRef;
+  elements.remoteClientRevokeButton.disabled = true;
+  elements.remoteClientRevokeText.textContent = selectedRemoteClientRef ? "Check required" : "Blocked";
+});
+
+elements.remoteClientRevokePreflightButton.addEventListener("click", () => {
+  runRemoteControlClientRevokePreflight();
+});
+
+elements.remoteClientRevokeButton.addEventListener("click", () => {
+  runRemoteControlClientRevoke();
+});
+
 elements.environmentAddForm.addEventListener("submit", (event) => {
   event.preventDefault();
   runEnvironmentAddPreflight();
@@ -1579,6 +1619,18 @@ function remoteControlDisablePreflightEndpoint() {
 
 function remoteControlDisableEndpoint() {
   return "/api/remote-control-disable";
+}
+
+function remoteControlClientsEndpoint() {
+  return "/api/remote-control-clients";
+}
+
+function remoteControlClientRevokePreflightEndpoint() {
+  return "/api/remote-control-client-revoke-preflight";
+}
+
+function remoteControlClientRevokeEndpoint() {
+  return "/api/remote-control-client-revoke";
 }
 
 function environmentAddPreflightEndpoint() {
@@ -2779,6 +2831,114 @@ async function runRemoteControlDisable() {
     lastRemoteControlDisablePreflight = null;
     elements.remoteControlDisableButton.disabled = true;
     setRemoteControlDisableLoading(false);
+  }
+}
+
+async function runRemoteControlClientsList() {
+  setRemoteControlClientsLoading(true);
+  hideError();
+
+  try {
+    remoteClientRefs = [];
+    selectedRemoteClientRef = null;
+    lastRemoteClientRevokePreflight = null;
+    renderRemoteClientRefs([]);
+    const response = await fetch(remoteControlClientsEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify({
+        workspace: selectedWorkspaceId,
+      }),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderRemoteControlClients(payload);
+    await refreshSettingsIntegrations().catch(() => {});
+  } catch (error) {
+    elements.remoteClientsStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    setRemoteControlClientsLoading(false);
+  }
+}
+
+async function runRemoteControlClientRevokePreflight() {
+  if (!selectedRemoteClientRef) {
+    return;
+  }
+
+  setRemoteControlClientRevokeLoading(true);
+  hideError();
+
+  try {
+    lastRemoteClientRevokePreflight = null;
+    elements.remoteClientRevokeButton.disabled = true;
+    const body = {
+      workspace: selectedWorkspaceId,
+      remoteClientRef: selectedRemoteClientRef,
+    };
+    const response = await fetch(remoteControlClientRevokePreflightEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify(body),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    lastRemoteClientRevokePreflight = {
+      body,
+      token: payload.preflight?.token,
+      enabled: payload.policy?.executionGateEnabled === true,
+    };
+    renderRemoteControlClientRevokePreflight(payload);
+    await refreshSettingsIntegrations().catch(() => {});
+  } catch (error) {
+    elements.remoteClientsStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    setRemoteControlClientRevokeLoading(false);
+  }
+}
+
+async function runRemoteControlClientRevoke() {
+  if (!lastRemoteClientRevokePreflight?.token || !lastRemoteClientRevokePreflight?.body) {
+    return;
+  }
+
+  setRemoteControlClientRevokeLoading(true);
+  hideError();
+
+  try {
+    const response = await fetch(remoteControlClientRevokeEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify({
+        ...lastRemoteClientRevokePreflight.body,
+        preflightToken: lastRemoteClientRevokePreflight.token,
+      }),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderRemoteControlClientRevoke(payload);
+    remoteClientRefs = remoteClientRefs.filter((item) => item.remoteClientRef !== selectedRemoteClientRef);
+    selectedRemoteClientRef = null;
+    renderRemoteClientRefs(remoteClientRefs);
+    await refreshSettingsIntegrations().catch(() => {});
+  } catch (error) {
+    elements.remoteClientsStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    lastRemoteClientRevokePreflight = null;
+    elements.remoteClientRevokeButton.disabled = true;
+    setRemoteControlClientRevokeLoading(false);
   }
 }
 
@@ -8981,6 +9141,66 @@ function renderRemoteControlDisable(payload) {
     : "Hidden";
 }
 
+function renderRemoteClientRefs(items) {
+  remoteClientRefs = Array.isArray(items) ? items : [];
+  elements.remoteClientSelect.innerHTML = "";
+  const emptyOption = document.createElement("option");
+  emptyOption.value = "";
+  emptyOption.textContent = "None";
+  elements.remoteClientSelect.append(emptyOption);
+  remoteClientRefs.forEach((item, index) => {
+    const ref = typeof item?.remoteClientRef === "string" ? item.remoteClientRef : "";
+    if (!ref) {
+      return;
+    }
+    const option = document.createElement("option");
+    option.value = ref;
+    option.textContent = `Client ${index + 1}`;
+    elements.remoteClientSelect.append(option);
+  });
+  elements.remoteClientSelect.disabled = remoteClientRefs.length === 0;
+  elements.remoteClientRefCount.textContent = String(remoteClientRefs.length);
+  elements.remoteClientRevokePreflightButton.disabled = !selectedRemoteClientRef;
+  elements.remoteClientRevokeButton.disabled =
+    !lastRemoteClientRevokePreflight?.token ||
+    lastRemoteClientRevokePreflight.enabled !== true;
+}
+
+function renderRemoteControlClients(payload) {
+  const result = payload.remoteClients ?? {};
+  const metadata = payload.remoteControlClients ?? {};
+  selectedRemoteClientRef = null;
+  lastRemoteClientRevokePreflight = null;
+  renderRemoteClientRefs(Array.isArray(result.items) ? result.items : []);
+  elements.remoteClientsStatus.textContent = payload.action?.execution ?? "completed";
+  elements.remoteClientIdsText.textContent =
+    result.clientIdsReturned || metadata.clientIdsReturned ? "Returned" : "Hidden";
+  elements.remoteClientNamesText.textContent =
+    result.namesReturned || metadata.clientNamesReturned ? "Returned" : "Hidden";
+  elements.remoteClientRevokeText.textContent = result.count > 0 ? "Select ref" : "No refs";
+}
+
+function renderRemoteControlClientRevokePreflight(payload) {
+  const result = payload.remoteControlClientRevoke ?? {};
+  elements.remoteClientsStatus.textContent = payload.action?.execution ?? "blocked";
+  elements.remoteClientIdsText.textContent = result.clientIdReturned ? "Returned" : "Hidden";
+  elements.remoteClientNamesText.textContent = "Hidden";
+  elements.remoteClientRevokeText.textContent = payload.policy?.executionGateEnabled
+    ? "Ready"
+    : "Blocked";
+  elements.remoteClientRevokeButton.disabled =
+    !lastRemoteClientRevokePreflight?.token ||
+    lastRemoteClientRevokePreflight.enabled !== true;
+}
+
+function renderRemoteControlClientRevoke(payload) {
+  const result = payload.remoteControlClientRevoke ?? {};
+  elements.remoteClientsStatus.textContent = payload.action?.execution ?? "completed";
+  elements.remoteClientIdsText.textContent = result.clientIdReturned ? "Returned" : "Hidden";
+  elements.remoteClientNamesText.textContent = "Hidden";
+  elements.remoteClientRevokeText.textContent = result.status ?? "revoked-with-redactions";
+}
+
 function renderEnvironmentAddPreflight(payload) {
   const result = payload.environmentAdd ?? {};
   elements.environmentAddStatus.textContent = payload.action?.execution ?? "blocked";
@@ -10817,6 +11037,34 @@ function setRemoteControlDisableLoading(isLoading) {
     : "Remote Disable Check";
   if (isLoading) {
     elements.remoteControlDisableStatus.textContent = "Checking";
+  }
+}
+
+function setRemoteControlClientsLoading(isLoading) {
+  elements.remoteClientsListButton.disabled = isLoading;
+  elements.remoteClientSelect.disabled = isLoading || remoteClientRefs.length === 0;
+  elements.remoteClientRevokePreflightButton.disabled = isLoading || !selectedRemoteClientRef;
+  elements.remoteClientRevokeButton.disabled =
+    isLoading ||
+    !lastRemoteClientRevokePreflight?.token ||
+    lastRemoteClientRevokePreflight.enabled !== true;
+  elements.remoteClientsListButton.textContent = isLoading ? "Listing" : "List Remote Clients";
+  if (isLoading) {
+    elements.remoteClientsStatus.textContent = "Checking";
+  }
+}
+
+function setRemoteControlClientRevokeLoading(isLoading) {
+  elements.remoteClientRevokePreflightButton.disabled = isLoading || !selectedRemoteClientRef;
+  elements.remoteClientRevokeButton.disabled =
+    isLoading ||
+    !lastRemoteClientRevokePreflight?.token ||
+    lastRemoteClientRevokePreflight.enabled !== true;
+  elements.remoteClientRevokePreflightButton.textContent = isLoading
+    ? "Checking"
+    : "Revoke Check";
+  if (isLoading) {
+    elements.remoteClientsStatus.textContent = "Checking";
   }
 }
 

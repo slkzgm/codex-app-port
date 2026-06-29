@@ -19,6 +19,8 @@ import {
   runPluginShareCheckoutProbe,
   runPluginUninstallProbe,
   runProcessSpawnProbe,
+  runRemoteControlClientRevokeProbe,
+  runRemoteControlClientsListProbe,
   runRemoteControlDisableProbe,
   runSkillsConfigWriteProbe,
   runSkillsExtraRootsClearProbe,
@@ -1519,6 +1521,98 @@ test("runRemoteControlDisableProbe disables remote control without returning ide
       delete process.env.CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_DISABLE;
     } else {
       process.env.CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_DISABLE = previous;
+    }
+  }
+});
+
+test("runRemoteControlClientsListProbe returns opaque client inventory metadata", async () => {
+  const previous = process.env.CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_CLIENT_LIST;
+  process.env.CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_CLIENT_LIST = "1";
+  try {
+    const summary = await runRemoteControlClientsListProbe({
+      codexBin: process.execPath,
+      codexArgs: [mockServer.pathname],
+      cwd: process.cwd(),
+      timeoutMs: 1_000,
+    });
+
+    assert.equal(summary.ok, true);
+    const clients = summary.probes.remoteControlClients;
+    assert.equal(clients.method, "remoteControl/client/list");
+    assert.equal(clients.status, "listed-with-redactions");
+    assert.equal(clients.responseObject, true);
+    assert.equal(clients.clientCount, 2);
+    assert.equal(clients.returnedClientCount, 2);
+    assert.equal(clients.hasNextCursor, true);
+    assert.equal(clients.environmentIdPresent, true);
+    assert.equal(clients.clientIdsReturned, false);
+    assert.equal(clients.clientNamesReturned, false);
+    assert.equal(clients.deviceMetadataReturned, false);
+    assert.equal(clients.cursorsReturned, false);
+    assert.equal(clients.rawPayloadReturned, false);
+
+    const serialized = JSON.stringify(summary);
+    for (const marker of [
+      "private-remote-environment-id",
+      "private-client-id",
+      "Private Laptop",
+      "PrivateBookPro",
+      "private-next-cursor",
+      "private-app-version",
+      "mock-codex-home",
+      "userAgent",
+      "codexHome",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    if (previous === undefined) {
+      delete process.env.CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_CLIENT_LIST;
+    } else {
+      process.env.CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_CLIENT_LIST = previous;
+    }
+  }
+});
+
+test("runRemoteControlClientRevokeProbe returns count-only revoke metadata", async () => {
+  const previous = process.env.CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_CLIENT_REVOKE;
+  process.env.CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_CLIENT_REVOKE = "1";
+  try {
+    const summary = await runRemoteControlClientRevokeProbe({
+      codexBin: process.execPath,
+      codexArgs: [mockServer.pathname],
+      cwd: process.cwd(),
+      timeoutMs: 1_000,
+      environmentId: "private-remote-environment-id",
+      clientId: "private-client-id-1",
+    });
+
+    assert.equal(summary.ok, true);
+    const revoke = summary.probes.remoteControlClientRevoke;
+    assert.equal(revoke.method, "remoteControl/client/revoke");
+    assert.equal(revoke.status, "revoked-with-redactions");
+    assert.equal(revoke.responseObject, true);
+    assert.equal(revoke.responseTopLevelKeyCount, 3);
+    assert.equal(revoke.environmentIdReturned, false);
+    assert.equal(revoke.clientIdReturned, false);
+    assert.equal(revoke.rawPayloadReturned, false);
+
+    const serialized = JSON.stringify(summary);
+    for (const marker of [
+      "private-remote-environment-id",
+      "private-client-id-1",
+      "sk-proj-private-remote-client-revoke-token",
+      "mock-codex-home",
+      "userAgent",
+      "codexHome",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    if (previous === undefined) {
+      delete process.env.CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_CLIENT_REVOKE;
+    } else {
+      process.env.CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_CLIENT_REVOKE = previous;
     }
   }
 });

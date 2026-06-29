@@ -794,6 +794,60 @@ function summarizeRemoteControlDisable(response) {
   };
 }
 
+function summarizeRemoteControlClientsList(response, { environmentId = null } = {}) {
+  const data = Array.isArray(response?.data) ? response.data : [];
+  const clients = data.slice(0, 20).map((client) => ({
+    clientId: typeof client?.clientId === "string" ? client.clientId : "",
+    displayNamePresent: Boolean(firstSafeString(client?.displayName)),
+    deviceModelPresent: Boolean(firstSafeString(client?.deviceModel)),
+    deviceTypePresent: Boolean(firstSafeString(client?.deviceType)),
+    platformPresent: Boolean(firstSafeString(client?.platform)),
+    osVersionPresent: Boolean(firstSafeString(client?.osVersion)),
+    appVersionPresent: Boolean(firstSafeString(client?.appVersion)),
+    lastSeenAtPresent: typeof client?.lastSeenAt === "number",
+  }));
+  const summary = {
+    method: APP_SERVER_METHODS.remoteControlClientList,
+    status: "listed-with-redactions",
+    responseObject: Boolean(response && typeof response === "object" && !Array.isArray(response)),
+    responseTopLevelKeyCount:
+      response && typeof response === "object" && !Array.isArray(response)
+        ? Object.keys(response).length
+        : 0,
+    clientCount: data.length,
+    returnedClientCount: clients.filter((client) => client.clientId).length,
+    hasNextCursor: typeof response?.nextCursor === "string" && response.nextCursor.length > 0,
+    environmentIdPresent: Boolean(environmentId),
+    clientIdsReturned: false,
+    clientNamesReturned: false,
+    deviceMetadataReturned: false,
+    cursorsReturned: false,
+    rawPayloadReturned: false,
+  };
+  Object.defineProperty(summary, "_privateEnvironmentId", {
+    value: environmentId,
+    enumerable: false,
+  });
+  Object.defineProperty(summary, "_privateClients", {
+    value: clients.filter((client) => client.clientId),
+    enumerable: false,
+  });
+  return summary;
+}
+
+function summarizeRemoteControlClientRevoke(response) {
+  const objectResponse = response && typeof response === "object" && !Array.isArray(response);
+  return {
+    method: APP_SERVER_METHODS.remoteControlClientRevoke,
+    status: "revoked-with-redactions",
+    responseObject: objectResponse,
+    responseTopLevelKeyCount: objectResponse ? Object.keys(response).length : 0,
+    environmentIdReturned: false,
+    clientIdReturned: false,
+    rawPayloadReturned: false,
+  };
+}
+
 function summarizeEnvironmentAdd(response) {
   const objectResponse = response && typeof response === "object" && !Array.isArray(response);
   return {
@@ -2640,6 +2694,158 @@ export async function runRemoteControlDisableProbe({
       initialize: summarizeInitialize(initialize),
       probes: {
         remoteControlDisable: summarizeRemoteControlDisable(remoteControlDisable),
+      },
+      notifications: notificationCounts(notifications),
+    };
+  } finally {
+    await client.close();
+  }
+}
+
+export async function runRemoteControlClientsListProbe({
+  codexBin = process.env.CODEX_BIN || "codex",
+  codexArgs = ["app-server", "--listen", "stdio://"],
+  cwd = process.cwd(),
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+  limit = 20,
+  onNotification = null,
+} = {}) {
+  if (process.env.CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_CLIENT_LIST !== "1") {
+    throw new Error(
+      "remote control client listing requires CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_CLIENT_LIST=1 because it inspects paired remote-control devices",
+    );
+  }
+
+  const notifications = [];
+  const client = new JsonlRpcClient({
+    command: codexBin,
+    args: codexArgs,
+    cwd,
+    timeoutMs,
+    onNotification(notification) {
+      notifications.push({
+        method: notification.method,
+      });
+      onNotification?.(notification);
+    },
+  });
+
+  await client.start();
+
+  try {
+    const initialize = normalizeInitializeResponse(
+      await client.request(APP_SERVER_METHODS.initialize, {
+        clientInfo: {
+          name: "codex_app_port",
+          title: "Codex App Port",
+          version: "0.1.0",
+        },
+        capabilities: {
+          experimentalApi: false,
+          requestAttestation: false,
+        },
+      }),
+    );
+
+    client.notify(APP_SERVER_METHODS.initialized);
+
+    const status = await client.request(APP_SERVER_METHODS.remoteControlStatusRead, null);
+    const environmentId = firstSafeString(status?.environmentId);
+    if (!environmentId) {
+      throwRequestError("Remote control environment is unavailable", 409);
+    }
+    const remoteControlClients = await client.request(APP_SERVER_METHODS.remoteControlClientList, {
+      environmentId,
+      cursor: null,
+      limit,
+      order: "desc",
+    });
+
+    return {
+      ok: true,
+      generatedAt: new Date().toISOString(),
+      transport: "stdio-jsonl",
+      protocol: "json-rpc-2.0-without-jsonrpc-field",
+      initialize: summarizeInitialize(initialize),
+      probes: {
+        remoteControlClients: summarizeRemoteControlClientsList(remoteControlClients, {
+          environmentId,
+        }),
+      },
+      notifications: notificationCounts(notifications),
+    };
+  } finally {
+    await client.close();
+  }
+}
+
+export async function runRemoteControlClientRevokeProbe({
+  codexBin = process.env.CODEX_BIN || "codex",
+  codexArgs = ["app-server", "--listen", "stdio://"],
+  cwd = process.cwd(),
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+  environmentId,
+  clientId,
+  onNotification = null,
+} = {}) {
+  if (process.env.CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_CLIENT_REVOKE !== "1") {
+    throw new Error(
+      "remote control client revoke requires CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_CLIENT_REVOKE=1 because it mutates paired remote-control devices",
+    );
+  }
+  if (typeof environmentId !== "string" || environmentId.length === 0) {
+    throwRequestError("Remote control environment is required", 400);
+  }
+  if (typeof clientId !== "string" || clientId.length === 0) {
+    throwRequestError("Remote control client id is required", 400);
+  }
+
+  const notifications = [];
+  const client = new JsonlRpcClient({
+    command: codexBin,
+    args: codexArgs,
+    cwd,
+    timeoutMs,
+    onNotification(notification) {
+      notifications.push({
+        method: notification.method,
+      });
+      onNotification?.(notification);
+    },
+  });
+
+  await client.start();
+
+  try {
+    const initialize = normalizeInitializeResponse(
+      await client.request(APP_SERVER_METHODS.initialize, {
+        clientInfo: {
+          name: "codex_app_port",
+          title: "Codex App Port",
+          version: "0.1.0",
+        },
+        capabilities: {
+          experimentalApi: false,
+          requestAttestation: false,
+        },
+      }),
+    );
+
+    client.notify(APP_SERVER_METHODS.initialized);
+
+    const remoteControlClientRevoke = await client.request(
+      APP_SERVER_METHODS.remoteControlClientRevoke,
+      { environmentId, clientId },
+    );
+
+    return {
+      ok: true,
+      generatedAt: new Date().toISOString(),
+      transport: "stdio-jsonl",
+      protocol: "json-rpc-2.0-without-jsonrpc-field",
+      initialize: summarizeInitialize(initialize),
+      probes: {
+        remoteControlClientRevoke: summarizeRemoteControlClientRevoke(remoteControlClientRevoke),
       },
       notifications: notificationCounts(notifications),
     };

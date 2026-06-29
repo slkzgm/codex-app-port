@@ -101,5 +101,15 @@ Target parity with the Codex desktop workflow:
   sends `null`, and returns only status/count/shape metadata, not status
   payloads, server names, installation ids, environment ids, notifications,
   preflight tokens, or raw payloads.
+- `remoteControl/client/list` and `remoteControl/client/revoke` have dedicated
+  disabled-by-default remote connection routes. Listing is gated by
+  `CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_CLIENT_LIST=1`, resolves the environment
+  server-side, and returns only opaque refs plus count/presence metadata.
+  Revoke is separately gated by
+  `CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_CLIENT_REVOKE=1`, consumes a matching
+  one-time preflight token, resolves real ids only from the server-side ref
+  registry, and writes sanitized action audit records without client ids,
+  environment ids, names, device metadata values, cursors, tokens, or raw
+  payloads.
 - The referenced unofficial Linux port converts the macOS DMG into a Linux
   Electron bundle and patches/stubs platform-specific pieces.

@@ -560,6 +560,18 @@ preflight token is supplied. The app-server call sends `null` params; browser
 before app-server traffic, and responses plus action audit records omit remote
 raw status payloads, server names, installation ids, environment ids, tokens,
 and raw payloads.
+Remote-control client management is split into a read-only inventory and a
+separate destructive revoke. `/api/remote-control-clients` can call
+`remoteControl/status/read` and `remoteControl/client/list` only when
+`CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_CLIENT_LIST=1` is set; it creates
+process-local `remoteclientref-*` selectors and returns only counts, refs, and
+field-presence booleans. Browser requests never provide `environmentId` or
+`clientId`. `/api/remote-control-client-revoke` can call
+`remoteControl/client/revoke` only when
+`CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_CLIENT_REVOKE=1` is set, a matching
+one-time preflight token is supplied, and the ref came from the server-side
+registry. Responses and action audit records omit client ids, environment ids,
+device names, device metadata values, cursors, tokens, and raw payloads.
 Remote environment add is a separate disabled-by-default mutation path.
 `/api/environment-add-preflight` validates only a safe remote environment id and
 `https:`/`wss:` exec-server URL, and `/api/environment-add` can call

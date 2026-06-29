@@ -960,6 +960,42 @@
               <dd id="remote-control-disable-identity-text">Hidden</dd>
             </div>
           </dl>
+          <div class="turn-actions">
+            <button id="remote-clients-list-button" class="secondary-button" type="button">
+              List Remote Clients
+            </button>
+            <label class="workspace-control" for="remote-client-select">
+              <span>Client ref</span>
+              <select id="remote-client-select" disabled>
+                <option value="">None</option>
+              </select>
+            </label>
+            <button id="remote-client-revoke-preflight-button" class="secondary-button" type="button" disabled>
+              Revoke Check
+            </button>
+            <button id="remote-client-revoke-button" class="secondary-button" type="button" disabled>
+              Revoke Client
+            </button>
+            <span id="remote-clients-status" class="empty-state">Blocked</span>
+          </div>
+          <dl class="agent-grid">
+            <div>
+              <dt>Refs</dt>
+              <dd id="remote-client-ref-count">0</dd>
+            </div>
+            <div>
+              <dt>IDs</dt>
+              <dd id="remote-client-ids-text">Hidden</dd>
+            </div>
+            <div>
+              <dt>Names</dt>
+              <dd id="remote-client-names-text">Hidden</dd>
+            </div>
+            <div>
+              <dt>Revoke</dt>
+              <dd id="remote-client-revoke-text">Blocked</dd>
+            </div>
+          </dl>
           <form id="environment-add-form" class="turn-form">
             <div class="thread-tools">
               <label class="search-control" for="environment-add-id-input">

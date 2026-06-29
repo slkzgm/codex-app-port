@@ -28,6 +28,8 @@ import {
   runPluginReadProbe,
   runPluginShareCheckoutProbe,
   runPluginUninstallProbe,
+  runRemoteControlClientRevokeProbe,
+  runRemoteControlClientsListProbe,
   runProcessSpawnProbe,
   runRemoteControlDisableProbe,
   runSkillsConfigWriteProbe,
@@ -126,6 +128,7 @@ export const MAX_TERMINAL_COMMAND_HISTORY_RECORDS = 20;
 export const MAX_PROCESS_SPAWN_HISTORY_RECORDS = 20;
 export const MAX_TERMINAL_CONTROL_HISTORY_RECORDS = 20;
 export const MAX_BACKGROUND_TERMINAL_RECORDS = 20;
+export const MAX_REMOTE_CONTROL_CLIENT_RECORDS = 20;
 export const MAX_FILE_ACTION_HISTORY_RECORDS = 20;
 export const MAX_APPROVAL_DECISION_HISTORY_RECORDS = 20;
 export const MAX_APPROVAL_DECISION_BATCH = 20;
@@ -199,6 +202,11 @@ export const BROWSER_POST_FIELD_POLICIES = Object.freeze({
     maxChars: 120,
     returnedRawValue: false,
     sensitivity: "terminal-process-selector",
+  }),
+  remoteClientRef: bodyFieldPolicy(["string", "null"], {
+    maxChars: 120,
+    returnedRawValue: false,
+    sensitivity: "remote-control-client-selector",
   }),
   actionType: bodyFieldPolicy(["string"], {
     maxChars: 80,
@@ -642,6 +650,17 @@ export const ACTION_PREFLIGHT_CONFIRMATION_FIELD_CONTRACTS = Object.freeze({
     "workspace",
     "preflightToken",
   ),
+  "remote-control-client-revoke-preflight": bodyFields(
+    "workspace",
+    "actionType",
+    "preflightToken",
+    "remoteClientRef",
+  ),
+  "remote-control-client-revoke": bodyFields(
+    "workspace",
+    "remoteClientRef",
+    "preflightToken",
+  ),
   "environment-add-preflight": bodyFields(
     "workspace",
     "actionType",
@@ -1029,6 +1048,24 @@ export const BROWSER_POST_BODY_CONTRACTS = Object.freeze({
     kind: "mutation",
     requiresPreflightToken: true,
   }),
+  "/api/remote-control-clients": bodyContract(["workspace"], {
+    kind: "read",
+    appServerTraffic: true,
+  }),
+  "/api/remote-control-client-revoke-preflight": bodyContract(
+    ["workspace", "remoteClientRef"],
+    {
+      kind: "preflight",
+      appServerTraffic: false,
+    },
+  ),
+  "/api/remote-control-client-revoke": bodyContract(
+    ["workspace", "remoteClientRef", "preflightToken"],
+    {
+      kind: "mutation",
+      requiresPreflightToken: true,
+    },
+  ),
   "/api/environment-add-preflight": bodyContract(["workspace", "environmentId", "execServerUrl"], {
     kind: "preflight",
     appServerTraffic: false,
@@ -1114,6 +1151,9 @@ const BROWSER_POST_RESPONSE_TOP_LEVEL_KEYS = Object.freeze({
     "terminalBackgroundList",
     "terminalBackgroundTerminate",
     "terminals",
+    "remoteControlClients",
+    "remoteClients",
+    "remoteControlClientRevoke",
     "threadShellCommand",
     "mcpOauthLogin",
     "mcpToolCall",
@@ -1165,6 +1205,9 @@ const BROWSER_POST_RESPONSE_TOP_LEVEL_KEYS = Object.freeze({
     "terminalBackgroundList",
     "terminalBackgroundTerminate",
     "terminals",
+    "remoteControlClients",
+    "remoteClients",
+    "remoteControlClientRevoke",
     "threadShellCommand",
     "mcpOauthLogin",
     "mcpToolCall",
@@ -1254,8 +1297,10 @@ const BROWSER_POST_RESPONSE_FORBIDDEN_TRUTHY_FLAG_KEYS = Object.freeze([
   "cwdReturned",
   "decisionTokensReturned",
   "descriptionsReturned",
+  "deviceMetadataReturned",
   "enablementValuesReturned",
   "environmentIdReturned",
+  "environmentIdsReturned",
   "environmentReturned",
   "execServerUrlReturned",
   "executableReturned",
@@ -1277,6 +1322,10 @@ const BROWSER_POST_RESPONSE_FORBIDDEN_TRUTHY_FLAG_KEYS = Object.freeze([
   "marketplaceNamesReturned",
   "mcpServerNamesReturned",
   "modelIdsReturned",
+  "clientIdReturned",
+  "clientIdsReturned",
+  "clientNamesReturned",
+  "cursorsReturned",
   "nameReturned",
   "namesReturned",
   "outputTextReturned",
@@ -7337,6 +7386,220 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
       "implemented",
     ],
   }),
+  "/api/remote-control-clients": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    initialize: ["platformFamily", "platformOs"],
+    appServer: [
+      "touched",
+      "modelTraffic",
+      "commandTraffic",
+      "remoteControlTraffic",
+      "auditedMethods",
+    ],
+    action: [
+      "type",
+      "method",
+      "execution",
+      "remoteControlClientInventory",
+      "appServerTouched",
+      "modelTraffic",
+      "reason",
+    ],
+    remoteControlClients: [
+      "method",
+      "status",
+      "responseObject",
+      "responseTopLevelKeyCount",
+      "clientCount",
+      "returnedClientCount",
+      "hasNextCursor",
+      "environmentIdPresent",
+      "clientRefsReturned",
+      "clientIdsReturned",
+      "clientNamesReturned",
+      "deviceMetadataReturned",
+      "cursorsReturned",
+      "rawPayloadReturned",
+    ],
+    remoteClients: [
+      "count",
+      "limit",
+      "items",
+      "clientRefsReturned",
+      "clientIdsReturned",
+      "environmentIdReturned",
+      "namesReturned",
+      "deviceMetadataReturned",
+      "rawPayloadReturned",
+    ],
+    "remoteClients.items.*": [
+      "remoteClientRef",
+      "ordinal",
+      "remoteClientRefReturned",
+      "clientIdReturned",
+      "displayNamePresent",
+      "deviceModelPresent",
+      "deviceTypePresent",
+      "platformPresent",
+      "osVersionPresent",
+      "appVersionPresent",
+      "lastSeenAtPresent",
+    ],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "modelTraffic",
+      "commandTraffic",
+      "remoteControlClientInventory",
+      "remoteControlClientListEnabled",
+      "clientRefsReturned",
+      "clientIdsReturned",
+      "environmentIdReturned",
+      "namesReturned",
+      "deviceMetadataReturned",
+      "cursorsReturned",
+      "rawPayloadsReturned",
+      "requiresExplicitEnablement",
+      "browserMethodCallsAccepted",
+      "implemented",
+    ],
+  }),
+  "/api/remote-control-client-revoke-preflight": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    appServer: ["touched", "modelTraffic", "commandTraffic", "remoteControlTraffic"],
+    action: [
+      "type",
+      "method",
+      "category",
+      "execution",
+      "wouldRevokeRemoteClient",
+      "appServerTouched",
+      "modelTraffic",
+      "reason",
+    ],
+    target: [
+      "remoteClientRefAccepted",
+      "remoteClientRefReturned",
+      "clientIdReturned",
+      "environmentIdReturned",
+    ],
+    remoteControlClientRevoke: [
+      "method",
+      "remoteClientRefAccepted",
+      "remoteClientRefReturned",
+      "clientIdReturned",
+      "environmentIdReturned",
+    ],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "remoteControlClientRevoke",
+      "remoteControlClientRevokeEnabled",
+      "executionRouteImplemented",
+      "executionGateEnabled",
+      "remoteClientRefRequired",
+      "remoteClientRefReturned",
+      "clientIdReturned",
+      "environmentIdReturned",
+      "rawPayloadsReturned",
+      "requiresApprovalPipeline",
+      "requiresIntegrationProvenance",
+      "requiresExplicitEnablement",
+      "browserMethodCallsAccepted",
+      "implemented",
+    ],
+    preflight: [
+      "token",
+      "tokenIssued",
+      "issuedAt",
+      "expiresAt",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseRequiredForMutation",
+      "consumed",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+  }),
+  "/api/remote-control-client-revoke": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    initialize: ["platformFamily", "platformOs"],
+    appServer: [
+      "touched",
+      "modelTraffic",
+      "commandTraffic",
+      "remoteControlTraffic",
+      "auditedMethods",
+    ],
+    action: [
+      "type",
+      "method",
+      "execution",
+      "remoteControlClientRevoke",
+      "appServerTouched",
+      "modelTraffic",
+      "reason",
+    ],
+    target: [
+      "remoteClientRefAccepted",
+      "remoteClientRefReturned",
+      "clientIdReturned",
+      "environmentIdReturned",
+    ],
+    remoteControlClientRevoke: [
+      "method",
+      "status",
+      "responseObject",
+      "responseTopLevelKeyCount",
+      "remoteClientRefAccepted",
+      "remoteClientRefReturned",
+      "clientIdReturned",
+      "environmentIdReturned",
+      "rawPayloadReturned",
+    ],
+    result: [
+      "status",
+      "responseObject",
+      "responseTopLevelKeyCount",
+      "clientIdReturned",
+      "environmentIdReturned",
+      "rawPayloadReturned",
+    ],
+    preflight: [
+      "tokenConsumed",
+      "tokenReturned",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseEnforced",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "modelTraffic",
+      "commandTraffic",
+      "remoteControlClientRevoke",
+      "remoteControlClientRevokeEnabled",
+      "remoteClientRefReturned",
+      "clientIdReturned",
+      "environmentIdReturned",
+      "rawPayloadsReturned",
+      "preflightTokenReturned",
+      "preflightTokenRequired",
+      "auditLogPersistent",
+      "auditLogPathReturned",
+      "auditLogWritableChecked",
+      "auditLogWritten",
+      "requiresExplicitEnablement",
+      "executionRouteImplemented",
+      "executionGateEnabled",
+      "browserMethodCallsAccepted",
+      "implemented",
+    ],
+  }),
   "/api/environment-add-preflight": responseNestedKeySchemas({
     workspace: ["id", "label", "isDefault"],
     appServer: ["touched", "modelTraffic", "commandTraffic", "remoteEnvironmentTraffic"],
@@ -8893,6 +9156,29 @@ const BROWSER_POST_RESPONSE_ROUTE_TOP_LEVEL_KEYS = Object.freeze({
     "remoteControlDisable",
     "result",
   ),
+  "/api/remote-control-clients": routeResponseTopLevelKeys(
+    ...RESPONSE_COMMON_TOP_LEVEL_KEYS,
+    "transport",
+    "protocol",
+    "initialize",
+    "appServer",
+    "action",
+    "policy",
+    "notifications",
+    "remoteControlClients",
+    "remoteClients",
+  ),
+  "/api/remote-control-client-revoke-preflight": routeResponseTopLevelKeys(
+    ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
+    "target",
+    "remoteControlClientRevoke",
+  ),
+  "/api/remote-control-client-revoke": routeResponseTopLevelKeys(
+    ...RESPONSE_APP_SERVER_MUTATION_TOP_LEVEL_KEYS,
+    "target",
+    "remoteControlClientRevoke",
+    "result",
+  ),
   "/api/environment-add-preflight": routeResponseTopLevelKeys(
     ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
     "integrationAction",
@@ -9065,6 +9351,8 @@ export function createDevServer({
   pluginShareCheckoutFn = runPluginShareCheckoutProbe,
   pluginUninstallFn = runPluginUninstallProbe,
   processSpawnFn = runProcessSpawnProbe,
+  remoteControlClientsListFn = runRemoteControlClientsListProbe,
+  remoteControlClientRevokeFn = runRemoteControlClientRevokeProbe,
   remoteControlDisableFn = runRemoteControlDisableProbe,
   skillsConfigWriteFn = runSkillsConfigWriteProbe,
   skillsExtraRootsClearFn = runSkillsExtraRootsClearProbe,
@@ -9143,6 +9431,10 @@ export function createDevServer({
     process.env.CODEX_APP_PORT_ALLOW_SKILLS_EXTRA_ROOTS_CLEAR === "1",
   remoteControlDisableEnabled =
     process.env.CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_DISABLE === "1",
+  remoteControlClientListEnabled =
+    process.env.CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_CLIENT_LIST === "1",
+  remoteControlClientRevokeEnabled =
+    process.env.CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_CLIENT_REVOKE === "1",
   environmentAddEnabled = process.env.CODEX_APP_PORT_ALLOW_ENVIRONMENT_ADD === "1",
   environmentAddAllowlist = parseEnvironmentAddAllowlist(
     process.env.CODEX_APP_PORT_ENVIRONMENT_ADD_ALLOWLIST,
@@ -9190,6 +9482,7 @@ export function createDevServer({
   terminalControlPreflightLedger = createTerminalControlPreflightLedger(),
   terminalControlConfirmationLedger = createTerminalControlConfirmationLedger(),
   backgroundTerminalRegistry = createBackgroundTerminalRegistry(),
+  remoteControlClientRegistry = createRemoteControlClientRegistry(),
   fileActionLedger = createFileActionLedger(),
   approvalDecisionLedger = createApprovalDecisionLedger(),
   integrationPreflightLedger = createIntegrationPreflightLedger(),
@@ -9235,6 +9528,8 @@ export function createDevServer({
       pluginShareCheckoutFn,
       pluginUninstallFn,
       processSpawnFn,
+      remoteControlClientsListFn,
+      remoteControlClientRevokeFn,
       remoteControlDisableFn,
       skillsConfigWriteFn,
       skillsExtraRootsClearFn,
@@ -9294,6 +9589,8 @@ export function createDevServer({
       skillsConfigWriteEnabled,
       skillsExtraRootsClearEnabled,
       remoteControlDisableEnabled,
+      remoteControlClientListEnabled,
+      remoteControlClientRevokeEnabled,
       environmentAddEnabled,
       environmentAddAllowlist,
       loadedSessionsEnabled,
@@ -9331,6 +9628,7 @@ export function createDevServer({
       terminalControlPreflightLedger,
       terminalControlConfirmationLedger,
       backgroundTerminalRegistry,
+      remoteControlClientRegistry,
       fileActionLedger,
       approvalDecisionLedger,
       integrationPreflightLedger,
@@ -13383,6 +13681,155 @@ export async function handleRequest(request, response, options) {
     return;
   }
 
+  if (url.pathname === "/api/remote-control-clients") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, ["workspace"]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      if (!options.remoteControlClientListEnabled) {
+        sendJson(response, 403, buildRemoteControlClientsBlocked({ workspace }));
+        return;
+      }
+      const payload = await options.remoteControlClientsListFn({
+        codexBin: options.codexBin,
+        cwd: workspace.cwd,
+        timeoutMs: options.timeoutMs,
+        limit: MAX_REMOTE_CONTROL_CLIENT_RECORDS,
+      });
+      const sanitized = sanitizeRemoteControlClientsPayload(payload, {
+        workspace,
+        remoteControlClientRegistry: options.remoteControlClientRegistry,
+      });
+      sendJson(response, 200, sanitized);
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid remote control clients request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/remote-control-client-revoke-preflight") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, ["workspace", "remoteClientRef"]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const payload = buildRemoteControlClientRevokePreflight(body, {
+        workspace,
+        remoteControlClientRevokeEnabled: options.remoteControlClientRevokeEnabled,
+        remoteControlClientRegistry: options.remoteControlClientRegistry,
+      });
+      const attached = attachActionPreflight(payload, { body, workspace, options });
+      options.integrationPreflightLedger?.record(attached);
+      sendJson(response, 200, attached);
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error:
+          cleanDisplayText(error.message, 200) ??
+          "Invalid remote control client revoke preflight request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/remote-control-client-revoke") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, [
+        "workspace",
+        "remoteClientRef",
+        "preflightToken",
+      ]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const preflightBody = stripActionPreflightControlFields(body);
+      const preflightPayload = buildRemoteControlClientRevokePreflight(preflightBody, {
+        workspace,
+        remoteControlClientRevokeEnabled: options.remoteControlClientRevokeEnabled,
+        remoteControlClientRegistry: options.remoteControlClientRegistry,
+        verifyRemoteClientRef: false,
+      });
+      if (!preflightPayload.policy.executionGateEnabled) {
+        sendJson(response, 403, buildRemoteControlClientRevokeBlocked(preflightPayload));
+        return;
+      }
+      const consumedPreflight = options.preflightRegistry.consume({
+        token: validateActionPreflightToken(body.preflightToken),
+        kind: preflightPayload.action.type,
+        workspace,
+        intent: actionPreflightIntent(preflightBody, preflightPayload),
+      });
+      const target = options.remoteControlClientRegistry.resolve({
+        workspace,
+        remoteClientRef: body.remoteClientRef,
+      });
+      const auditLogWritableChecked = ensureActionAuditLogWritable(options.actionAuditLog);
+      const payload = await options.remoteControlClientRevokeFn({
+        codexBin: options.codexBin,
+        cwd: workspace.cwd,
+        timeoutMs: options.timeoutMs,
+        environmentId: target.environmentId,
+        clientId: target.clientId,
+      });
+      options.remoteControlClientRegistry.revoke({
+        workspace,
+        remoteClientRef: body.remoteClientRef,
+      });
+      const sanitized = sanitizeRemoteControlClientRevokePayload(payload, {
+        workspace,
+        consumedPreflight,
+        actionAuditLog: options.actionAuditLog,
+        auditLogWritableChecked,
+      });
+      sanitized.policy.auditLogWritten = writeActionAuditLog(options.actionAuditLog, sanitized);
+      sendJson(response, 200, sanitized);
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error:
+          cleanDisplayText(error.message, 200) ?? "Invalid remote control client revoke request",
+      });
+    }
+    return;
+  }
+
   if (url.pathname === "/api/environment-add-preflight") {
     if (request.method !== "POST") {
       sendJson(response, 405, { ok: false, error: "Method not allowed" });
@@ -14551,6 +14998,12 @@ async function buildConfirmableActionPreflightPayload(actionType, body, { worksp
         workspace,
         remoteControlDisableEnabled: options.remoteControlDisableEnabled,
       });
+    case "remote-control-client-revoke-preflight":
+      return buildRemoteControlClientRevokePreflight(body, {
+        workspace,
+        remoteControlClientRevokeEnabled: options.remoteControlClientRevokeEnabled,
+        remoteControlClientRegistry: options.remoteControlClientRegistry,
+      });
     case "environment-add-preflight":
       return buildEnvironmentAddPreflight(body, {
         workspace,
@@ -14636,6 +15089,7 @@ function isIntegrationPreflightActionType(actionType) {
     actionType === "skills-config-preflight" ||
     actionType === "skills-extra-roots-clear-preflight" ||
     actionType === "remote-control-disable-preflight" ||
+    actionType === "remote-control-client-revoke-preflight" ||
     actionType === "environment-add-preflight" ||
     actionType === "integration-action-preflight"
   );
@@ -14707,6 +15161,8 @@ function actionAuditEvent(record) {
       return "skills-extra-roots-clear-recorded";
     case "remote-control-disable":
       return "remote-control-disable-recorded";
+    case "remote-control-client-revoke":
+      return "remote-control-client-revoke-recorded";
     case "environment-add":
       return "environment-add-recorded";
     case "terminal-background-clean":
@@ -15044,6 +15500,101 @@ export function createBackgroundTerminalRegistry({ now = () => new Date().toISOS
         limit: MAX_BACKGROUND_TERMINAL_RECORDS,
         terminalRefsReturned: false,
         processIdsReturned: false,
+      };
+    },
+  };
+}
+
+export function createRemoteControlClientRegistry({
+  now = () => new Date().toISOString(),
+} = {}) {
+  const records = [];
+  return {
+    recordList({ workspace, clients = [], environmentId = null } = {}) {
+      if (
+        !workspace?.id ||
+        typeof environmentId !== "string" ||
+        environmentId.trim().length === 0
+      ) {
+        return [];
+      }
+      const refs = [];
+      const clientItems = Array.isArray(clients) ? clients : [];
+      for (const client of clientItems.slice(0, MAX_REMOTE_CONTROL_CLIENT_RECORDS)) {
+        if (typeof client?.clientId !== "string" || client.clientId.length === 0) {
+          continue;
+        }
+        const record = {
+          remoteClientRef: `remoteclientref-${randomBytes(16).toString("hex")}`,
+          workspaceId: workspace.id,
+          environmentId,
+          clientId: client.clientId,
+          createdAt: now(),
+          revoked: false,
+          displayNamePresent: Boolean(client.displayNamePresent),
+          deviceModelPresent: Boolean(client.deviceModelPresent),
+          deviceTypePresent: Boolean(client.deviceTypePresent),
+          platformPresent: Boolean(client.platformPresent),
+          osVersionPresent: Boolean(client.osVersionPresent),
+          appVersionPresent: Boolean(client.appVersionPresent),
+          lastSeenAtPresent: Boolean(client.lastSeenAtPresent),
+        };
+        records.unshift(record);
+        refs.push({
+          remoteClientRef: record.remoteClientRef,
+          createdAt: record.createdAt,
+          displayNamePresent: record.displayNamePresent,
+          deviceModelPresent: record.deviceModelPresent,
+          deviceTypePresent: record.deviceTypePresent,
+          platformPresent: record.platformPresent,
+          osVersionPresent: record.osVersionPresent,
+          appVersionPresent: record.appVersionPresent,
+          lastSeenAtPresent: record.lastSeenAtPresent,
+        });
+      }
+      records.splice(MAX_REMOTE_CONTROL_CLIENT_RECORDS);
+      return refs;
+    },
+    resolve({ workspace, remoteClientRef } = {}) {
+      const safeRef = validateRemoteClientRef(remoteClientRef);
+      const record = records.find(
+        (item) =>
+          item.remoteClientRef === safeRef &&
+          item.workspaceId === workspace?.id &&
+          !item.revoked,
+      );
+      if (!record) {
+        throwRequestError("Remote client reference is unavailable or already used", 404);
+      }
+      return {
+        remoteClientRef: record.remoteClientRef,
+        environmentId: record.environmentId,
+        clientId: record.clientId,
+      };
+    },
+    revoke({ workspace, remoteClientRef } = {}) {
+      const safeRef = validateRemoteClientRef(remoteClientRef);
+      const record = records.find(
+        (item) =>
+          item.remoteClientRef === safeRef &&
+          item.workspaceId === workspace?.id &&
+          !item.revoked,
+      );
+      if (record) {
+        record.revoked = true;
+      }
+      return Boolean(record);
+    },
+    summary({ workspaceId = null } = {}) {
+      const activeRecords = records.filter(
+        (record) => !record.revoked && (!workspaceId || record.workspaceId === workspaceId),
+      );
+      return {
+        activeCount: activeRecords.length,
+        limit: MAX_REMOTE_CONTROL_CLIENT_RECORDS,
+        remoteClientRefsReturned: false,
+        clientIdsReturned: false,
+        environmentIdsReturned: false,
       };
     },
   };
@@ -23621,6 +24172,414 @@ function summarizeRemoteControlDisableResult(value) {
   return {
     status,
     statusKnown: status !== "unknown",
+    responseObject: Boolean(value?.responseObject),
+    responseTopLevelKeyCount: safeCount(value?.responseTopLevelKeyCount),
+  };
+}
+
+function sanitizeRemoteControlClientsPayload(
+  payload,
+  { workspace, remoteControlClientRegistry } = {},
+) {
+  const summary = summarizeRemoteControlClientsResult(payload?.probes?.remoteControlClients);
+  const privateClients = Array.isArray(payload?.probes?.remoteControlClients?._privateClients)
+    ? payload.probes.remoteControlClients._privateClients
+    : [];
+  const environmentId =
+    typeof payload?.probes?.remoteControlClients?._privateEnvironmentId === "string"
+      ? payload.probes.remoteControlClients._privateEnvironmentId
+      : null;
+  const refs =
+    remoteControlClientRegistry?.recordList?.({
+      workspace,
+      clients: privateClients,
+      environmentId,
+    }) ?? [];
+  const items = refs.slice(0, MAX_REMOTE_CONTROL_CLIENT_RECORDS).map((record, index) => ({
+    remoteClientRef: record.remoteClientRef,
+    ordinal: index + 1,
+    remoteClientRefReturned: true,
+    clientIdReturned: false,
+    displayNamePresent: Boolean(record.displayNamePresent),
+    deviceModelPresent: Boolean(record.deviceModelPresent),
+    deviceTypePresent: Boolean(record.deviceTypePresent),
+    platformPresent: Boolean(record.platformPresent),
+    osVersionPresent: Boolean(record.osVersionPresent),
+    appVersionPresent: Boolean(record.appVersionPresent),
+    lastSeenAtPresent: Boolean(record.lastSeenAtPresent),
+  }));
+  return {
+    ok: Boolean(payload?.ok),
+    generatedAt: payload?.generatedAt ?? new Date().toISOString(),
+    transport: cleanDisplayText(payload?.transport, 80),
+    protocol: cleanDisplayText(payload?.protocol, 80),
+    initialize: sanitizeInitialize(payload?.initialize),
+    workspace: publicWorkspaces([workspace])[0],
+    appServer: {
+      touched: true,
+      modelTraffic: false,
+      commandTraffic: false,
+      remoteControlTraffic: true,
+      auditedMethods: ["remoteControl/status/read", "remoteControl/client/list"],
+    },
+    action: {
+      type: "remote-control-clients",
+      method: "remoteControl/client/list",
+      execution: "completed",
+      remoteControlClientInventory: true,
+      appServerTouched: true,
+      modelTraffic: false,
+    },
+    remoteControlClients: {
+      method: "remoteControl/client/list",
+      status: summary.status,
+      responseObject: summary.responseObject,
+      responseTopLevelKeyCount: summary.responseTopLevelKeyCount,
+      clientCount: summary.clientCount,
+      returnedClientCount: items.length,
+      hasNextCursor: summary.hasNextCursor,
+      environmentIdPresent: summary.environmentIdPresent,
+      clientRefsReturned: items.length > 0,
+      clientIdsReturned: false,
+      clientNamesReturned: false,
+      deviceMetadataReturned: false,
+      cursorsReturned: false,
+      rawPayloadReturned: false,
+    },
+    remoteClients: {
+      count: items.length,
+      limit: MAX_REMOTE_CONTROL_CLIENT_RECORDS,
+      items,
+      clientRefsReturned: items.length > 0,
+      clientIdsReturned: false,
+      environmentIdReturned: false,
+      namesReturned: false,
+      deviceMetadataReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: true,
+      modelTraffic: false,
+      commandTraffic: false,
+      remoteControlClientInventory: true,
+      remoteControlClientListEnabled: true,
+      clientRefsReturned: items.length > 0,
+      clientIdsReturned: false,
+      environmentIdReturned: false,
+      namesReturned: false,
+      deviceMetadataReturned: false,
+      cursorsReturned: false,
+      rawPayloadsReturned: false,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: true,
+      implemented: true,
+    },
+    notifications: sanitizeNotificationCounts(payload?.notifications),
+  };
+}
+
+function buildRemoteControlClientsBlocked({ workspace } = {}) {
+  return {
+    ok: false,
+    generatedAt: new Date().toISOString(),
+    workspace: publicWorkspaces([workspace])[0],
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      remoteControlTraffic: false,
+      auditedMethods: [],
+    },
+    action: {
+      type: "remote-control-clients",
+      method: "remoteControl/client/list",
+      execution: "blocked",
+      remoteControlClientInventory: false,
+      appServerTouched: false,
+      modelTraffic: false,
+      reason: "remote-control-client-list-disabled",
+    },
+    remoteControlClients: {
+      method: "remoteControl/client/list",
+      status: "blocked",
+      responseObject: false,
+      responseTopLevelKeyCount: 0,
+      clientCount: 0,
+      returnedClientCount: 0,
+      hasNextCursor: false,
+      environmentIdPresent: false,
+      clientRefsReturned: false,
+      clientIdsReturned: false,
+      clientNamesReturned: false,
+      deviceMetadataReturned: false,
+      cursorsReturned: false,
+      rawPayloadReturned: false,
+    },
+    remoteClients: {
+      count: 0,
+      limit: MAX_REMOTE_CONTROL_CLIENT_RECORDS,
+      items: [],
+      clientRefsReturned: false,
+      clientIdsReturned: false,
+      environmentIdReturned: false,
+      namesReturned: false,
+      deviceMetadataReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      remoteControlClientInventory: false,
+      remoteControlClientListEnabled: false,
+      clientRefsReturned: false,
+      clientIdsReturned: false,
+      environmentIdReturned: false,
+      namesReturned: false,
+      deviceMetadataReturned: false,
+      cursorsReturned: false,
+      rawPayloadsReturned: false,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: false,
+      implemented: true,
+    },
+  };
+}
+
+function buildRemoteControlClientRevokePreflight(
+  body,
+  {
+    workspace,
+    remoteControlClientRevokeEnabled = false,
+    remoteControlClientRegistry = null,
+    verifyRemoteClientRef = true,
+  } = {},
+) {
+  const methodAudit = integrationMethodAudit();
+  const auditEntry = methodAudit.find((entry) => entry.method === "remoteControl/client/revoke");
+  const executionGateEnabled = Boolean(remoteControlClientRevokeEnabled);
+  const remoteClientRef = validateRemoteClientRef(body?.remoteClientRef);
+  if (executionGateEnabled && verifyRemoteClientRef) {
+    remoteControlClientRegistry?.resolve?.({ workspace, remoteClientRef });
+  }
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: publicWorkspaces([workspace])[0],
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      remoteControlTraffic: false,
+    },
+    action: {
+      type: "remote-control-client-revoke-preflight",
+      method: "remoteControl/client/revoke",
+      category: auditEntry?.category ?? "remote-control",
+      execution: executionGateEnabled ? "requires-confirmation" : "blocked",
+      wouldRevokeRemoteClient: false,
+      appServerTouched: false,
+      modelTraffic: false,
+      reason: executionGateEnabled
+        ? "remote-control-client-revoke-requires-preflight-token"
+        : "remote-control-client-revoke-disabled",
+    },
+    target: {
+      remoteClientRefAccepted: true,
+      remoteClientRefReturned: false,
+      clientIdReturned: false,
+      environmentIdReturned: false,
+    },
+    remoteControlClientRevoke: {
+      method: "remoteControl/client/revoke",
+      remoteClientRefAccepted: true,
+      remoteClientRefReturned: false,
+      clientIdReturned: false,
+      environmentIdReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: false,
+      remoteControlClientRevoke: false,
+      remoteControlClientRevokeEnabled: executionGateEnabled,
+      executionRouteImplemented: true,
+      executionGateEnabled,
+      remoteClientRefRequired: true,
+      remoteClientRefReturned: false,
+      clientIdReturned: false,
+      environmentIdReturned: false,
+      rawPayloadsReturned: false,
+      requiresApprovalPipeline: true,
+      requiresIntegrationProvenance: true,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: executionGateEnabled,
+      implemented: true,
+    },
+  };
+}
+
+function buildRemoteControlClientRevokeBlocked(preflightPayload) {
+  return {
+    ok: false,
+    generatedAt: new Date().toISOString(),
+    workspace: preflightPayload.workspace,
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      remoteControlTraffic: false,
+    },
+    action: {
+      type: "remote-control-client-revoke",
+      method: "remoteControl/client/revoke",
+      execution: "blocked",
+      remoteControlClientRevoke: false,
+      appServerTouched: false,
+      modelTraffic: false,
+      reason: "remote-control-client-revoke-disabled",
+    },
+    target: {
+      remoteClientRefAccepted: true,
+      remoteClientRefReturned: false,
+      clientIdReturned: false,
+      environmentIdReturned: false,
+    },
+    remoteControlClientRevoke: {
+      method: "remoteControl/client/revoke",
+      status: "blocked",
+      responseObject: false,
+      responseTopLevelKeyCount: 0,
+      remoteClientRefAccepted: true,
+      remoteClientRefReturned: false,
+      clientIdReturned: false,
+      environmentIdReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      remoteControlClientRevoke: false,
+      remoteControlClientRevokeEnabled: false,
+      remoteClientRefReturned: false,
+      clientIdReturned: false,
+      environmentIdReturned: false,
+      rawPayloadsReturned: false,
+      preflightTokenReturned: false,
+      preflightTokenRequired: true,
+      auditLogPersistent: false,
+      auditLogPathReturned: false,
+      auditLogWritableChecked: false,
+      auditLogWritten: false,
+      requiresExplicitEnablement: true,
+      executionRouteImplemented: true,
+      executionGateEnabled: false,
+      browserMethodCallsAccepted: false,
+      implemented: true,
+    },
+  };
+}
+
+function sanitizeRemoteControlClientRevokePayload(
+  payload,
+  { workspace, consumedPreflight = null, actionAuditLog = null, auditLogWritableChecked = false } = {},
+) {
+  const summary = summarizeRemoteControlClientRevokeResult(
+    payload?.probes?.remoteControlClientRevoke,
+  );
+  return {
+    ok: Boolean(payload?.ok),
+    generatedAt: payload?.generatedAt ?? new Date().toISOString(),
+    transport: cleanDisplayText(payload?.transport, 80),
+    protocol: cleanDisplayText(payload?.protocol, 80),
+    initialize: sanitizeInitialize(payload?.initialize),
+    workspace: publicWorkspaces([workspace])[0],
+    appServer: {
+      touched: true,
+      modelTraffic: false,
+      commandTraffic: false,
+      remoteControlTraffic: true,
+      auditedMethods: ["remoteControl/client/revoke"],
+    },
+    action: {
+      type: "remote-control-client-revoke",
+      method: "remoteControl/client/revoke",
+      execution: "completed",
+      remoteControlClientRevoke: true,
+      appServerTouched: true,
+      modelTraffic: false,
+    },
+    target: {
+      remoteClientRefAccepted: true,
+      remoteClientRefReturned: false,
+      clientIdReturned: false,
+      environmentIdReturned: false,
+    },
+    remoteControlClientRevoke: {
+      method: "remoteControl/client/revoke",
+      status: summary.status,
+      responseObject: summary.responseObject,
+      responseTopLevelKeyCount: summary.responseTopLevelKeyCount,
+      remoteClientRefAccepted: true,
+      remoteClientRefReturned: false,
+      clientIdReturned: false,
+      environmentIdReturned: false,
+      rawPayloadReturned: false,
+    },
+    result: {
+      status: summary.status,
+      responseObject: summary.responseObject,
+      responseTopLevelKeyCount: summary.responseTopLevelKeyCount,
+      clientIdReturned: false,
+      environmentIdReturned: false,
+      rawPayloadReturned: false,
+    },
+    preflight: buildConsumedPreflightSummary(consumedPreflight),
+    policy: {
+      readOnly: false,
+      appServerTraffic: true,
+      modelTraffic: false,
+      commandTraffic: false,
+      remoteControlClientRevoke: true,
+      remoteControlClientRevokeEnabled: true,
+      remoteClientRefReturned: false,
+      clientIdReturned: false,
+      environmentIdReturned: false,
+      rawPayloadsReturned: false,
+      preflightTokenReturned: false,
+      preflightTokenRequired: true,
+      auditLogPersistent: Boolean(actionAuditLog?.persistent),
+      auditLogPathReturned: false,
+      auditLogWritableChecked: Boolean(auditLogWritableChecked),
+      auditLogWritten: false,
+      requiresExplicitEnablement: true,
+      executionRouteImplemented: true,
+      executionGateEnabled: true,
+      browserMethodCallsAccepted: true,
+      implemented: true,
+    },
+    notifications: sanitizeNotificationCounts(payload?.notifications),
+  };
+}
+
+function summarizeRemoteControlClientsResult(value) {
+  return {
+    status: cleanDisplayText(value?.status, 80) ?? "listed-with-redactions",
+    responseObject: Boolean(value?.responseObject),
+    responseTopLevelKeyCount: safeCount(value?.responseTopLevelKeyCount),
+    clientCount: safeCount(value?.clientCount),
+    returnedClientCount: safeCount(value?.returnedClientCount),
+    hasNextCursor: Boolean(value?.hasNextCursor),
+    environmentIdPresent: Boolean(value?.environmentIdPresent),
+  };
+}
+
+function summarizeRemoteControlClientRevokeResult(value) {
+  return {
+    status: cleanDisplayText(value?.status, 80) ?? "revoked-with-redactions",
     responseObject: Boolean(value?.responseObject),
     responseTopLevelKeyCount: safeCount(value?.responseTopLevelKeyCount),
   };
@@ -34685,6 +35644,12 @@ function safeTerminalRef(value) {
   return typeof value === "string" && /^terminalref-[a-f0-9]{32}$/.test(value) ? value : null;
 }
 
+function safeRemoteClientRef(value) {
+  return typeof value === "string" && /^remoteclientref-[a-f0-9]{32}$/.test(value)
+    ? value
+    : null;
+}
+
 function cleanTranscriptText(value, maxLength) {
   if (typeof value !== "string") {
     return "";
@@ -36035,6 +37000,14 @@ function validateTerminalRef(value) {
   const clean = safeTerminalRef(value);
   if (!clean) {
     throwRequestError("Background terminal selector is required", 400);
+  }
+  return clean;
+}
+
+function validateRemoteClientRef(value) {
+  const clean = safeRemoteClientRef(value);
+  if (!clean) {
+    throwRequestError("Remote client selector is required", 400);
   }
   return clean;
 }

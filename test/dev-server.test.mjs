@@ -241,6 +241,13 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /remote-control-disable-status/);
     assert.match(appScript, /runRemoteControlDisablePreflight/);
     assert.match(appScript, /runRemoteControlDisable/);
+    assert.match(html, /remote-clients-list-button/);
+    assert.match(html, /remote-client-select/);
+    assert.match(html, /remote-client-revoke-preflight-button/);
+    assert.match(html, /remote-client-revoke-button/);
+    assert.match(appScript, /runRemoteControlClientsList/);
+    assert.match(appScript, /runRemoteControlClientRevokePreflight/);
+    assert.match(appScript, /runRemoteControlClientRevoke/);
     assert.match(html, /environment-add-form/);
     assert.match(html, /environment-add-status/);
     assert.match(html, /environment-add-run-button/);
@@ -384,6 +391,9 @@ test("browser POST body contracts are centralized and immutable", () => {
     "/api/skills-extra-roots-clear",
     "/api/remote-control-disable-preflight",
     "/api/remote-control-disable",
+    "/api/remote-control-clients",
+    "/api/remote-control-client-revoke-preflight",
+    "/api/remote-control-client-revoke",
     "/api/environment-add-preflight",
     "/api/environment-add",
     "/api/integration-action-preflight",
@@ -662,6 +672,17 @@ test("browser POST body contracts are centralized and immutable", () => {
     [...BROWSER_POST_BODY_CONTRACTS["/api/remote-control-disable"].allowedFields],
     ["workspace", "preflightToken"],
   );
+  assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/remote-control-clients"].allowedFields], [
+    "workspace",
+  ]);
+  assert.deepEqual(
+    [...BROWSER_POST_BODY_CONTRACTS["/api/remote-control-client-revoke-preflight"].allowedFields],
+    ["workspace", "remoteClientRef"],
+  );
+  assert.deepEqual(
+    [...BROWSER_POST_BODY_CONTRACTS["/api/remote-control-client-revoke"].allowedFields],
+    ["workspace", "remoteClientRef", "preflightToken"],
+  );
   assert.deepEqual(
     [...BROWSER_POST_BODY_CONTRACTS["/api/environment-add-preflight"].allowedFields],
     ["workspace", "environmentId", "execServerUrl"],
@@ -911,6 +932,58 @@ test("browser POST response contracts block unsafe response values", () => {
     true,
   );
   assert.equal(remoteControlDisableContract.nestedKeySchemas.policy.includes("unexpected"), false);
+  const remoteControlClientsContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/remote-control-clients"];
+  assert.equal(remoteControlClientsContract.usesRouteSpecificNestedKeySchemas, true);
+  assert.equal(
+    remoteControlClientsContract.nestedKeySchemas.remoteControlClients.includes(
+      "clientRefsReturned",
+    ),
+    true,
+  );
+  assert.equal(
+    remoteControlClientsContract.nestedKeySchemas["remoteClients.items.*"].includes(
+      "remoteClientRef",
+    ),
+    true,
+  );
+  assert.equal(
+    remoteControlClientsContract.nestedKeySchemas.policy.includes("clientIdsReturned"),
+    true,
+  );
+  assert.equal(remoteControlClientsContract.nestedKeySchemas.policy.includes("unexpected"), false);
+  const remoteControlClientRevokePreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/remote-control-client-revoke-preflight"];
+  assert.equal(remoteControlClientRevokePreflightContract.usesRouteSpecificNestedKeySchemas, true);
+  assert.equal(
+    remoteControlClientRevokePreflightContract.nestedKeySchemas.target.includes(
+      "remoteClientRefReturned",
+    ),
+    true,
+  );
+  assert.equal(
+    remoteControlClientRevokePreflightContract.nestedKeySchemas.policy.includes(
+      "remoteControlClientRevokeEnabled",
+    ),
+    true,
+  );
+  const remoteControlClientRevokeContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/remote-control-client-revoke"];
+  assert.equal(remoteControlClientRevokeContract.usesRouteSpecificNestedKeySchemas, true);
+  assert.equal(
+    remoteControlClientRevokeContract.nestedKeySchemas.remoteControlClientRevoke.includes(
+      "clientIdReturned",
+    ),
+    true,
+  );
+  assert.equal(
+    remoteControlClientRevokeContract.nestedKeySchemas.result.includes("environmentIdReturned"),
+    true,
+  );
+  assert.equal(
+    remoteControlClientRevokeContract.nestedKeySchemas.policy.includes("auditLogWritten"),
+    true,
+  );
   const environmentAddPreflightContract =
     BROWSER_POST_RESPONSE_CONTRACTS["/api/environment-add-preflight"];
   assert.equal(environmentAddPreflightContract.usesRouteSpecificNestedKeySchemas, true);
@@ -21621,6 +21694,297 @@ test("dev server disables remote control only behind opt-in and preflight tokens
       preflightPayload.preflight.token,
       "\"serverNameReturned\":true",
       "\"statusValueReturned\":true",
+    ]) {
+      assert.equal(auditSerialized.includes(marker), false, `audit leaked ${marker}`);
+    }
+  } finally {
+    await closeServer(enabled.server);
+    await rm(auditDir, { recursive: true, force: true });
+  }
+});
+
+test("dev server lists and revokes remote clients through opaque refs only", async () => {
+  const auditDir = await mkdtemp(join(tmpdir(), "codex-app-port-remote-client-revoke-"));
+  const auditLogPath = join(auditDir, "actions.jsonl");
+  const listCalls = [];
+  const revokeCalls = [];
+  const remoteControlClientsListFn = async (options) => {
+    listCalls.push(options);
+    const summary = {
+      method: "remoteControl/client/list",
+      status: "listed-with-redactions",
+      responseObject: true,
+      responseTopLevelKeyCount: 2,
+      clientCount: 2,
+      returnedClientCount: 2,
+      hasNextCursor: true,
+      environmentIdPresent: true,
+      clientIdsReturned: true,
+      clientNamesReturned: true,
+      deviceMetadataReturned: true,
+      cursorsReturned: true,
+      rawPayloadReturned: true,
+    };
+    Object.defineProperties(summary, {
+      _privateEnvironmentId: {
+        value: "private-remote-environment-id",
+      },
+      _privateClients: {
+        value: [
+          {
+            clientId: "private-client-id-1",
+            displayNamePresent: true,
+            deviceModelPresent: true,
+            deviceTypePresent: true,
+            platformPresent: true,
+            osVersionPresent: true,
+            appVersionPresent: true,
+            lastSeenAtPresent: true,
+          },
+          {
+            clientId: "private-client-id-2",
+            displayNamePresent: true,
+          },
+        ],
+      },
+    });
+    return {
+      ok: true,
+      generatedAt: "2026-06-29T00:00:00.000Z",
+      transport: "stdio-jsonl",
+      protocol: "json-rpc-2.0-without-jsonrpc-field",
+      initialize: { platformOs: "linux", platformFamily: "unix" },
+      probes: {
+        remoteControlClients: summary,
+      },
+      notifications: {},
+    };
+  };
+  const remoteControlClientRevokeFn = async (options) => {
+    revokeCalls.push(options);
+    return {
+      ok: true,
+      generatedAt: "2026-06-29T00:00:00.000Z",
+      transport: "stdio-jsonl",
+      protocol: "json-rpc-2.0-without-jsonrpc-field",
+      initialize: { platformOs: "linux", platformFamily: "unix" },
+      probes: {
+        remoteControlClientRevoke: {
+          method: "remoteControl/client/revoke",
+          status: "revoked-with-redactions",
+          responseObject: true,
+          responseTopLevelKeyCount: 3,
+          clientIdReturned: true,
+          environmentIdReturned: true,
+          rawPayloadReturned: true,
+          clientId: options.clientId,
+          environmentId: options.environmentId,
+          privateToken: "sk-proj-private-remote-client-token",
+        },
+      },
+      notifications: {},
+    };
+  };
+
+  const disabled = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    workspaceInputs: ["/tmp/second-workspace"],
+    remoteControlClientsListFn,
+  });
+
+  try {
+    const blocked = await fetch(`${disabled.url}/api/remote-control-clients`, {
+      method: "POST",
+      headers: jsonHeaders(disabled.server),
+      body: JSON.stringify({ workspace: "workspace-2" }),
+    });
+    assert.equal(blocked.status, 403);
+    assert.equal(listCalls.length, 0);
+  } finally {
+    await closeServer(disabled.server);
+  }
+
+  const enabled = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    workspaceInputs: ["/tmp/second-workspace"],
+    remoteControlClientListEnabled: true,
+    remoteControlClientRevokeEnabled: true,
+    remoteControlClientsListFn,
+    remoteControlClientRevokeFn,
+    actionAuditLog: createActionAuditLog({ path: auditLogPath }),
+  });
+
+  try {
+    const listResponse = await fetch(`${enabled.url}/api/remote-control-clients`, {
+      method: "POST",
+      headers: jsonHeaders(enabled.server),
+      body: JSON.stringify({ workspace: "workspace-2" }),
+    });
+    assert.equal(listResponse.status, 200);
+    const listPayload = await listResponse.json();
+    const listSerialized = JSON.stringify(listPayload);
+    assert.equal(listPayload.ok, true);
+    assert.equal(listPayload.appServer.remoteControlTraffic, true);
+    assert.deepEqual(listPayload.appServer.auditedMethods, [
+      "remoteControl/status/read",
+      "remoteControl/client/list",
+    ]);
+    assert.equal(listPayload.action.type, "remote-control-clients");
+    assert.equal(listPayload.remoteControlClients.clientCount, 2);
+    assert.equal(listPayload.remoteControlClients.returnedClientCount, 2);
+    assert.equal(listPayload.remoteControlClients.clientRefsReturned, true);
+    assert.equal(listPayload.remoteControlClients.clientIdsReturned, false);
+    assert.equal(listPayload.remoteControlClients.clientNamesReturned, false);
+    assert.equal(listPayload.remoteControlClients.deviceMetadataReturned, false);
+    assert.equal(listPayload.remoteControlClients.cursorsReturned, false);
+    assert.equal(listPayload.remoteClients.count, 2);
+    assert.match(listPayload.remoteClients.items[0].remoteClientRef, /^remoteclientref-[a-f0-9]{32}$/);
+    assert.equal(listPayload.remoteClients.items[0].clientIdReturned, false);
+    assert.equal(listPayload.policy.clientIdsReturned, false);
+    assert.equal(listPayload.policy.environmentIdReturned, false);
+    assert.equal(listCalls.length, 1);
+    assert.equal(listCalls[0].cwd, "/tmp/second-workspace");
+    assert.equal(listCalls[0].limit, 20);
+    for (const marker of [
+      "/tmp/second-workspace",
+      "private-remote-environment-id",
+      "private-client-id",
+      "Private Laptop",
+      "PrivateBookPro",
+      "sk-proj-private-remote-client-token",
+      "\"clientIdsReturned\":true",
+      "\"environmentIdReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]) {
+      assert.equal(listSerialized.includes(marker), false, `list leaked ${marker}`);
+    }
+
+    const remoteClientRef = listPayload.remoteClients.items[0].remoteClientRef;
+    const preflightResponse = await fetch(
+      `${enabled.url}/api/remote-control-client-revoke-preflight`,
+      {
+        method: "POST",
+        headers: jsonHeaders(enabled.server),
+        body: JSON.stringify({ workspace: "workspace-2", remoteClientRef }),
+      },
+    );
+    assert.equal(preflightResponse.status, 200);
+    const preflightPayload = await preflightResponse.json();
+    const preflightSerialized = JSON.stringify(preflightPayload);
+    assert.equal(preflightPayload.action.type, "remote-control-client-revoke-preflight");
+    assert.equal(preflightPayload.action.execution, "requires-confirmation");
+    assert.equal(preflightPayload.target.remoteClientRefAccepted, true);
+    assert.equal(preflightPayload.target.remoteClientRefReturned, false);
+    assert.equal(preflightPayload.policy.remoteControlClientRevokeEnabled, true);
+    assertActionPreflight(
+      preflightPayload,
+      "remote-control-client-revoke-preflight",
+      "workspace-2",
+    );
+    for (const marker of [
+      remoteClientRef,
+      "private-remote-environment-id",
+      "private-client-id",
+    ]) {
+      assert.equal(preflightSerialized.includes(marker), false, `preflight leaked ${marker}`);
+    }
+
+    const response = await fetch(`${enabled.url}/api/remote-control-client-revoke`, {
+      method: "POST",
+      headers: jsonHeaders(enabled.server),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        remoteClientRef,
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.remoteControlTraffic, true);
+    assert.deepEqual(payload.appServer.auditedMethods, ["remoteControl/client/revoke"]);
+    assert.equal(payload.action.type, "remote-control-client-revoke");
+    assert.equal(payload.action.remoteControlClientRevoke, true);
+    assert.equal(payload.target.remoteClientRefReturned, false);
+    assert.equal(payload.target.clientIdReturned, false);
+    assert.equal(payload.target.environmentIdReturned, false);
+    assert.equal(payload.remoteControlClientRevoke.status, "revoked-with-redactions");
+    assert.equal(payload.remoteControlClientRevoke.clientIdReturned, false);
+    assert.equal(payload.remoteControlClientRevoke.environmentIdReturned, false);
+    assert.equal(payload.result.clientIdReturned, false);
+    assert.equal(payload.result.environmentIdReturned, false);
+    assert.equal(payload.policy.auditLogWritten, true);
+    assert.equal(payload.preflight.tokenConsumed, true);
+    assert.equal(payload.preflight.tokenReturned, false);
+    assert.equal(revokeCalls.length, 1);
+    assert.equal(revokeCalls[0].cwd, "/tmp/second-workspace");
+    assert.equal(revokeCalls[0].environmentId, "private-remote-environment-id");
+    assert.equal(revokeCalls[0].clientId, "private-client-id-1");
+    for (const marker of [
+      "/tmp/second-workspace",
+      remoteClientRef,
+      "private-remote-environment-id",
+      "private-client-id",
+      "sk-proj-private-remote-client-token",
+      preflightPayload.preflight.token,
+      "\"clientIdReturned\":true",
+      "\"environmentIdReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `revoke leaked ${marker}`);
+    }
+
+    const replay = await fetch(`${enabled.url}/api/remote-control-client-revoke`, {
+      method: "POST",
+      headers: jsonHeaders(enabled.server),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        remoteClientRef,
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    assert.equal(replay.status, 409);
+    assert.equal(revokeCalls.length, 1);
+
+    const reusedRefPreflight = await fetch(
+      `${enabled.url}/api/remote-control-client-revoke-preflight`,
+      {
+        method: "POST",
+        headers: jsonHeaders(enabled.server),
+        body: JSON.stringify({ workspace: "workspace-2", remoteClientRef }),
+      },
+    );
+    assert.equal(reusedRefPreflight.status, 404);
+
+    const auditRecords = (await readFile(auditLogPath, "utf8"))
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    assert.equal(auditRecords.length, 1);
+    assert.equal(auditRecords[0].event, "remote-control-client-revoke-recorded");
+    assert.equal(auditRecords[0].action.type, "remote-control-client-revoke");
+    assert.equal(auditRecords[0].action.method, "remoteControl/client/revoke");
+    assert.equal(auditRecords[0].action.remoteControlClientRevoke, true);
+    assert.equal(auditRecords[0].appServer.remoteControlTraffic, true);
+    assert.equal(auditRecords[0].target.remoteClientRefReturned, false);
+    assert.equal(auditRecords[0].target.clientIdReturned, false);
+    assert.equal(auditRecords[0].target.environmentIdReturned, false);
+    assert.equal(auditRecords[0].result.status, "revoked-with-redactions");
+    assert.equal(auditRecords[0].result.clientIdReturned, false);
+    assert.equal(auditRecords[0].result.environmentIdReturned, false);
+    assert.equal(auditRecords[0].preflight.tokenConsumed, true);
+    assert.equal(auditRecords[0].preflight.tokenReturned, false);
+    const auditSerialized = JSON.stringify(auditRecords);
+    for (const marker of [
+      "/tmp/second-workspace",
+      remoteClientRef,
+      "private-remote-environment-id",
+      "private-client-id",
+      "sk-proj-private-remote-client-token",
+      preflightPayload.preflight.token,
+      "\"clientIdReturned\":true",
+      "\"environmentIdReturned\":true",
     ]) {
       assert.equal(auditSerialized.includes(marker), false, `audit leaked ${marker}`);
     }

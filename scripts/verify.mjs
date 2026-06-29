@@ -1141,6 +1141,20 @@ async function checkStrictBrowserPostBodies() {
           preflightToken: "preflight-1234567890abcdef",
         },
       ],
+      ["/api/remote-control-clients", {}],
+      [
+        "/api/remote-control-client-revoke-preflight",
+        {
+          remoteClientRef: "remoteclientref-1234567890abcdef1234567890abcdef",
+        },
+      ],
+      [
+        "/api/remote-control-client-revoke",
+        {
+          remoteClientRef: "remoteclientref-1234567890abcdef1234567890abcdef",
+          preflightToken: "preflight-1234567890abcdef",
+        },
+      ],
       [
         "/api/environment-add-preflight",
         {
@@ -1501,6 +1515,53 @@ function assertBrowserPostBodyContracts(cases) {
     remoteControlDisableContract.nestedKeySchemas.policy?.includes("unexpected")
   ) {
     throw new Error("remote-control-disable response contract is missing nested schemas");
+  }
+  const remoteControlClientsContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/remote-control-clients"];
+  if (
+    remoteControlClientsContract.usesRouteSpecificNestedKeySchemas !== true ||
+    !Object.isFrozen(remoteControlClientsContract.nestedKeySchemas.policy) ||
+    !remoteControlClientsContract.nestedKeySchemas.remoteControlClients?.includes(
+      "clientRefsReturned",
+    ) ||
+    !remoteControlClientsContract.nestedKeySchemas["remoteClients.items.*"]?.includes(
+      "remoteClientRef",
+    ) ||
+    !remoteControlClientsContract.nestedKeySchemas.policy?.includes("clientIdsReturned") ||
+    remoteControlClientsContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("remote-control-clients response contract is missing nested schemas");
+  }
+  const remoteControlClientRevokePreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/remote-control-client-revoke-preflight"];
+  if (
+    remoteControlClientRevokePreflightContract.usesRouteSpecificNestedKeySchemas !== true ||
+    !Object.isFrozen(remoteControlClientRevokePreflightContract.nestedKeySchemas.policy) ||
+    !remoteControlClientRevokePreflightContract.nestedKeySchemas.target?.includes(
+      "remoteClientRefReturned",
+    ) ||
+    !remoteControlClientRevokePreflightContract.nestedKeySchemas.policy?.includes(
+      "remoteControlClientRevokeEnabled",
+    )
+  ) {
+    throw new Error(
+      "remote-control-client-revoke-preflight response contract is missing nested schemas",
+    );
+  }
+  const remoteControlClientRevokeContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/remote-control-client-revoke"];
+  if (
+    remoteControlClientRevokeContract.usesRouteSpecificNestedKeySchemas !== true ||
+    !Object.isFrozen(remoteControlClientRevokeContract.nestedKeySchemas.policy) ||
+    !remoteControlClientRevokeContract.nestedKeySchemas.remoteControlClientRevoke?.includes(
+      "clientIdReturned",
+    ) ||
+    !remoteControlClientRevokeContract.nestedKeySchemas.result?.includes(
+      "environmentIdReturned",
+    ) ||
+    !remoteControlClientRevokeContract.nestedKeySchemas.policy?.includes("auditLogWritten")
+  ) {
+    throw new Error("remote-control-client-revoke response contract is missing nested schemas");
   }
   const environmentAddPreflightContract =
     BROWSER_POST_RESPONSE_CONTRACTS["/api/environment-add-preflight"];

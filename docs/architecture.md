@@ -593,6 +593,14 @@ Current M1 status:
   payload, and responses plus action audit records reduced to
   status/count/shape metadata without raw status payloads, server names, installation
   ids, environment ids, notifications, tokens, or raw payloads
+- done: opt-in `/api/remote-control-clients` plus
+  `/api/remote-control-client-revoke` behind separate
+  `CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_CLIENT_LIST=1` and
+  `CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_CLIENT_REVOKE=1` gates, with
+  server-side environment resolution, process-local opaque client refs,
+  one-time revoke preflight tokens, sanitized persistent action audit, and no
+  browser-supplied or returned client ids, environment ids, device names,
+  device metadata values, cursors, notifications, tokens, or raw payloads
 - done: opt-in `/api/config-value-write` behind
   `CODEX_APP_PORT_ALLOW_CONFIG_VALUE_WRITE=1`, an exact
   `CODEX_APP_PORT_CONFIG_VALUE_WRITE_ALLOWLIST` key match, and a matching

@@ -771,6 +771,93 @@ function handle(message) {
     return;
   }
 
+  if (message.method === "remoteControl/client/list") {
+    const paramKeys = Object.keys(message.params ?? {}).sort();
+    const allowedKeys = ["cursor", "environmentId", "limit", "order"];
+    if (
+      JSON.stringify(paramKeys) !== JSON.stringify(allowedKeys) ||
+      message.params?.environmentId !== "private-remote-environment-id" ||
+      message.params?.cursor !== null ||
+      message.params?.limit !== 20 ||
+      message.params?.order !== "desc"
+    ) {
+      send({
+        id: message.id,
+        error: {
+          code: -32602,
+          message: "unsafe remote control client list payload",
+          data: {
+            keys: paramKeys,
+            environmentId: message.params?.environmentId,
+            cursor: message.params?.cursor,
+            limit: message.params?.limit,
+            order: message.params?.order,
+          },
+        },
+      });
+      return;
+    }
+    send({
+      id: message.id,
+      result: {
+        data: [
+          {
+            clientId: "private-client-id-1",
+            displayName: "Private Laptop",
+            deviceModel: "PrivateBookPro",
+            deviceType: "desktop",
+            platform: "darwin",
+            osVersion: "private-os-version",
+            appVersion: "private-app-version",
+            lastSeenAt: "2026-06-29T10:00:00.000Z",
+          },
+          {
+            clientId: "private-client-id-2",
+            displayName: "Private Phone",
+            deviceModel: "PrivatePhone",
+            deviceType: "mobile",
+            platform: "ios",
+          },
+        ],
+        nextCursor: "private-next-cursor",
+      },
+    });
+    return;
+  }
+
+  if (message.method === "remoteControl/client/revoke") {
+    const paramKeys = Object.keys(message.params ?? {}).sort();
+    const allowedKeys = ["clientId", "environmentId"];
+    if (
+      JSON.stringify(paramKeys) !== JSON.stringify(allowedKeys) ||
+      message.params?.environmentId !== "private-remote-environment-id" ||
+      !["private-client-id-1", "private-client-id-2"].includes(message.params?.clientId)
+    ) {
+      send({
+        id: message.id,
+        error: {
+          code: -32602,
+          message: "unsafe remote control client revoke payload",
+          data: {
+            keys: paramKeys,
+            environmentId: message.params?.environmentId,
+            clientId: message.params?.clientId,
+          },
+        },
+      });
+      return;
+    }
+    send({
+      id: message.id,
+      result: {
+        clientId: message.params.clientId,
+        environmentId: message.params.environmentId,
+        privateToken: "sk-proj-private-remote-client-revoke-token",
+      },
+    });
+    return;
+  }
+
   if (message.method === "remoteControl/disable") {
     if (message.params !== null && message.params !== undefined) {
       send({
