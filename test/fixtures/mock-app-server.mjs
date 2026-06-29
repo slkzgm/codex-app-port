@@ -1343,6 +1343,58 @@ function handle(message) {
     return;
   }
 
+  if (message.method === "thread/settings/update") {
+    const forbiddenKeys = ["cwd", "model", "permissions", "serviceTier", "summary"];
+    const leakedKey = forbiddenKeys.find((key) => Object.hasOwn(message.params ?? {}, key));
+    if (
+      leakedKey ||
+      message.params?.approvalPolicy !== "on-request" ||
+      message.params?.approvalsReviewer !== "user" ||
+      message.params?.sandboxPolicy?.type !== "readOnly" ||
+      message.params?.sandboxPolicy?.networkAccess !== false
+    ) {
+      send({
+        id: message.id,
+        error: {
+          code: -32602,
+          message: "unsafe thread settings payload",
+          data: { leakedKey },
+        },
+      });
+      return;
+    }
+    send({
+      id: message.id,
+      result: {
+        privateSettingsEcho: {
+          threadId: message.params?.threadId,
+          cwd: "/tmp/mock-workspace/safety-lock-secret",
+          model: "private-model",
+          permissions: "private-permissions",
+        },
+      },
+    });
+    send({
+      method: "thread/settings/updated",
+      params: {
+        threadId: message.params?.threadId,
+        threadSettings: {
+          approvalPolicy: "on-request",
+          approvalsReviewer: "user",
+          cwd: "/tmp/mock-workspace/safety-lock-notification-secret",
+          model: "private-model",
+          modelProvider: "openai",
+          sandboxPolicy: { type: "readOnly", networkAccess: false },
+          collaborationMode: {
+            mode: "default",
+            settings: { model: "private-model" },
+          },
+        },
+      },
+    });
+    return;
+  }
+
   if (message.method === "thread/compact/start") {
     send({
       id: message.id,

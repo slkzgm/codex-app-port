@@ -26,6 +26,7 @@ import {
   runThreadForkProbe,
   runThreadRenameProbe,
   runThreadRollbackProbe,
+  runThreadSafetyLockProbe,
   runThreadSearchProbe,
   runThreadStartProbe,
   runThreadTranscriptProbe,
@@ -1281,6 +1282,60 @@ test("runThreadRollbackProbe rolls back by suffix and count without returning id
       delete process.env.CODEX_APP_PORT_ALLOW_THREAD_ROLLBACK;
     } else {
       process.env.CODEX_APP_PORT_ALLOW_THREAD_ROLLBACK = previous;
+    }
+  }
+});
+
+test("runThreadSafetyLockProbe locks future thread policy without accepting unsafe settings", async () => {
+  const previous = process.env.CODEX_APP_PORT_ALLOW_THREAD_SAFETY_LOCK;
+  process.env.CODEX_APP_PORT_ALLOW_THREAD_SAFETY_LOCK = "1";
+  try {
+    const summary = await runThreadSafetyLockProbe({
+      codexBin: process.execPath,
+      codexArgs: [mockServer.pathname],
+      cwd: process.cwd(),
+      timeoutMs: 1_000,
+      threadIdSuffix: "00000001",
+    });
+
+    assert.equal(summary.ok, true);
+    const lock = summary.probes.threadSafetyLock;
+    assert.equal(lock.method, "thread/settings/update");
+    assert.equal(lock.threadIdSuffix, "00000001");
+    assert.equal(lock.status, "safety-locked");
+    assert.deepEqual(lock.methodsUsed, ["thread/list", "thread/settings/update"]);
+    assert.equal(lock.approvalPolicy, "on-request");
+    assert.equal(lock.approvalsReviewer, "user");
+    assert.equal(lock.sandboxPolicyType, "readOnly");
+    assert.equal(lock.networkAccessAllowed, false);
+    assert.equal(lock.modelAcceptedFromBrowser, false);
+    assert.equal(lock.cwdAcceptedFromBrowser, false);
+    assert.equal(lock.permissionsAcceptedFromBrowser, false);
+    assert.equal(lock.threadContentReturned, false);
+    assert.equal(lock.fullIdsReturned, false);
+    assert.equal(lock.cwdReturned, false);
+    assert.equal(lock.pathsReturned, false);
+    assert.equal(lock.rawPayloadReturned, false);
+
+    const serialized = JSON.stringify(summary);
+    for (const marker of [
+      "thread-00000001",
+      "safety-lock-secret",
+      "safety-lock-notification-secret",
+      "private-model",
+      "private-permissions",
+      "/tmp/mock-workspace",
+      "mock-codex-home",
+      "userAgent",
+      "codexHome",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    if (previous === undefined) {
+      delete process.env.CODEX_APP_PORT_ALLOW_THREAD_SAFETY_LOCK;
+    } else {
+      process.env.CODEX_APP_PORT_ALLOW_THREAD_SAFETY_LOCK = previous;
     }
   }
 });

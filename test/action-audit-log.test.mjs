@@ -131,6 +131,10 @@ test("action audit log writes sanitized local mutation JSONL", async () => {
       payload: threadRollbackPayload(),
     });
     log.append({
+      event: "thread-safety-lock-recorded",
+      payload: threadSafetyLockPayload(),
+    });
+    log.append({
       event: "thread-compact-recorded",
       payload: threadCompactPayload(),
     });
@@ -139,7 +143,7 @@ test("action audit log writes sanitized local mutation JSONL", async () => {
       .trim()
       .split("\n")
       .map((line) => JSON.parse(line));
-    assert.equal(records.length, 7);
+    assert.equal(records.length, 8);
     assert.equal(records[0].event, "file-action-recorded");
     assert.equal(records[0].action.fileAction, "writeFile");
     assert.equal(records[0].target.depth, 2);
@@ -176,13 +180,22 @@ test("action audit log writes sanitized local mutation JSONL", async () => {
     assert.equal(records[5].target.numTurns, 2);
     assert.equal(records[5].result.rolledBack, true);
     assert.equal(records[5].result.threadContentReturned, false);
-    assert.equal(records[6].event, "thread-compact-recorded");
-    assert.equal(records[6].action.type, "thread-compact");
-    assert.equal(records[6].action.method, "thread/compact/start");
-    assert.equal(records[6].action.modelTraffic, true);
-    assert.equal(records[6].target.threadIdSuffix, "feedbeef");
-    assert.equal(records[6].result.loadedSessionCount, 1);
+    assert.equal(records[6].event, "thread-safety-lock-recorded");
+    assert.equal(records[6].action.type, "thread-safety-lock");
+    assert.equal(records[6].action.method, "thread/settings/update");
+    assert.equal(records[6].target.threadIdSuffix, "cab005e1");
+    assert.equal(records[6].target.locked, true);
+    assert.equal(records[6].target.approvalPolicy, "on-request");
+    assert.equal(records[6].target.sandboxPolicyType, "readOnly");
+    assert.equal(records[6].result.locked, true);
     assert.equal(records[6].result.threadContentReturned, false);
+    assert.equal(records[7].event, "thread-compact-recorded");
+    assert.equal(records[7].action.type, "thread-compact");
+    assert.equal(records[7].action.method, "thread/compact/start");
+    assert.equal(records[7].action.modelTraffic, true);
+    assert.equal(records[7].target.threadIdSuffix, "feedbeef");
+    assert.equal(records[7].result.loadedSessionCount, 1);
+    assert.equal(records[7].result.threadContentReturned, false);
 
     const serialized = JSON.stringify(records);
     for (const marker of [
@@ -200,6 +213,8 @@ test("action audit log writes sanitized local mutation JSONL", async () => {
       "thread-private-full-id",
       "Sensitive archived content",
       "Sensitive rollback content",
+      "Sensitive safety lock content",
+      "safety-lock-secret",
       "rollback-secret",
       "Sensitive compacted content",
       "private@example.com",
@@ -670,6 +685,62 @@ function threadRollbackPayload() {
       token: "preflight-private-token",
       scope: {
         kind: "thread-rollback-preflight",
+        workspaceId: "default",
+      },
+      oneTimeUseEnforced: true,
+    },
+  };
+}
+
+function threadSafetyLockPayload() {
+  return {
+    ok: true,
+    workspace: {
+      id: "default",
+      label: "codex-app-port-test",
+      isDefault: true,
+      cwd: "/tmp/private-workspace",
+    },
+    appServer: {
+      touched: true,
+      modelTraffic: false,
+      commandTraffic: false,
+      settingsTraffic: true,
+      auditedMethods: ["thread/list", "thread/settings/update"],
+    },
+    action: {
+      type: "thread-safety-lock",
+      method: "thread/settings/update",
+      execution: "safety-locked",
+      threadSafetyLocked: true,
+      threadSettingsMutated: true,
+      threadStateMutated: true,
+      appServerTouched: true,
+      modelTraffic: false,
+    },
+    target: {
+      threadIdSuffix: "cab005e1",
+      locked: true,
+      approvalPolicy: "on-request",
+      approvalsReviewer: "user",
+      sandboxPolicyType: "readOnly",
+      networkAccessAllowed: false,
+      fullId: "thread-private-full-id-cab005e1",
+      path: "/tmp/private-workspace/safety-lock-secret.txt",
+    },
+    result: {
+      status: "safety-locked",
+      locked: true,
+      responseObject: true,
+      responseTopLevelKeyCount: 1,
+      threadContent: "Sensitive safety lock content",
+      fullIds: ["thread-private-full-id-cab005e1"],
+    },
+    preflight: {
+      tokenConsumed: true,
+      token: "preflight-private-token",
+      scope: {
+        kind: "thread-safety-lock-preflight",
         workspaceId: "default",
       },
       oneTimeUseEnforced: true,

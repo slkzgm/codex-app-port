@@ -82,5 +82,13 @@ Target parity with the Codex desktop workflow:
   `thread/rollback` only with a bounded `numTurns` count, and returns only
   suffix/status/method/count metadata, not full ids, names, previews, paths,
   thread content, preflight tokens, or raw payloads.
+- `thread/settings/update` has a separate disabled-by-default safety-lock path
+  behind `CODEX_APP_PORT_ALLOW_THREAD_SAFETY_LOCK=1`; it consumes a matching
+  one-time preflight token, resolves the target by suffix through `thread/list`,
+  sends only a fixed safe settings payload (`on-request`, `user`, read-only
+  sandbox, network disabled), rejects browser-supplied cwd/model/permissions
+  controls by omission from the route contract, and returns only suffix/status
+  metadata, not full ids, paths, settings payloads, preflight tokens, or raw
+  payloads.
 - The referenced unofficial Linux port converts the macOS DMG into a Linux
   Electron bundle and patches/stubs platform-specific pieces.

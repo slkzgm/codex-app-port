@@ -666,6 +666,18 @@ action audit records return suffix/status/count/method metadata only, never full
 ids, names, previews, transcript content, cwd, paths, raw app-server payloads,
 or the preflight token. This is conversation-history rollback only; it does not
 revert workspace files.
+Thread safety locking is the only browser-facing `thread/settings/update`
+execution path. `/api/thread-safety-lock-preflight` validates a selected thread
+suffix locally without app-server traffic. `/api/thread-safety-lock-action` is
+disabled unless `CODEX_APP_PORT_ALLOW_THREAD_SAFETY_LOCK=1` is set; when
+enabled it consumes the matching token, resolves the suffix through sanitized
+`thread/list` metadata, and calls only `thread/settings/update` with a fixed
+safe payload: `approvalPolicy: "on-request"`, `approvalsReviewer: "user"`, and
+read-only sandbox with network disabled. Browser-supplied cwd, model,
+permissions, service tier, summary, sandbox, and arbitrary settings are not
+accepted. Responses and action audit records return suffix/status/policy-count
+metadata only, never full ids, cwd, paths, settings payloads, raw app-server
+payloads, or the preflight token.
 Thread compaction is more sensitive because it can trigger model traffic.
 `/api/thread-compact-preflight` validates a selected thread suffix locally and
 returns a one-time token without app-server traffic. `/api/thread-compact-start`
@@ -685,7 +697,7 @@ result counts, cursor-presence booleans, and per-result suffix/status/source
 metadata only. Search terms, snippets, names, previews, full ids, paths,
 cursors, and raw payloads are omitted.
 `/api/execution-gate` also returns a capped process-local thread lifecycle
-history for successful start/archive/delete/fork/rename/rollback/compact actions. That history is UI-facing
+history for successful start/archive/delete/fork/rename/rollback/safety-lock/compact actions. That history is UI-facing
 metadata only: action type/method, suffix, status/counts, token-consumed state,
 and audit flags. It never returns preflight tokens, prompts, full ids, paths,
 names, previews, transcript content, or raw app-server payloads.
@@ -838,7 +850,7 @@ decisions, including file-change accept-once decisions, are journaled before
 the browser decision is forwarded, so an unavailable persistent audit log fails
 closed for that browser-originated decision.
 The launcher also writes successful account logout, thread creation, thread
-archive/unarchive actions, thread deletion, thread forking, thread renaming, thread rollback actions, thread compaction starts, live-session controls,
+archive/unarchive actions, thread deletion, thread forking, thread renaming, thread rollback actions, thread safety locks, thread compaction starts, live-session controls,
 allowlisted terminal command executions, allowlisted process spawn executions,
 background terminal cleanup requests, and local file actions to the sanitized
 action audit log described above.

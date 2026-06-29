@@ -43,6 +43,7 @@ const ACTION_AUDIT_EVENTS = new Set([
   "thread-fork-recorded",
   "thread-rename-recorded",
   "thread-rollback-recorded",
+  "thread-safety-lock-recorded",
   "thread-start-recorded",
 ]);
 
@@ -116,7 +117,8 @@ export function sanitizeActionAuditRecord(record, { generatedAt = null } = {}) {
         actionType === "mcp-server-reload" ||
         actionType === "config-batch-write" ||
         actionType === "config-value-write" ||
-        actionType === "experimental-feature-set"
+        actionType === "experimental-feature-set" ||
+        actionType === "thread-safety-lock"
           ? Boolean(appServer.settingsTraffic)
           : false,
       toolTraffic:
@@ -236,6 +238,8 @@ function actionAuditEvent(actionType) {
       return "thread-rename-recorded";
     case "thread-rollback":
       return "thread-rollback-recorded";
+    case "thread-safety-lock":
+      return "thread-safety-lock-recorded";
     case "thread-start":
       return "thread-start-recorded";
     case "live-session-control":
@@ -546,6 +550,18 @@ function sanitizeAction(action, actionType, { appServer }) {
       modelTraffic: false,
     };
   }
+  if (actionType === "thread-safety-lock") {
+    return {
+      type: "thread-safety-lock",
+      method: "thread/settings/update",
+      execution: safeString(action.execution, 40) ?? "safety-locked",
+      threadSafetyLocked: Boolean(action.threadSafetyLocked),
+      threadSettingsMutated: Boolean(action.threadSettingsMutated),
+      threadStateMutated: Boolean(action.threadStateMutated),
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: false,
+    };
+  }
   if (actionType === "thread-compact") {
     return {
       type: "thread-compact",
@@ -833,6 +849,18 @@ function sanitizeTarget(target, actionType) {
       rolledBack: Boolean(target.rolledBack),
       numTurns: safeCount(target.numTurns),
       returnedTurnCount: safeCount(target.returnedTurnCount),
+      fullIdsReturned: false,
+      pathsReturned: false,
+    };
+  }
+  if (actionType === "thread-safety-lock") {
+    return {
+      threadIdSuffix: safeString(target.threadIdSuffix, 16),
+      locked: Boolean(target.locked),
+      approvalPolicy: "on-request",
+      approvalsReviewer: "user",
+      sandboxPolicyType: "readOnly",
+      networkAccessAllowed: false,
       fullIdsReturned: false,
       pathsReturned: false,
     };
@@ -1222,6 +1250,16 @@ function sanitizeResult(result, actionType) {
       threadContentReturned: false,
     };
   }
+  if (actionType === "thread-safety-lock") {
+    return {
+      status: safeString(result.status, 80) ?? "safety-locked",
+      locked: Boolean(result.locked),
+      responseObject: Boolean(result.responseObject),
+      responseTopLevelKeyCount: safeCount(result.responseTopLevelKeyCount),
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
   if (actionType === "thread-compact") {
     return {
       status: safeString(result.status, 80) ?? "compact-started",
@@ -1360,6 +1398,7 @@ function sanitizeActionType(value) {
     "thread-fork",
     "thread-rename",
     "thread-rollback",
+    "thread-safety-lock",
     "thread-start",
   ].includes(value)
     ? value

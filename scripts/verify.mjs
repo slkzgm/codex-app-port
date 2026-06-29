@@ -908,6 +908,14 @@ async function checkStrictBrowserPostBodies() {
           preflightToken: "preflight-1234567890abcdef",
         },
       ],
+      ["/api/thread-safety-lock-preflight", { thread: "12345678" }],
+      [
+        "/api/thread-safety-lock-action",
+        {
+          thread: "12345678",
+          preflightToken: "preflight-1234567890abcdef",
+        },
+      ],
       ["/api/thread-compact-preflight", { thread: "12345678" }],
       [
         "/api/thread-compact-start",
@@ -1875,6 +1883,40 @@ function assertBrowserPostBodyContracts(cases) {
     threadRollbackActionContract.nestedKeySchemas.policy?.includes("unexpected")
   ) {
     throw new Error("thread-rollback-action response contract is missing nested schemas");
+  }
+  const threadSafetyLockPreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-safety-lock-preflight"];
+  if (
+    threadSafetyLockPreflightContract.usesRouteSpecificNestedKeySchemas !== true ||
+    !Object.isFrozen(threadSafetyLockPreflightContract.nestedKeySchemas.policy) ||
+    !threadSafetyLockPreflightContract.nestedKeySchemas.settings?.includes(
+      "sandboxPolicyType",
+    ) ||
+    !threadSafetyLockPreflightContract.nestedKeySchemas.policy?.includes(
+      "threadSafetyLocked",
+    ) ||
+    threadSafetyLockPreflightContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("thread-safety-lock-preflight response contract is missing nested schemas");
+  }
+  const threadSafetyLockActionContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-safety-lock-action"];
+  if (
+    threadSafetyLockActionContract.usesRouteSpecificNestedKeySchemas !== true ||
+    !Object.isFrozen(threadSafetyLockActionContract.nestedKeySchemas.policy) ||
+    !threadSafetyLockActionContract.nestedKeySchemas["probes.threadSafetyLock"]?.includes(
+      "methodsUsed",
+    ) ||
+    !threadSafetyLockActionContract.nestedKeySchemas.target?.includes("locked") ||
+    !threadSafetyLockActionContract.nestedKeySchemas.result?.includes(
+      "responseTopLevelKeyCount",
+    ) ||
+    !threadSafetyLockActionContract.nestedKeySchemas.policy?.includes(
+      "requiresExplicitExecutionGate",
+    ) ||
+    threadSafetyLockActionContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("thread-safety-lock-action response contract is missing nested schemas");
   }
   const threadCompactPreflightContract =
     BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-compact-preflight"];
@@ -5192,6 +5234,151 @@ function assertBrowserPostBodyContracts(cases) {
       },
     ],
     [
+      "/api/thread-safety-lock-preflight",
+      {
+        ok: true,
+        appServer: {
+          touched: false,
+          modelTraffic: false,
+          commandTraffic: false,
+        },
+        action: {
+          type: "thread-safety-lock-preflight",
+          method: "thread/settings/update",
+          execution: "blocked",
+          wouldLockThreadSafety: false,
+          threadSafetyLocked: false,
+          threadSettingsMutated: false,
+          threadStateMutated: false,
+          appServerTouched: false,
+        },
+        thread: {
+          threadIdSuffix: "thread1234",
+          fullIdsReturned: false,
+          contentReturned: false,
+          namesReturned: false,
+          previewsReturned: false,
+          pathsReturned: false,
+        },
+        settings: {
+          approvalPolicy: "on-request",
+          approvalsReviewer: "user",
+          sandboxPolicyType: "readOnly",
+          networkAccessAllowed: false,
+          modelAcceptedFromBrowser: false,
+          cwdAcceptedFromBrowser: false,
+          permissionsAcceptedFromBrowser: false,
+          settingsPayloadReturned: false,
+        },
+        preflight: {
+          token: "preflight-1234567890abcdef",
+          tokenIssued: true,
+          scope: {
+            kind: "thread-safety-lock-preflight",
+            workspaceId: "default",
+          },
+        },
+        policy: {
+          readOnly: true,
+          appServerTraffic: false,
+          threadSettingsMutated: false,
+          threadStateMutated: false,
+          threadSafetyLocked: false,
+          executionGateEnabled: true,
+          implemented: false,
+        },
+      },
+    ],
+    [
+      "/api/thread-safety-lock-action",
+      {
+        ok: true,
+        appServer: {
+          touched: true,
+          modelTraffic: false,
+          commandTraffic: false,
+          auditedMethods: ["thread/list", "thread/settings/update"],
+        },
+        action: {
+          type: "thread-safety-lock",
+          method: "thread/settings/update",
+          execution: "safety-locked",
+          threadSafetyLocked: true,
+          threadSettingsMutated: true,
+          threadStateMutated: true,
+          appServerTouched: true,
+        },
+        settings: {
+          approvalPolicy: "on-request",
+          approvalsReviewer: "user",
+          sandboxPolicyType: "readOnly",
+          networkAccessAllowed: false,
+          modelAcceptedFromBrowser: false,
+          cwdAcceptedFromBrowser: false,
+          permissionsAcceptedFromBrowser: false,
+          settingsPayloadReturned: false,
+        },
+        target: {
+          threadIdSuffix: "thread1234",
+          locked: true,
+          approvalPolicy: "on-request",
+          approvalsReviewer: "user",
+          sandboxPolicyType: "readOnly",
+          networkAccessAllowed: false,
+          fullIdsReturned: false,
+          pathsReturned: false,
+        },
+        probes: {
+          threadSafetyLock: {
+            method: "thread/settings/update",
+            threadIdSuffix: "thread1234",
+            status: "safety-locked",
+            methodsUsed: ["thread/list", "thread/settings/update"],
+            approvalPolicy: "on-request",
+            approvalsReviewer: "user",
+            sandboxPolicyType: "readOnly",
+            networkAccessAllowed: false,
+            responseObject: true,
+            responseTopLevelKeyCount: 1,
+            modelAcceptedFromBrowser: false,
+            cwdAcceptedFromBrowser: false,
+            permissionsAcceptedFromBrowser: false,
+            threadContentReturned: false,
+            fullIdsReturned: false,
+            cwdReturned: false,
+            pathsReturned: false,
+            rawPayloadReturned: false,
+          },
+        },
+        result: {
+          status: "safety-locked",
+          locked: true,
+          responseObject: true,
+          responseTopLevelKeyCount: 1,
+          fullIdsReturned: false,
+          threadContentReturned: false,
+        },
+        preflight: {
+          tokenConsumed: true,
+          tokenReturned: false,
+          scope: {
+            kind: "thread-safety-lock-preflight",
+            workspaceId: "default",
+          },
+        },
+        policy: {
+          readOnly: false,
+          appServerTraffic: true,
+          threadSettingsMutated: true,
+          threadStateMutated: true,
+          threadSafetyLocked: true,
+          preflightTokenConsumed: true,
+          requiresExplicitExecutionGate: true,
+          implemented: true,
+        },
+      },
+    ],
+    [
       "/api/thread-compact-preflight",
       {
         ok: true,
@@ -6658,6 +6845,72 @@ function assertBrowserPostBodyContracts(cases) {
   });
   if (allowedNestedTurnStartShape.statusCode !== 200) {
     throw new Error("browser POST response contract rejected an allowed nested turn-start shape");
+  }
+  for (const [payload, marker] of [
+    [
+      {
+        ok: true,
+        settings: {
+          approvalPolicy: "on-request",
+          leakedSettings: "private settings",
+        },
+      },
+      "private",
+    ],
+    [{ ok: true, policy: { threadSafetyLocked: false, leakedLockPolicy: "private policy" } }, "private"],
+  ]) {
+    const unexpectedThreadSafetyLockPreflightNestedKeyResponse =
+      applyBrowserPostResponseContract({
+        method: "POST",
+        pathname: "/api/thread-safety-lock-preflight",
+        statusCode: 200,
+        payload,
+      });
+    if (
+      unexpectedThreadSafetyLockPreflightNestedKeyResponse.statusCode !== 500 ||
+      JSON.stringify(unexpectedThreadSafetyLockPreflightNestedKeyResponse.payload).includes(
+        marker,
+      )
+    ) {
+      throw new Error(
+        "browser POST response contract did not block an unexpected thread-safety-lock preflight nested key",
+      );
+    }
+  }
+  for (const [payload, marker] of [
+    [{ ok: true, target: { threadIdSuffix: "thread1234", leakedThreadPath: "private path" } }, "private"],
+    [
+      {
+        ok: true,
+        probes: {
+          threadSafetyLock: {
+            status: "safety-locked",
+            leakedSettings: "private settings",
+          },
+        },
+      },
+      "private",
+    ],
+    [{ ok: true, result: { status: "safety-locked", leakedLockResult: "private result" } }, "private"],
+    [{ ok: true, policy: { threadSafetyLocked: true, leakedLockPolicy: "private policy" } }, "private"],
+  ]) {
+    const unexpectedThreadSafetyLockActionNestedKeyResponse =
+      applyBrowserPostResponseContract({
+        method: "POST",
+        pathname: "/api/thread-safety-lock-action",
+        statusCode: 200,
+        payload,
+      });
+    if (
+      unexpectedThreadSafetyLockActionNestedKeyResponse.statusCode !== 500 ||
+      JSON.stringify(unexpectedThreadSafetyLockActionNestedKeyResponse.payload).includes(
+        marker,
+      )
+    ) {
+      throw new Error(
+        "browser POST response contract did not block an unexpected thread-safety-lock action nested key",
+      );
+    }
   }
   for (const [payload, marker] of [
     [{ ok: true, integrationAction: { leakedIntegrationKey: "private nested value" } }, "private"],

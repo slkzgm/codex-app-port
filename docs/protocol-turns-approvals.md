@@ -281,6 +281,18 @@ records exclude full ids, names, previews, returned turn content, cwd, paths,
 raw app-server payloads, and preflight tokens. The route mutates conversation
 history only and does not revert workspace files.
 
+When the server is started with `CODEX_APP_PORT_ALLOW_THREAD_SAFETY_LOCK=1`,
+`/api/thread-safety-lock-action` may call `thread/settings/update` only after
+consuming a matching one-time `/api/thread-safety-lock-preflight` token.
+Missing, stale, or intent-mismatched tokens fail before app-server traffic.
+That opt-in path resolves the target thread by suffix through `thread/list`,
+sends no prompt or model request, and passes only fixed safe future-turn policy:
+`approvalPolicy: "on-request"`, `approvalsReviewer: "user"`, and read-only
+sandbox with network disabled. Browser bodies cannot supply cwd, model,
+permissions, service tier, summary, sandbox policy, or arbitrary settings.
+Browser responses and action audit records exclude full ids, cwd, paths,
+settings payloads, raw app-server payloads, and preflight tokens.
+
 When the server is started with both `CODEX_APP_PORT_ALLOW_THREAD_COMPACT=1`
 and `CODEX_APP_PORT_ALLOW_SESSION_MANAGER=1`, `/api/thread-compact-start` may
 call `thread/compact/start` only after consuming a matching one-time
@@ -455,7 +467,7 @@ individual and bulk controls: recent action counts, succeeded/failed counts, and
 latest-control method/status/suffix/count metadata only, with no prompt text,
 preflight tokens, full ids, paths, thread content, or raw app-server payloads.
 Persistent action audit logging is available through `scripts/dev-server.mjs`: successful
-device-code account login, account login cancel, account logout, thread creation, thread archive/unarchive, thread deletion, thread forking, thread renaming, thread rollback, thread compaction,
+device-code account login, account login cancel, account logout, thread creation, thread archive/unarchive, thread deletion, thread forking, thread renaming, thread rollback, thread safety lock, thread compaction,
 individual and bulk live-session controls, allowlisted terminal command executions, separate
 allowlisted process-spawn executions, exact-allowlisted thread shell command
 submissions, background terminal cleanup requests,

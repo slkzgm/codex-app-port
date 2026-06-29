@@ -223,6 +223,13 @@ The server binds to `127.0.0.1` by default and serves:
   token; execution resolves the suffix through `thread/list`, sends only
   `threadId` plus bounded `numTurns`, and omits full ids, names, previews, cwd,
   paths, conversation content, raw app-server payloads, and preflight tokens
+- `/api/thread-safety-lock-preflight` and `/api/thread-safety-lock-action`:
+  local safety-lock validation plus opt-in app-server `thread/settings/update`
+  behind `CODEX_APP_PORT_ALLOW_THREAD_SAFETY_LOCK=1` and a matching one-time
+  preflight token; execution resolves the suffix through `thread/list`, sends
+  only fixed safe settings (`on-request`, `user`, read-only sandbox, network
+  disabled), and omits full ids, cwd, paths, settings payloads, raw app-server
+  payloads, and preflight tokens
 - `/api/thread-compact-preflight` and `/api/thread-compact-start`: local
   compaction validation plus opt-in persistent app-server
   `thread/compact/start` behind `CODEX_APP_PORT_ALLOW_THREAD_COMPACT=1`,
@@ -1008,6 +1015,20 @@ content, cwd, paths, raw app-server payloads, raw returned turns, or preflight
 tokens. This rolls back conversation history only and does not revert workspace
 files.
 
+The thread safety-lock preflight endpoint validates only a selected thread
+suffix and returns a local token without touching app-server. The matching
+`/api/thread-safety-lock-action` route is disabled unless
+`CODEX_APP_PORT_ALLOW_THREAD_SAFETY_LOCK=1` is set; when enabled, it consumes
+the one-time token, resolves the suffix through `thread/list`, and calls only
+`thread/settings/update` with a fixed safe payload: `approvalPolicy:
+"on-request"`, `approvalsReviewer: "user"`, and read-only sandbox with network
+disabled. Browser responses and sanitized action audit records return suffix,
+fixed-policy labels, method, status, response-shape count, and policy metadata
+only. They do not return full ids, cwd, paths, thread content, raw settings
+payloads, raw app-server payloads, or preflight tokens. Browser bodies cannot
+provide cwd, model, permissions, service tier, summary, sandbox policy, or
+arbitrary settings.
+
 The thread compact preflight endpoint validates only a selected thread suffix
 and returns a local token without touching app-server. The matching
 `/api/thread-compact-start` route is disabled unless both
@@ -1020,9 +1041,9 @@ suffix, loaded-session count, method, status, and policy metadata. They do not
 return prompt text, full ids, transcript content, cwd, paths, raw app-server
 payloads, or preflight tokens.
 
-Successful thread start/archive/delete/fork/rename/rollback/compact actions are also visible in the
+Successful thread start/archive/delete/fork/rename/rollback/safety-lock/compact actions are also visible in the
 Execution Gate panel through a capped process-local lifecycle history. The
-history keeps only action type/method, thread suffix, archive/delete/fork/rename/rollback/model-traffic
+history keeps only action type/method, thread suffix, archive/delete/fork/rename/rollback/safety-lock/model-traffic
 status, safe counts, token-consumed state, and audit flags. It omits preflight
 tokens, prompts, full ids, cwd, paths, names, previews, transcript content, and
 raw app-server payloads.
@@ -1476,7 +1497,7 @@ Current UI scope:
 - active-session operations UI summary for inventory/control/bulk/routing state
   without prompts, tokens, full ids, paths, thread content, or raw payloads
 - blocked execution-gate status for future approvals
-- process-local thread lifecycle action history for start/archive/delete/fork/rename/rollback/compact with
+- process-local thread lifecycle action history for start/archive/delete/fork/rename/rollback/safety-lock/compact with
   suffix/status/count/token-consumed/audit metadata only
 - deny-only browser approval decision intake without app-server forwarding
 - request-scoped approval policy UI showing local deny, forwarded deny,

@@ -252,6 +252,11 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /thread-rollback-status/);
     assert.match(appScript, /runThreadRollbackPreflight/);
     assert.match(appScript, /runThreadRollbackAction/);
+    assert.match(html, /thread-safety-lock-preflight-button/);
+    assert.match(html, /thread-safety-lock-button/);
+    assert.match(html, /thread-safety-lock-status/);
+    assert.match(appScript, /runThreadSafetyLockPreflight/);
+    assert.match(appScript, /runThreadSafetyLockAction/);
     assert.match(html, /account-login-cancel-preflight-button/);
     assert.match(html, /account-login-cancel-button/);
     assert.match(html, /account-login-history-list/);
@@ -293,6 +298,8 @@ test("browser POST body contracts are centralized and immutable", () => {
     "/api/thread-rename-action",
     "/api/thread-rollback-preflight",
     "/api/thread-rollback-action",
+    "/api/thread-safety-lock-preflight",
+    "/api/thread-safety-lock-action",
     "/api/thread-compact-preflight",
     "/api/thread-compact-start",
     "/api/thread-search",
@@ -404,6 +411,15 @@ test("browser POST body contracts are centralized and immutable", () => {
     "workspace",
     "thread",
     "numTurns",
+    "preflightToken",
+  ]);
+  assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/thread-safety-lock-preflight"].allowedFields], [
+    "workspace",
+    "thread",
+  ]);
+  assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/thread-safety-lock-action"].allowedFields], [
+    "workspace",
+    "thread",
     "preflightToken",
   ]);
   assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/terminal-command"].allowedFields], [
@@ -1026,6 +1042,22 @@ test("browser POST response contracts block unsafe response values", () => {
   assert.equal(threadRollbackActionContract.nestedKeySchemas.result.includes("returnedTurnCount"), true);
   assert.equal(threadRollbackActionContract.nestedKeySchemas.policy.includes("requiresExplicitExecutionGate"), true);
   assert.equal(threadRollbackActionContract.nestedKeySchemas.policy.includes("unexpected"), false);
+  const threadSafetyLockPreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-safety-lock-preflight"];
+  assert.equal(threadSafetyLockPreflightContract.usesRouteSpecificNestedKeySchemas, true);
+  assert.equal(Object.isFrozen(threadSafetyLockPreflightContract.nestedKeySchemas.policy), true);
+  assert.equal(threadSafetyLockPreflightContract.nestedKeySchemas.settings.includes("sandboxPolicyType"), true);
+  assert.equal(threadSafetyLockPreflightContract.nestedKeySchemas.policy.includes("threadSafetyLocked"), true);
+  assert.equal(threadSafetyLockPreflightContract.nestedKeySchemas.policy.includes("unexpected"), false);
+  const threadSafetyLockActionContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-safety-lock-action"];
+  assert.equal(threadSafetyLockActionContract.usesRouteSpecificNestedKeySchemas, true);
+  assert.equal(Object.isFrozen(threadSafetyLockActionContract.nestedKeySchemas.policy), true);
+  assert.equal(threadSafetyLockActionContract.nestedKeySchemas["probes.threadSafetyLock"].includes("methodsUsed"), true);
+  assert.equal(threadSafetyLockActionContract.nestedKeySchemas.target.includes("locked"), true);
+  assert.equal(threadSafetyLockActionContract.nestedKeySchemas.result.includes("responseTopLevelKeyCount"), true);
+  assert.equal(threadSafetyLockActionContract.nestedKeySchemas.policy.includes("threadSafetyLocked"), true);
+  assert.equal(threadSafetyLockActionContract.nestedKeySchemas.policy.includes("unexpected"), false);
   const threadCompactPreflightContract =
     BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-compact-preflight"];
   assert.equal(threadCompactPreflightContract.usesRouteSpecificNestedKeySchemas, true);
@@ -10044,6 +10076,251 @@ test("dev server rolls back threads only behind explicit opt-in and preflight to
       "rollback-secret.txt",
       "\"threadContentReturned\":true",
       "\"fullIdsReturned\":true",
+      "\"pathsReturned\":true",
+    ]) {
+      assert.equal(auditSerialized.includes(marker), false, `audit leaked ${marker}`);
+    }
+  } finally {
+    await closeServer(server);
+    await rm(actionAuditDir, { recursive: true, force: true });
+  }
+});
+
+test("dev server safety locks threads only behind explicit opt-in and preflight token", async () => {
+  const calls = [];
+  const actionAuditDir = await mkdtemp(join(tmpdir(), "codex-thread-safety-lock-action-audit-"));
+  const actionAuditLogPath = join(actionAuditDir, "actions.jsonl");
+  const { server, url } = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    threadSafetyLockEnabled: true,
+    threadSafetyLockFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-06-29T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/private-home",
+          userAgent: "mock/0.0.0",
+        },
+        probes: {
+          threadSafetyLock: {
+            method: "thread/settings/update",
+            threadIdSuffix: "abcd1234",
+            status: "safety-locked",
+            methodsUsed: ["thread/list", "thread/settings/update"],
+            approvalPolicy: "never",
+            approvalsReviewer: "agent",
+            sandboxPolicyType: "danger-full-access",
+            networkAccessAllowed: true,
+            responseObject: true,
+            responseTopLevelKeyCount: 4,
+            modelAcceptedFromBrowser: true,
+            cwdAcceptedFromBrowser: true,
+            permissionsAcceptedFromBrowser: true,
+            threadContentReturned: true,
+            fullIdsReturned: true,
+            cwdReturned: true,
+            pathsReturned: true,
+            rawPayloadReturned: true,
+            privateSettings: "safety-lock-secret",
+            privatePath: "/tmp/default-workspace/safety-lock-secret.txt",
+          },
+        },
+        notifications: {
+          "thread/settings/updated": 1,
+        },
+      };
+    },
+    actionAuditLog: createActionAuditLog({
+      path: actionAuditLogPath,
+      now: () => "2026-06-29T00:00:00.000Z",
+    }),
+  });
+
+  try {
+    const getResponse = await fetch(`${url}/api/thread-safety-lock-preflight`, {
+      headers: apiHeaders(server),
+    });
+    assert.equal(getResponse.status, 405);
+
+    const preflightResponse = await fetch(`${url}/api/thread-safety-lock-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        thread: "abcd1234",
+      }),
+    });
+    assert.equal(preflightResponse.status, 200);
+    const preflightPayload = await preflightResponse.json();
+    const preflightSerialized = JSON.stringify(preflightPayload);
+    assert.equal(preflightPayload.action.type, "thread-safety-lock-preflight");
+    assert.equal(preflightPayload.action.method, "thread/settings/update");
+    assert.equal(preflightPayload.action.threadSafetyLocked, false);
+    assert.equal(preflightPayload.thread.threadIdSuffix, "abcd1234");
+    assert.equal(preflightPayload.settings.approvalPolicy, "on-request");
+    assert.equal(preflightPayload.settings.approvalsReviewer, "user");
+    assert.equal(preflightPayload.settings.sandboxPolicyType, "readOnly");
+    assert.equal(preflightPayload.settings.networkAccessAllowed, false);
+    assert.equal(preflightPayload.settings.modelAcceptedFromBrowser, false);
+    assert.equal(preflightPayload.settings.cwdAcceptedFromBrowser, false);
+    assert.equal(preflightPayload.settings.permissionsAcceptedFromBrowser, false);
+    assert.equal(preflightPayload.policy.executionGateEnabled, true);
+    assert.equal(preflightPayload.policy.threadSafetyLocked, false);
+    assertActionPreflight(preflightPayload, "thread-safety-lock-preflight", "default");
+    assert.equal(preflightSerialized.includes("/tmp/default-workspace"), false);
+    assert.equal(calls.length, 0);
+
+    const response = await fetch(`${url}/api/thread-safety-lock-action`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        thread: "abcd1234",
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, true);
+    assert.equal(payload.appServer.modelTraffic, false);
+    assert.deepEqual(payload.appServer.auditedMethods, [
+      "thread/list",
+      "thread/settings/update",
+    ]);
+    assert.equal(payload.action.type, "thread-safety-lock");
+    assert.equal(payload.action.threadSafetyLocked, true);
+    assert.equal(payload.action.threadSettingsMutated, true);
+    assert.equal(payload.action.threadStateMutated, true);
+    assert.equal(payload.preflight.tokenConsumed, true);
+    assert.equal(payload.thread.threadIdSuffix, "abcd1234");
+    assert.equal(payload.settings.approvalPolicy, "on-request");
+    assert.equal(payload.settings.approvalsReviewer, "user");
+    assert.equal(payload.settings.sandboxPolicyType, "readOnly");
+    assert.equal(payload.settings.networkAccessAllowed, false);
+    assert.equal(payload.settings.modelAcceptedFromBrowser, false);
+    assert.equal(payload.settings.cwdAcceptedFromBrowser, false);
+    assert.equal(payload.settings.permissionsAcceptedFromBrowser, false);
+    assert.equal(payload.settings.settingsPayloadReturned, false);
+    assert.equal(payload.target.threadIdSuffix, "abcd1234");
+    assert.equal(payload.target.locked, true);
+    assert.equal(payload.target.approvalPolicy, "on-request");
+    assert.equal(payload.target.approvalsReviewer, "user");
+    assert.equal(payload.target.sandboxPolicyType, "readOnly");
+    assert.equal(payload.target.networkAccessAllowed, false);
+    assert.equal(payload.probes.threadSafetyLock.approvalPolicy, "on-request");
+    assert.equal(payload.probes.threadSafetyLock.approvalsReviewer, "user");
+    assert.equal(payload.probes.threadSafetyLock.sandboxPolicyType, "readOnly");
+    assert.equal(payload.probes.threadSafetyLock.networkAccessAllowed, false);
+    assert.equal(payload.probes.threadSafetyLock.modelAcceptedFromBrowser, false);
+    assert.equal(payload.probes.threadSafetyLock.cwdAcceptedFromBrowser, false);
+    assert.equal(payload.probes.threadSafetyLock.permissionsAcceptedFromBrowser, false);
+    assert.equal(payload.probes.threadSafetyLock.fullIdsReturned, false);
+    assert.equal(payload.probes.threadSafetyLock.cwdReturned, false);
+    assert.equal(payload.probes.threadSafetyLock.pathsReturned, false);
+    assert.equal(payload.probes.threadSafetyLock.rawPayloadReturned, false);
+    assert.equal(payload.result.locked, true);
+    assert.equal(payload.result.responseObject, true);
+    assert.equal(payload.result.responseTopLevelKeyCount, 4);
+    assert.equal(payload.policy.threadSafetyLocked, true);
+    assert.equal(payload.policy.threadSettingsMutated, true);
+    assert.equal(payload.policy.threadStateMutated, true);
+    assert.equal(payload.policy.turnStarted, false);
+    assert.equal(payload.policy.auditLogPersistent, true);
+    assert.equal(payload.policy.auditLogWritableChecked, true);
+    assert.equal(payload.policy.auditLogWritten, true);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].cwd, "/tmp/default-workspace");
+    assert.equal(calls[0].threadIdSuffix, "abcd1234");
+    for (const marker of [
+      "/tmp/default-workspace",
+      "/tmp/private-home",
+      "codexHome",
+      "userAgent",
+      "safety-lock-secret",
+      "danger-full-access",
+      "\"approvalPolicy\":\"never\"",
+      "\"approvalsReviewer\":\"agent\"",
+      "\"networkAccessAllowed\":true",
+      preflightPayload.preflight.token,
+      "\"fullIdsReturned\":true",
+      "\"cwdReturned\":true",
+      "\"pathsReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+
+    const gateResponse = await fetch(`${url}/api/execution-gate`, {
+      headers: apiHeaders(server),
+    });
+    assert.equal(gateResponse.status, 200);
+    assertThreadLifecycleHistory(await gateResponse.json(), {
+      count: 1,
+      type: "thread-safety-lock",
+      method: "thread/settings/update",
+      threadIdSuffix: "abcd1234",
+      token: preflightPayload.preflight.token,
+      appServerTraffic: true,
+      modelTraffic: false,
+      threadSafetyLocked: true,
+      threadSettingsMutated: true,
+      threadStateMutated: true,
+      locked: true,
+    });
+
+    const replay = await fetch(`${url}/api/thread-safety-lock-action`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        thread: "abcd1234",
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    assert.equal(replay.status, 409);
+
+    const auditRecords = (await readFile(actionAuditLogPath, "utf8"))
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    assert.equal(auditRecords.length, 1);
+    assert.equal(auditRecords[0].event, "thread-safety-lock-recorded");
+    assert.equal(auditRecords[0].action.type, "thread-safety-lock");
+    assert.equal(auditRecords[0].action.method, "thread/settings/update");
+    assert.equal(auditRecords[0].action.threadSafetyLocked, true);
+    assert.equal(auditRecords[0].action.threadSettingsMutated, true);
+    assert.equal(auditRecords[0].target.threadIdSuffix, "abcd1234");
+    assert.equal(auditRecords[0].target.locked, true);
+    assert.equal(auditRecords[0].target.approvalPolicy, "on-request");
+    assert.equal(auditRecords[0].target.approvalsReviewer, "user");
+    assert.equal(auditRecords[0].target.sandboxPolicyType, "readOnly");
+    assert.equal(auditRecords[0].target.networkAccessAllowed, false);
+    assert.equal(auditRecords[0].result.locked, true);
+    assert.equal(auditRecords[0].result.responseObject, true);
+    assert.equal(auditRecords[0].result.responseTopLevelKeyCount, 4);
+    assert.equal(auditRecords[0].result.threadContentReturned, false);
+    assert.equal(auditRecords[0].policy.rawRequestBodyReturned, false);
+    const auditSerialized = JSON.stringify(auditRecords);
+    for (const marker of [
+      preflightPayload.preflight.token,
+      "/tmp/default-workspace",
+      "/tmp/private-home",
+      "codexHome",
+      "userAgent",
+      "safety-lock-secret",
+      "danger-full-access",
+      "\"approvalPolicy\":\"never\"",
+      "\"approvalsReviewer\":\"agent\"",
+      "\"networkAccessAllowed\":true",
+      "\"fullIdsReturned\":true",
+      "\"cwdReturned\":true",
       "\"pathsReturned\":true",
     ]) {
       assert.equal(auditSerialized.includes(marker), false, `audit leaked ${marker}`);
@@ -26331,6 +26608,8 @@ function assertThreadLifecycleHistory(
     threadRenamed = false,
     threadDeleted = false,
     threadRolledBack = false,
+    threadSafetyLocked = false,
+    threadSettingsMutated = false,
     threadStateMutated = false,
     threadCompactionStarted = false,
     archived = null,
@@ -26338,6 +26617,7 @@ function assertThreadLifecycleHistory(
     forked = null,
     renamed = null,
     rolledBack = null,
+    locked = null,
     excludeTurns = null,
     numTurns = 0,
     returnedTurnCount = 0,
@@ -26362,6 +26642,8 @@ function assertThreadLifecycleHistory(
       threadStateMutated ||
       threadDeleted ||
       threadRolledBack ||
+      threadSafetyLocked ||
+      threadSettingsMutated ||
       threadCompactionStarted,
   );
   assert.equal(history.preflightTokensReturned, false);
@@ -26416,6 +26698,8 @@ function assertThreadLifecycleHistory(
   assert.equal(item.action.threadRenamed, threadRenamed);
   assert.equal(item.action.threadDeleted, threadDeleted);
   assert.equal(item.action.threadRolledBack, threadRolledBack);
+  assert.equal(item.action.threadSafetyLocked, threadSafetyLocked);
+  assert.equal(item.action.threadSettingsMutated, threadSettingsMutated);
   assert.equal(item.action.threadStateMutated, threadStateMutated);
   assert.equal(item.action.threadCompactionStarted, threadCompactionStarted);
   assert.equal(item.action.appServerTouched, appServerTraffic);
@@ -26428,6 +26712,7 @@ function assertThreadLifecycleHistory(
   assert.equal(item.target.forked, forked);
   assert.equal(item.target.renamed, renamed);
   assert.equal(item.target.rolledBack, rolledBack);
+  assert.equal(item.target.locked, locked);
   assert.equal(item.target.excludeTurns, excludeTurns);
   assert.equal(item.target.numTurns, numTurns);
   assert.equal(item.target.returnedTurnCount, returnedTurnCount);
@@ -26439,6 +26724,7 @@ function assertThreadLifecycleHistory(
   assert.equal(item.result.forked, forked);
   assert.equal(item.result.renamed, renamed);
   assert.equal(item.result.rolledBack, rolledBack);
+  assert.equal(item.result.locked, locked);
   assert.equal(item.result.excludeTurns, excludeTurns);
   assert.equal(item.result.numTurns, numTurns);
   assert.equal(item.result.returnedTurnCount, returnedTurnCount);
@@ -26459,6 +26745,8 @@ function assertThreadLifecycleHistory(
   assert.equal(item.policy.threadRenamed, threadRenamed);
   assert.equal(item.policy.threadDeleted, threadDeleted);
   assert.equal(item.policy.threadRolledBack, threadRolledBack);
+  assert.equal(item.policy.threadSafetyLocked, threadSafetyLocked);
+  assert.equal(item.policy.threadSettingsMutated, threadSettingsMutated);
   assert.equal(item.policy.fullIdsReturned, false);
   assert.equal(item.policy.pathsReturned, false);
   assert.equal(item.policy.namesReturned, false);

@@ -3021,6 +3021,111 @@ export async function runThreadRollbackProbe({
   }
 }
 
+export async function runThreadSafetyLockProbe({
+  codexBin = process.env.CODEX_BIN || "codex",
+  codexArgs = ["app-server", "--listen", "stdio://"],
+  cwd = process.cwd(),
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+  threadIdSuffix,
+  threadScanLimit = DEFAULT_THREAD_DETAIL_SCAN_LIMIT,
+  onNotification = null,
+} = {}) {
+  if (process.env.CODEX_APP_PORT_ALLOW_THREAD_SAFETY_LOCK !== "1") {
+    throw new Error(
+      "thread/settings/update safety lock requires CODEX_APP_PORT_ALLOW_THREAD_SAFETY_LOCK=1 because it mutates future thread execution policy",
+    );
+  }
+  if (!isValidSuffix(threadIdSuffix)) {
+    throwRequestError("Thread selector must be an 8-character id suffix", 400);
+  }
+
+  const notifications = [];
+  const client = new JsonlRpcClient({
+    command: codexBin,
+    args: codexArgs,
+    cwd,
+    timeoutMs,
+    onNotification(notification) {
+      notifications.push({
+        method: notification.method,
+      });
+      onNotification?.(notification);
+    },
+  });
+
+  await client.start();
+
+  try {
+    const initialize = normalizeInitializeResponse(
+      await client.request(APP_SERVER_METHODS.initialize, {
+        clientInfo: {
+          name: "codex_app_port",
+          title: "Codex App Port",
+          version: "0.1.0",
+        },
+        capabilities: {
+          experimentalApi: false,
+          requestAttestation: false,
+        },
+      }),
+    );
+
+    client.notify(APP_SERVER_METHODS.initialized);
+
+    const thread = await selectThreadBySuffixFromLists(client, {
+      threadIdSuffix,
+      threadScanLimit,
+    });
+    const response = await client.request(
+      APP_SERVER_METHODS.threadSettingsUpdate,
+      {
+        threadId: thread.id,
+        approvalPolicy: "on-request",
+        approvalsReviewer: "user",
+        sandboxPolicy: {
+          type: "readOnly",
+          networkAccess: false,
+        },
+      },
+      { timeoutMs },
+    );
+
+    return {
+      ok: true,
+      generatedAt: new Date().toISOString(),
+      transport: "stdio-jsonl",
+      protocol: "json-rpc-2.0-without-jsonrpc-field",
+      initialize: summarizeInitialize(initialize),
+      probes: {
+        threadSafetyLock: {
+          method: APP_SERVER_METHODS.threadSettingsUpdate,
+          threadIdSuffix: suffix(thread.id),
+          status: "safety-locked",
+          methodsUsed: [APP_SERVER_METHODS.threadList, APP_SERVER_METHODS.threadSettingsUpdate],
+          approvalPolicy: "on-request",
+          approvalsReviewer: "user",
+          sandboxPolicyType: "readOnly",
+          networkAccessAllowed: false,
+          responseObject: Boolean(response && typeof response === "object"),
+          responseTopLevelKeyCount:
+            response && typeof response === "object" ? Object.keys(response).length : 0,
+          modelAcceptedFromBrowser: false,
+          cwdAcceptedFromBrowser: false,
+          permissionsAcceptedFromBrowser: false,
+          fullIdsReturned: false,
+          cwdReturned: false,
+          pathsReturned: false,
+          threadContentReturned: false,
+          rawPayloadReturned: false,
+        },
+      },
+      notifications: notificationCounts(notifications),
+    };
+  } finally {
+    await client.close();
+  }
+}
+
 export async function runAccountLogoutProbe({
   codexBin = process.env.CODEX_BIN || "codex",
   codexArgs = ["app-server", "--listen", "stdio://"],

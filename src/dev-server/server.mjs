@@ -36,6 +36,7 @@ import {
   runThreadForkProbe,
   runThreadRenameProbe,
   runThreadRollbackProbe,
+  runThreadSafetyLockProbe,
   runThreadSearchProbe,
   runThreadStartProbe,
   runThreadTranscriptProbe,
@@ -379,6 +380,12 @@ export const ACTION_PREFLIGHT_CONFIRMATION_FIELD_CONTRACTS = Object.freeze({
     "thread",
     "numTurns",
   ),
+  "thread-safety-lock-preflight": bodyFields(
+    "workspace",
+    "actionType",
+    "preflightToken",
+    "thread",
+  ),
   "thread-compact-preflight": bodyFields("workspace", "actionType", "preflightToken", "thread"),
   "account-login-preflight": bodyFields("workspace", "actionType", "preflightToken"),
   "account-login-cancel-preflight": bodyFields(
@@ -662,6 +669,14 @@ export const BROWSER_POST_BODY_CONTRACTS = Object.freeze({
       requiresPreflightToken: true,
     },
   ),
+  "/api/thread-safety-lock-preflight": bodyContract(["workspace", "thread"], {
+    kind: "preflight",
+    appServerTraffic: false,
+  }),
+  "/api/thread-safety-lock-action": bodyContract(["workspace", "thread", "preflightToken"], {
+    kind: "mutation",
+    requiresPreflightToken: true,
+  }),
   "/api/thread-compact-preflight": bodyContract(["workspace", "thread"], {
     kind: "preflight",
     appServerTraffic: false,
@@ -3184,6 +3199,186 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
       "commandTraffic",
       "threadStateMutated",
       "threadRolledBack",
+      "turnStarted",
+      "promptTextReturned",
+      "threadContentReturned",
+      "fullIdsReturned",
+      "pathsReturned",
+      "namesReturned",
+      "previewsReturned",
+      "rawPayloadReturned",
+      "requiresExplicitEnablement",
+      "executionRouteImplemented",
+      "executionGateEnabled",
+      "preflightTokenConsumed",
+      "auditLogPersistent",
+      "auditLogWritableChecked",
+      "auditLogWritten",
+      "auditLogPathReturned",
+      "browserMethodCallsAccepted",
+      "implemented",
+      "requiresExplicitExecutionGate",
+    ],
+  }),
+  "/api/thread-safety-lock-preflight": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    appServer: ["touched", "modelTraffic", "commandTraffic"],
+    action: [
+      "type",
+      "method",
+      "execution",
+      "wouldLockThreadSafety",
+      "threadSafetyLocked",
+      "threadSettingsMutated",
+      "threadStateMutated",
+      "appServerTouched",
+      "reason",
+    ],
+    thread: [
+      "threadIdSuffix",
+      "fullIdsReturned",
+      "contentReturned",
+      "namesReturned",
+      "previewsReturned",
+      "pathsReturned",
+    ],
+    settings: [
+      "approvalPolicy",
+      "approvalsReviewer",
+      "sandboxPolicyType",
+      "networkAccessAllowed",
+      "modelAcceptedFromBrowser",
+      "cwdAcceptedFromBrowser",
+      "permissionsAcceptedFromBrowser",
+      "settingsPayloadReturned",
+    ],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "modelTraffic",
+      "commandTraffic",
+      "threadSettingsMutated",
+      "threadStateMutated",
+      "threadSafetyLocked",
+      "turnStarted",
+      "promptTextReturned",
+      "threadContentReturned",
+      "fullIdsReturned",
+      "pathsReturned",
+      "namesReturned",
+      "previewsReturned",
+      "rawPayloadReturned",
+      "requiresExplicitEnablement",
+      "executionRouteImplemented",
+      "executionGateEnabled",
+      "browserMethodCallsAccepted",
+      "implemented",
+    ],
+    preflight: [
+      "token",
+      "tokenIssued",
+      "issuedAt",
+      "expiresAt",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseRequiredForMutation",
+      "consumed",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+  }),
+  "/api/thread-safety-lock-action": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    initialize: ["platformFamily", "platformOs"],
+    appServer: ["touched", "modelTraffic", "commandTraffic", "auditedMethods"],
+    action: [
+      "type",
+      "method",
+      "execution",
+      "wouldLockThreadSafety",
+      "threadSafetyLocked",
+      "threadSettingsMutated",
+      "threadStateMutated",
+      "appServerTouched",
+      "modelTraffic",
+      "reason",
+    ],
+    thread: [
+      "threadIdSuffix",
+      "fullIdsReturned",
+      "contentReturned",
+      "namesReturned",
+      "previewsReturned",
+      "pathsReturned",
+    ],
+    settings: [
+      "approvalPolicy",
+      "approvalsReviewer",
+      "sandboxPolicyType",
+      "networkAccessAllowed",
+      "modelAcceptedFromBrowser",
+      "cwdAcceptedFromBrowser",
+      "permissionsAcceptedFromBrowser",
+      "settingsPayloadReturned",
+    ],
+    target: [
+      "threadIdSuffix",
+      "locked",
+      "approvalPolicy",
+      "approvalsReviewer",
+      "sandboxPolicyType",
+      "networkAccessAllowed",
+      "fullIdsReturned",
+      "pathsReturned",
+    ],
+    probes: ["threadSafetyLock"],
+    "probes.threadSafetyLock": [
+      "method",
+      "threadIdSuffix",
+      "status",
+      "methodsUsed",
+      "approvalPolicy",
+      "approvalsReviewer",
+      "sandboxPolicyType",
+      "networkAccessAllowed",
+      "responseObject",
+      "responseTopLevelKeyCount",
+      "modelAcceptedFromBrowser",
+      "cwdAcceptedFromBrowser",
+      "permissionsAcceptedFromBrowser",
+      "threadContentReturned",
+      "fullIdsReturned",
+      "cwdReturned",
+      "pathsReturned",
+      "rawPayloadReturned",
+    ],
+    result: [
+      "status",
+      "locked",
+      "responseObject",
+      "responseTopLevelKeyCount",
+      "fullIdsReturned",
+      "threadContentReturned",
+    ],
+    preflight: [
+      "tokenConsumed",
+      "tokenReturned",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseEnforced",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "modelTraffic",
+      "commandTraffic",
+      "threadSettingsMutated",
+      "threadStateMutated",
+      "threadSafetyLocked",
       "turnStarted",
       "promptTextReturned",
       "threadContentReturned",
@@ -7548,6 +7743,18 @@ const BROWSER_POST_RESPONSE_ROUTE_TOP_LEVEL_KEYS = Object.freeze({
     "thread",
     "result",
   ),
+  "/api/thread-safety-lock-preflight": routeResponseTopLevelKeys(
+    ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
+    "thread",
+    "settings",
+  ),
+  "/api/thread-safety-lock-action": routeResponseTopLevelKeys(
+    ...RESPONSE_APP_SERVER_MUTATION_TOP_LEVEL_KEYS,
+    "target",
+    "thread",
+    "settings",
+    "result",
+  ),
   "/api/thread-compact-preflight": routeResponseTopLevelKeys(
     ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
     "thread",
@@ -8054,6 +8261,7 @@ export function createDevServer({
   threadForkFn = runThreadForkProbe,
   threadRenameFn = runThreadRenameProbe,
   threadRollbackFn = runThreadRollbackProbe,
+  threadSafetyLockFn = runThreadSafetyLockProbe,
   accountLoginCancelFn = runAccountLoginCancelProbe,
   accountLoginStartFn = runAccountLoginStartProbe,
   accountLogoutFn = runAccountLogoutProbe,
@@ -8095,6 +8303,7 @@ export function createDevServer({
   threadForkEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_FORK === "1",
   threadRenameEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_RENAME === "1",
   threadRollbackEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_ROLLBACK === "1",
+  threadSafetyLockEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_SAFETY_LOCK === "1",
   threadCompactEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_COMPACT === "1",
   accountLoginCancelEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN_CANCEL === "1",
   accountLoginEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN === "1",
@@ -8204,6 +8413,7 @@ export function createDevServer({
       threadForkFn,
       threadRenameFn,
       threadRollbackFn,
+      threadSafetyLockFn,
       accountLoginCancelFn,
       accountLoginStartFn,
       accountLogoutFn,
@@ -8244,6 +8454,7 @@ export function createDevServer({
       threadForkEnabled,
       threadRenameEnabled,
       threadRollbackEnabled,
+      threadSafetyLockEnabled,
       threadCompactEnabled,
       accountLoginCancelEnabled,
       accountLoginEnabled,
@@ -8939,6 +9150,99 @@ export async function handleRequest(request, response, options) {
       sendJson(response, error.statusCode ?? 400, {
         ok: false,
         error: cleanDisplayText(error.message, 200) ?? "Invalid thread rollback request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/thread-safety-lock-preflight") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, ["workspace", "thread"]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const payload = buildThreadSafetyLockPreflight(body, {
+        workspace,
+        threadSafetyLockEnabled: options.threadSafetyLockEnabled,
+      });
+      sendJson(response, 200, attachActionPreflight(payload, { body, workspace, options }));
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error:
+          cleanDisplayText(error.message, 200) ?? "Invalid thread safety lock preflight request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/thread-safety-lock-action") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, [
+        "workspace",
+        "thread",
+        "preflightToken",
+      ]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const preflightBody = stripActionPreflightControlFields(body);
+      const preflightPayload = buildThreadSafetyLockPreflight(preflightBody, {
+        workspace,
+        threadSafetyLockEnabled: options.threadSafetyLockEnabled,
+      });
+      if (!preflightPayload.policy.executionGateEnabled) {
+        sendJson(response, 403, buildThreadSafetyLockBlocked(preflightPayload));
+        return;
+      }
+      const consumedPreflight = options.preflightRegistry.consume({
+        token: validateActionPreflightToken(body.preflightToken),
+        kind: preflightPayload.action.type,
+        workspace,
+        intent: actionPreflightIntent(preflightBody, preflightPayload),
+      });
+      const auditLogWritableChecked = ensureActionAuditLogWritable(options.actionAuditLog);
+      const payload = await options.threadSafetyLockFn({
+        codexBin: options.codexBin,
+        cwd: workspace.cwd,
+        timeoutMs: options.timeoutMs,
+        threadIdSuffix: preflightPayload.thread.threadIdSuffix,
+      });
+      const sanitized = sanitizeThreadSafetyLockPayload(payload, {
+        workspace,
+        consumedPreflight,
+        actionAuditLog: options.actionAuditLog,
+        auditLogWritableChecked,
+      });
+      sanitized.policy.auditLogWritten = writeActionAuditLog(options.actionAuditLog, sanitized);
+      options.threadLifecycleActionLedger?.record(sanitized);
+      sendJson(response, 200, sanitized);
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid thread safety lock request",
       });
     }
     return;
@@ -12853,6 +13157,11 @@ async function buildConfirmableActionPreflightPayload(actionType, body, { worksp
         workspace,
         threadRollbackEnabled: options.threadRollbackEnabled,
       });
+    case "thread-safety-lock-preflight":
+      return buildThreadSafetyLockPreflight(body, {
+        workspace,
+        threadSafetyLockEnabled: options.threadSafetyLockEnabled,
+      });
     case "thread-compact-preflight":
       return buildThreadCompactPreflight(body, {
         workspace,
@@ -13181,6 +13490,8 @@ function actionAuditEvent(record) {
       return "thread-rename-recorded";
     case "thread-rollback":
       return "thread-rollback-recorded";
+    case "thread-safety-lock":
+      return "thread-safety-lock-recorded";
     case "thread-start":
       return "thread-start-recorded";
     case "live-session-bulk-control":
@@ -23390,6 +23701,207 @@ export function buildThreadRollbackBlocked(preflightPayload) {
   };
 }
 
+export function sanitizeThreadSafetyLockPayload(
+  payload,
+  { workspace = null, consumedPreflight, actionAuditLog = null, auditLogWritableChecked = false } = {},
+) {
+  const threadSafetyLock = sanitizeThreadSafetyLockProbe(payload?.probes?.threadSafetyLock);
+  return {
+    ok: Boolean(payload?.ok),
+    generatedAt: payload?.generatedAt ?? new Date().toISOString(),
+    transport: cleanDisplayText(payload?.transport, 80),
+    protocol: cleanDisplayText(payload?.protocol, 80),
+    initialize: sanitizeInitialize(payload?.initialize),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: true,
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: threadSafetyLock.methodsUsed,
+    },
+    action: {
+      type: "thread-safety-lock",
+      method: "thread/settings/update",
+      execution: "safety-locked",
+      wouldLockThreadSafety: true,
+      threadSafetyLocked: true,
+      threadSettingsMutated: true,
+      threadStateMutated: true,
+      appServerTouched: true,
+      modelTraffic: false,
+    },
+    preflight: buildConsumedPreflightSummary(consumedPreflight),
+    thread: {
+      threadIdSuffix: threadSafetyLock.threadIdSuffix,
+      fullIdsReturned: false,
+      contentReturned: false,
+      namesReturned: false,
+      previewsReturned: false,
+      pathsReturned: false,
+    },
+    settings: {
+      approvalPolicy: threadSafetyLock.approvalPolicy,
+      approvalsReviewer: threadSafetyLock.approvalsReviewer,
+      sandboxPolicyType: threadSafetyLock.sandboxPolicyType,
+      networkAccessAllowed: false,
+      modelAcceptedFromBrowser: false,
+      cwdAcceptedFromBrowser: false,
+      permissionsAcceptedFromBrowser: false,
+      settingsPayloadReturned: false,
+    },
+    target: {
+      threadIdSuffix: threadSafetyLock.threadIdSuffix,
+      locked: true,
+      approvalPolicy: threadSafetyLock.approvalPolicy,
+      approvalsReviewer: threadSafetyLock.approvalsReviewer,
+      sandboxPolicyType: threadSafetyLock.sandboxPolicyType,
+      networkAccessAllowed: false,
+      fullIdsReturned: false,
+      pathsReturned: false,
+    },
+    probes: {
+      threadSafetyLock,
+    },
+    result: {
+      status: threadSafetyLock.status,
+      locked: true,
+      responseObject: threadSafetyLock.responseObject,
+      responseTopLevelKeyCount: threadSafetyLock.responseTopLevelKeyCount,
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    },
+    policy: {
+      readOnly: false,
+      appServerTraffic: true,
+      modelTraffic: false,
+      commandTraffic: false,
+      threadSettingsMutated: true,
+      threadStateMutated: true,
+      threadSafetyLocked: true,
+      turnStarted: false,
+      promptTextReturned: false,
+      threadContentReturned: false,
+      fullIdsReturned: false,
+      pathsReturned: false,
+      namesReturned: false,
+      previewsReturned: false,
+      rawPayloadReturned: false,
+      requiresExplicitEnablement: true,
+      executionRouteImplemented: true,
+      executionGateEnabled: true,
+      preflightTokenConsumed: true,
+      auditLogPersistent: Boolean(actionAuditLog?.persistent),
+      auditLogWritableChecked: Boolean(auditLogWritableChecked),
+      auditLogWritten: false,
+      auditLogPathReturned: false,
+      browserMethodCallsAccepted: true,
+      implemented: true,
+      requiresExplicitExecutionGate: true,
+    },
+    notifications: sanitizeNotificationCounts(payload?.notifications),
+  };
+}
+
+export function buildThreadSafetyLockPreflight(
+  body,
+  { workspace, threadSafetyLockEnabled = false } = {},
+) {
+  const threadIdSuffix = validateThreadSuffix(body?.thread);
+  const enabled = Boolean(threadSafetyLockEnabled);
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: publicWorkspaces([workspace])[0],
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+    },
+    action: {
+      type: "thread-safety-lock-preflight",
+      method: "thread/settings/update",
+      execution: "blocked",
+      wouldLockThreadSafety: false,
+      threadSafetyLocked: false,
+      threadSettingsMutated: false,
+      threadStateMutated: false,
+      appServerTouched: false,
+      reason: enabled
+        ? "thread-safety-lock-requires-confirmation"
+        : "thread-safety-lock-requires-opt-in",
+    },
+    thread: {
+      threadIdSuffix,
+      fullIdsReturned: false,
+      contentReturned: false,
+      namesReturned: false,
+      previewsReturned: false,
+      pathsReturned: false,
+    },
+    settings: {
+      approvalPolicy: "on-request",
+      approvalsReviewer: "user",
+      sandboxPolicyType: "readOnly",
+      networkAccessAllowed: false,
+      modelAcceptedFromBrowser: false,
+      cwdAcceptedFromBrowser: false,
+      permissionsAcceptedFromBrowser: false,
+      settingsPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      threadSettingsMutated: false,
+      threadStateMutated: false,
+      threadSafetyLocked: false,
+      turnStarted: false,
+      promptTextReturned: false,
+      threadContentReturned: false,
+      fullIdsReturned: false,
+      pathsReturned: false,
+      namesReturned: false,
+      previewsReturned: false,
+      rawPayloadReturned: false,
+      requiresExplicitEnablement: true,
+      executionRouteImplemented: true,
+      executionGateEnabled: enabled,
+      browserMethodCallsAccepted: false,
+      implemented: false,
+    },
+  };
+}
+
+export function buildThreadSafetyLockBlocked(preflightPayload) {
+  return {
+    ...preflightPayload,
+    ok: false,
+    error:
+      "Thread safety lock is disabled. Set CODEX_APP_PORT_ALLOW_THREAD_SAFETY_LOCK=1 before starting the dev server.",
+    action: {
+      ...preflightPayload.action,
+      execution: "blocked",
+      wouldLockThreadSafety: false,
+      threadSafetyLocked: false,
+      threadSettingsMutated: false,
+      threadStateMutated: false,
+      appServerTouched: false,
+      reason: "thread-safety-lock-disabled",
+    },
+    policy: {
+      ...preflightPayload.policy,
+      appServerTraffic: false,
+      threadSettingsMutated: false,
+      threadStateMutated: false,
+      threadSafetyLocked: false,
+      executionGateEnabled: false,
+      browserMethodCallsAccepted: false,
+      implemented: false,
+    },
+  };
+}
+
 export function buildThreadDeletePreflight(
   body,
   { workspace, threadDeleteEnabled = false } = {},
@@ -23562,6 +24074,7 @@ function sanitizeThreadLifecycleActionHistory(records) {
         item.action?.threadStateMutated ||
         item.action?.threadDeleted ||
         item.action?.threadRolledBack ||
+        item.action?.threadSafetyLocked ||
         item.action?.threadCompactionStarted,
     ),
     preflightTokensReturned: false,
@@ -23586,6 +24099,7 @@ function sanitizeThreadLifecycleActionHistoryRecord(record, { recordedAt = null 
   const method = sanitizeThreadLifecycleActionMethod(action.method, type);
   const threadCompactionStarted = Boolean(action.threadCompactionStarted);
   const threadRolledBack = Boolean(action.threadRolledBack);
+  const threadSafetyLocked = Boolean(action.threadSafetyLocked);
   return {
     recordedAt: cleanDisplayText(recordedAt ?? record?.recordedAt, 40),
     workspace: record?.workspace
@@ -23607,7 +24121,11 @@ function sanitizeThreadLifecycleActionHistoryRecord(record, { recordedAt = null 
       threadRenamed: Boolean(action.threadRenamed),
       threadDeleted: Boolean(action.threadDeleted),
       threadRolledBack,
-      threadStateMutated: Boolean(action.threadStateMutated || threadRolledBack || threadCompactionStarted),
+      threadSafetyLocked,
+      threadSettingsMutated: Boolean(action.threadSettingsMutated),
+      threadStateMutated: Boolean(
+        action.threadStateMutated || threadRolledBack || threadSafetyLocked || threadCompactionStarted,
+      ),
       threadCompactionStarted,
       appServerTouched: Boolean(action.appServerTouched),
       modelTraffic: Boolean(action.modelTraffic),
@@ -23621,6 +24139,12 @@ function sanitizeThreadLifecycleActionHistoryRecord(record, { recordedAt = null 
       forked: typeof target.forked === "boolean" ? target.forked : null,
       renamed: typeof target.renamed === "boolean" ? target.renamed : null,
       rolledBack: typeof target.rolledBack === "boolean" ? target.rolledBack : null,
+      locked: typeof target.locked === "boolean" ? target.locked : null,
+      approvalPolicy: cleanDisplayText(target.approvalPolicy, 40),
+      approvalsReviewer: cleanDisplayText(target.approvalsReviewer, 40),
+      sandboxPolicyType: cleanDisplayText(target.sandboxPolicyType, 40),
+      networkAccessAllowed:
+        typeof target.networkAccessAllowed === "boolean" ? target.networkAccessAllowed : null,
       excludeTurns: typeof target.excludeTurns === "boolean" ? target.excludeTurns : null,
       numTurns: safeCount(target.numTurns),
       returnedTurnCount: safeCount(target.returnedTurnCount),
@@ -23637,6 +24161,7 @@ function sanitizeThreadLifecycleActionHistoryRecord(record, { recordedAt = null 
       forked: typeof result.forked === "boolean" ? result.forked : null,
       renamed: typeof result.renamed === "boolean" ? result.renamed : null,
       rolledBack: typeof result.rolledBack === "boolean" ? result.rolledBack : null,
+      locked: typeof result.locked === "boolean" ? result.locked : null,
       excludeTurns: typeof result.excludeTurns === "boolean" ? result.excludeTurns : null,
       numTurns: safeCount(result.numTurns),
       returnedTurnCount: safeCount(result.returnedTurnCount),
@@ -23664,6 +24189,8 @@ function sanitizeThreadLifecycleActionHistoryRecord(record, { recordedAt = null 
       threadRenamed: Boolean(policy.threadRenamed),
       threadDeleted: Boolean(policy.threadDeleted),
       threadRolledBack: Boolean(policy.threadRolledBack),
+      threadSafetyLocked: Boolean(policy.threadSafetyLocked),
+      threadSettingsMutated: Boolean(policy.threadSettingsMutated),
       threadStateMutated: Boolean(policy.threadStateMutated),
       threadCompactionStarted: Boolean(policy.threadCompactionStarted),
       promptsReturned: false,
@@ -23694,6 +24221,7 @@ function sanitizeThreadLifecycleActionType(type) {
     "thread-fork",
     "thread-rename",
     "thread-rollback",
+    "thread-safety-lock",
     "thread-compact",
   ].includes(type)
     ? type
@@ -23710,6 +24238,7 @@ function sanitizeThreadLifecycleActionMethod(method, type) {
       "thread/fork",
       "thread/name/set",
       "thread/rollback",
+      "thread/settings/update",
       "thread/compact/start",
     ].includes(method)
   ) {
@@ -23728,6 +24257,8 @@ function sanitizeThreadLifecycleActionMethod(method, type) {
       return "thread/name/set";
     case "thread-rollback":
       return "thread/rollback";
+    case "thread-safety-lock":
+      return "thread/settings/update";
     case "thread-compact":
       return "thread/compact/start";
     default:
@@ -30309,6 +30840,33 @@ function sanitizeThreadRollbackProbe(threadRollback) {
     pathsReturned: false,
     namesReturned: false,
     previewsReturned: false,
+    rawPayloadReturned: false,
+  };
+}
+
+function sanitizeThreadSafetyLockProbe(threadSafetyLock) {
+  const methodsUsed = sanitizeMethodList(threadSafetyLock?.methodsUsed).filter((method) =>
+    ["thread/list", "thread/settings/update"].includes(method),
+  );
+  return {
+    method: "thread/settings/update",
+    threadIdSuffix: cleanDisplayText(threadSafetyLock?.threadIdSuffix, 16),
+    status: cleanDisplayText(threadSafetyLock?.status, 80) ?? "safety-locked",
+    methodsUsed:
+      methodsUsed.length > 0 ? methodsUsed : ["thread/list", "thread/settings/update"],
+    approvalPolicy: "on-request",
+    approvalsReviewer: "user",
+    sandboxPolicyType: "readOnly",
+    networkAccessAllowed: false,
+    responseObject: Boolean(threadSafetyLock?.responseObject),
+    responseTopLevelKeyCount: safeCount(threadSafetyLock?.responseTopLevelKeyCount),
+    modelAcceptedFromBrowser: false,
+    cwdAcceptedFromBrowser: false,
+    permissionsAcceptedFromBrowser: false,
+    threadContentReturned: false,
+    fullIdsReturned: false,
+    cwdReturned: false,
+    pathsReturned: false,
     rawPayloadReturned: false,
   };
 }

@@ -169,6 +169,18 @@
   history mutation only, not workspace file rollback. The preflight and
   execution responses are constrained by route-specific nested response
   schemas.
+- Browser-facing thread settings updates must not expose arbitrary
+  `thread/settings/update`. The only implemented path is a blocked-by-default
+  safety lock. When `CODEX_APP_PORT_ALLOW_THREAD_SAFETY_LOCK=1` is enabled,
+  `/api/thread-safety-lock-action` must consume a matching one-time preflight
+  token before resolving a suffix through `thread/list` and calling only
+  `thread/settings/update` with fixed safe values: `approvalPolicy:
+  "on-request"`, `approvalsReviewer: "user"`, and read-only sandbox with
+  network disabled. Browser bodies must not accept cwd, model, permissions,
+  service tier, summary, sandbox policy, or arbitrary settings. Responses and
+  action audit records must not return full ids, cwd, paths, settings payloads,
+  raw app-server payloads, or preflight tokens. The preflight and execution
+  responses are constrained by route-specific nested response schemas.
 - Browser-facing thread compaction must be blocked by default and opt-in only.
   Because `thread/compact/start` can trigger model traffic, it also requires the
   persistent session manager gate. When `CODEX_APP_PORT_ALLOW_THREAD_COMPACT=1`
