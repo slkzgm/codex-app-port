@@ -231,6 +231,11 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /skills-config-form/);
     assert.match(html, /skills-config-status/);
     assert.match(html, /skills-config-run-button/);
+    assert.match(html, /skills-extra-roots-clear-preflight-button/);
+    assert.match(html, /skills-extra-roots-clear-button/);
+    assert.match(html, /skills-extra-roots-clear-status/);
+    assert.match(appScript, /runSkillsExtraRootsClearPreflight/);
+    assert.match(appScript, /runSkillsExtraRootsClear/);
     assert.match(html, /config-value-form/);
     assert.match(html, /config-value-status/);
     assert.match(html, /config-value-run-button/);
@@ -358,6 +363,8 @@ test("browser POST body contracts are centralized and immutable", () => {
     "/api/plugin-content-read",
     "/api/skills-config-preflight",
     "/api/skills-config-write",
+    "/api/skills-extra-roots-clear-preflight",
+    "/api/skills-extra-roots-clear",
     "/api/integration-action-preflight",
     "/api/live-session-control-preflight",
     "/api/live-session-control",
@@ -609,6 +616,14 @@ test("browser POST body contracts are centralized and immutable", () => {
     "arguments",
     "preflightToken",
   ]);
+  assert.deepEqual(
+    [...BROWSER_POST_BODY_CONTRACTS["/api/skills-extra-roots-clear-preflight"].allowedFields],
+    ["workspace"],
+  );
+  assert.deepEqual(
+    [...BROWSER_POST_BODY_CONTRACTS["/api/skills-extra-roots-clear"].allowedFields],
+    ["workspace", "preflightToken"],
+  );
 
   for (const [path, contract] of Object.entries(BROWSER_POST_BODY_CONTRACTS)) {
     assert.equal(Object.isFrozen(contract), true, path);
@@ -774,6 +789,43 @@ test("browser POST response contracts block unsafe response values", () => {
   assert.equal(skillsConfigWriteContract.nestedKeySchemas.result.includes("effectiveEnabled"), true);
   assert.equal(skillsConfigWriteContract.nestedKeySchemas.policy.includes("skillsConfigWrite"), true);
   assert.equal(skillsConfigWriteContract.nestedKeySchemas.policy.includes("unexpected"), false);
+  const skillsExtraRootsClearPreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/skills-extra-roots-clear-preflight"];
+  assert.equal(skillsExtraRootsClearPreflightContract.usesRouteSpecificNestedKeySchemas, true);
+  assert.equal(
+    skillsExtraRootsClearPreflightContract.nestedKeySchemas.skillsExtraRootsClear.includes(
+      "browserRootsAccepted",
+    ),
+    true,
+  );
+  assert.equal(
+    skillsExtraRootsClearPreflightContract.nestedKeySchemas.policy.includes(
+      "skillsExtraRootsClear",
+    ),
+    true,
+  );
+  assert.equal(
+    skillsExtraRootsClearPreflightContract.nestedKeySchemas.policy.includes("unexpected"),
+    false,
+  );
+  const skillsExtraRootsClearContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/skills-extra-roots-clear"];
+  assert.equal(skillsExtraRootsClearContract.usesRouteSpecificNestedKeySchemas, true);
+  assert.equal(
+    skillsExtraRootsClearContract.nestedKeySchemas.skillsExtraRootsClear.includes(
+      "requestedExtraRootCount",
+    ),
+    true,
+  );
+  assert.equal(
+    skillsExtraRootsClearContract.nestedKeySchemas.result.includes("responseTopLevelKeyCount"),
+    true,
+  );
+  assert.equal(
+    skillsExtraRootsClearContract.nestedKeySchemas.policy.includes("skillsExtraRootsClear"),
+    true,
+  );
+  assert.equal(skillsExtraRootsClearContract.nestedKeySchemas.policy.includes("unexpected"), false);
   const configValuePreflightContract =
     BROWSER_POST_RESPONSE_CONTRACTS["/api/config-value-preflight"];
   assert.equal(configValuePreflightContract.usesRouteSpecificNestedKeySchemas, true);
@@ -20776,6 +20828,217 @@ test("dev server writes skills config only behind opt-in and preflight tokens", 
       "SKILL.md",
       "sk-proj-privatevalue",
       preflightPayload.preflight.token,
+    ]) {
+      assert.equal(auditSerialized.includes(marker), false, `audit leaked ${marker}`);
+    }
+  } finally {
+    await closeServer(enabled.server);
+    await rm(auditDir, { recursive: true, force: true });
+  }
+});
+
+test("dev server clears skills extra roots only behind opt-in and preflight tokens", async () => {
+  const auditDir = await mkdtemp(join(tmpdir(), "codex-app-port-skills-extra-roots-"));
+  const auditLogPath = join(auditDir, "actions.jsonl");
+  const calls = [];
+  const skillsExtraRootsClearFn = async (options) => {
+    calls.push(options);
+    return {
+      ok: true,
+      generatedAt: "2026-06-29T00:00:00.000Z",
+      transport: "stdio-jsonl",
+      protocol: "json-rpc-2.0-without-jsonrpc-field",
+      initialize: { platformOs: "linux", platformFamily: "unix" },
+      probes: {
+        skillsExtraRootsClear: {
+          method: "skills/extraRoots/set",
+          status: "cleared",
+          requestedExtraRootCount: 0,
+          responseObject: true,
+          responseTopLevelKeyCount: 3,
+          extraRootsReturned: true,
+          pathsReturned: true,
+          rawPayloadReturned: true,
+          privatePath: "/tmp/second-workspace/private-extra-root",
+          privateSettings: "private-extra-roots-secret",
+        },
+      },
+      notifications: { "skills/extraRoots/updated": 1 },
+    };
+  };
+
+  const disabled = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    workspaceInputs: ["/tmp/second-workspace"],
+    skillsExtraRootsClearFn,
+  });
+
+  try {
+    const preflightResponse = await fetch(
+      `${disabled.url}/api/skills-extra-roots-clear-preflight`,
+      {
+        method: "POST",
+        headers: jsonHeaders(disabled.server),
+        body: JSON.stringify({ workspace: "workspace-2" }),
+      },
+    );
+    assert.equal(preflightResponse.status, 200);
+    const preflightPayload = await preflightResponse.json();
+    assert.equal(preflightPayload.policy.executionGateEnabled, false);
+    assert.equal(preflightPayload.policy.skillsExtraRootsClearEnabled, false);
+    const blocked = await fetch(`${disabled.url}/api/skills-extra-roots-clear`, {
+      method: "POST",
+      headers: jsonHeaders(disabled.server),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    assert.equal(blocked.status, 403);
+    assert.equal(calls.length, 0);
+  } finally {
+    await closeServer(disabled.server);
+  }
+
+  const enabled = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    workspaceInputs: ["/tmp/second-workspace"],
+    skillsExtraRootsClearEnabled: true,
+    skillsExtraRootsClearFn,
+    actionAuditLog: createActionAuditLog({ path: auditLogPath }),
+  });
+
+  try {
+    const preflightResponse = await fetch(
+      `${enabled.url}/api/skills-extra-roots-clear-preflight`,
+      {
+        method: "POST",
+        headers: jsonHeaders(enabled.server),
+        body: JSON.stringify({ workspace: "workspace-2" }),
+      },
+    );
+    assert.equal(preflightResponse.status, 200);
+    const preflightPayload = await preflightResponse.json();
+    const preflightSerialized = JSON.stringify(preflightPayload);
+    assert.equal(preflightPayload.action.type, "skills-extra-roots-clear-preflight");
+    assert.equal(preflightPayload.action.method, "skills/extraRoots/set");
+    assert.equal(preflightPayload.action.execution, "requires-confirmation");
+    assert.equal(preflightPayload.appServer.touched, false);
+    assert.equal(preflightPayload.appServer.skillsExtraRootsTraffic, false);
+    assert.equal(preflightPayload.skillsExtraRootsClear.requestedExtraRootCount, 0);
+    assert.equal(preflightPayload.skillsExtraRootsClear.browserRootsAccepted, false);
+    assert.equal(preflightPayload.skillsExtraRootsClear.pathsReturned, false);
+    assert.equal(preflightPayload.policy.skillsExtraRootsClear, false);
+    assert.equal(preflightPayload.policy.skillsExtraRootsClearEnabled, true);
+    assert.equal(preflightPayload.policy.browserRootsAccepted, false);
+    assert.equal(preflightPayload.policy.executionGateEnabled, true);
+    assertActionPreflight(preflightPayload, "skills-extra-roots-clear-preflight", "workspace-2");
+    for (const marker of ["/tmp/second-workspace", "private-extra-root"]) {
+      assert.equal(preflightSerialized.includes(marker), false, `preflight leaked ${marker}`);
+    }
+
+    const rejectedUnknown = await fetch(`${enabled.url}/api/skills-extra-roots-clear`, {
+      method: "POST",
+      headers: jsonHeaders(enabled.server),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        extraRoots: ["/tmp/second-workspace/private-extra-root"],
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    assert.equal(rejectedUnknown.status, 400);
+    assert.equal(calls.length, 0);
+
+    const response = await fetch(`${enabled.url}/api/skills-extra-roots-clear`, {
+      method: "POST",
+      headers: jsonHeaders(enabled.server),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, true);
+    assert.equal(payload.appServer.skillsExtraRootsTraffic, true);
+    assert.deepEqual(payload.appServer.auditedMethods, ["skills/extraRoots/set"]);
+    assert.equal(payload.action.type, "skills-extra-roots-clear");
+    assert.equal(payload.action.method, "skills/extraRoots/set");
+    assert.equal(payload.action.skillsExtraRootsClear, true);
+    assert.equal(payload.target.requestedExtraRootCount, 0);
+    assert.equal(payload.target.browserRootsAccepted, false);
+    assert.equal(payload.target.pathsReturned, false);
+    assert.equal(payload.skillsExtraRootsClear.status, "cleared");
+    assert.equal(payload.skillsExtraRootsClear.requestedExtraRootCount, 0);
+    assert.equal(payload.skillsExtraRootsClear.responseObject, true);
+    assert.equal(payload.skillsExtraRootsClear.responseTopLevelKeyCount, 3);
+    assert.equal(payload.skillsExtraRootsClear.extraRootsReturned, false);
+    assert.equal(payload.skillsExtraRootsClear.pathsReturned, false);
+    assert.equal(payload.skillsExtraRootsClear.rawPayloadReturned, false);
+    assert.equal(payload.result.status, "cleared");
+    assert.equal(payload.result.responseTopLevelKeyCount, 3);
+    assert.equal(payload.policy.skillsExtraRootsClear, true);
+    assert.equal(payload.policy.skillsExtraRootsClearEnabled, true);
+    assert.equal(payload.policy.browserRootsAccepted, false);
+    assert.equal(payload.policy.extraRootsReturned, false);
+    assert.equal(payload.policy.pathsReturned, false);
+    assert.equal(payload.policy.auditLogWritten, true);
+    assert.equal(payload.preflight.tokenConsumed, true);
+    assert.equal(payload.preflight.tokenReturned, false);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].cwd, "/tmp/second-workspace");
+    for (const marker of [
+      "/tmp/second-workspace",
+      "private-extra-root",
+      "private-extra-roots-secret",
+      preflightPayload.preflight.token,
+      "\"extraRootsReturned\":true",
+      "\"pathsReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+
+    const replay = await fetch(`${enabled.url}/api/skills-extra-roots-clear`, {
+      method: "POST",
+      headers: jsonHeaders(enabled.server),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    assert.equal(replay.status, 409);
+    assert.equal(calls.length, 1);
+
+    const auditRecords = (await readFile(auditLogPath, "utf8"))
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    assert.equal(auditRecords.length, 1);
+    assert.equal(auditRecords[0].event, "skills-extra-roots-clear-recorded");
+    assert.equal(auditRecords[0].action.type, "skills-extra-roots-clear");
+    assert.equal(auditRecords[0].action.method, "skills/extraRoots/set");
+    assert.equal(auditRecords[0].action.skillsExtraRootsClear, true);
+    assert.equal(auditRecords[0].appServer.skillsExtraRootsTraffic, true);
+    assert.equal(auditRecords[0].target.requestedExtraRootCount, 0);
+    assert.equal(auditRecords[0].target.browserRootsAccepted, false);
+    assert.equal(auditRecords[0].target.pathsReturned, false);
+    assert.equal(auditRecords[0].result.status, "cleared");
+    assert.equal(auditRecords[0].result.extraRootsReturned, false);
+    assert.equal(auditRecords[0].result.pathsReturned, false);
+    assert.equal(auditRecords[0].result.rawPayloadReturned, false);
+    assert.equal(auditRecords[0].preflight.tokenConsumed, true);
+    assert.equal(auditRecords[0].preflight.tokenReturned, false);
+    const auditSerialized = JSON.stringify(auditRecords);
+    for (const marker of [
+      "/tmp/second-workspace",
+      "private-extra-root",
+      "private-extra-roots-secret",
+      preflightPayload.preflight.token,
+      "\"extraRootsReturned\":true",
+      "\"pathsReturned\":true",
     ]) {
       assert.equal(auditSerialized.includes(marker), false, `audit leaked ${marker}`);
     }

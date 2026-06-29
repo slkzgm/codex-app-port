@@ -169,6 +169,14 @@ const elements = {
   skillsConfigArgKeys: document.querySelector("#skills-config-arg-keys"),
   skillsConfigWriteText: document.querySelector("#skills-config-write-text"),
   skillsConfigEffectiveText: document.querySelector("#skills-config-effective-text"),
+  skillsExtraRootsClearPreflightButton: document.querySelector(
+    "#skills-extra-roots-clear-preflight-button",
+  ),
+  skillsExtraRootsClearButton: document.querySelector("#skills-extra-roots-clear-button"),
+  skillsExtraRootsClearStatus: document.querySelector("#skills-extra-roots-clear-status"),
+  skillsExtraRootsClearCount: document.querySelector("#skills-extra-roots-clear-count"),
+  skillsExtraRootsBrowserText: document.querySelector("#skills-extra-roots-browser-text"),
+  skillsExtraRootsResultText: document.querySelector("#skills-extra-roots-result-text"),
   integrationActionForm: document.querySelector("#integration-action-form"),
   integrationMethodSelect: document.querySelector("#integration-method-select"),
   integrationTargetInput: document.querySelector("#integration-target-input"),
@@ -549,6 +557,7 @@ let lastPluginContentPreflight = null;
 let lastPluginReadPreflight = null;
 let lastPluginUninstallPreflight = null;
 let lastSkillsConfigPreflight = null;
+let lastSkillsExtraRootsClearPreflight = null;
 let lastTerminalCleanPreflight = null;
 let lastTerminalBackgroundTerminatePreflight = null;
 let selectedTerminalBackgroundRef = null;
@@ -604,6 +613,7 @@ elements.workspaceSelect.addEventListener("change", () => {
   lastPluginReadPreflight = null;
   lastPluginUninstallPreflight = null;
   lastSkillsConfigPreflight = null;
+  lastSkillsExtraRootsClearPreflight = null;
   lastTerminalCleanPreflight = null;
   lastTerminalBackgroundTerminatePreflight = null;
   selectedTerminalBackgroundRef = null;
@@ -640,6 +650,7 @@ elements.workspaceSelect.addEventListener("change", () => {
   elements.pluginReadRunButton.disabled = true;
   elements.pluginUninstallRunButton.disabled = true;
   elements.skillsConfigRunButton.disabled = true;
+  elements.skillsExtraRootsClearButton.disabled = true;
   elements.terminalCleanButton.disabled = true;
   elements.terminalBackgroundTerminatePreflightButton.disabled = true;
   elements.terminalBackgroundTerminateButton.disabled = true;
@@ -1120,6 +1131,14 @@ elements.skillsConfigRunButton.addEventListener("click", () => {
   runSkillsConfigWrite();
 });
 
+elements.skillsExtraRootsClearPreflightButton.addEventListener("click", () => {
+  runSkillsExtraRootsClearPreflight();
+});
+
+elements.skillsExtraRootsClearButton.addEventListener("click", () => {
+  runSkillsExtraRootsClear();
+});
+
 elements.configValueForm.addEventListener("submit", (event) => {
   event.preventDefault();
   runConfigValuePreflight();
@@ -1458,6 +1477,14 @@ function skillsConfigPreflightEndpoint() {
 
 function skillsConfigWriteEndpoint() {
   return "/api/skills-config-write";
+}
+
+function skillsExtraRootsClearPreflightEndpoint() {
+  return "/api/skills-extra-roots-clear-preflight";
+}
+
+function skillsExtraRootsClearEndpoint() {
+  return "/api/skills-extra-roots-clear";
 }
 
 function configValuePreflightEndpoint() {
@@ -2442,6 +2469,75 @@ async function runSkillsConfigWrite() {
     lastSkillsConfigPreflight = null;
     elements.skillsConfigRunButton.disabled = true;
     setSkillsConfigLoading(false);
+  }
+}
+
+async function runSkillsExtraRootsClearPreflight() {
+  setSkillsExtraRootsClearLoading(true);
+  hideError();
+
+  try {
+    lastSkillsExtraRootsClearPreflight = null;
+    elements.skillsExtraRootsClearButton.disabled = true;
+    const body = {
+      workspace: selectedWorkspaceId,
+    };
+    const response = await fetch(skillsExtraRootsClearPreflightEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify(body),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    lastSkillsExtraRootsClearPreflight = {
+      body,
+      token: payload.preflight?.token,
+      enabled: payload.policy?.executionGateEnabled === true,
+    };
+    renderSkillsExtraRootsClearPreflight(payload);
+    await refreshSettingsIntegrations().catch(() => {});
+  } catch (error) {
+    elements.skillsExtraRootsClearStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    setSkillsExtraRootsClearLoading(false);
+  }
+}
+
+async function runSkillsExtraRootsClear() {
+  if (!lastSkillsExtraRootsClearPreflight?.token || !lastSkillsExtraRootsClearPreflight?.body) {
+    return;
+  }
+
+  setSkillsExtraRootsClearLoading(true);
+  hideError();
+
+  try {
+    const response = await fetch(skillsExtraRootsClearEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify({
+        ...lastSkillsExtraRootsClearPreflight.body,
+        preflightToken: lastSkillsExtraRootsClearPreflight.token,
+      }),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderSkillsExtraRootsClear(payload);
+    await refreshSettingsIntegrations().catch(() => {});
+  } catch (error) {
+    elements.skillsExtraRootsClearStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    lastSkillsExtraRootsClearPreflight = null;
+    elements.skillsExtraRootsClearButton.disabled = true;
+    setSkillsExtraRootsClearLoading(false);
   }
 }
 
@@ -8477,6 +8573,31 @@ function renderSkillsConfigWrite(payload) {
     : "Disabled";
 }
 
+function renderSkillsExtraRootsClearPreflight(payload) {
+  const result = payload.skillsExtraRootsClear ?? {};
+  elements.skillsExtraRootsClearStatus.textContent = payload.action?.execution ?? "blocked";
+  elements.skillsExtraRootsClearCount.textContent = String(result.requestedExtraRootCount ?? 0);
+  elements.skillsExtraRootsBrowserText.textContent = result.browserRootsAccepted
+    ? "Accepted"
+    : "Rejected";
+  elements.skillsExtraRootsResultText.textContent = payload.policy?.skillsExtraRootsClearEnabled
+    ? "Ready"
+    : "Blocked";
+  elements.skillsExtraRootsClearButton.disabled =
+    !lastSkillsExtraRootsClearPreflight?.token ||
+    lastSkillsExtraRootsClearPreflight.enabled !== true;
+}
+
+function renderSkillsExtraRootsClear(payload) {
+  const result = payload.skillsExtraRootsClear ?? {};
+  elements.skillsExtraRootsClearStatus.textContent = payload.action?.execution ?? "completed";
+  elements.skillsExtraRootsClearCount.textContent = String(result.requestedExtraRootCount ?? 0);
+  elements.skillsExtraRootsBrowserText.textContent = payload.policy?.browserRootsAccepted
+    ? "Accepted"
+    : "Rejected";
+  elements.skillsExtraRootsResultText.textContent = result.status ?? "cleared";
+}
+
 function renderConfigValuePreflight(payload) {
   const config = payload.configValueWrite ?? {};
   elements.configValueStatus.textContent = payload.action?.execution ?? "blocked";
@@ -10251,6 +10372,20 @@ function setSkillsConfigLoading(isLoading) {
   elements.skillsConfigButton.textContent = isLoading ? "Checking" : "Skills Config Check";
   if (isLoading) {
     elements.skillsConfigStatus.textContent = "Checking";
+  }
+}
+
+function setSkillsExtraRootsClearLoading(isLoading) {
+  elements.skillsExtraRootsClearPreflightButton.disabled = isLoading;
+  elements.skillsExtraRootsClearButton.disabled =
+    isLoading ||
+    !lastSkillsExtraRootsClearPreflight?.token ||
+    lastSkillsExtraRootsClearPreflight.enabled !== true;
+  elements.skillsExtraRootsClearPreflightButton.textContent = isLoading
+    ? "Checking"
+    : "Extra Roots Check";
+  if (isLoading) {
+    elements.skillsExtraRootsClearStatus.textContent = "Checking";
   }
 }
 

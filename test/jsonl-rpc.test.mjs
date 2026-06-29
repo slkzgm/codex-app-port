@@ -18,6 +18,7 @@ import {
   runPluginUninstallProbe,
   runProcessSpawnProbe,
   runSkillsConfigWriteProbe,
+  runSkillsExtraRootsClearProbe,
   runTerminalCommandExecProbe,
   runThreadArchiveProbe,
   runThreadChangesProbe,
@@ -1336,6 +1337,48 @@ test("runThreadSafetyLockProbe locks future thread policy without accepting unsa
       delete process.env.CODEX_APP_PORT_ALLOW_THREAD_SAFETY_LOCK;
     } else {
       process.env.CODEX_APP_PORT_ALLOW_THREAD_SAFETY_LOCK = previous;
+    }
+  }
+});
+
+test("runSkillsExtraRootsClearProbe clears extra roots without accepting paths", async () => {
+  const previous = process.env.CODEX_APP_PORT_ALLOW_SKILLS_EXTRA_ROOTS_CLEAR;
+  process.env.CODEX_APP_PORT_ALLOW_SKILLS_EXTRA_ROOTS_CLEAR = "1";
+  try {
+    const summary = await runSkillsExtraRootsClearProbe({
+      codexBin: process.execPath,
+      codexArgs: [mockServer.pathname],
+      cwd: process.cwd(),
+      timeoutMs: 1_000,
+    });
+
+    assert.equal(summary.ok, true);
+    const clear = summary.probes.skillsExtraRootsClear;
+    assert.equal(clear.method, "skills/extraRoots/set");
+    assert.equal(clear.status, "cleared");
+    assert.equal(clear.requestedExtraRootCount, 0);
+    assert.equal(clear.responseObject, true);
+    assert.equal(clear.responseTopLevelKeyCount, 3);
+    assert.equal(clear.extraRootsReturned, false);
+    assert.equal(clear.pathsReturned, false);
+    assert.equal(clear.rawPayloadReturned, false);
+
+    const serialized = JSON.stringify(summary);
+    for (const marker of [
+      "private-extra-roots-secret",
+      "private-extra-root",
+      "/tmp/mock-workspace",
+      "mock-codex-home",
+      "userAgent",
+      "codexHome",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    if (previous === undefined) {
+      delete process.env.CODEX_APP_PORT_ALLOW_SKILLS_EXTRA_ROOTS_CLEAR;
+    } else {
+      process.env.CODEX_APP_PORT_ALLOW_SKILLS_EXTRA_ROOTS_CLEAR = previous;
     }
   }
 });

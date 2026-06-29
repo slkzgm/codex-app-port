@@ -673,6 +673,36 @@ function handle(message) {
     return;
   }
 
+  if (message.method === "skills/extraRoots/set") {
+    if (!Array.isArray(message.params?.extraRoots) || message.params.extraRoots.length !== 0) {
+      send({
+        id: message.id,
+        error: {
+          code: -32602,
+          message: "skills extra roots mock accepts only an empty extraRoots array",
+        },
+      });
+      return;
+    }
+    send({
+      id: message.id,
+      result: {
+        cleared: true,
+        extraRoots: ["/tmp/mock-workspace/private-extra-root"],
+        privateSettings: "private-extra-roots-secret",
+      },
+    });
+    process.stdout.write(
+      `${JSON.stringify({
+        method: "skills/extraRoots/updated",
+        params: {
+          extraRoots: ["/tmp/mock-workspace/private-extra-root"],
+        },
+      })}\n`,
+    );
+    return;
+  }
+
   if (message.method === "skills/list") {
     send({
       id: message.id,

@@ -104,6 +104,12 @@ The server binds to `127.0.0.1` by default and serves:
   plus a matching one-time preflight token; execution accepts only a safe skill
   name and `{"enabled":boolean}`, rejects paths/unknown keys before app-server
   traffic, and returns only counts plus the effective enabled boolean
+- `/api/skills-extra-roots-clear-preflight` and
+  `/api/skills-extra-roots-clear`: opt-in `skills/extraRoots/set` clear action
+  behind `CODEX_APP_PORT_ALLOW_SKILLS_EXTRA_ROOTS_CLEAR=1` plus a matching
+  one-time preflight token; execution accepts no browser roots, paths, or
+  arguments and sends only `{"extraRoots":[]}`, returning status/count/shape
+  metadata only
 - `/api/config-value-preflight` and `/api/config-value-write`: opt-in
   `config/value/write` behind `CODEX_APP_PORT_ALLOW_CONFIG_VALUE_WRITE=1`, an
   exact `CODEX_APP_PORT_CONFIG_VALUE_WRITE_ALLOWLIST` key match, and a matching
@@ -711,6 +717,16 @@ app-server traffic, calls `skills/config/write` by safe skill name only, and
 reduces the result to target/argument counts plus the effective enabled boolean.
 It does not return or audit skill names, paths, argument text, tokens, or raw
 payloads.
+
+The skills-extra-roots-clear-preflight endpoint accepts no root/path input and
+creates only a local one-time confirmation token. The matching
+`/api/skills-extra-roots-clear` route is fail-closed unless
+`CODEX_APP_PORT_ALLOW_SKILLS_EXTRA_ROOTS_CLEAR=1` is enabled before launch. It
+rebuilds the same empty-intent preflight, consumes a matching token once,
+rejects browser-provided roots, paths, and unknown fields before app-server
+traffic, calls `skills/extraRoots/set` only with `{"extraRoots":[]}`, and
+reduces the result to status/count/shape metadata. It does not return or audit
+extra roots, paths, tokens, notifications, or raw payloads.
 
 The config-value-preflight endpoint accepts only `config/value/write` intent for
 local validation. It returns key-path/value shape counts only, does not return
@@ -1626,6 +1642,10 @@ payloads, that
 `skills/config/write` traffic with `{"enabled":boolean}` and sanitized
 target/argument counts plus effective enabled state, without skill names,
 paths, argument text, tokens, or raw payloads, that
+`/api/skills-extra-roots-clear` can execute only as opt-in empty
+`skills/extraRoots/set` traffic with `{"extraRoots":[]}` and sanitized
+status/count/shape metadata, without accepting or returning extra roots, paths,
+tokens, notifications, or raw payloads, that
 `/api/config-value-write` can execute only as opt-in allowlisted
 `config/value/write` traffic with JSON-text values, one-time tokens, and
 `filePath`/`expectedVersion` forced to `null`, returning only count/shape

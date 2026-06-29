@@ -86,6 +86,7 @@ async function main() {
   await checkPluginContentPreflightApi();
   await checkPluginContentReadApi();
   await checkSkillsConfigWriteApi();
+  await checkSkillsExtraRootsClearApi();
   await checkIntegrationActionPreflightApi();
   await checkTerminalActionsApi();
   await checkTerminalCommandPreflightApi();
@@ -1115,6 +1116,13 @@ async function checkStrictBrowserPostBodies() {
           preflightToken: "preflight-1234567890abcdef",
         },
       ],
+      ["/api/skills-extra-roots-clear-preflight", {}],
+      [
+        "/api/skills-extra-roots-clear",
+        {
+          preflightToken: "preflight-1234567890abcdef",
+        },
+      ],
       ["/api/integration-action-preflight", { method: "plugin/install", target: "safe-plugin" }],
       [
         "/api/action-preflight-confirm",
@@ -1398,6 +1406,39 @@ function assertBrowserPostBodyContracts(cases) {
     skillsConfigWriteContract.nestedKeySchemas.policy?.includes("unexpected")
   ) {
     throw new Error("skills-config-write response contract is missing nested schemas");
+  }
+  const skillsExtraRootsClearPreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/skills-extra-roots-clear-preflight"];
+  if (
+    skillsExtraRootsClearPreflightContract.usesRouteSpecificNestedKeySchemas !== true ||
+    !Object.isFrozen(skillsExtraRootsClearPreflightContract.nestedKeySchemas.policy) ||
+    !skillsExtraRootsClearPreflightContract.nestedKeySchemas.skillsExtraRootsClear?.includes(
+      "browserRootsAccepted",
+    ) ||
+    !skillsExtraRootsClearPreflightContract.nestedKeySchemas.policy?.includes(
+      "skillsExtraRootsClear",
+    ) ||
+    skillsExtraRootsClearPreflightContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("skills-extra-roots-clear-preflight response contract is missing nested schemas");
+  }
+  const skillsExtraRootsClearContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/skills-extra-roots-clear"];
+  if (
+    skillsExtraRootsClearContract.usesRouteSpecificNestedKeySchemas !== true ||
+    !Object.isFrozen(skillsExtraRootsClearContract.nestedKeySchemas.policy) ||
+    !skillsExtraRootsClearContract.nestedKeySchemas.skillsExtraRootsClear?.includes(
+      "requestedExtraRootCount",
+    ) ||
+    !skillsExtraRootsClearContract.nestedKeySchemas.result?.includes(
+      "responseTopLevelKeyCount",
+    ) ||
+    !skillsExtraRootsClearContract.nestedKeySchemas.policy?.includes(
+      "skillsExtraRootsClear",
+    ) ||
+    skillsExtraRootsClearContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("skills-extra-roots-clear response contract is missing nested schemas");
   }
   const configValuePreflightContract =
     BROWSER_POST_RESPONSE_CONTRACTS["/api/config-value-preflight"];
@@ -2711,6 +2752,133 @@ function assertBrowserPostBodyContracts(cases) {
   });
   if (allowedNestedSkillsConfigWriteShape.statusCode !== 200) {
     throw new Error("browser POST response contract rejected an allowed nested skills-config write shape");
+  }
+  const allowedNestedSkillsExtraRootsClearPreflightShape = applyBrowserPostResponseContract({
+    method: "POST",
+    pathname: "/api/skills-extra-roots-clear-preflight",
+    statusCode: 200,
+    payload: {
+      ok: true,
+      appServer: {
+        touched: false,
+        modelTraffic: false,
+        commandTraffic: false,
+        skillsExtraRootsTraffic: false,
+      },
+      action: {
+        type: "skills-extra-roots-clear-preflight",
+        method: "skills/extraRoots/set",
+        category: "skills-write",
+        execution: "requires-confirmation",
+        wouldClearExtraRoots: false,
+        appServerTouched: false,
+      },
+      skillsExtraRootsClear: {
+        requestedExtraRootCount: 0,
+        browserRootsAccepted: false,
+        extraRootsReturned: false,
+        pathsReturned: false,
+        rawPayloadReturned: false,
+      },
+      preflight: {
+        token: "preflight-1234567890abcdef",
+        tokenIssued: true,
+        scope: {
+          kind: "skills-extra-roots-clear-preflight",
+          workspaceId: "default",
+        },
+      },
+      policy: {
+        readOnly: true,
+        appServerTraffic: false,
+        skillsExtraRootsClear: false,
+        skillsExtraRootsClearEnabled: true,
+        browserRootsAccepted: false,
+        extraRootsReturned: false,
+        pathsReturned: false,
+        rawPayloadsReturned: false,
+        executionGateEnabled: true,
+        implemented: true,
+      },
+    },
+  });
+  if (allowedNestedSkillsExtraRootsClearPreflightShape.statusCode !== 200) {
+    throw new Error(
+      "browser POST response contract rejected an allowed nested skills extra roots clear preflight shape",
+    );
+  }
+  const allowedNestedSkillsExtraRootsClearShape = applyBrowserPostResponseContract({
+    method: "POST",
+    pathname: "/api/skills-extra-roots-clear",
+    statusCode: 200,
+    payload: {
+      ok: true,
+      appServer: {
+        touched: true,
+        modelTraffic: false,
+        commandTraffic: false,
+        skillsExtraRootsTraffic: true,
+        auditedMethods: ["skills/extraRoots/set"],
+      },
+      action: {
+        type: "skills-extra-roots-clear",
+        method: "skills/extraRoots/set",
+        execution: "completed",
+        skillsExtraRootsClear: true,
+        appServerTouched: true,
+      },
+      target: {
+        requestedExtraRootCount: 0,
+        browserRootsAccepted: false,
+        extraRootsReturned: false,
+        pathsReturned: false,
+        rawPayloadReturned: false,
+      },
+      skillsExtraRootsClear: {
+        method: "skills/extraRoots/set",
+        status: "cleared",
+        requestedExtraRootCount: 0,
+        responseObject: true,
+        responseTopLevelKeyCount: 3,
+        extraRootsReturned: false,
+        pathsReturned: false,
+        rawPayloadReturned: false,
+      },
+      result: {
+        status: "cleared",
+        requestedExtraRootCount: 0,
+        responseObject: true,
+        responseTopLevelKeyCount: 3,
+        extraRootsReturned: false,
+        pathsReturned: false,
+        rawPayloadReturned: false,
+      },
+      preflight: {
+        tokenConsumed: true,
+        tokenReturned: false,
+        scope: {
+          kind: "skills-extra-roots-clear-preflight",
+          workspaceId: "default",
+        },
+      },
+      policy: {
+        readOnly: false,
+        appServerTraffic: true,
+        skillsExtraRootsClear: true,
+        skillsExtraRootsClearEnabled: true,
+        browserRootsAccepted: false,
+        extraRootsReturned: false,
+        pathsReturned: false,
+        rawPayloadsReturned: false,
+        executionGateEnabled: true,
+        implemented: true,
+      },
+    },
+  });
+  if (allowedNestedSkillsExtraRootsClearShape.statusCode !== 200) {
+    throw new Error(
+      "browser POST response contract rejected an allowed nested skills extra roots clear shape",
+    );
   }
   const allowedNestedConfigValuePreflightShape = applyBrowserPostResponseContract({
     method: "POST",
@@ -7171,6 +7339,46 @@ function assertBrowserPostBodyContracts(cases) {
     [
       {
         ok: true,
+        skillsExtraRootsClear: {
+          requestedExtraRootCount: 0,
+          leakedExtraRoot: "private root",
+        },
+      },
+      "private",
+    ],
+    [
+      {
+        ok: true,
+        policy: {
+          skillsExtraRootsClear: false,
+          leakedExtraRootsPolicy: "private policy",
+        },
+      },
+      "private",
+    ],
+  ]) {
+    const unexpectedSkillsExtraRootsClearPreflightNestedKeyResponse =
+      applyBrowserPostResponseContract({
+        method: "POST",
+        pathname: "/api/skills-extra-roots-clear-preflight",
+        statusCode: 200,
+        payload,
+      });
+    if (
+      unexpectedSkillsExtraRootsClearPreflightNestedKeyResponse.statusCode !== 500 ||
+      JSON.stringify(unexpectedSkillsExtraRootsClearPreflightNestedKeyResponse.payload).includes(
+        marker,
+      )
+    ) {
+      throw new Error(
+        "browser POST response contract did not block an unexpected skills extra roots clear preflight nested key",
+      );
+    }
+  }
+  for (const [payload, marker] of [
+    [
+      {
+        ok: true,
         integrationAction: {
           target: {
             charCount: 11,
@@ -7440,6 +7648,64 @@ function assertBrowserPostBodyContracts(cases) {
     ) {
       throw new Error(
         "browser POST response contract did not block an unexpected skills-config write nested key",
+      );
+    }
+  }
+  for (const [payload, marker] of [
+    [
+      {
+        ok: true,
+        target: {
+          requestedExtraRootCount: 0,
+          leakedExtraRoot: "private root",
+        },
+      },
+      "private",
+    ],
+    [
+      {
+        ok: true,
+        skillsExtraRootsClear: {
+          status: "cleared",
+          leakedExtraRoot: "private root",
+        },
+      },
+      "private",
+    ],
+    [
+      {
+        ok: true,
+        result: {
+          status: "cleared",
+          leakedExtraRoot: "private result",
+        },
+      },
+      "private",
+    ],
+    [
+      {
+        ok: true,
+        policy: {
+          skillsExtraRootsClear: true,
+          leakedExtraRootsPolicy: "private policy",
+        },
+      },
+      "private",
+    ],
+  ]) {
+    const unexpectedSkillsExtraRootsClearNestedKeyResponse =
+      applyBrowserPostResponseContract({
+        method: "POST",
+        pathname: "/api/skills-extra-roots-clear",
+        statusCode: 200,
+        payload,
+      });
+    if (
+      unexpectedSkillsExtraRootsClearNestedKeyResponse.statusCode !== 500 ||
+      JSON.stringify(unexpectedSkillsExtraRootsClearNestedKeyResponse.payload).includes(marker)
+    ) {
+      throw new Error(
+        "browser POST response contract did not block an unexpected skills extra roots clear nested key",
       );
     }
   }
@@ -16935,6 +17201,166 @@ async function checkSkillsConfigWriteApi() {
     await rm(auditDir, { recursive: true, force: true });
   }
   pass("dev server skills config write is opt-in, preflighted, and sanitized");
+}
+
+async function checkSkillsExtraRootsClearApi() {
+  const auditDir = await mkdtemp(join(tmpdir(), "codex-app-port-verify-skills-extra-roots-"));
+  const auditLogPath = join(auditDir, "actions.jsonl");
+  const calls = [];
+  const skillsExtraRootsClearFn = async (options) => {
+    calls.push(options);
+    return {
+      ok: true,
+      generatedAt: "2026-06-29T00:00:00.000Z",
+      transport: "stdio-jsonl",
+      protocol: "json-rpc-2.0-without-jsonrpc-field",
+      initialize: { platformOs: "linux", platformFamily: "unix" },
+      probes: {
+        skillsExtraRootsClear: {
+          method: "skills/extraRoots/set",
+          status: "cleared",
+          requestedExtraRootCount: 0,
+          responseObject: true,
+          responseTopLevelKeyCount: 3,
+          extraRootsReturned: true,
+          pathsReturned: true,
+          rawPayloadReturned: true,
+          privatePath: "/tmp/codex-app-port-verify-extra/private-extra-root",
+          privateSettings: "private-extra-roots-secret",
+        },
+      },
+      notifications: { "skills/extraRoots/updated": 1 },
+    };
+  };
+
+  const disabled = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    workspaceInputs: ["/tmp/codex-app-port-verify-extra"],
+    skillsExtraRootsClearFn,
+  });
+  const disabledPort = await listenWithFallback(disabled, { host: "127.0.0.1", port: 0 });
+  const disabledBaseUrl = `http://127.0.0.1:${disabledPort}`;
+
+  try {
+    const token = await readUiSessionToken(disabledBaseUrl);
+    const preflight = await fetch(
+      `${disabledBaseUrl}/api/skills-extra-roots-clear-preflight`,
+      {
+        method: "POST",
+        headers: jsonHeaders(token),
+        body: JSON.stringify({ workspace: "workspace-2" }),
+      },
+    );
+    if (!preflight.ok) {
+      throw new Error(`disabled skills extra roots preflight returned HTTP ${preflight.status}`);
+    }
+    const preflightPayload = await preflight.json();
+    if (
+      preflightPayload.policy?.executionGateEnabled !== false ||
+      preflightPayload.policy?.skillsExtraRootsClearEnabled !== false
+    ) {
+      throw new Error("disabled skills extra roots preflight unexpectedly enabled writes");
+    }
+    const blocked = await fetch(`${disabledBaseUrl}/api/skills-extra-roots-clear`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    if (blocked.status !== 403) {
+      throw new Error(`disabled skills extra roots clear returned HTTP ${blocked.status}`);
+    }
+    if (calls.length !== 0) {
+      throw new Error("disabled skills extra roots clear called the app-server probe");
+    }
+  } finally {
+    await closeServer(disabled);
+  }
+
+  const server = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    workspaceInputs: ["/tmp/codex-app-port-verify-extra"],
+    skillsExtraRootsClearEnabled: true,
+    skillsExtraRootsClearFn,
+    actionAuditLog: createActionAuditLog({ path: auditLogPath }),
+  });
+  const port = await listenWithFallback(server, { host: "127.0.0.1", port: 0 });
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  try {
+    const token = await readUiSessionToken(baseUrl);
+    const preflight = await fetch(`${baseUrl}/api/skills-extra-roots-clear-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({ workspace: "workspace-2" }),
+    });
+    if (!preflight.ok) {
+      throw new Error(`skills extra roots clear preflight returned HTTP ${preflight.status}`);
+    }
+    const preflightPayload = await preflight.json();
+    assertSanitizedSkillsExtraRootsClearPreflight(preflightPayload, { gateEnabled: true });
+
+    const rejectedUnknown = await fetch(`${baseUrl}/api/skills-extra-roots-clear`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        extraRoots: ["/tmp/codex-app-port-verify-extra/private-extra-root"],
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    if (rejectedUnknown.status !== 400) {
+      throw new Error(`skills extra roots clear with roots returned HTTP ${rejectedUnknown.status}`);
+    }
+    if (calls.length !== 0) {
+      throw new Error("rejected skills extra roots clear called the app-server probe");
+    }
+
+    const response = await fetch(`${baseUrl}/api/skills-extra-roots-clear`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(`skills extra roots clear returned HTTP ${response.status}`);
+    }
+    assertSanitizedSkillsExtraRootsClear(await response.json(), {
+      token: preflightPayload.preflight.token,
+    });
+
+    if (calls.length !== 1 || calls[0].cwd !== "/tmp/codex-app-port-verify-extra") {
+      throw new Error("skills extra roots clear did not call the app-server probe with expected parameters");
+    }
+
+    const replay = await fetch(`${baseUrl}/api/skills-extra-roots-clear`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    if (replay.status !== 409) {
+      throw new Error(`skills extra roots clear replay returned HTTP ${replay.status}`);
+    }
+
+    const records = (await readFile(auditLogPath, "utf8"))
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    assertSanitizedSkillsExtraRootsClearAudit(records, {
+      token: preflightPayload.preflight.token,
+    });
+  } finally {
+    await closeServer(server);
+    await rm(auditDir, { recursive: true, force: true });
+  }
+  pass("dev server skills extra roots clear is opt-in, preflighted, and sanitized");
 }
 
 async function checkIntegrationActionPreflightApi() {
@@ -30467,6 +30893,199 @@ function assertSanitizedSkillsConfigWriteAudit(
   ]) {
     if (serialized.includes(marker)) {
       throw new Error(`skills config write audit leaked ${marker}`);
+    }
+  }
+}
+
+function assertSanitizedSkillsExtraRootsClearPreflight(payload, { gateEnabled }) {
+  if (!payload.ok) {
+    throw new Error("skills extra roots clear preflight payload is not ok");
+  }
+  const serialized = JSON.stringify(payload);
+  for (const marker of [
+    "/tmp/codex-app-port-verify",
+    "/tmp/codex-app-port-verify-extra",
+    "private-extra-root",
+    "private-extra-roots-secret",
+    "codexHome",
+    "userAgent",
+  ]) {
+    if (serialized.includes(marker)) {
+      throw new Error(`skills extra roots clear preflight payload leaked ${marker}`);
+    }
+  }
+  if (
+    payload.appServer?.touched !== false ||
+    payload.appServer?.modelTraffic !== false ||
+    payload.appServer?.skillsExtraRootsTraffic !== false
+  ) {
+    throw new Error("skills extra roots clear preflight unexpectedly touched app-server");
+  }
+  if (
+    payload.action?.type !== "skills-extra-roots-clear-preflight" ||
+    payload.action?.method !== "skills/extraRoots/set" ||
+    payload.action?.category !== "skills-write" ||
+    payload.action?.execution !== (gateEnabled ? "requires-confirmation" : "blocked") ||
+    payload.action?.wouldClearExtraRoots !== false ||
+    payload.action?.appServerTouched !== false
+  ) {
+    throw new Error("skills extra roots clear preflight did not preserve action metadata");
+  }
+  assertActionPreflight(payload, "skills-extra-roots-clear-preflight", "workspace-2");
+  if (
+    payload.skillsExtraRootsClear?.requestedExtraRootCount !== 0 ||
+    payload.skillsExtraRootsClear?.browserRootsAccepted !== false ||
+    payload.skillsExtraRootsClear?.extraRootsReturned !== false ||
+    payload.skillsExtraRootsClear?.pathsReturned !== false ||
+    payload.skillsExtraRootsClear?.rawPayloadReturned !== false
+  ) {
+    throw new Error("skills extra roots clear preflight did not preserve safe counts");
+  }
+  if (
+    payload.policy?.readOnly !== true ||
+    payload.policy?.appServerTraffic !== false ||
+    payload.policy?.skillsExtraRootsClear !== false ||
+    payload.policy?.skillsExtraRootsClearEnabled !== gateEnabled ||
+    payload.policy?.executionRouteImplemented !== true ||
+    payload.policy?.executionGateEnabled !== gateEnabled ||
+    payload.policy?.browserRootsAccepted !== false ||
+    payload.policy?.extraRootsReturned !== false ||
+    payload.policy?.pathsReturned !== false ||
+    payload.policy?.rawPayloadsReturned !== false ||
+    payload.policy?.requiresApprovalPipeline !== true ||
+    payload.policy?.requiresIntegrationProvenance !== true ||
+    payload.policy?.requiresExplicitEnablement !== true ||
+    payload.policy?.browserMethodCallsAccepted !== gateEnabled ||
+    payload.policy?.implemented !== true
+  ) {
+    throw new Error("skills extra roots clear preflight policy did not preserve fail-closed gates");
+  }
+}
+
+function assertSanitizedSkillsExtraRootsClear(payload, { token }) {
+  if (!payload.ok) {
+    throw new Error("skills extra roots clear payload is not ok");
+  }
+  const serialized = JSON.stringify(payload);
+  for (const marker of [
+    token,
+    "/tmp/codex-app-port-verify",
+    "/tmp/codex-app-port-verify-extra",
+    "private-extra-root",
+    "private-extra-roots-secret",
+    "codexHome",
+    "userAgent",
+    "\"extraRootsReturned\":true",
+    "\"pathsReturned\":true",
+    "\"rawPayloadReturned\":true",
+  ]) {
+    if (serialized.includes(marker)) {
+      throw new Error(`skills extra roots clear payload leaked ${marker}`);
+    }
+  }
+  if (
+    payload.appServer?.touched !== true ||
+    payload.appServer?.modelTraffic !== false ||
+    payload.appServer?.skillsExtraRootsTraffic !== true ||
+    !payload.appServer?.auditedMethods?.includes("skills/extraRoots/set")
+  ) {
+    throw new Error("skills extra roots clear payload did not record sanitized app-server traffic");
+  }
+  if (
+    payload.action?.type !== "skills-extra-roots-clear" ||
+    payload.action?.method !== "skills/extraRoots/set" ||
+    payload.action?.execution !== "completed" ||
+    payload.action?.skillsExtraRootsClear !== true ||
+    payload.action?.modelTraffic !== false
+  ) {
+    throw new Error("skills extra roots clear payload did not expose expected action metadata");
+  }
+  if (
+    payload.target?.requestedExtraRootCount !== 0 ||
+    payload.target?.browserRootsAccepted !== false ||
+    payload.target?.extraRootsReturned !== false ||
+    payload.target?.pathsReturned !== false ||
+    payload.target?.rawPayloadReturned !== false
+  ) {
+    throw new Error("skills extra roots clear target summary did not preserve safe counts");
+  }
+  if (
+    payload.skillsExtraRootsClear?.method !== "skills/extraRoots/set" ||
+    payload.skillsExtraRootsClear?.status !== "cleared" ||
+    payload.skillsExtraRootsClear?.requestedExtraRootCount !== 0 ||
+    payload.skillsExtraRootsClear?.responseObject !== true ||
+    payload.skillsExtraRootsClear?.responseTopLevelKeyCount !== 3 ||
+    payload.skillsExtraRootsClear?.extraRootsReturned !== false ||
+    payload.skillsExtraRootsClear?.pathsReturned !== false ||
+    payload.skillsExtraRootsClear?.rawPayloadReturned !== false
+  ) {
+    throw new Error("skills extra roots clear payload did not preserve count-only metadata");
+  }
+  if (
+    payload.result?.status !== "cleared" ||
+    payload.result?.requestedExtraRootCount !== 0 ||
+    payload.result?.responseTopLevelKeyCount !== 3 ||
+    payload.result?.extraRootsReturned !== false ||
+    payload.result?.pathsReturned !== false ||
+    payload.result?.rawPayloadReturned !== false
+  ) {
+    throw new Error("skills extra roots clear result did not preserve sanitized metadata");
+  }
+  if (
+    payload.preflight?.tokenConsumed !== true ||
+    payload.preflight?.tokenReturned !== false ||
+    payload.policy?.readOnly !== false ||
+    payload.policy?.appServerTraffic !== true ||
+    payload.policy?.skillsExtraRootsClear !== true ||
+    payload.policy?.skillsExtraRootsClearEnabled !== true ||
+    payload.policy?.browserRootsAccepted !== false ||
+    payload.policy?.extraRootsReturned !== false ||
+    payload.policy?.pathsReturned !== false ||
+    payload.policy?.rawPayloadsReturned !== false ||
+    payload.policy?.preflightTokenReturned !== false ||
+    payload.policy?.auditLogWritten !== true ||
+    payload.policy?.executionGateEnabled !== true ||
+    payload.policy?.implemented !== true
+  ) {
+    throw new Error("skills extra roots clear policy did not preserve execution guardrails");
+  }
+}
+
+function assertSanitizedSkillsExtraRootsClearAudit(records, { token }) {
+  if (
+    records.length !== 1 ||
+    records[0]?.event !== "skills-extra-roots-clear-recorded" ||
+    records[0]?.action?.type !== "skills-extra-roots-clear" ||
+    records[0]?.action?.method !== "skills/extraRoots/set" ||
+    records[0]?.action?.skillsExtraRootsClear !== true ||
+    records[0]?.appServer?.skillsExtraRootsTraffic !== true ||
+    records[0]?.target?.requestedExtraRootCount !== 0 ||
+    records[0]?.target?.browserRootsAccepted !== false ||
+    records[0]?.target?.extraRootsReturned !== false ||
+    records[0]?.target?.pathsReturned !== false ||
+    records[0]?.result?.status !== "cleared" ||
+    records[0]?.result?.extraRootsReturned !== false ||
+    records[0]?.result?.pathsReturned !== false ||
+    records[0]?.result?.rawPayloadReturned !== false ||
+    records[0]?.preflight?.tokenConsumed !== true ||
+    records[0]?.preflight?.tokenReturned !== false
+  ) {
+    throw new Error("skills extra roots clear audit record was not sanitized as expected");
+  }
+  const serialized = JSON.stringify(records);
+  for (const marker of [
+    token,
+    "/tmp/codex-app-port-verify",
+    "/tmp/codex-app-port-verify-extra",
+    "private-extra-root",
+    "private-extra-roots-secret",
+    "codexHome",
+    "userAgent",
+    "\"extraRootsReturned\":true",
+    "\"pathsReturned\":true",
+  ]) {
+    if (serialized.includes(marker)) {
+      throw new Error(`skills extra roots clear audit leaked ${marker}`);
     }
   }
 }

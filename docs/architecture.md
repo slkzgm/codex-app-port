@@ -570,6 +570,13 @@ Current M1 status:
   action audit records reduced to target/argument counts and the effective
   enabled boolean without skill names, paths, argument text, tokens, or raw
   payloads
+- done: opt-in `/api/skills-extra-roots-clear` behind
+  `CODEX_APP_PORT_ALLOW_SKILLS_EXTRA_ROOTS_CLEAR=1` and a matching one-time
+  preflight token, with preflight-only validation by default, no browser
+  roots/paths/arguments accepted, `{"extraRoots":[]}` as the fixed
+  `skills/extraRoots/set` payload, and responses plus action audit records
+  reduced to status/count/shape metadata without extra roots, paths,
+  notifications, tokens, or raw payloads
 - done: opt-in `/api/config-value-write` behind
   `CODEX_APP_PORT_ALLOW_CONFIG_VALUE_WRITE=1`, an exact
   `CODEX_APP_PORT_CONFIG_VALUE_WRITE_ALLOWLIST` key match, and a matching

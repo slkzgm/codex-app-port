@@ -53,6 +53,7 @@ export const APP_SERVER_METHODS = Object.freeze({
   pluginUninstall: "plugin/uninstall",
   remoteControlStatusRead: "remoteControl/status/read",
   skillsConfigWrite: "skills/config/write",
+  skillsExtraRootsSet: "skills/extraRoots/set",
   turnStart: "turn/start",
   turnInterrupt: "turn/interrupt",
   turnSteer: "turn/steer",

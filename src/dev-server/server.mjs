@@ -28,6 +28,7 @@ import {
   runPluginUninstallProbe,
   runProcessSpawnProbe,
   runSkillsConfigWriteProbe,
+  runSkillsExtraRootsClearProbe,
   runTerminalCommandExecProbe,
   runThreadChangesProbe,
   runThreadArchiveProbe,
@@ -599,6 +600,15 @@ export const ACTION_PREFLIGHT_CONFIRMATION_FIELD_CONTRACTS = Object.freeze({
     "arguments",
     "preflightToken",
   ),
+  "skills-extra-roots-clear-preflight": bodyFields(
+    "workspace",
+    "actionType",
+    "preflightToken",
+  ),
+  "skills-extra-roots-clear": bodyFields(
+    "workspace",
+    "preflightToken",
+  ),
   "integration-action-preflight": bodyFields(
     "workspace",
     "actionType",
@@ -946,6 +956,14 @@ export const BROWSER_POST_BODY_CONTRACTS = Object.freeze({
     appServerTraffic: false,
   }),
   "/api/skills-config-write": bodyContract(["workspace", "target", "arguments", "preflightToken"], {
+    kind: "mutation",
+    requiresPreflightToken: true,
+  }),
+  "/api/skills-extra-roots-clear-preflight": bodyContract(["workspace"], {
+    kind: "preflight",
+    appServerTraffic: false,
+  }),
+  "/api/skills-extra-roots-clear": bodyContract(["workspace", "preflightToken"], {
     kind: "mutation",
     requiresPreflightToken: true,
   }),
@@ -6767,6 +6785,138 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
       "implemented",
     ],
   }),
+  "/api/skills-extra-roots-clear-preflight": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    appServer: ["touched", "modelTraffic", "commandTraffic", "skillsExtraRootsTraffic"],
+    action: [
+      "type",
+      "method",
+      "category",
+      "execution",
+      "wouldClearExtraRoots",
+      "appServerTouched",
+      "modelTraffic",
+      "reason",
+    ],
+    skillsExtraRootsClear: [
+      "requestedExtraRootCount",
+      "browserRootsAccepted",
+      "extraRootsReturned",
+      "pathsReturned",
+      "rawPayloadReturned",
+    ],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "skillsExtraRootsClear",
+      "skillsExtraRootsClearEnabled",
+      "executionRouteImplemented",
+      "executionGateEnabled",
+      "browserRootsAccepted",
+      "extraRootsReturned",
+      "pathsReturned",
+      "rawPayloadsReturned",
+      "requiresApprovalPipeline",
+      "requiresIntegrationProvenance",
+      "requiresExplicitEnablement",
+      "browserMethodCallsAccepted",
+      "implemented",
+    ],
+    preflight: [
+      "token",
+      "tokenIssued",
+      "issuedAt",
+      "expiresAt",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseRequiredForMutation",
+      "consumed",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+  }),
+  "/api/skills-extra-roots-clear": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    initialize: ["platformFamily", "platformOs"],
+    appServer: [
+      "touched",
+      "modelTraffic",
+      "commandTraffic",
+      "skillsExtraRootsTraffic",
+      "auditedMethods",
+    ],
+    action: [
+      "type",
+      "method",
+      "execution",
+      "skillsExtraRootsClear",
+      "appServerTouched",
+      "modelTraffic",
+      "reason",
+    ],
+    target: [
+      "requestedExtraRootCount",
+      "browserRootsAccepted",
+      "extraRootsReturned",
+      "pathsReturned",
+      "rawPayloadReturned",
+    ],
+    skillsExtraRootsClear: [
+      "method",
+      "status",
+      "requestedExtraRootCount",
+      "responseObject",
+      "responseTopLevelKeyCount",
+      "extraRootsReturned",
+      "pathsReturned",
+      "rawPayloadReturned",
+    ],
+    result: [
+      "status",
+      "requestedExtraRootCount",
+      "responseObject",
+      "responseTopLevelKeyCount",
+      "extraRootsReturned",
+      "pathsReturned",
+      "rawPayloadReturned",
+      "fullIdsReturned",
+      "threadContentReturned",
+    ],
+    preflight: [
+      "tokenConsumed",
+      "tokenReturned",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseEnforced",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "modelTraffic",
+      "commandTraffic",
+      "skillsExtraRootsClear",
+      "skillsExtraRootsClearEnabled",
+      "browserRootsAccepted",
+      "extraRootsReturned",
+      "pathsReturned",
+      "rawPayloadsReturned",
+      "preflightTokenReturned",
+      "preflightTokenRequired",
+      "auditLogPersistent",
+      "auditLogPathReturned",
+      "auditLogWritableChecked",
+      "auditLogWritten",
+      "requiresExplicitEnablement",
+      "executionRouteImplemented",
+      "executionGateEnabled",
+      "browserMethodCallsAccepted",
+      "implemented",
+    ],
+  }),
   "/api/config-value-preflight": responseNestedKeySchemas({
     workspace: ["id", "label", "isDefault"],
     appServer: ["touched", "modelTraffic", "commandTraffic", "settingsTraffic"],
@@ -8120,6 +8270,16 @@ const BROWSER_POST_RESPONSE_ROUTE_TOP_LEVEL_KEYS = Object.freeze({
     "skillsConfigWrite",
     "result",
   ),
+  "/api/skills-extra-roots-clear-preflight": routeResponseTopLevelKeys(
+    ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
+    "skillsExtraRootsClear",
+  ),
+  "/api/skills-extra-roots-clear": routeResponseTopLevelKeys(
+    ...RESPONSE_APP_SERVER_MUTATION_TOP_LEVEL_KEYS,
+    "target",
+    "skillsExtraRootsClear",
+    "result",
+  ),
   "/api/integration-action-preflight": routeResponseTopLevelKeys(
     ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
     "integrationAction",
@@ -8280,6 +8440,7 @@ export function createDevServer({
   pluginUninstallFn = runPluginUninstallProbe,
   processSpawnFn = runProcessSpawnProbe,
   skillsConfigWriteFn = runSkillsConfigWriteProbe,
+  skillsExtraRootsClearFn = runSkillsExtraRootsClearProbe,
   loadedSessionsFn = runLoadedSessionsProbe,
   liveSessionControlFn = runLiveSessionControlProbe,
   terminalCommandFn = runTerminalCommandExecProbe,
@@ -8346,6 +8507,8 @@ export function createDevServer({
   ),
   pluginShareListEnabled = process.env.CODEX_APP_PORT_ALLOW_PLUGIN_SHARE_LIST === "1",
   skillsConfigWriteEnabled = process.env.CODEX_APP_PORT_ALLOW_SKILLS_CONFIG_WRITE === "1",
+  skillsExtraRootsClearEnabled =
+    process.env.CODEX_APP_PORT_ALLOW_SKILLS_EXTRA_ROOTS_CLEAR === "1",
   loadedSessionsEnabled = process.env.CODEX_APP_PORT_ALLOW_LOADED_SESSIONS === "1",
   liveSessionControlEnabled = process.env.CODEX_APP_PORT_ALLOW_LIVE_SESSION_CONTROL === "1",
   liveSessionBulkControlEnabled =
@@ -8433,6 +8596,7 @@ export function createDevServer({
       pluginUninstallFn,
       processSpawnFn,
       skillsConfigWriteFn,
+      skillsExtraRootsClearFn,
       loadedSessionsFn,
       liveSessionControlFn,
       terminalCommandFn,
@@ -8485,6 +8649,7 @@ export function createDevServer({
       pluginUninstallAllowlist,
       pluginShareListEnabled,
       skillsConfigWriteEnabled,
+      skillsExtraRootsClearEnabled,
       loadedSessionsEnabled,
       liveSessionControlEnabled,
       liveSessionBulkControlEnabled,
@@ -12291,6 +12456,96 @@ export async function handleRequest(request, response, options) {
     return;
   }
 
+  if (url.pathname === "/api/skills-extra-roots-clear-preflight") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, ["workspace"]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const payload = buildSkillsExtraRootsClearPreflight(body, {
+        workspace,
+        skillsExtraRootsClearEnabled: options.skillsExtraRootsClearEnabled,
+      });
+      const attached = attachActionPreflight(payload, { body, workspace, options });
+      options.integrationPreflightLedger?.record(attached);
+      sendJson(response, 200, attached);
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error:
+          cleanDisplayText(error.message, 200) ??
+          "Invalid skills extra roots clear preflight request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/skills-extra-roots-clear") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, ["workspace", "preflightToken"]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const preflightBody = stripActionPreflightControlFields(body);
+      const preflightPayload = buildSkillsExtraRootsClearPreflight(preflightBody, {
+        workspace,
+        skillsExtraRootsClearEnabled: options.skillsExtraRootsClearEnabled,
+      });
+      if (!preflightPayload.policy.executionGateEnabled) {
+        sendJson(response, 403, buildSkillsExtraRootsClearBlocked(preflightPayload));
+        return;
+      }
+      const consumedPreflight = options.preflightRegistry.consume({
+        token: validateActionPreflightToken(body.preflightToken),
+        kind: preflightPayload.action.type,
+        workspace,
+        intent: actionPreflightIntent(preflightBody, preflightPayload),
+      });
+      const auditLogWritableChecked = ensureActionAuditLogWritable(options.actionAuditLog);
+      const payload = await options.skillsExtraRootsClearFn({
+        codexBin: options.codexBin,
+        cwd: workspace.cwd,
+        timeoutMs: options.timeoutMs,
+      });
+      const sanitized = sanitizeSkillsExtraRootsClearPayload(payload, {
+        workspace,
+        consumedPreflight,
+        actionAuditLog: options.actionAuditLog,
+        auditLogWritableChecked,
+      });
+      sanitized.policy.auditLogWritten = writeActionAuditLog(options.actionAuditLog, sanitized);
+      sendJson(response, 200, sanitized);
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid skills extra roots clear request",
+      });
+    }
+    return;
+  }
+
   if (url.pathname === "/api/integration-action-preflight") {
     if (request.method !== "POST") {
       sendJson(response, 405, { ok: false, error: "Method not allowed" });
@@ -12821,6 +13076,7 @@ export async function handleRequest(request, response, options) {
             pluginUninstallEnabled: options.pluginUninstallEnabled,
             pluginShareListEnabled: options.pluginShareListEnabled,
             skillsConfigWriteEnabled: options.skillsConfigWriteEnabled,
+            skillsExtraRootsClearEnabled: options.skillsExtraRootsClearEnabled,
             integrationPreflightHistory,
             integrationPreflightConfirmationHistory,
             accountLoginFlowSummary,
@@ -12850,6 +13106,7 @@ export async function handleRequest(request, response, options) {
           pluginUninstallEnabled: options.pluginUninstallEnabled,
           pluginShareListEnabled: options.pluginShareListEnabled,
           skillsConfigWriteEnabled: options.skillsConfigWriteEnabled,
+          skillsExtraRootsClearEnabled: options.skillsExtraRootsClearEnabled,
           integrationPreflightHistory,
           integrationPreflightConfirmationHistory,
           accountLoginFlowSummary,
@@ -13328,6 +13585,11 @@ async function buildConfirmableActionPreflightPayload(actionType, body, { worksp
         workspace,
         skillsConfigWriteEnabled: options.skillsConfigWriteEnabled,
       });
+    case "skills-extra-roots-clear-preflight":
+      return buildSkillsExtraRootsClearPreflight(body, {
+        workspace,
+        skillsExtraRootsClearEnabled: options.skillsExtraRootsClearEnabled,
+      });
     case "integration-action-preflight":
       return buildIntegrationActionPreflight(body, { workspace });
     default:
@@ -13404,6 +13666,7 @@ function isIntegrationPreflightActionType(actionType) {
     actionType === "plugin-uninstall-preflight" ||
     actionType === "plugin-content-preflight" ||
     actionType === "skills-config-preflight" ||
+    actionType === "skills-extra-roots-clear-preflight" ||
     actionType === "integration-action-preflight"
   );
 }
@@ -13468,6 +13731,8 @@ function actionAuditEvent(record) {
       return "process-spawn-recorded";
     case "skills-config-write":
       return "skills-config-write-recorded";
+    case "skills-extra-roots-clear":
+      return "skills-extra-roots-clear-recorded";
     case "terminal-background-clean":
       return "terminal-background-clean-recorded";
     case "terminal-background-terminate":
@@ -21638,6 +21903,201 @@ function summarizeSkillsConfigWriteResult(value) {
   };
 }
 
+export function buildSkillsExtraRootsClearPreflight(
+  _body,
+  { workspace, skillsExtraRootsClearEnabled = false } = {},
+) {
+  const methodAudit = integrationMethodAudit();
+  const auditEntry = methodAudit.find((entry) => entry.method === "skills/extraRoots/set");
+  const executionGateEnabled = Boolean(skillsExtraRootsClearEnabled);
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: publicWorkspaces([workspace])[0],
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      skillsExtraRootsTraffic: false,
+    },
+    action: {
+      type: "skills-extra-roots-clear-preflight",
+      method: "skills/extraRoots/set",
+      category: auditEntry?.category ?? "skills-write",
+      execution: executionGateEnabled ? "requires-confirmation" : "blocked",
+      wouldClearExtraRoots: false,
+      appServerTouched: false,
+      modelTraffic: false,
+      reason: executionGateEnabled
+        ? "skills-extra-roots-clear-requires-preflight-token"
+        : "skills-extra-roots-clear-disabled",
+    },
+    skillsExtraRootsClear: {
+      requestedExtraRootCount: 0,
+      browserRootsAccepted: false,
+      extraRootsReturned: false,
+      pathsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: false,
+      skillsExtraRootsClear: false,
+      skillsExtraRootsClearEnabled: executionGateEnabled,
+      executionRouteImplemented: true,
+      executionGateEnabled,
+      browserRootsAccepted: false,
+      extraRootsReturned: false,
+      pathsReturned: false,
+      rawPayloadsReturned: false,
+      requiresApprovalPipeline: true,
+      requiresIntegrationProvenance: true,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: executionGateEnabled,
+      implemented: true,
+    },
+  };
+}
+
+function buildSkillsExtraRootsClearBlocked(preflightPayload) {
+  return {
+    ok: false,
+    generatedAt: new Date().toISOString(),
+    workspace: preflightPayload.workspace,
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      skillsExtraRootsTraffic: false,
+    },
+    action: {
+      type: "skills-extra-roots-clear",
+      method: "skills/extraRoots/set",
+      execution: "blocked",
+      skillsExtraRootsClear: false,
+      appServerTouched: false,
+      modelTraffic: false,
+      reason: "skills-extra-roots-clear-disabled",
+    },
+    skillsExtraRootsClear: {
+      method: "skills/extraRoots/set",
+      status: "blocked",
+      requestedExtraRootCount: 0,
+      responseObject: false,
+      responseTopLevelKeyCount: 0,
+      extraRootsReturned: false,
+      pathsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: false,
+      skillsExtraRootsClear: false,
+      skillsExtraRootsClearEnabled: false,
+      executionRouteImplemented: true,
+      executionGateEnabled: false,
+      browserRootsAccepted: false,
+      extraRootsReturned: false,
+      pathsReturned: false,
+      rawPayloadsReturned: false,
+      requiresExplicitEnablement: true,
+      preflightTokenRequired: true,
+      implemented: true,
+    },
+  };
+}
+
+function sanitizeSkillsExtraRootsClearPayload(
+  payload,
+  { workspace, consumedPreflight = null, actionAuditLog = null, auditLogWritableChecked = false } = {},
+) {
+  const summary = summarizeSkillsExtraRootsClearResult(payload?.probes?.skillsExtraRootsClear);
+  return {
+    ok: Boolean(payload?.ok),
+    generatedAt: payload?.generatedAt ?? new Date().toISOString(),
+    transport: cleanDisplayText(payload?.transport, 80),
+    protocol: cleanDisplayText(payload?.protocol, 80),
+    initialize: sanitizeInitialize(payload?.initialize),
+    workspace: publicWorkspaces([workspace])[0],
+    appServer: {
+      touched: true,
+      modelTraffic: false,
+      commandTraffic: false,
+      skillsExtraRootsTraffic: true,
+      auditedMethods: ["skills/extraRoots/set"],
+    },
+    action: {
+      type: "skills-extra-roots-clear",
+      method: "skills/extraRoots/set",
+      execution: "completed",
+      skillsExtraRootsClear: true,
+      appServerTouched: true,
+      modelTraffic: false,
+    },
+    target: {
+      requestedExtraRootCount: 0,
+      browserRootsAccepted: false,
+      extraRootsReturned: false,
+      pathsReturned: false,
+      rawPayloadReturned: false,
+    },
+    skillsExtraRootsClear: {
+      method: "skills/extraRoots/set",
+      status: summary.status,
+      requestedExtraRootCount: 0,
+      responseObject: summary.responseObject,
+      responseTopLevelKeyCount: summary.responseTopLevelKeyCount,
+      extraRootsReturned: false,
+      pathsReturned: false,
+      rawPayloadReturned: false,
+    },
+    result: {
+      status: summary.status,
+      requestedExtraRootCount: 0,
+      responseObject: summary.responseObject,
+      responseTopLevelKeyCount: summary.responseTopLevelKeyCount,
+      extraRootsReturned: false,
+      pathsReturned: false,
+      rawPayloadReturned: false,
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    },
+    preflight: buildConsumedPreflightSummary(consumedPreflight),
+    policy: {
+      readOnly: false,
+      appServerTraffic: true,
+      modelTraffic: false,
+      commandTraffic: false,
+      skillsExtraRootsClear: true,
+      skillsExtraRootsClearEnabled: true,
+      browserRootsAccepted: false,
+      extraRootsReturned: false,
+      pathsReturned: false,
+      rawPayloadsReturned: false,
+      preflightTokenReturned: false,
+      preflightTokenRequired: true,
+      auditLogPersistent: Boolean(actionAuditLog?.persistent),
+      auditLogPathReturned: false,
+      auditLogWritableChecked: Boolean(auditLogWritableChecked),
+      auditLogWritten: false,
+      requiresExplicitEnablement: true,
+      executionRouteImplemented: true,
+      executionGateEnabled: true,
+      browserMethodCallsAccepted: true,
+      implemented: true,
+    },
+    notifications: sanitizeNotificationCounts(payload?.notifications),
+  };
+}
+
+function summarizeSkillsExtraRootsClearResult(value) {
+  return {
+    status: cleanDisplayText(value?.status, 80) ?? "cleared",
+    responseObject: Boolean(value?.responseObject),
+    responseTopLevelKeyCount: safeCount(value?.responseTopLevelKeyCount),
+  };
+}
+
 export function buildIntegrationActionPreflight(body, { workspace }) {
   const methodAudit = integrationMethodAudit();
   const method = validateIntegrationMutationMethod(body?.method, methodAudit);
@@ -22591,6 +23051,7 @@ export function sanitizeSettingsIntegrationsPayload(
     pluginUninstallEnabled = false,
     pluginShareListEnabled = false,
     skillsConfigWriteEnabled = false,
+    skillsExtraRootsClearEnabled = false,
     integrationPreflightHistory = [],
     integrationPreflightConfirmationHistory = [],
     accountLoginFlowSummary = null,
@@ -22639,6 +23100,7 @@ export function sanitizeSettingsIntegrationsPayload(
     pluginUninstallEnabled,
     pluginShareListEnabled,
     skillsConfigWriteEnabled,
+    skillsExtraRootsClearEnabled,
     namesReturned,
   });
   const result = {
@@ -22779,16 +23241,22 @@ export function sanitizeSettingsIntegrationsPayload(
           : "external-agent-config-detect-unavailable",
       },
       skills: {
-        state: inventory.skills.ok || skillsConfigWriteEnabled ? "partial" : "blocked",
+        state:
+          inventory.skills.ok || skillsConfigWriteEnabled || skillsExtraRootsClearEnabled
+            ? "partial"
+            : "blocked",
         listingAvailable: inventory.skills.ok,
         configWriteEnabled: Boolean(skillsConfigWriteEnabled),
+        extraRootsClearEnabled: Boolean(skillsExtraRootsClearEnabled),
         installEnabled: false,
         executionEnabled: false,
-        mutationEnabled: Boolean(skillsConfigWriteEnabled),
+        mutationEnabled: Boolean(skillsConfigWriteEnabled || skillsExtraRootsClearEnabled),
         reason: inventory.skills.ok
           ? inventory.skills.namesReturned
             ? "names-and-counts"
             : "counts-only"
+          : skillsExtraRootsClearEnabled
+            ? "extra-roots-clear-opt-in-only"
           : "skills-list-unavailable",
       },
       plugins: {
@@ -28044,6 +28512,7 @@ export function buildSettingsIntegrations({
   pluginUninstallEnabled = false,
   pluginShareListEnabled = false,
   skillsConfigWriteEnabled = false,
+  skillsExtraRootsClearEnabled = false,
   integrationPreflightHistory = [],
   integrationPreflightConfirmationHistory = [],
   accountLoginFlowSummary = null,
@@ -28077,6 +28546,7 @@ export function buildSettingsIntegrations({
     pluginUninstallEnabled,
     pluginShareListEnabled,
     skillsConfigWriteEnabled,
+    skillsExtraRootsClearEnabled,
   });
   const result = {
     ok: true,
@@ -28179,12 +28649,13 @@ export function buildSettingsIntegrations({
         reason: "requires-explicit-inventory-enable",
       },
       skills: {
-        state: skillsConfigWriteEnabled ? "partial" : "blocked",
+        state: skillsConfigWriteEnabled || skillsExtraRootsClearEnabled ? "partial" : "blocked",
         listingAvailable: false,
         configWriteEnabled: Boolean(skillsConfigWriteEnabled),
+        extraRootsClearEnabled: Boolean(skillsExtraRootsClearEnabled),
         installEnabled: false,
         executionEnabled: false,
-        mutationEnabled: Boolean(skillsConfigWriteEnabled),
+        mutationEnabled: Boolean(skillsConfigWriteEnabled || skillsExtraRootsClearEnabled),
         reason: "requires-explicit-inventory-enable",
       },
       plugins: {
@@ -28309,6 +28780,7 @@ function buildIntegrationActionScope({
   pluginUninstallEnabled = false,
   pluginShareListEnabled = false,
   skillsConfigWriteEnabled = false,
+  skillsExtraRootsClearEnabled = false,
   namesReturned = false,
 } = {}) {
   const readMethods = [
@@ -28340,6 +28812,7 @@ function buildIntegrationActionScope({
     pluginContentReadEnabled ? "plugin/skill/read" : null,
     pluginShareListEnabled ? "plugin/share/list" : null,
     skillsConfigWriteEnabled ? "skills/config/write" : null,
+    skillsExtraRootsClearEnabled ? "skills/extraRoots/set" : null,
   ].filter(Boolean);
   const blockedMutationMethods = blockedIntegrationMutationMethods();
   return {
@@ -28373,6 +28846,7 @@ function buildIntegrationActionScope({
     appAuthLinkingEnabled: false,
     externalConfigImportEnabled: false,
     skillsConfigWriteEnabled: Boolean(skillsConfigWriteEnabled),
+    skillsExtraRootsClearEnabled: Boolean(skillsExtraRootsClearEnabled),
     pluginReadEnabled: Boolean(pluginReadEnabled),
     pluginUninstallEnabled: Boolean(pluginUninstallEnabled),
     pluginInstallEnabled: false,

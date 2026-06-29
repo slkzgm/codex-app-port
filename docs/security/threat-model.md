@@ -372,6 +372,14 @@
   Responses and action audit records may expose only target/argument counts and
   the effective enabled boolean; they must not expose skill names, paths,
   argument text, preflight tokens, or raw app-server payloads.
+- Browser-facing `skills/extraRoots/set` must stay blocked as a generic
+  mutation. The only allowed route is the disabled-by-default clear action:
+  when `CODEX_APP_PORT_ALLOW_SKILLS_EXTRA_ROOTS_CLEAR=1` is enabled,
+  `/api/skills-extra-roots-clear` must consume a matching one-time preflight
+  token, reject all browser roots/paths/arguments, and call app-server only with
+  `{"extraRoots":[]}`. Responses and action audit records may expose only
+  status/count/shape metadata; they must not expose extra roots, paths,
+  notifications, preflight tokens, or raw app-server payloads.
 - Browser-facing `config/value/write` must be blocked by default and opt-in
   only. When `CODEX_APP_PORT_ALLOW_CONFIG_VALUE_WRITE=1` is enabled,
   `/api/config-value-write` must require an exact

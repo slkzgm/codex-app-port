@@ -90,5 +90,10 @@ Target parity with the Codex desktop workflow:
   controls by omission from the route contract, and returns only suffix/status
   metadata, not full ids, paths, settings payloads, preflight tokens, or raw
   payloads.
+- `skills/extraRoots/set` has a separate disabled-by-default clear-only path
+  behind `CODEX_APP_PORT_ALLOW_SKILLS_EXTRA_ROOTS_CLEAR=1`; it consumes a
+  matching one-time preflight token, accepts no browser roots/paths/arguments,
+  sends only `{"extraRoots":[]}`, and returns only status/count/shape metadata,
+  not extra roots, paths, notifications, preflight tokens, or raw payloads.
 - The referenced unofficial Linux port converts the macOS DMG into a Linux
   Electron bundle and patches/stubs platform-specific pieces.

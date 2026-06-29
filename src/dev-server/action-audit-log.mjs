@@ -32,6 +32,7 @@ const ACTION_AUDIT_EVENTS = new Set([
   "plugin-uninstall-recorded",
   "process-spawn-recorded",
   "skills-config-write-recorded",
+  "skills-extra-roots-clear-recorded",
   "terminal-background-clean-recorded",
   "terminal-background-terminate-recorded",
   "terminal-control-recorded",
@@ -135,6 +136,10 @@ export function sanitizeActionAuditRecord(record, { generatedAt = null } = {}) {
         actionType === "plugin-uninstall" ? Boolean(appServer.pluginMutationTraffic) : false,
       skillsConfigTraffic:
         actionType === "skills-config-write" ? Boolean(appServer.skillsConfigTraffic) : false,
+      skillsExtraRootsTraffic:
+        actionType === "skills-extra-roots-clear"
+          ? Boolean(appServer.skillsExtraRootsTraffic)
+          : false,
       auditedMethods: sanitizeMethodList(appServer.auditedMethods),
     },
     target: sanitizeTarget(target, actionType),
@@ -216,6 +221,8 @@ function actionAuditEvent(actionType) {
       return "process-spawn-recorded";
     case "skills-config-write":
       return "skills-config-write-recorded";
+    case "skills-extra-roots-clear":
+      return "skills-extra-roots-clear-recorded";
     case "terminal-background-clean":
       return "terminal-background-clean-recorded";
     case "terminal-background-terminate":
@@ -429,6 +436,16 @@ function sanitizeAction(action, actionType, { appServer }) {
       method: "skills/config/write",
       execution: safeString(action.execution, 40) ?? "completed",
       skillsConfigWrite: Boolean(action.skillsConfigWrite),
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: false,
+    };
+  }
+  if (actionType === "skills-extra-roots-clear") {
+    return {
+      type: "skills-extra-roots-clear",
+      method: "skills/extraRoots/set",
+      execution: safeString(action.execution, 40) ?? "completed",
+      skillsExtraRootsClear: Boolean(action.skillsExtraRootsClear),
       appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
       modelTraffic: false,
     };
@@ -771,6 +788,15 @@ function sanitizeTarget(target, actionType) {
       argumentTextReturned: false,
       namesReturned: false,
       pathsReturned: false,
+    };
+  }
+  if (actionType === "skills-extra-roots-clear") {
+    return {
+      requestedExtraRootCount: 0,
+      browserRootsAccepted: false,
+      extraRootsReturned: false,
+      pathsReturned: false,
+      rawPayloadReturned: false,
     };
   }
   if (actionType === "terminal-command") {
@@ -1150,6 +1176,19 @@ function sanitizeResult(result, actionType) {
       threadContentReturned: false,
     };
   }
+  if (actionType === "skills-extra-roots-clear") {
+    return {
+      status: safeString(result.status, 80) ?? "cleared",
+      requestedExtraRootCount: 0,
+      responseObject: Boolean(result.responseObject),
+      responseTopLevelKeyCount: safeCount(result.responseTopLevelKeyCount),
+      extraRootsReturned: false,
+      pathsReturned: false,
+      rawPayloadReturned: false,
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
   if (actionType === "terminal-command") {
     return {
       status: safeString(result.status, 80) ?? "completed",
@@ -1387,6 +1426,7 @@ function sanitizeActionType(value) {
     "plugin-uninstall",
     "process-spawn",
     "skills-config-write",
+    "skills-extra-roots-clear",
     "terminal-control",
     "terminal-background-clean",
     "terminal-background-terminate",

@@ -402,6 +402,15 @@ with `{"enabled":boolean}`, rejects path selectors and unknown keys before
 app-server traffic, and returns only target/argument counts plus the effective
 enabled boolean. Skill names, paths, argument text, tokens, and raw payloads
 remain omitted from responses and action audit records.
+`skills/extraRoots/set` remains blocked as a generic browser mutation and is
+exposed only through the dedicated local clear pair:
+`/api/skills-extra-roots-clear-preflight` and
+`/api/skills-extra-roots-clear`. The action route is disabled unless
+`CODEX_APP_PORT_ALLOW_SKILLS_EXTRA_ROOTS_CLEAR=1` is set, requires a matching
+one-time preflight token, accepts no browser roots/paths/arguments, calls
+app-server only with `{"extraRoots":[]}`, and returns status/count/shape
+metadata only. Extra roots, paths, notifications, tokens, and raw payloads
+remain omitted from responses and action audit records.
 `config/value/write` is exposed only through the dedicated local
 `/api/config-value-preflight` and `/api/config-value-write` pair. The write
 route is disabled unless `CODEX_APP_PORT_ALLOW_CONFIG_VALUE_WRITE=1` is set,

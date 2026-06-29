@@ -532,6 +532,15 @@ app-server call uses the skill name selector only, and responses plus action
 audit records return only target/argument counts and the effective enabled
 boolean; skill names, paths, argument text, tokens, and raw payloads stay
 omitted.
+Skills extra roots clear is a separate disabled-by-default action.
+`/api/skills-extra-roots-clear-preflight` accepts no target paths, and
+`/api/skills-extra-roots-clear` can call `skills/extraRoots/set` only when
+`CODEX_APP_PORT_ALLOW_SKILLS_EXTRA_ROOTS_CLEAR=1` is set and a matching
+one-time preflight token is supplied. The app-server call is fixed to
+`{"extraRoots":[]}`; browser-provided roots, paths, or arguments are rejected
+before app-server traffic, and responses plus action audit records return only
+status/count/shape metadata without extra roots, paths, tokens, or raw
+payloads.
 Config value preflight accepts only a safe dotted key path, JSON-text value, and
 `replace` or `upsert` merge strategy, then returns key/value shape counts only.
 `/api/config-value-write` can execute `config/value/write` only when

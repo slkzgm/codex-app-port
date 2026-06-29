@@ -135,6 +135,10 @@ test("action audit log writes sanitized local mutation JSONL", async () => {
       payload: threadSafetyLockPayload(),
     });
     log.append({
+      event: "skills-extra-roots-clear-recorded",
+      payload: skillsExtraRootsClearPayload(),
+    });
+    log.append({
       event: "thread-compact-recorded",
       payload: threadCompactPayload(),
     });
@@ -143,7 +147,7 @@ test("action audit log writes sanitized local mutation JSONL", async () => {
       .trim()
       .split("\n")
       .map((line) => JSON.parse(line));
-    assert.equal(records.length, 8);
+    assert.equal(records.length, 9);
     assert.equal(records[0].event, "file-action-recorded");
     assert.equal(records[0].action.fileAction, "writeFile");
     assert.equal(records[0].target.depth, 2);
@@ -189,13 +193,23 @@ test("action audit log writes sanitized local mutation JSONL", async () => {
     assert.equal(records[6].target.sandboxPolicyType, "readOnly");
     assert.equal(records[6].result.locked, true);
     assert.equal(records[6].result.threadContentReturned, false);
-    assert.equal(records[7].event, "thread-compact-recorded");
-    assert.equal(records[7].action.type, "thread-compact");
-    assert.equal(records[7].action.method, "thread/compact/start");
-    assert.equal(records[7].action.modelTraffic, true);
-    assert.equal(records[7].target.threadIdSuffix, "feedbeef");
-    assert.equal(records[7].result.loadedSessionCount, 1);
-    assert.equal(records[7].result.threadContentReturned, false);
+    assert.equal(records[7].event, "skills-extra-roots-clear-recorded");
+    assert.equal(records[7].action.type, "skills-extra-roots-clear");
+    assert.equal(records[7].action.method, "skills/extraRoots/set");
+    assert.equal(records[7].action.skillsExtraRootsClear, true);
+    assert.equal(records[7].appServer.skillsExtraRootsTraffic, true);
+    assert.equal(records[7].target.requestedExtraRootCount, 0);
+    assert.equal(records[7].target.browserRootsAccepted, false);
+    assert.equal(records[7].result.status, "cleared");
+    assert.equal(records[7].result.extraRootsReturned, false);
+    assert.equal(records[7].result.pathsReturned, false);
+    assert.equal(records[8].event, "thread-compact-recorded");
+    assert.equal(records[8].action.type, "thread-compact");
+    assert.equal(records[8].action.method, "thread/compact/start");
+    assert.equal(records[8].action.modelTraffic, true);
+    assert.equal(records[8].target.threadIdSuffix, "feedbeef");
+    assert.equal(records[8].result.loadedSessionCount, 1);
+    assert.equal(records[8].result.threadContentReturned, false);
 
     const serialized = JSON.stringify(records);
     for (const marker of [
@@ -215,6 +229,8 @@ test("action audit log writes sanitized local mutation JSONL", async () => {
       "Sensitive rollback content",
       "Sensitive safety lock content",
       "safety-lock-secret",
+      "private-extra-roots-secret",
+      "private-extra-root",
       "rollback-secret",
       "Sensitive compacted content",
       "private@example.com",
@@ -741,6 +757,56 @@ function threadSafetyLockPayload() {
       token: "preflight-private-token",
       scope: {
         kind: "thread-safety-lock-preflight",
+        workspaceId: "default",
+      },
+      oneTimeUseEnforced: true,
+    },
+  };
+}
+
+function skillsExtraRootsClearPayload() {
+  return {
+    ok: true,
+    workspace: {
+      id: "default",
+      label: "codex-app-port-test",
+      isDefault: true,
+      cwd: "/tmp/private-workspace",
+    },
+    appServer: {
+      touched: true,
+      modelTraffic: false,
+      commandTraffic: false,
+      skillsExtraRootsTraffic: true,
+      auditedMethods: ["skills/extraRoots/set"],
+    },
+    action: {
+      type: "skills-extra-roots-clear",
+      method: "skills/extraRoots/set",
+      execution: "completed",
+      skillsExtraRootsClear: true,
+      appServerTouched: true,
+      modelTraffic: false,
+    },
+    target: {
+      requestedExtraRootCount: 0,
+      browserRootsAccepted: false,
+      extraRoots: ["/tmp/private-workspace/private-extra-root"],
+      privateSettings: "private-extra-roots-secret",
+    },
+    result: {
+      status: "cleared",
+      requestedExtraRootCount: 0,
+      responseObject: true,
+      responseTopLevelKeyCount: 3,
+      extraRoots: ["/tmp/private-workspace/private-extra-root"],
+      privateSettings: "private-extra-roots-secret",
+    },
+    preflight: {
+      tokenConsumed: true,
+      token: "preflight-private-token",
+      scope: {
+        kind: "skills-extra-roots-clear-preflight",
         workspaceId: "default",
       },
       oneTimeUseEnforced: true,
