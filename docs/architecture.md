@@ -408,7 +408,11 @@ Current M1 status:
   tokens to the browser after a decision is recorded
 - done: read-only `/api/settings-integrations` boundary for
   Settings/Auth/Apps/MCP/Skills/Plugins, with auth callbacks, installs, tool
-  invocation, mutations, filesystem reads, and app-server traffic disabled
+  invocation, mutations, filesystem reads, and app-server traffic disabled; the
+  UI includes a client-only manual refresh control and Ready/Refreshing/Failed
+  status that reuses the same sanitized endpoint without adding API fields,
+  tokens, names, targets, argument text, resource content, skill content, URLs,
+  paths, secrets, or raw payloads
 - done: opt-in `/api/account-login-start` path behind
   `CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN=1`, with matching one-time
   account-login-preflight token consumption, `account/login/start` device-code

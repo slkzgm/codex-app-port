@@ -157,6 +157,8 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /approval-safe-accept-count/);
     assert.match(html, /approval-managed-count/);
     assert.match(html, /approval-preview-count/);
+    assert.match(html, /settings-refresh-button/);
+    assert.match(html, /settings-refresh-state/);
     assert.match(html, /approval-filter-summary/);
     assert.match(html, /approval-execution-readiness/);
     assert.match(html, /approval-decision-contract/);
@@ -193,6 +195,8 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(appScript, /approvalInteractionContractText/);
     assert.match(appScript, /runThreadServerSearch/);
     assert.match(appScript, /renderThreadServerSearch/);
+    assert.match(appScript, /manualRefreshSettingsIntegrations/);
+    assert.match(appScript, /setSettingsRefreshState/);
     assert.match(appScript, /turnExecutionAuthorityText/);
     assert.match(appScript, /turnSessionReadinessText/);
     assert.match(appScript, /turnSessionRoutingContractText/);

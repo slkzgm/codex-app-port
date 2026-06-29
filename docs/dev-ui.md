@@ -530,6 +530,11 @@ linking/installs, ungated MCP tool/resource calls, ungated MCP server reloads,
 config writes, ungated config-value writes, ungated config-batch writes, ungated skill config writes, plugin
 installs/uninstalls/sharing, and marketplace mutations. It performs no filesystem reads, no app-server
 traffic, no installs, no callbacks, and no tool invocation.
+The Settings & Integrations panel has a dedicated manual refresh control and
+Manual/Ready/Refreshing/Failed status. That control calls only the existing
+sanitized `/api/settings-integrations` route and does not add API fields,
+tokens, names, targets, argument text, resource content, skill content, URLs,
+paths, secrets, or raw payloads.
 It also exposes a compact integration scope summary with active read methods,
 local preflight/login/login-cancel/logout gates, and blocked mutation method
 names/counts. That summary still omits secrets, auth tokens, paths, URLs, hook commands,

@@ -36843,6 +36843,9 @@ async function readUiSessionToken(baseUrl) {
   if (!html.includes("approval-refresh-button") || !html.includes("approval-refresh-state")) {
     throw new Error("dev server UI is missing the approval refresh control");
   }
+  if (!html.includes("settings-refresh-button") || !html.includes("settings-refresh-state")) {
+    throw new Error("dev server UI is missing the settings refresh control");
+  }
   const appResponse = await fetch(`${baseUrl}/assets/app.js`);
   if (!appResponse.ok) {
     throw new Error(`dev server UI script returned HTTP ${appResponse.status}`);
@@ -36860,6 +36863,8 @@ async function readUiSessionToken(baseUrl) {
     "approvalInteractionContractText",
     "manualRefreshApprovalDecisions",
     "setApprovalRefreshState",
+    "manualRefreshSettingsIntegrations",
+    "setSettingsRefreshState",
     "turnExecutionAuthorityText",
     "turnSessionReadinessText",
     "turnSessionRoutingContractText",

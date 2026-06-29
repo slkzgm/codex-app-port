@@ -10,6 +10,8 @@ const elements = {
   sandboxText: document.querySelector("#sandbox-text"),
   approvalText: document.querySelector("#approval-text"),
   settingsStateText: document.querySelector("#settings-state-text"),
+  settingsRefreshButton: document.querySelector("#settings-refresh-button"),
+  settingsRefreshState: document.querySelector("#settings-refresh-state"),
   settingsSourceText: document.querySelector("#settings-source-text"),
   requirementsStateText: document.querySelector("#requirements-state-text"),
   modelInventoryStateText: document.querySelector("#model-inventory-state-text"),
@@ -1125,6 +1127,10 @@ for (const input of [
 
 elements.fileActionButton.addEventListener("click", () => {
   runFileAction();
+});
+
+elements.settingsRefreshButton.addEventListener("click", () => {
+  manualRefreshSettingsIntegrations();
 });
 
 elements.mcpToolForm.addEventListener("submit", (event) => {
@@ -2270,6 +2276,26 @@ async function refreshSettingsIntegrations() {
   }
 
   renderSettingsIntegrations(payload);
+}
+
+async function manualRefreshSettingsIntegrations() {
+  elements.settingsRefreshButton.disabled = true;
+  setSettingsRefreshState("Refreshing");
+  hideError();
+
+  try {
+    await refreshSettingsIntegrations();
+    setSettingsRefreshState("Ready");
+  } catch (error) {
+    setSettingsRefreshState("Failed");
+    renderError(error);
+  } finally {
+    elements.settingsRefreshButton.disabled = false;
+  }
+}
+
+function setSettingsRefreshState(state) {
+  elements.settingsRefreshState.textContent = state;
 }
 
 async function runMcpToolPreflight() {
