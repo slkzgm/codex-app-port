@@ -64,6 +64,7 @@ async function main() {
   await checkGitCommitPreflightApi();
   await checkGitWorktreePreflightApi();
   await checkThreadDetailApi();
+  await checkThreadGoalApi();
   await checkThreadTranscriptApi();
   await checkThreadChangesApi();
   await checkEventStreamApi();
@@ -11061,6 +11062,87 @@ async function checkThreadDetailApi() {
     await closeServer(server);
   }
   pass("dev server thread detail API returns metadata only");
+}
+
+async function checkThreadGoalApi() {
+  const server = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    threadGoalEnabled: true,
+    probeFn: async () => ({
+      ok: true,
+      initialize: {
+        platformOs: "linux",
+        platformFamily: "unix",
+      },
+      probes: {
+        threads: {
+          count: 1,
+          items: [
+            {
+              idSuffix: "abcd1234",
+              hasName: true,
+              hasPreview: true,
+              cwdBasename: "codex-app-port-verify",
+            },
+          ],
+        },
+      },
+      notifications: {},
+    }),
+    threadGoalProbeFn: async () => ({
+      ok: true,
+      generatedAt: "2026-06-29T00:00:00.000Z",
+      transport: "stdio-jsonl",
+      protocol: "json-rpc-2.0-without-jsonrpc-field",
+      initialize: {
+        platformOs: "linux",
+        platformFamily: "unix",
+        userAgent: "verify-sensitive-agent",
+        codexHome: "/tmp/verify-private-home",
+      },
+      probes: {
+        threadGoal: {
+          method: "thread/goal/get",
+          threadIdSuffix: "abcd1234",
+          threadId: "private-full-thread-id-abcd1234",
+          objective: "Sensitive goal objective references /tmp/codex-app-port-verify/secret.txt",
+          goalPresent: true,
+          status: "active",
+          tokenBudgetPresent: true,
+          tokenBudget: 1000,
+          tokensUsed: 250,
+          timeUsedSeconds: 42,
+          objectiveCharCount: 78,
+          objectiveLineCount: 1,
+          createdAt: 1782726047,
+          updatedAt: 1782726048,
+          createdTimestampPresent: true,
+          updatedTimestampPresent: true,
+          objectiveReturned: true,
+          fullIdsReturned: true,
+          timestampsReturned: true,
+          rawPayloadReturned: true,
+        },
+      },
+      notifications: {},
+    }),
+  });
+  const port = await listenWithFallback(server, { host: "127.0.0.1", port: 0 });
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  try {
+    const token = await readUiSessionToken(baseUrl);
+    const response = await fetch(`${baseUrl}/api/thread-goal?thread=abcd1234`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`thread goal API returned HTTP ${response.status}`);
+    }
+    assertSanitizedThreadGoal(await response.json());
+  } finally {
+    await closeServer(server);
+  }
+  pass("dev server thread goal API returns objective-free metadata");
 }
 
 async function checkThreadTranscriptApi() {
@@ -36402,6 +36484,62 @@ function assertSanitizedThreadDetail(payload) {
   const item = detail.turns?.[0]?.items?.[0];
   if (!item || item.type !== "agentMessage" || item.hasText !== true) {
     throw new Error("thread detail payload did not preserve safe item metadata");
+  }
+}
+
+function assertSanitizedThreadGoal(payload) {
+  if (!payload.ok) {
+    throw new Error("thread goal payload is not ok");
+  }
+  const serialized = JSON.stringify(payload);
+  for (const marker of [
+    "Sensitive goal objective",
+    "secret.txt",
+    "private-full-thread-id",
+    "verify-sensitive-agent",
+    "codexHome",
+    "userAgent",
+    "/tmp/codex-app-port-verify",
+    "/tmp/verify-private-home",
+    "1782726047",
+  ]) {
+    if (serialized.includes(marker)) {
+      throw new Error(`thread goal payload leaked ${marker}`);
+    }
+  }
+  const goal = payload.probes?.threadGoal;
+  if (!goal) {
+    throw new Error("thread goal payload is missing goal metadata");
+  }
+  if (
+    goal.method !== "thread/goal/get" ||
+    goal.threadIdSuffix !== "abcd1234" ||
+    goal.goalPresent !== true ||
+    goal.status !== "active" ||
+    goal.tokenBudget !== 1000 ||
+    goal.tokensUsed !== 250 ||
+    goal.timeUsedSeconds !== 42 ||
+    goal.objectiveCharCount !== 78 ||
+    goal.objectiveReturned !== false ||
+    goal.fullIdsReturned !== false ||
+    goal.timestampsReturned !== false ||
+    goal.rawPayloadReturned !== false
+  ) {
+    throw new Error("thread goal payload did not preserve sanitized goal metadata");
+  }
+  for (const forbidden of ["id", "threadId", "objective", "createdAt", "updatedAt", "cwd", "path"]) {
+    if (Object.hasOwn(goal, forbidden)) {
+      throw new Error(`thread goal payload leaked ${forbidden}`);
+    }
+  }
+  if (
+    payload.policy?.goalReadEnabled !== true ||
+    payload.policy?.objectiveReturned !== false ||
+    payload.policy?.fullIdsReturned !== false ||
+    payload.policy?.timestampsReturned !== false ||
+    payload.policy?.rawPayloadReturned !== false
+  ) {
+    throw new Error("thread goal policy did not preserve redaction flags");
   }
 }
 

@@ -69,6 +69,11 @@ Target parity with the Codex desktop workflow:
   search term to the local app-server, but returns only counts, cursor-presence,
   and suffix/status/source metadata, not the search term, snippets, names,
   previews, full ids, paths, cursors, or raw payloads.
+- `thread/goal/get` has a separate disabled-by-default `GET /api/thread-goal`
+  path behind `CODEX_APP_PORT_ALLOW_THREAD_GOAL=1`; it resolves the target by
+  suffix through `thread/list` and returns only goal presence/status plus
+  bounded usage/count metadata, not the objective text, full ids, timestamps,
+  paths, or raw payloads.
 - `thread/delete` has a separate disabled-by-default destructive
   `POST /api/thread-delete-action` path behind
   `CODEX_APP_PORT_ALLOW_THREAD_DELETE=1`; it consumes a matching one-time

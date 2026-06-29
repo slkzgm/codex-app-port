@@ -42,6 +42,7 @@ import {
   runThreadDeleteProbe,
   runThreadDetailProbe,
   runThreadForkProbe,
+  runThreadGoalProbe,
   runThreadRenameProbe,
   runThreadRollbackProbe,
   runThreadSafetyLockProbe,
@@ -9749,6 +9750,7 @@ export function createDevServer({
   threadArchiveFn = runThreadArchiveProbe,
   threadDeleteFn = runThreadDeleteProbe,
   threadForkFn = runThreadForkProbe,
+  threadGoalProbeFn = runThreadGoalProbe,
   threadRenameFn = runThreadRenameProbe,
   threadRollbackFn = runThreadRollbackProbe,
   threadSafetyLockFn = runThreadSafetyLockProbe,
@@ -9799,6 +9801,7 @@ export function createDevServer({
   threadArchiveEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_ARCHIVE === "1",
   threadDeleteEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_DELETE === "1",
   threadForkEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_FORK === "1",
+  threadGoalEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_GOAL === "1",
   threadRenameEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_RENAME === "1",
   threadRollbackEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_ROLLBACK === "1",
   threadSafetyLockEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_SAFETY_LOCK === "1",
@@ -9932,6 +9935,7 @@ export function createDevServer({
       threadArchiveFn,
       threadDeleteFn,
       threadForkFn,
+      threadGoalProbeFn,
       threadRenameFn,
       threadRollbackFn,
       threadSafetyLockFn,
@@ -9981,6 +9985,7 @@ export function createDevServer({
       threadArchiveEnabled,
       threadDeleteEnabled,
       threadForkEnabled,
+      threadGoalEnabled,
       threadRenameEnabled,
       threadRollbackEnabled,
       threadSafetyLockEnabled,
@@ -15271,6 +15276,49 @@ export async function handleRequest(request, response, options) {
     return;
   }
 
+  if (url.pathname === "/api/thread-goal") {
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        url.searchParams.get("workspace"),
+      );
+      const threadIdSuffix = validateThreadSuffix(url.searchParams.get("thread"));
+      if (!options.threadGoalEnabled) {
+        sendJson(
+          response,
+          200,
+          buildThreadGoalBlockedPayload({ workspace, threadIdSuffix }),
+        );
+        return;
+      }
+      const payload = await options.threadGoalProbeFn({
+        codexBin: options.codexBin,
+        cwd: workspace.cwd,
+        timeoutMs: options.timeoutMs,
+        threadIdSuffix,
+      });
+      sendJson(
+        response,
+        200,
+        sanitizeThreadGoalPayload(payload, {
+          workspace,
+          enabled: true,
+        }),
+      );
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 502, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Thread goal request failed",
+      });
+    }
+    return;
+  }
+
   if (url.pathname === "/api/thread-transcript") {
     if (!hasValidApiToken(request, options.sessionToken)) {
       sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
@@ -17240,6 +17288,86 @@ export function sanitizeThreadDetailPayload(payload, { workspace = null } = {}) 
         : null,
     },
     notifications: sanitizeNotificationCounts(payload?.notifications),
+  };
+}
+
+function threadGoalPolicy({ enabled = false, appServerTraffic = false } = {}) {
+  return {
+    readOnly: true,
+    appServerTraffic: Boolean(appServerTraffic),
+    modelTraffic: false,
+    commandTraffic: false,
+    goalReadEnabled: Boolean(enabled),
+    requiresExplicitEnablement: true,
+    objectiveReturned: false,
+    fullIdsReturned: false,
+    timestampsReturned: false,
+    pathsReturned: false,
+    rawPayloadReturned: false,
+    browserMethodCallsAccepted: Boolean(enabled),
+    implemented: Boolean(enabled),
+  };
+}
+
+export function buildThreadGoalBlockedPayload({ workspace = null, threadIdSuffix = null } = {}) {
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["thread/list", "thread/goal/get"],
+    },
+    probes: {
+      threadGoal: sanitizeThreadGoalSummary({
+        method: "thread/goal/get",
+        threadIdSuffix,
+        goalPresent: false,
+        status: null,
+        tokenBudgetPresent: false,
+        tokenBudget: null,
+        tokensUsed: 0,
+        timeUsedSeconds: 0,
+        objectiveCharCount: 0,
+        objectiveLineCount: 0,
+        createdTimestampPresent: false,
+        updatedTimestampPresent: false,
+        objectiveReturned: false,
+        fullIdsReturned: false,
+        timestampsReturned: false,
+        rawPayloadReturned: false,
+      }),
+    },
+    policy: threadGoalPolicy({ enabled: false, appServerTraffic: false }),
+  };
+}
+
+export function sanitizeThreadGoalPayload(
+  payload,
+  { workspace = null, enabled = false } = {},
+) {
+  return {
+    ok: Boolean(payload?.ok),
+    generatedAt: payload?.generatedAt ?? new Date().toISOString(),
+    transport: cleanDisplayText(payload?.transport, 80),
+    protocol: cleanDisplayText(payload?.protocol, 80),
+    initialize: sanitizeInitialize(payload?.initialize),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: true,
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["thread/list", "thread/goal/get"],
+    },
+    probes: {
+      threadGoal: payload?.probes?.threadGoal
+        ? sanitizeThreadGoalSummary(payload.probes.threadGoal)
+        : null,
+    },
+    notifications: sanitizeNotificationCounts(payload?.notifications),
+    policy: threadGoalPolicy({ enabled, appServerTraffic: true }),
   };
 }
 
@@ -34842,6 +34970,28 @@ function sanitizeAgentTurnPayload(payload) {
         : null,
     },
     notifications: sanitizeNotificationCounts(payload?.notifications),
+  };
+}
+
+function sanitizeThreadGoalSummary(goal) {
+  return {
+    method: cleanDisplayText(goal?.method, 80) ?? "thread/goal/get",
+    threadIdSuffix: cleanDisplayText(goal?.threadIdSuffix, 16),
+    goalPresent: Boolean(goal?.goalPresent),
+    status: goal?.goalPresent ? statusLabel(goal?.status) : null,
+    tokenBudgetPresent: Boolean(goal?.tokenBudgetPresent),
+    tokenBudget: goal?.tokenBudgetPresent ? safeCount(goal?.tokenBudget) : null,
+    tokensUsed: safeCount(goal?.tokensUsed),
+    timeUsedSeconds: safeCount(goal?.timeUsedSeconds),
+    objectiveCharCount: safeCount(goal?.objectiveCharCount),
+    objectiveLineCount: safeCount(goal?.objectiveLineCount),
+    createdTimestampPresent: Boolean(goal?.createdTimestampPresent),
+    updatedTimestampPresent: Boolean(goal?.updatedTimestampPresent),
+    objectiveReturned: false,
+    fullIdsReturned: false,
+    timestampsReturned: false,
+    pathsReturned: false,
+    rawPayloadReturned: false,
   };
 }
 

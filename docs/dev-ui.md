@@ -355,6 +355,15 @@ metadata. It does not receive the search term, snippets, thread names,
 previews, full ids, cwd/path values, cursors, raw thread payloads, or raw
 app-server payloads.
 
+`/api/thread-goal` is the separate goal-state read surface for selected
+threads. It is disabled unless `CODEX_APP_PORT_ALLOW_THREAD_GOAL=1` is set
+before server startup. When enabled, it resolves the selected thread by suffix
+through `thread/list` and calls only `thread/goal/get`. The browser receives
+goal presence/status, token/time usage, token budget presence/value, and
+objective length/line counts. It does not receive objective text, full ids,
+exact goal timestamps, cwd/path values, raw thread payloads, or raw app-server
+payloads.
+
 Every `/api/*` route also requires a per-process session token. The server
 injects this token into the served HTML and the browser sends it back in the
 `X-Codex-App-Port-Token` header. The token is not stored on disk and is meant to

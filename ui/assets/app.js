@@ -312,6 +312,8 @@ const elements = {
   threadCompactPreflightButton: document.querySelector("#thread-compact-preflight-button"),
   threadCompactButton: document.querySelector("#thread-compact-button"),
   threadCompactStatus: document.querySelector("#thread-compact-status"),
+  threadGoalButton: document.querySelector("#thread-goal-button"),
+  threadGoalStatus: document.querySelector("#thread-goal-status"),
   threadDetailMeta: document.querySelector("#thread-detail-meta"),
   turnTimeline: document.querySelector("#turn-timeline"),
   transcriptButton: document.querySelector("#transcript-button"),
@@ -944,6 +946,10 @@ elements.threadCompactPreflightButton.addEventListener("click", () => {
 
 elements.threadCompactButton.addEventListener("click", () => {
   runThreadCompactStart();
+});
+
+elements.threadGoalButton.addEventListener("click", () => {
+  loadThreadGoal();
 });
 
 elements.turnForm.addEventListener("submit", (event) => {
@@ -4970,6 +4976,8 @@ async function loadThreadDetail(threadIdSuffix, { archived = false } = {}) {
   elements.liveSessionControlButton.disabled = true;
   elements.mcpToolRunButton.disabled = true;
   elements.threadShellCommandButton.disabled = true;
+  elements.threadGoalButton.disabled = false;
+  elements.threadGoalStatus.textContent = "Goal not loaded.";
   updateThreadArchiveState();
   updateThreadForkState();
   updateThreadRenameState();
@@ -5004,6 +5012,41 @@ async function loadThreadDetail(threadIdSuffix, { archived = false } = {}) {
   } catch (error) {
     renderError(error);
     clearThreadDetail();
+  }
+}
+
+async function loadThreadGoal() {
+  if (!selectedThreadIdSuffix) {
+    elements.threadGoalStatus.textContent = "Select thread";
+    return;
+  }
+
+  elements.threadGoalButton.disabled = true;
+  elements.threadGoalStatus.textContent = "Loading goal.";
+  hideError();
+
+  try {
+    const params = new URLSearchParams();
+    params.set("thread", selectedThreadIdSuffix);
+    if (selectedWorkspaceId) {
+      params.set("workspace", selectedWorkspaceId);
+    }
+
+    const response = await fetch(`/api/thread-goal?${params.toString()}`, {
+      method: "GET",
+      headers: apiHeaders(),
+      cache: "no-store",
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderThreadGoal(payload.probes?.threadGoal ?? null, payload.policy ?? null);
+  } catch (error) {
+    elements.threadGoalStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    elements.threadGoalButton.disabled = !selectedThreadIdSuffix;
   }
 }
 
@@ -6833,6 +6876,25 @@ function renderThreadDetail(detail) {
   }
 }
 
+function renderThreadGoal(goal, policy) {
+  if (!goal) {
+    elements.threadGoalStatus.textContent = "No goal metadata returned.";
+    return;
+  }
+  const enabled = policy?.goalReadEnabled === true;
+  if (!enabled) {
+    elements.threadGoalStatus.textContent = "Goal read blocked.";
+    return;
+  }
+  elements.threadGoalStatus.textContent = joinParts([
+    goal.goalPresent ? statusLabel(goal.status) : "No active goal",
+    goal.goalPresent ? `${goal.tokensUsed ?? 0} tokens` : null,
+    goal.tokenBudgetPresent ? `budget ${goal.tokenBudget ?? 0}` : null,
+    goal.goalPresent ? `${goal.timeUsedSeconds ?? 0}s` : null,
+    goal.objectiveReturned === false ? "objective hidden" : null,
+  ]);
+}
+
 function clearThreadDetail() {
   selectedThreadArchived = false;
   lastLiveSessionControlPreflight = null;
@@ -6857,6 +6919,8 @@ function clearThreadDetail() {
   elements.threadSafetyLockStatus.textContent = "Select a thread to lock safety settings.";
   elements.threadDeleteStatus.textContent = "Select a thread to delete.";
   elements.threadCompactStatus.textContent = "Select a loaded active thread to compact.";
+  elements.threadGoalStatus.textContent = "Select a thread to inspect goal state.";
+  elements.threadGoalButton.disabled = true;
   elements.threadDetailMeta.replaceChildren();
   elements.turnTimeline.replaceChildren(emptyState("Select a thread to inspect sanitized turn metadata."));
   clearTranscript();

@@ -52,6 +52,11 @@ or raw payloads.
 behind `CODEX_APP_PORT_ALLOW_THREAD_SEARCH=1`; it returns only accepted-state,
 counts, cursor-presence, and suffix/status/source metadata, never the search
 term, snippets, names, previews, full ids, paths, cursors, or raw payloads.
+`thread/goal/get` is promoted separately through a disabled-by-default GET
+route behind `CODEX_APP_PORT_ALLOW_THREAD_GOAL=1`; it resolves the target by
+suffix through `thread/list` and returns only goal presence/status plus
+usage/count metadata, never the objective text, full ids, timestamps, paths, or
+raw payloads.
 `thread/delete` is promoted through a separate disabled-by-default destructive
 POST route behind `CODEX_APP_PORT_ALLOW_THREAD_DELETE=1`; it requires a
 matching one-time preflight token, resolves targets by suffix through

@@ -27379,6 +27379,116 @@ test("dev server exposes sanitized thread detail metadata", async () => {
   }
 });
 
+test("dev server exposes thread goal metadata only behind opt-in without objective text", async () => {
+  const blockedCalls = [];
+  const blockedServer = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    threadGoalProbeFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+
+  try {
+    const response = await fetch(`${blockedServer.url}/api/thread-goal?thread=b0153f06`, {
+      headers: apiHeaders(blockedServer.server),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, false);
+    assert.equal(payload.policy.goalReadEnabled, false);
+    assert.equal(payload.probes.threadGoal.threadIdSuffix, "b0153f06");
+    assert.equal(blockedCalls.length, 0);
+  } finally {
+    await closeServer(blockedServer.server);
+  }
+
+  const calls = [];
+  const { server, url } = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    threadGoalEnabled: true,
+    threadGoalProbeFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-06-29T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/private-home",
+          userAgent: "mock/0.0.0",
+        },
+        probes: {
+          threadGoal: {
+            method: "thread/goal/get",
+            threadIdSuffix: "b0153f06",
+            threadId: "private-full-thread-id-b0153f06",
+            objective: "Sensitive goal objective mentions /tmp/default-workspace/secret.txt",
+            goalPresent: true,
+            status: "active",
+            tokenBudgetPresent: true,
+            tokenBudget: 12000,
+            tokensUsed: 345,
+            timeUsedSeconds: 67,
+            objectiveCharCount: 65,
+            objectiveLineCount: 1,
+            createdAt: 1782726047,
+            updatedAt: 1782726048,
+            createdTimestampPresent: true,
+            updatedTimestampPresent: true,
+            objectiveReturned: true,
+            fullIdsReturned: true,
+            timestampsReturned: true,
+            rawPayloadReturned: true,
+          },
+        },
+        notifications: {
+          "turn/moderationMetadata": 1,
+        },
+      };
+    },
+  });
+
+  try {
+    const response = await fetch(`${url}/api/thread-goal?thread=b0153f06`, {
+      headers: apiHeaders(server),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(calls[0].threadIdSuffix, "b0153f06");
+    assert.equal(calls[0].cwd, "/tmp/default-workspace");
+    assert.equal(payload.appServer.touched, true);
+    assert.deepEqual(payload.appServer.auditedMethods, ["thread/list", "thread/goal/get"]);
+    assert.equal(payload.policy.goalReadEnabled, true);
+    assert.equal(payload.probes.threadGoal.status, "active");
+    assert.equal(payload.probes.threadGoal.tokenBudget, 12000);
+    assert.equal(payload.probes.threadGoal.tokensUsed, 345);
+    assert.equal(payload.probes.threadGoal.objectiveCharCount, 65);
+    assert.equal(payload.probes.threadGoal.objectiveReturned, false);
+    assert.equal(payload.probes.threadGoal.fullIdsReturned, false);
+    assert.equal(payload.probes.threadGoal.timestampsReturned, false);
+    assert.equal(payload.probes.threadGoal.rawPayloadReturned, false);
+    for (const marker of [
+      "Sensitive goal objective",
+      "secret.txt",
+      "private-full-thread-id",
+      "/tmp/default-workspace",
+      "/tmp/private-home",
+      "userAgent",
+      "1782726047",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    await closeServer(server);
+  }
+});
+
 test("dev server exposes bounded sanitized thread transcript text", async () => {
   const calls = [];
   const { server, url } = await startTestServer({

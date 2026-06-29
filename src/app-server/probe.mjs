@@ -209,6 +209,31 @@ export function summarizeThreadDetail(
   };
 }
 
+export function summarizeThreadGoal(response, { threadIdSuffix = null } = {}) {
+  const goal = response?.goal && typeof response.goal === "object" ? response.goal : null;
+  const objective = typeof goal?.objective === "string" ? goal.objective : "";
+  return {
+    method: APP_SERVER_METHODS.threadGoalGet,
+    threadIdSuffix: suffix(goal?.threadId) ?? (isValidSuffix(threadIdSuffix) ? threadIdSuffix : null),
+    goalPresent: Boolean(goal),
+    status: goal ? statusLabel(goal.status) : null,
+    tokenBudgetPresent: Number.isFinite(goal?.tokenBudget),
+    tokenBudget: Number.isFinite(goal?.tokenBudget) ? Math.max(0, Math.trunc(goal.tokenBudget)) : null,
+    tokensUsed: Number.isFinite(goal?.tokensUsed) ? Math.max(0, Math.trunc(goal.tokensUsed)) : 0,
+    timeUsedSeconds: Number.isFinite(goal?.timeUsedSeconds)
+      ? Math.max(0, Math.trunc(goal.timeUsedSeconds))
+      : 0,
+    objectiveCharCount: objective.length,
+    objectiveLineCount: objective ? countLines(objective) : 0,
+    createdTimestampPresent: Number.isFinite(goal?.createdAt),
+    updatedTimestampPresent: Number.isFinite(goal?.updatedAt),
+    objectiveReturned: false,
+    fullIdsReturned: false,
+    timestampsReturned: false,
+    rawPayloadReturned: false,
+  };
+}
+
 export function summarizeTurn(turn, { itemLimit = DEFAULT_THREAD_DETAIL_ITEM_LIMIT } = {}) {
   const safeTurn = normalizeTurn(turn);
   const items = Array.isArray(safeTurn?.items) ? safeTurn.items : [];
@@ -1085,6 +1110,81 @@ export async function runThreadDetailProbe({
       initialize: summarizeInitialize(initialize),
       probes: {
         threadDetail: summarizeThreadDetail(detail.thread, { turnLimit, itemLimit }),
+      },
+      notifications: notificationCounts(notifications),
+    };
+  } finally {
+    await client.close();
+  }
+}
+
+export async function runThreadGoalProbe({
+  codexBin = process.env.CODEX_BIN || "codex",
+  codexArgs = ["app-server", "--listen", "stdio://"],
+  cwd = process.cwd(),
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+  threadIdSuffix,
+  threadScanLimit = DEFAULT_THREAD_DETAIL_SCAN_LIMIT,
+  onNotification = null,
+} = {}) {
+  if (process.env.CODEX_APP_PORT_ALLOW_THREAD_GOAL !== "1") {
+    throw new Error(
+      "thread/goal/get requires CODEX_APP_PORT_ALLOW_THREAD_GOAL=1 because it can inspect user goal intent",
+    );
+  }
+  if (!isValidSuffix(threadIdSuffix)) {
+    throwRequestError("Thread selector must be an 8-character id suffix", 400);
+  }
+
+  const notifications = [];
+  const client = new JsonlRpcClient({
+    command: codexBin,
+    args: codexArgs,
+    cwd,
+    timeoutMs,
+    onNotification(notification) {
+      notifications.push({
+        method: notification.method,
+      });
+      onNotification?.(notification);
+    },
+  });
+
+  await client.start();
+
+  try {
+    const initialize = normalizeInitializeResponse(
+      await client.request("initialize", {
+        clientInfo: {
+          name: "codex_app_port",
+          title: "Codex App Port",
+          version: "0.1.0",
+        },
+        capabilities: {
+          experimentalApi: false,
+          requestAttestation: false,
+        },
+      }),
+    );
+
+    client.notify("initialized");
+
+    const thread = await selectThreadBySuffixFromLists(client, {
+      threadIdSuffix,
+      threadScanLimit,
+    });
+    const goal = await client.request(APP_SERVER_METHODS.threadGoalGet, {
+      threadId: thread.id,
+    });
+
+    return {
+      ok: true,
+      generatedAt: new Date().toISOString(),
+      transport: "stdio-jsonl",
+      protocol: "json-rpc-2.0-without-jsonrpc-field",
+      initialize: summarizeInitialize(initialize),
+      probes: {
+        threadGoal: summarizeThreadGoal(goal, { threadIdSuffix }),
       },
       notifications: notificationCounts(notifications),
     };

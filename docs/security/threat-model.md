@@ -200,6 +200,13 @@
   must not return the search term, snippets, thread names, previews, full ids,
   cwd, paths, cursors, thread content, raw thread payloads, or raw app-server
   payloads.
+- Browser-facing thread goal reads must be blocked by default and opt-in only.
+  When `CODEX_APP_PORT_ALLOW_THREAD_GOAL=1` is enabled, `/api/thread-goal` may
+  call only `thread/list` for suffix resolution and `thread/goal/get` for the
+  selected thread. Responses must expose only suffix, goal presence/status,
+  bounded usage values, and objective length/line counts. They must not return
+  objective text, full ids, exact goal timestamps, cwd, paths, thread content,
+  or raw app-server payloads.
 - Browser-facing thread lifecycle histories must be process-local, capped, and
   sanitized. They may expose only action type/method, thread suffix, safe
   status/count metadata, token-consumed state, model-traffic booleans, and audit

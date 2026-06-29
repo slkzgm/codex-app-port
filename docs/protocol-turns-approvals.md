@@ -286,8 +286,9 @@ Implemented local policy:
 ## Current Implementation
 
 Keep `/api/thread-start`, `/api/thread-archive-action`,
-`/api/thread-delete-action`, `/api/thread-compact-start`, and
-`/api/turn-start` returning `403` by default.
+`/api/thread-delete-action`, `/api/thread-compact-start`, and `/api/turn-start`
+returning `403` by default. Keep `/api/thread-goal` blocked by default without
+app-server traffic.
 
 When the server is started with `CODEX_APP_PORT_ALLOW_THREAD_START=1`,
 `/api/thread-start` may call `thread/start` only after consuming a matching
@@ -297,6 +298,14 @@ the allowlisted workspace cwd, read-only sandbox, user-routed approvals, empty
 environments, and no model traffic. Browser responses and action audit records
 return only suffix/status/policy metadata without full ids, cwd, paths,
 instruction sources, prompt text, raw app-server payloads, or preflight tokens.
+
+When the server is started with `CODEX_APP_PORT_ALLOW_THREAD_GOAL=1`,
+`/api/thread-goal` may call `thread/list` to resolve the selected suffix and
+then `thread/goal/get` for that thread. Browser responses return only suffix,
+goal presence/status, token/time usage, token budget presence/value, and
+objective length/line counts. They do not return objective text, full ids,
+exact goal timestamps, cwd, paths, thread content, raw app-server payloads, or
+preflight tokens.
 
 When the server is started with `CODEX_APP_PORT_ALLOW_THREAD_ARCHIVE=1`,
 `/api/thread-archive-action` may call `thread/archive` or `thread/unarchive`
