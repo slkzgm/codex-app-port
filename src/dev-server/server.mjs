@@ -6,12 +6,13 @@ import { basename, extname, join, normalize, resolve } from "node:path";
 import process from "node:process";
 
 import {
-  DEFAULT_TIMEOUT_MS,
-  DEFAULT_LOADED_SESSION_LIMIT,
-  openReadOnlyNotificationStream,
-  runAccountLoginCancelProbe,
-  runAccountLoginStartProbe,
-  runAccountLogoutProbe,
+	  DEFAULT_TIMEOUT_MS,
+	  DEFAULT_LOADED_SESSION_LIMIT,
+	  openReadOnlyNotificationStream,
+	  runAccountCreditsNudgeProbe,
+	  runAccountLoginCancelProbe,
+	  runAccountLoginStartProbe,
+	  runAccountLogoutProbe,
   runAppServerProbe,
   runConfigBatchWriteProbe,
   runConfigValueWriteProbe,
@@ -123,6 +124,7 @@ export const MAX_LIVE_SESSION_CONTROL_RECORDS = 20;
 export const MAX_THREAD_LIFECYCLE_ACTION_HISTORY_RECORDS = 20;
 export const MAX_ACCOUNT_LOGIN_FLOW_RECORDS = 20;
 export const MAX_ACCOUNT_LOGIN_HISTORY_RECORDS = 20;
+export const MAX_ACCOUNT_CREDITS_NUDGE_HISTORY_RECORDS = 20;
 export const MAX_ACCOUNT_LOGOUT_HISTORY_RECORDS = 20;
 export const MAX_TERMINAL_COMMAND_HISTORY_RECORDS = 20;
 export const MAX_PROCESS_SPAWN_HISTORY_RECORDS = 20;
@@ -197,6 +199,11 @@ export const BROWSER_POST_FIELD_POLICIES = Object.freeze({
     maxChars: 120,
     returnedRawValue: false,
     sensitivity: "auth-flow-selector",
+  }),
+  creditType: bodyFieldPolicy(["string"], {
+    maxChars: 16,
+    returnedRawValue: false,
+    sensitivity: "account-credit-type",
   }),
   terminalRef: bodyFieldPolicy(["string", "null"], {
     maxChars: 120,
@@ -415,6 +422,12 @@ export const ACTION_PREFLIGHT_CONFIRMATION_FIELD_CONTRACTS = Object.freeze({
     "actionType",
     "preflightToken",
     "loginRef",
+  ),
+  "account-credits-nudge-preflight": bodyFields(
+    "workspace",
+    "actionType",
+    "preflightToken",
+    "creditType",
   ),
   "account-logout-preflight": bodyFields("workspace", "actionType", "preflightToken"),
   "turn-preflight": bodyFields("workspace", "actionType", "preflightToken", "thread", "prompt"),
@@ -778,6 +791,14 @@ export const BROWSER_POST_BODY_CONTRACTS = Object.freeze({
     appServerTraffic: false,
   }),
   "/api/account-login-cancel": bodyContract(["workspace", "loginRef", "preflightToken"], {
+    kind: "mutation",
+    requiresPreflightToken: true,
+  }),
+  "/api/account-credits-nudge-preflight": bodyContract(["workspace", "creditType"], {
+    kind: "preflight",
+    appServerTraffic: false,
+  }),
+  "/api/account-credits-nudge": bodyContract(["workspace", "creditType", "preflightToken"], {
     kind: "mutation",
     requiresPreflightToken: true,
   }),
@@ -1177,6 +1198,7 @@ const BROWSER_POST_RESPONSE_TOP_LEVEL_KEYS = Object.freeze({
     "liveSessionControl",
     "liveSessionBulkControl",
     "auth",
+    "email",
   ),
   mutation: responseTopLevelKeys(
     "ok",
@@ -1225,6 +1247,7 @@ const BROWSER_POST_RESPONSE_TOP_LEVEL_KEYS = Object.freeze({
     "content",
     "filesystem",
     "auth",
+    "email",
     "status",
     "safety",
     "before",
@@ -5846,6 +5869,140 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
       "requiresExplicitExecutionGate",
     ],
   }),
+  "/api/account-credits-nudge-preflight": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    appServer: ["touched", "modelTraffic", "commandTraffic"],
+    action: [
+      "type",
+      "method",
+      "execution",
+      "authMutation",
+      "emailSideEffect",
+      "wouldSendEmail",
+      "appServerTouched",
+      "reason",
+    ],
+    target: ["creditType", "creditTypeReturned", "accountIdentifiersReturned", "tokensReturned", "urlsReturned"],
+    auth: ["accountSelected", "accountIdentifiersReturned", "tokensReturned", "urlsReturned"],
+    email: ["sideEffect", "addressReturned", "urlsReturned", "rawPayloadReturned"],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "modelTraffic",
+      "commandTraffic",
+      "settingsWrites",
+      "authCallbacks",
+      "authMutations",
+      "emailSideEffects",
+      "toolInvocation",
+      "installsEnabled",
+      "tokensReturned",
+      "accountIdentifiersReturned",
+      "urlsReturned",
+      "pathsReturned",
+      "rawPayloadReturned",
+      "requiresExplicitEnablement",
+      "executionRouteImplemented",
+      "executionGateEnabled",
+      "browserMethodCallsAccepted",
+      "implemented",
+    ],
+    preflight: [
+      "token",
+      "tokenIssued",
+      "issuedAt",
+      "expiresAt",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseRequiredForMutation",
+      "consumed",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+  }),
+  "/api/account-credits-nudge": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    initialize: ["platformFamily", "platformOs"],
+    appServer: ["touched", "modelTraffic", "commandTraffic", "auditedMethods"],
+    action: [
+      "type",
+      "method",
+      "execution",
+      "authMutation",
+      "emailSideEffect",
+      "wouldSendEmail",
+      "appServerTouched",
+      "modelTraffic",
+      "reason",
+    ],
+    target: ["creditType", "creditTypeReturned", "accountIdentifiersReturned", "tokensReturned", "urlsReturned"],
+    auth: ["accountSelected", "accountIdentifiersReturned", "tokensReturned", "urlsReturned"],
+    email: ["sideEffect", "status", "addressReturned", "urlsReturned", "rawPayloadReturned"],
+    probes: ["accountCreditsNudge"],
+    "probes.accountCreditsNudge": [
+      "method",
+      "creditType",
+      "resultStatus",
+      "emailSideEffect",
+      "authMutation",
+      "modelTraffic",
+      "tokensReturned",
+      "accountIdentifiersReturned",
+      "urlsReturned",
+      "rawPayloadReturned",
+    ],
+    result: [
+      "status",
+      "emailSideEffect",
+      "tokensReturned",
+      "accountIdentifiersReturned",
+      "urlsReturned",
+      "rawPayloadReturned",
+      "threadContentReturned",
+      "fullIdsReturned",
+    ],
+    preflight: [
+      "tokenConsumed",
+      "tokenReturned",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseEnforced",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "modelTraffic",
+      "commandTraffic",
+      "settingsWrites",
+      "authCallbacks",
+      "authMutations",
+      "emailSideEffects",
+      "toolInvocation",
+      "installsEnabled",
+      "promptTextReturned",
+      "secretsReturned",
+      "tokensReturned",
+      "accountIdentifiersReturned",
+      "urlsReturned",
+      "pathsReturned",
+      "rawPayloadReturned",
+      "requiresExplicitEnablement",
+      "executionRouteImplemented",
+      "executionGateEnabled",
+      "preflightTokenConsumed",
+      "auditLogPersistent",
+      "auditLogWritableChecked",
+      "auditLogWritten",
+      "auditLogPathReturned",
+      "browserMethodCallsAccepted",
+      "implemented",
+      "requiresExplicitExecutionGate",
+    ],
+  }),
   "/api/mcp-tool-preflight": responseNestedKeySchemas({
     workspace: ["id", "label", "isDefault"],
     appServer: ["touched", "modelTraffic", "commandTraffic", "toolTraffic"],
@@ -8822,6 +8979,19 @@ const BROWSER_POST_RESPONSE_ROUTE_TOP_LEVEL_KEYS = Object.freeze({
     "auth",
     "result",
   ),
+  "/api/account-credits-nudge-preflight": routeResponseTopLevelKeys(
+    ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
+    "target",
+    "auth",
+    "email",
+  ),
+  "/api/account-credits-nudge": routeResponseTopLevelKeys(
+    ...RESPONSE_APP_SERVER_MUTATION_TOP_LEVEL_KEYS,
+    "target",
+    "auth",
+    "email",
+    "result",
+  ),
   "/api/account-logout-preflight": routeResponseTopLevelKeys(
     ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
     "target",
@@ -9355,6 +9525,7 @@ export function createDevServer({
   threadSafetyLockFn = runThreadSafetyLockProbe,
   accountLoginCancelFn = runAccountLoginCancelProbe,
   accountLoginStartFn = runAccountLoginStartProbe,
+  accountCreditsNudgeFn = runAccountCreditsNudgeProbe,
   accountLogoutFn = runAccountLogoutProbe,
   threadTranscriptProbeFn = runThreadTranscriptProbe,
   threadChangesProbeFn = runThreadChangesProbe,
@@ -9404,6 +9575,7 @@ export function createDevServer({
   threadCompactEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_COMPACT === "1",
   accountLoginCancelEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN_CANCEL === "1",
   accountLoginEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN === "1",
+  accountCreditsNudgeEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_CREDITS_NUDGE === "1",
   accountLogoutEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_LOGOUT === "1",
   gitBranchSwitchEnabled = process.env.CODEX_APP_PORT_ALLOW_GIT_BRANCH_SWITCH === "1",
   gitBranchCreateEnabled = process.env.CODEX_APP_PORT_ALLOW_GIT_BRANCH_CREATE === "1",
@@ -9496,6 +9668,7 @@ export function createDevServer({
   threadLifecycleActionLedger = createThreadLifecycleActionLedger(),
   accountLoginFlowRegistry = createAccountLoginFlowRegistry(),
   accountLoginLedger = createAccountLoginLedger(),
+  accountCreditsNudgeLedger = createAccountCreditsNudgeLedger(),
   accountLogoutLedger = createAccountLogoutLedger(),
   terminalCommandLedger = createTerminalCommandLedger(),
   threadShellCommandLedger = createThreadShellCommandLedger(),
@@ -9531,6 +9704,7 @@ export function createDevServer({
       threadSafetyLockFn,
       accountLoginCancelFn,
       accountLoginStartFn,
+      accountCreditsNudgeFn,
       accountLogoutFn,
       threadTranscriptProbeFn,
       threadChangesProbeFn,
@@ -9579,6 +9753,7 @@ export function createDevServer({
       threadCompactEnabled,
       accountLoginCancelEnabled,
       accountLoginEnabled,
+      accountCreditsNudgeEnabled,
       accountLogoutEnabled,
       gitBranchSwitchEnabled,
       gitBranchCreateEnabled,
@@ -9642,6 +9817,7 @@ export function createDevServer({
       threadLifecycleActionLedger,
       accountLoginFlowRegistry,
       accountLoginLedger,
+      accountCreditsNudgeLedger,
       accountLogoutLedger,
       terminalCommandLedger,
       threadShellCommandLedger,
@@ -10697,6 +10873,101 @@ export async function handleRequest(request, response, options) {
       sendJson(response, error.statusCode ?? 400, {
         ok: false,
         error: cleanDisplayText(error.message, 200) ?? "Invalid account login cancel request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/account-credits-nudge-preflight") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, ["workspace", "creditType"]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const payload = buildAccountCreditsNudgePreflight(body, {
+        workspace,
+        accountCreditsNudgeEnabled: options.accountCreditsNudgeEnabled,
+      });
+      sendJson(response, 200, attachActionPreflight(payload, { body, workspace, options }));
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error:
+          cleanDisplayText(error.message, 200) ??
+          "Invalid account credits nudge preflight request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/account-credits-nudge") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, [
+        "workspace",
+        "creditType",
+        "preflightToken",
+      ]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const preflightBody = stripActionPreflightControlFields(body);
+      const preflightPayload = buildAccountCreditsNudgePreflight(preflightBody, {
+        workspace,
+        accountCreditsNudgeEnabled: options.accountCreditsNudgeEnabled,
+      });
+      if (!preflightPayload.policy.executionGateEnabled) {
+        sendJson(response, 403, buildAccountCreditsNudgeBlocked(preflightPayload));
+        return;
+      }
+      const consumedPreflight = options.preflightRegistry.consume({
+        token: validateActionPreflightToken(body.preflightToken),
+        kind: preflightPayload.action.type,
+        workspace,
+        intent: actionPreflightIntent(preflightBody, preflightPayload),
+      });
+      const auditLogWritableChecked = ensureActionAuditLogWritable(options.actionAuditLog);
+      const payload = await options.accountCreditsNudgeFn({
+        codexBin: options.codexBin,
+        cwd: workspace.cwd,
+        timeoutMs: options.timeoutMs,
+        creditType: preflightPayload.target.creditType,
+      });
+      const sanitized = sanitizeAccountCreditsNudgePayload(payload, {
+        workspace,
+        consumedPreflight,
+        actionAuditLog: options.actionAuditLog,
+        auditLogWritableChecked,
+        creditType: preflightPayload.target.creditType,
+      });
+      sanitized.policy.auditLogWritten = writeActionAuditLog(options.actionAuditLog, sanitized);
+      options.accountCreditsNudgeLedger?.record(sanitized);
+      sendJson(response, 200, sanitized);
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid account credits nudge request",
       });
     }
     return;
@@ -14464,6 +14735,8 @@ export async function handleRequest(request, response, options) {
         options.integrationPreflightConfirmationLedger?.list({ workspaceId: workspace.id }) ?? [];
       const accountLoginHistory =
         options.accountLoginLedger?.list({ workspaceId: workspace.id }) ?? [];
+      const accountCreditsNudgeHistory =
+        options.accountCreditsNudgeLedger?.list({ workspaceId: workspace.id }) ?? [];
       const accountLogoutHistory =
         options.accountLogoutLedger?.list({ workspaceId: workspace.id }) ?? [];
       const accountLoginFlowSummary =
@@ -14483,6 +14756,7 @@ export async function handleRequest(request, response, options) {
             integrationNamesEnabled: options.integrationNamesEnabled,
             accountLoginCancelEnabled: options.accountLoginCancelEnabled,
             accountLoginEnabled: options.accountLoginEnabled,
+            accountCreditsNudgeEnabled: options.accountCreditsNudgeEnabled,
             accountLogoutEnabled: options.accountLogoutEnabled,
             configBatchWriteEnabled: options.configBatchWriteEnabled,
             configValueWriteEnabled: options.configValueWriteEnabled,
@@ -14504,6 +14778,7 @@ export async function handleRequest(request, response, options) {
             integrationPreflightConfirmationHistory,
             accountLoginFlowSummary,
             accountLoginHistory,
+            accountCreditsNudgeHistory,
             accountLogoutHistory,
           }),
         );
@@ -14516,6 +14791,7 @@ export async function handleRequest(request, response, options) {
           workspace,
           accountLoginCancelEnabled: options.accountLoginCancelEnabled,
           accountLoginEnabled: options.accountLoginEnabled,
+          accountCreditsNudgeEnabled: options.accountCreditsNudgeEnabled,
           accountLogoutEnabled: options.accountLogoutEnabled,
           configBatchWriteEnabled: options.configBatchWriteEnabled,
           configValueWriteEnabled: options.configValueWriteEnabled,
@@ -14537,6 +14813,7 @@ export async function handleRequest(request, response, options) {
           integrationPreflightConfirmationHistory,
           accountLoginFlowSummary,
           accountLoginHistory,
+          accountCreditsNudgeHistory,
           accountLogoutHistory,
         }),
       );
@@ -15167,6 +15444,8 @@ function actionAuditEvent(record) {
       return "account-login-cancel-recorded";
     case "account-login":
       return "account-login-recorded";
+    case "account-credits-nudge":
+      return "account-credits-nudge-recorded";
     case "account-logout":
       return "account-logout-recorded";
     case "file-action":
@@ -15649,6 +15928,23 @@ export function createAccountLoginLedger({ now = () => new Date().toISOString() 
       const record = sanitizeAccountLoginHistoryRecord(payload, { recordedAt: now() });
       records.unshift(record);
       records.splice(MAX_ACCOUNT_LOGIN_HISTORY_RECORDS);
+      return cloneJson(record);
+    },
+    list({ workspaceId = null } = {}) {
+      return records
+        .filter((record) => !workspaceId || record.workspace?.id === workspaceId)
+        .map(cloneJson);
+    },
+  };
+}
+
+export function createAccountCreditsNudgeLedger({ now = () => new Date().toISOString() } = {}) {
+  const records = [];
+  return {
+    record(payload) {
+      const record = sanitizeAccountCreditsNudgeHistoryRecord(payload, { recordedAt: now() });
+      records.unshift(record);
+      records.splice(MAX_ACCOUNT_CREDITS_NUDGE_HISTORY_RECORDS);
       return cloneJson(record);
     },
     list({ workspaceId = null } = {}) {
@@ -25990,6 +26286,7 @@ export function sanitizeSettingsIntegrationsPayload(
     integrationNamesEnabled = false,
     accountLoginCancelEnabled = false,
     accountLoginEnabled = false,
+    accountCreditsNudgeEnabled = false,
     accountLogoutEnabled = false,
     configBatchWriteEnabled = false,
     configValueWriteEnabled = false,
@@ -26011,6 +26308,7 @@ export function sanitizeSettingsIntegrationsPayload(
     integrationPreflightConfirmationHistory = [],
     accountLoginFlowSummary = null,
     accountLoginHistory = [],
+    accountCreditsNudgeHistory = [],
     accountLogoutHistory = [],
   } = {},
 ) {
@@ -26019,6 +26317,7 @@ export function sanitizeSettingsIntegrationsPayload(
   });
   const loginEnabled = Boolean(accountLoginEnabled);
   const loginCancelEnabled = Boolean(accountLoginCancelEnabled);
+  const creditsNudgeEnabled = Boolean(accountCreditsNudgeEnabled);
   const logoutEnabled = Boolean(accountLogoutEnabled);
   const methodAudit = integrationMethodAudit();
   const preflightHistory = sanitizeIntegrationPreflightHistory(integrationPreflightHistory);
@@ -26026,6 +26325,9 @@ export function sanitizeSettingsIntegrationsPayload(
     integrationPreflightConfirmationHistory,
   );
   const recentAccountLoginHistory = sanitizeAccountLoginHistory(accountLoginHistory);
+  const recentAccountCreditsNudgeHistory = sanitizeAccountCreditsNudgeHistory(
+    accountCreditsNudgeHistory,
+  );
   const recentAccountLogoutHistory = sanitizeAccountLogoutHistory(accountLogoutHistory);
   const namesReturned = Boolean(
     inventory.apps.namesReturned ||
@@ -26042,6 +26344,7 @@ export function sanitizeSettingsIntegrationsPayload(
     enabledReadMethods: ["config/read", ...optInIntegrationReadMethods()],
     accountLoginCancelEnabled: loginCancelEnabled,
     accountLoginEnabled: loginEnabled,
+    accountCreditsNudgeEnabled: creditsNudgeEnabled,
     accountLogoutEnabled: logoutEnabled,
     configBatchWriteEnabled,
     configValueWriteEnabled,
@@ -26124,6 +26427,7 @@ export function sanitizeSettingsIntegrationsPayload(
           inventory.rateLimits.ok ||
           loginEnabled ||
           loginCancelEnabled ||
+          creditsNudgeEnabled ||
           logoutEnabled
             ? "partial"
             : "blocked",
@@ -26139,15 +26443,19 @@ export function sanitizeSettingsIntegrationsPayload(
         loginEnabled,
         deviceCodeLoginEnabled: loginEnabled,
         loginCancelEnabled,
+        creditsNudgeAvailable: true,
+        creditsNudgeEnabled,
         activeLoginFlowCount: safeCount(accountLoginFlowSummary?.activeCount),
         loginRefsReturned: false,
         logoutAvailable: true,
         logoutEnabled,
-        mutationEnabled: loginEnabled || loginCancelEnabled || logoutEnabled,
+        mutationEnabled: loginEnabled || loginCancelEnabled || creditsNudgeEnabled || logoutEnabled,
         reason: loginEnabled
           ? "account-login-device-code-opt-in-only"
           : loginCancelEnabled
           ? "account-login-cancel-opt-in-only"
+          : creditsNudgeEnabled
+          ? "account-credits-nudge-opt-in-only"
           : logoutEnabled
           ? "account-logout-opt-in-only"
           : inventory.account.ok || inventory.rateLimits.ok
@@ -26258,6 +26566,7 @@ export function sanitizeSettingsIntegrationsPayload(
     preflightHistory,
     preflightConfirmationHistory,
     accountLoginHistory: recentAccountLoginHistory,
+    accountCreditsNudgeHistory: recentAccountCreditsNudgeHistory,
     accountLogoutHistory: recentAccountLogoutHistory,
     integrationScope,
     methodAudit,
@@ -26279,6 +26588,8 @@ export function sanitizeSettingsIntegrationsPayload(
       preflightConfirmationHistoryLimit: MAX_INTEGRATION_PREFLIGHT_CONFIRMATION_HISTORY_RECORDS,
       accountLogoutHistoryReturned: true,
       accountLogoutHistoryLimit: MAX_ACCOUNT_LOGOUT_HISTORY_RECORDS,
+      accountCreditsNudgeHistoryReturned: true,
+      accountCreditsNudgeHistoryLimit: MAX_ACCOUNT_CREDITS_NUDGE_HISTORY_RECORDS,
       accountLoginHistoryReturned: true,
       accountLoginHistoryLimit: MAX_ACCOUNT_LOGIN_HISTORY_RECORDS,
       preflightTokensReturned: false,
@@ -28401,6 +28712,206 @@ export function sanitizeAccountLogoutPayload(
   };
 }
 
+export function sanitizeAccountCreditsNudgePayload(
+  payload,
+  {
+    workspace = null,
+    consumedPreflight,
+    actionAuditLog = null,
+    auditLogWritableChecked = false,
+    creditType = null,
+  } = {},
+) {
+  const accountCreditsNudge = sanitizeAccountCreditsNudgeProbe(
+    payload?.probes?.accountCreditsNudge,
+    { creditType },
+  );
+  return {
+    ok: Boolean(payload?.ok),
+    generatedAt: payload?.generatedAt ?? new Date().toISOString(),
+    transport: cleanDisplayText(payload?.transport, 80),
+    protocol: cleanDisplayText(payload?.protocol, 80),
+    initialize: sanitizeInitialize(payload?.initialize),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: true,
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["account/sendAddCreditsNudgeEmail"],
+    },
+    action: {
+      type: "account-credits-nudge",
+      method: "account/sendAddCreditsNudgeEmail",
+      execution: accountCreditsNudge.resultStatus,
+      authMutation: true,
+      emailSideEffect: true,
+      appServerTouched: true,
+      modelTraffic: false,
+    },
+    preflight: buildConsumedPreflightSummary(consumedPreflight),
+    target: {
+      creditType: accountCreditsNudge.creditType,
+      creditTypeReturned: true,
+      accountIdentifiersReturned: false,
+      tokensReturned: false,
+      urlsReturned: false,
+    },
+    auth: {
+      accountSelected: false,
+      accountIdentifiersReturned: false,
+      tokensReturned: false,
+      urlsReturned: false,
+    },
+    email: {
+      sideEffect: true,
+      status: accountCreditsNudge.resultStatus,
+      addressReturned: false,
+      urlsReturned: false,
+      rawPayloadReturned: false,
+    },
+    probes: {
+      accountCreditsNudge,
+    },
+    result: {
+      status: accountCreditsNudge.resultStatus,
+      emailSideEffect: true,
+      tokensReturned: false,
+      accountIdentifiersReturned: false,
+      urlsReturned: false,
+      rawPayloadReturned: false,
+      threadContentReturned: false,
+      fullIdsReturned: false,
+    },
+    policy: {
+      readOnly: false,
+      appServerTraffic: true,
+      modelTraffic: false,
+      commandTraffic: false,
+      settingsWrites: false,
+      authCallbacks: false,
+      authMutations: true,
+      emailSideEffects: true,
+      toolInvocation: false,
+      installsEnabled: false,
+      promptTextReturned: false,
+      secretsReturned: false,
+      tokensReturned: false,
+      accountIdentifiersReturned: false,
+      urlsReturned: false,
+      pathsReturned: false,
+      rawPayloadReturned: false,
+      requiresExplicitEnablement: true,
+      executionRouteImplemented: true,
+      executionGateEnabled: true,
+      preflightTokenConsumed: true,
+      auditLogPersistent: Boolean(actionAuditLog?.persistent),
+      auditLogWritableChecked: Boolean(auditLogWritableChecked),
+      auditLogWritten: false,
+      auditLogPathReturned: false,
+      browserMethodCallsAccepted: true,
+      implemented: true,
+      requiresExplicitExecutionGate: true,
+    },
+    notifications: sanitizeNotificationCounts(payload?.notifications),
+  };
+}
+
+function sanitizeAccountCreditsNudgeHistory(records) {
+  const items = Array.isArray(records)
+    ? records.slice(0, MAX_ACCOUNT_CREDITS_NUDGE_HISTORY_RECORDS).map((record) =>
+        sanitizeAccountCreditsNudgeHistoryRecord(record),
+      )
+    : [];
+  return {
+    count: items.length,
+    items,
+    limit: MAX_ACCOUNT_CREDITS_NUDGE_HISTORY_RECORDS,
+    appServerTraffic: items.some((item) => item.action?.appServerTouched),
+    authMutationsRecorded: items.some((item) => item.action?.authMutation),
+    emailSideEffectsRecorded: items.some((item) => item.action?.emailSideEffect),
+    preflightTokensReturned: false,
+    tokensReturned: false,
+    accountIdentifiersReturned: false,
+    urlsReturned: false,
+    pathsReturned: false,
+    rawPayloadsReturned: false,
+  };
+}
+
+function sanitizeAccountCreditsNudgeHistoryRecord(record, { recordedAt = null } = {}) {
+  const action = record?.action ?? {};
+  const result = record?.result ?? {};
+  const target = record?.target ?? {};
+  const preflight = record?.preflight ?? {};
+  const policy = record?.policy ?? {};
+  return {
+    recordedAt: cleanDisplayText(recordedAt ?? record?.recordedAt, 40),
+    workspace: record?.workspace
+      ? {
+          id: cleanDisplayText(record.workspace.id, 80),
+          label: cleanDisplayText(record.workspace.label, 120),
+          isDefault: Boolean(record.workspace.isDefault),
+        }
+      : null,
+    action: {
+      type: "account-credits-nudge",
+      method: "account/sendAddCreditsNudgeEmail",
+      execution: sanitizeAccountCreditsNudgeStatus(action.execution ?? result.status),
+      authMutation: Boolean(action.authMutation),
+      emailSideEffect: Boolean(action.emailSideEffect),
+      appServerTouched: Boolean(action.appServerTouched),
+      modelTraffic: false,
+    },
+    target: {
+      creditType: sanitizeAccountCreditsNudgeCreditType(target.creditType),
+      creditTypeReturned: true,
+      accountIdentifiersReturned: false,
+      tokensReturned: false,
+      urlsReturned: false,
+    },
+    result: {
+      status: sanitizeAccountCreditsNudgeStatus(result.status),
+      emailSideEffect: true,
+      tokensReturned: false,
+      accountIdentifiersReturned: false,
+      urlsReturned: false,
+      rawPayloadReturned: false,
+      threadContentReturned: false,
+      fullIdsReturned: false,
+    },
+    preflight: {
+      tokenConsumed: Boolean(preflight.tokenConsumed),
+      tokenReturned: false,
+      workspaceId: cleanDisplayText(preflight.scope?.workspaceId ?? preflight.workspaceId, 80),
+      rawIntentStored: false,
+      rawIntentReturned: false,
+      intentHashReturned: false,
+      oneTimeUseEnforced: preflight.oneTimeUseEnforced !== false,
+    },
+    policy: {
+      readOnly: false,
+      appServerTraffic: Boolean(policy.appServerTraffic),
+      authMutations: Boolean(policy.authMutations),
+      emailSideEffects: true,
+      modelTraffic: false,
+      secretsReturned: false,
+      tokensReturned: false,
+      accountIdentifiersReturned: false,
+      urlsReturned: false,
+      pathsReturned: false,
+      rawPayloadReturned: false,
+      preflightTokenReturned: false,
+      auditLogPersistent: Boolean(policy.auditLogPersistent),
+      auditLogWritableChecked: Boolean(policy.auditLogWritableChecked),
+      auditLogWritten: Boolean(policy.auditLogWritten),
+      auditLogPathReturned: false,
+      sensitivePayloadLogged: false,
+      browserMethodCallsAccepted: Boolean(policy.browserMethodCallsAccepted),
+      implemented: Boolean(policy.implemented),
+    },
+  };
+}
+
 function sanitizeAccountLogoutHistory(records) {
   const items = Array.isArray(records)
     ? records.slice(0, MAX_ACCOUNT_LOGOUT_HISTORY_RECORDS).map((record) =>
@@ -28529,6 +29040,108 @@ export function buildAccountLogoutPreflight({ workspace, accountLogoutEnabled = 
       requiresExplicitEnablement: true,
       executionRouteImplemented: true,
       executionGateEnabled: enabled,
+      browserMethodCallsAccepted: false,
+      implemented: false,
+    },
+  };
+}
+
+export function buildAccountCreditsNudgePreflight(
+  body,
+  { workspace, accountCreditsNudgeEnabled = false } = {},
+) {
+  const creditType = sanitizeAccountCreditsNudgeCreditType(body?.creditType);
+  const enabled = Boolean(accountCreditsNudgeEnabled);
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: publicWorkspaces([workspace])[0],
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+    },
+    action: {
+      type: "account-credits-nudge-preflight",
+      method: "account/sendAddCreditsNudgeEmail",
+      execution: "blocked",
+      authMutation: false,
+      emailSideEffect: false,
+      wouldSendEmail: false,
+      appServerTouched: false,
+      reason: enabled
+        ? "account-credits-nudge-requires-confirmation"
+        : "account-credits-nudge-requires-opt-in",
+    },
+    target: {
+      creditType,
+      creditTypeReturned: true,
+      accountIdentifiersReturned: false,
+      tokensReturned: false,
+      urlsReturned: false,
+    },
+    auth: {
+      accountSelected: false,
+      accountIdentifiersReturned: false,
+      tokensReturned: false,
+      urlsReturned: false,
+    },
+    email: {
+      sideEffect: false,
+      addressReturned: false,
+      urlsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      settingsWrites: false,
+      authCallbacks: false,
+      authMutations: false,
+      emailSideEffects: false,
+      toolInvocation: false,
+      installsEnabled: false,
+      tokensReturned: false,
+      accountIdentifiersReturned: false,
+      urlsReturned: false,
+      pathsReturned: false,
+      rawPayloadReturned: false,
+      requiresExplicitEnablement: true,
+      executionRouteImplemented: true,
+      executionGateEnabled: enabled,
+      browserMethodCallsAccepted: false,
+      implemented: false,
+    },
+  };
+}
+
+export function buildAccountCreditsNudgeBlocked(preflightPayload) {
+  return {
+    ...preflightPayload,
+    ok: false,
+    error:
+      "Account credits nudge is disabled. Set CODEX_APP_PORT_ALLOW_ACCOUNT_CREDITS_NUDGE=1 before starting the dev server.",
+    action: {
+      ...preflightPayload.action,
+      execution: "blocked",
+      authMutation: false,
+      emailSideEffect: false,
+      wouldSendEmail: false,
+      appServerTouched: false,
+      reason: "account-credits-nudge-disabled",
+    },
+    email: {
+      ...preflightPayload.email,
+      sideEffect: false,
+    },
+    policy: {
+      ...preflightPayload.policy,
+      appServerTraffic: false,
+      authMutations: false,
+      emailSideEffects: false,
+      executionGateEnabled: false,
       browserMethodCallsAccepted: false,
       implemented: false,
     },
@@ -31469,6 +32082,7 @@ export function buildSettingsIntegrations({
   workspace,
   accountLoginCancelEnabled = false,
   accountLoginEnabled = false,
+  accountCreditsNudgeEnabled = false,
   accountLogoutEnabled = false,
   configBatchWriteEnabled = false,
   configValueWriteEnabled = false,
@@ -31490,22 +32104,28 @@ export function buildSettingsIntegrations({
   integrationPreflightConfirmationHistory = [],
   accountLoginFlowSummary = null,
   accountLoginHistory = [],
+  accountCreditsNudgeHistory = [],
   accountLogoutHistory = [],
 }) {
   const methodAudit = integrationMethodAudit();
   const loginCancelEnabled = Boolean(accountLoginCancelEnabled);
   const loginEnabled = Boolean(accountLoginEnabled);
+  const creditsNudgeEnabled = Boolean(accountCreditsNudgeEnabled);
   const logoutEnabled = Boolean(accountLogoutEnabled);
   const preflightHistory = sanitizeIntegrationPreflightHistory(integrationPreflightHistory);
   const preflightConfirmationHistory = sanitizeIntegrationPreflightConfirmationHistory(
     integrationPreflightConfirmationHistory,
   );
   const recentAccountLoginHistory = sanitizeAccountLoginHistory(accountLoginHistory);
+  const recentAccountCreditsNudgeHistory = sanitizeAccountCreditsNudgeHistory(
+    accountCreditsNudgeHistory,
+  );
   const recentAccountLogoutHistory = sanitizeAccountLogoutHistory(accountLogoutHistory);
   const integrationScope = buildIntegrationActionScope({
     enabledReadMethods: ["config/read"],
     accountLoginCancelEnabled: loginCancelEnabled,
     accountLoginEnabled: loginEnabled,
+    accountCreditsNudgeEnabled: creditsNudgeEnabled,
     accountLogoutEnabled: logoutEnabled,
     configBatchWriteEnabled,
     configValueWriteEnabled,
@@ -31574,7 +32194,10 @@ export function buildSettingsIntegrations({
                 : "settings-summary-only",
       },
       auth: {
-        state: loginEnabled || loginCancelEnabled || logoutEnabled ? "partial" : "blocked",
+        state:
+          loginEnabled || loginCancelEnabled || creditsNudgeEnabled || logoutEnabled
+            ? "partial"
+            : "blocked",
         stateVisible: false,
         rateLimitsAvailable: false,
         rateLimitReached: false,
@@ -31584,15 +32207,19 @@ export function buildSettingsIntegrations({
         loginEnabled,
         deviceCodeLoginEnabled: loginEnabled,
         loginCancelEnabled,
+        creditsNudgeAvailable: true,
+        creditsNudgeEnabled,
         activeLoginFlowCount: safeCount(accountLoginFlowSummary?.activeCount),
         loginRefsReturned: false,
         logoutAvailable: true,
         logoutEnabled,
-        mutationEnabled: loginEnabled || loginCancelEnabled || logoutEnabled,
+        mutationEnabled: loginEnabled || loginCancelEnabled || creditsNudgeEnabled || logoutEnabled,
         reason: loginEnabled
           ? "account-login-device-code-opt-in-only"
           : loginCancelEnabled
           ? "account-login-cancel-opt-in-only"
+          : creditsNudgeEnabled
+          ? "account-credits-nudge-opt-in-only"
           : logoutEnabled
           ? "account-logout-opt-in-only"
           : "requires-explicit-inventory-enable",
@@ -31668,6 +32295,7 @@ export function buildSettingsIntegrations({
     preflightHistory,
     preflightConfirmationHistory,
     accountLoginHistory: recentAccountLoginHistory,
+    accountCreditsNudgeHistory: recentAccountCreditsNudgeHistory,
     accountLogoutHistory: recentAccountLogoutHistory,
     integrationScope,
     methodAudit,
@@ -31689,6 +32317,8 @@ export function buildSettingsIntegrations({
       preflightConfirmationHistoryLimit: MAX_INTEGRATION_PREFLIGHT_CONFIRMATION_HISTORY_RECORDS,
       accountLogoutHistoryReturned: true,
       accountLogoutHistoryLimit: MAX_ACCOUNT_LOGOUT_HISTORY_RECORDS,
+      accountCreditsNudgeHistoryReturned: true,
+      accountCreditsNudgeHistoryLimit: MAX_ACCOUNT_CREDITS_NUDGE_HISTORY_RECORDS,
       accountLoginHistoryReturned: true,
       accountLoginHistoryLimit: MAX_ACCOUNT_LOGIN_HISTORY_RECORDS,
       preflightTokensReturned: false,
@@ -31755,6 +32385,7 @@ function buildIntegrationActionScope({
   enabledReadMethods = [],
   accountLoginCancelEnabled = false,
   accountLoginEnabled = false,
+  accountCreditsNudgeEnabled = false,
   accountLogoutEnabled = false,
   configBatchWriteEnabled = false,
   configValueWriteEnabled = false,
@@ -31792,6 +32423,7 @@ function buildIntegrationActionScope({
     "integration-action-preflight",
     accountLoginEnabled ? "account/login/start" : null,
     accountLoginCancelEnabled ? "account/login/cancel" : null,
+    accountCreditsNudgeEnabled ? "account/sendAddCreditsNudgeEmail" : null,
     accountLogoutEnabled ? "account/logout" : null,
     configBatchWriteEnabled ? "config/batchWrite" : null,
     configValueWriteEnabled ? "config/value/write" : null,
@@ -31824,6 +32456,8 @@ function buildIntegrationActionScope({
     authDeviceCodeLoginEnabled: Boolean(accountLoginEnabled),
     accountLoginCancelEnabled: Boolean(accountLoginCancelEnabled),
     authDeviceCodeCancelEnabled: Boolean(accountLoginCancelEnabled),
+    accountCreditsNudgeEnabled: Boolean(accountCreditsNudgeEnabled),
+    authCreditsNudgeEnabled: Boolean(accountCreditsNudgeEnabled),
     accountLogoutEnabled: Boolean(accountLogoutEnabled),
     authCallbacksEnabled: false,
     authTokenAccessEnabled: false,
@@ -31879,16 +32513,19 @@ function summarizeIntegrationLifecycle(payload = {}) {
   const preflightHistory = payload.preflightHistory ?? {};
   const preflightConfirmationHistory = payload.preflightConfirmationHistory ?? {};
   const accountLoginHistory = payload.accountLoginHistory ?? {};
+  const accountCreditsNudgeHistory = payload.accountCreditsNudgeHistory ?? {};
   const accountLogoutHistory = payload.accountLogoutHistory ?? {};
   const enabledMutationGateCount = countEnabledIntegrationMutationGates(integrationScope);
   const preflightHistoryCount = safeCount(preflightHistory.count);
   const confirmationHistoryCount = safeCount(preflightConfirmationHistory.count);
   const accountLoginHistoryCount = safeCount(accountLoginHistory.count);
+  const accountCreditsNudgeHistoryCount = safeCount(accountCreditsNudgeHistory.count);
   const accountLogoutHistoryCount = safeCount(accountLogoutHistory.count);
   const historyCount =
     preflightHistoryCount +
     confirmationHistoryCount +
     accountLoginHistoryCount +
+    accountCreditsNudgeHistoryCount +
     accountLogoutHistoryCount;
   const appServerTouched = Boolean(payload.appServer?.touched);
   const integrationActions = summarizeIntegrationActions({
@@ -31905,6 +32542,7 @@ function summarizeIntegrationLifecycle(payload = {}) {
     preflightHistoryCount,
     confirmationHistoryCount,
     accountLoginHistoryCount,
+    accountCreditsNudgeHistoryCount,
     accountLogoutHistoryCount,
     activeLoginFlowCount: safeCount(surfaces.auth?.activeLoginFlowCount),
     appServerTouched,
@@ -31989,6 +32627,7 @@ function summarizeIntegrationLifecycle(payload = {}) {
     authMutationEnabled: Boolean(
       integrationScope.accountLoginEnabled ||
         integrationScope.accountLoginCancelEnabled ||
+        integrationScope.accountCreditsNudgeEnabled ||
         integrationScope.accountLogoutEnabled,
     ),
     mcpActionEnabled: Boolean(
@@ -32362,6 +33001,9 @@ function summarizeIntegrationAuditContract({
   const preflightHistoryCount = safeCount(integrationManagement.preflightHistoryCount);
   const confirmationHistoryCount = safeCount(integrationManagement.confirmationHistoryCount);
   const accountLoginHistoryCount = safeCount(integrationManagement.accountLoginHistoryCount);
+  const accountCreditsNudgeHistoryCount = safeCount(
+    integrationManagement.accountCreditsNudgeHistoryCount,
+  );
   const accountLogoutHistoryCount = safeCount(integrationManagement.accountLogoutHistoryCount);
   const enabledActionFamilyCount = [
     integrationActions.accountActionsEnabled,
@@ -32409,15 +33051,18 @@ function summarizeIntegrationAuditContract({
     preflightHistoryCount,
     confirmationHistoryCount,
     accountLoginHistoryCount,
+    accountCreditsNudgeHistoryCount,
     accountLogoutHistoryCount,
     latestActionAvailable: Boolean(integrationManagement.latestActionAvailable),
     preflightHistoryReturned: true,
     preflightConfirmationHistoryReturned: true,
     accountLoginHistoryReturned: true,
+    accountCreditsNudgeHistoryReturned: true,
     accountLogoutHistoryReturned: true,
     preflightHistoryLimit: MAX_INTEGRATION_PREFLIGHT_HISTORY_RECORDS,
     preflightConfirmationHistoryLimit: MAX_INTEGRATION_PREFLIGHT_CONFIRMATION_HISTORY_RECORDS,
     accountLoginHistoryLimit: MAX_ACCOUNT_LOGIN_HISTORY_RECORDS,
+    accountCreditsNudgeHistoryLimit: MAX_ACCOUNT_CREDITS_NUDGE_HISTORY_RECORDS,
     accountLogoutHistoryLimit: MAX_ACCOUNT_LOGOUT_HISTORY_RECORDS,
     persistentActionAuditRequiredForExecution: true,
     actionAuditRecordsSanitized: true,
@@ -32622,6 +33267,7 @@ function summarizeIntegrationActions({
   const accountActionCount = [
     integrationScope.accountLoginEnabled,
     integrationScope.accountLoginCancelEnabled,
+    integrationScope.accountCreditsNudgeEnabled,
     integrationScope.accountLogoutEnabled,
   ].filter(Boolean).length;
   const settingsActionCount = [
@@ -32707,6 +33353,7 @@ function summarizeIntegrationManagement({
   preflightHistoryCount = 0,
   confirmationHistoryCount = 0,
   accountLoginHistoryCount = 0,
+  accountCreditsNudgeHistoryCount = 0,
   accountLogoutHistoryCount = 0,
   activeLoginFlowCount = 0,
   appServerTouched = false,
@@ -32759,6 +33406,7 @@ function summarizeIntegrationManagement({
     preflightHistoryCount: safeCount(preflightHistoryCount),
     confirmationHistoryCount: safeCount(confirmationHistoryCount),
     accountLoginHistoryCount: safeCount(accountLoginHistoryCount),
+    accountCreditsNudgeHistoryCount: safeCount(accountCreditsNudgeHistoryCount),
     accountLogoutHistoryCount: safeCount(accountLogoutHistoryCount),
     activeLoginFlowCount: safeCount(activeLoginFlowCount),
     latestActionAvailable,
@@ -32865,6 +33513,7 @@ function countEnabledIntegrationMutationGates(integrationScope = {}) {
   return [
     integrationScope.accountLoginEnabled,
     integrationScope.accountLoginCancelEnabled,
+    integrationScope.accountCreditsNudgeEnabled,
     integrationScope.accountLogoutEnabled,
     integrationScope.settingsWriteEnabled,
     integrationScope.configBatchWriteEnabled,
@@ -32887,6 +33536,7 @@ function summarizeLatestIntegrationLifecycleAction(payload = {}) {
   const candidates = [
     ...integrationLifecycleHistoryCandidates(payload.preflightConfirmationHistory, "confirmation"),
     ...integrationLifecycleHistoryCandidates(payload.accountLoginHistory, "account-login"),
+    ...integrationLifecycleHistoryCandidates(payload.accountCreditsNudgeHistory, "account-credits-nudge"),
     ...integrationLifecycleHistoryCandidates(payload.accountLogoutHistory, "account-logout"),
     ...integrationLifecycleHistoryCandidates(payload.preflightHistory, "preflight"),
   ].sort((a, b) => String(b.recordedAt ?? "").localeCompare(String(a.recordedAt ?? "")));
@@ -34378,6 +35028,21 @@ function sanitizeAccountLogoutProbe(accountLogout) {
   return {
     method: "account/logout",
     resultStatus: cleanDisplayText(accountLogout?.resultStatus, 80) ?? "logged-out",
+    authMutation: true,
+    modelTraffic: false,
+    tokensReturned: false,
+    accountIdentifiersReturned: false,
+    urlsReturned: false,
+    rawPayloadReturned: false,
+  };
+}
+
+function sanitizeAccountCreditsNudgeProbe(accountCreditsNudge, { creditType = null } = {}) {
+  return {
+    method: "account/sendAddCreditsNudgeEmail",
+    creditType: sanitizeAccountCreditsNudgeCreditType(accountCreditsNudge?.creditType ?? creditType),
+    resultStatus: sanitizeAccountCreditsNudgeStatus(accountCreditsNudge?.resultStatus),
+    emailSideEffect: true,
     authMutation: true,
     modelTraffic: false,
     tokensReturned: false,
@@ -37122,6 +37787,22 @@ function validateAccountLoginRef(value) {
     throwRequestError("Account login flow selector is required", 400);
   }
   return clean;
+}
+
+function sanitizeAccountCreditsNudgeCreditType(value) {
+  const clean = cleanDisplayText(value, 16);
+  if (clean === "credits" || clean === "usage_limit") {
+    return clean;
+  }
+  throwRequestError("Unsupported account credits nudge type", 400);
+}
+
+function sanitizeAccountCreditsNudgeStatus(value) {
+  const clean = cleanDisplayText(value, 32);
+  if (clean === "sent" || clean === "cooldown_active") {
+    return clean;
+  }
+  return "unknown";
 }
 
 function validateTerminalRef(value) {

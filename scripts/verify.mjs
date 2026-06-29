@@ -68,6 +68,7 @@ async function main() {
   await checkSettingsIntegrationsApi();
   await checkAccountLoginApi();
   await checkAccountLoginCancelApi();
+  await checkAccountCreditsNudgeApi();
   await checkAccountLogoutApi();
   await checkSettingsIntegrationsInventoryApi();
   await checkSettingsIntegrationsNamesApi();
@@ -941,6 +942,11 @@ async function checkStrictBrowserPostBodies() {
           loginRef: "loginref-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
           preflightToken: "preflight-1234567890abcdef",
         },
+      ],
+      ["/api/account-credits-nudge-preflight", { creditType: "usage_limit" }],
+      [
+        "/api/account-credits-nudge",
+        { creditType: "usage_limit", preflightToken: "preflight-1234567890abcdef" },
       ],
       ["/api/account-logout-preflight", {}],
       ["/api/account-logout", { preflightToken: "preflight-1234567890abcdef" }],
@@ -13920,6 +13926,177 @@ async function checkAccountLoginCancelApi() {
   pass("dev server account login cancel consumes opaque references behind opt-in one-time tokens");
 }
 
+async function checkAccountCreditsNudgeApi() {
+  const actionAuditDir = await mkdtemp(join(tmpdir(), "codex-verify-account-credits-audit-"));
+  const actionAuditLogPath = join(actionAuditDir, "actions.jsonl");
+  const calls = [];
+  const server = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    accountCreditsNudgeEnabled: true,
+    accountCreditsNudgeFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-06-29T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/verify-private-home",
+          userAgent: "verify-private-agent",
+        },
+        probes: {
+          accountCreditsNudge: {
+            method: "account/sendAddCreditsNudgeEmail",
+            creditType: options.creditType,
+            resultStatus: "cooldown_active",
+            emailSideEffect: true,
+            authMutation: true,
+            modelTraffic: false,
+            tokensReturned: true,
+            accountIdentifiersReturned: true,
+            urlsReturned: true,
+            rawPayloadReturned: true,
+            email: "private@example.com",
+            token: "sk-proj-private-auth-token",
+          },
+        },
+        notifications: {},
+      };
+    },
+    actionAuditLog: createActionAuditLog({
+      path: actionAuditLogPath,
+      now: () => "2026-06-29T00:00:00.000Z",
+    }),
+  });
+  const port = await listenWithFallback(server, { host: "127.0.0.1", port: 0 });
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  try {
+    const token = await readUiSessionToken(baseUrl);
+    const settingsResponse = await fetch(`${baseUrl}/api/settings-integrations`, {
+      headers: apiHeaders(token),
+    });
+    if (!settingsResponse.ok) {
+      throw new Error(`settings integrations for account credits nudge returned HTTP ${settingsResponse.status}`);
+    }
+    const settingsPayload = await settingsResponse.json();
+    if (
+      settingsPayload.surfaces?.auth?.creditsNudgeAvailable !== true ||
+      settingsPayload.surfaces?.auth?.creditsNudgeEnabled !== true ||
+      settingsPayload.integrationScope?.accountCreditsNudgeEnabled !== true ||
+      !settingsPayload.integrationScope?.enabledLocalGates?.includes(
+        "account/sendAddCreditsNudgeEmail",
+      )
+    ) {
+      throw new Error("settings integrations did not expose the account credits nudge gate safely");
+    }
+
+    const preflightResponse = await fetch(`${baseUrl}/api/account-credits-nudge-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({ creditType: "usage_limit" }),
+    });
+    if (!preflightResponse.ok) {
+      throw new Error(`account credits nudge preflight returned HTTP ${preflightResponse.status}`);
+    }
+    const preflightPayload = await preflightResponse.json();
+    if (
+      preflightPayload.action?.type !== "account-credits-nudge-preflight" ||
+      preflightPayload.action?.method !== "account/sendAddCreditsNudgeEmail" ||
+      preflightPayload.target?.creditType !== "usage_limit" ||
+      preflightPayload.action?.emailSideEffect !== false ||
+      preflightPayload.policy?.executionGateEnabled !== true ||
+      preflightPayload.policy?.emailSideEffects !== false
+    ) {
+      throw new Error("account credits nudge preflight did not preserve the gated shape");
+    }
+    assertActionPreflight(preflightPayload, "account-credits-nudge-preflight", "default");
+
+    const response = await fetch(`${baseUrl}/api/account-credits-nudge`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        creditType: "usage_limit",
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(`account credits nudge returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    assertSanitizedAccountCreditsNudge(payload, {
+      token: preflightPayload.preflight.token,
+      status: "cooldown_active",
+    });
+    if (
+      calls.length !== 1 ||
+      calls[0].cwd !== "/tmp/codex-app-port-verify" ||
+      calls[0].creditType !== "usage_limit"
+    ) {
+      throw new Error("account credits nudge did not call the app-server nudge path once");
+    }
+
+    const replayResponse = await fetch(`${baseUrl}/api/account-credits-nudge`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        creditType: "usage_limit",
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    if (replayResponse.status !== 409) {
+      throw new Error(`account credits nudge replay returned HTTP ${replayResponse.status}`);
+    }
+
+    const auditRecords = (await readFile(actionAuditLogPath, "utf8"))
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    if (
+      auditRecords.length !== 1 ||
+      auditRecords[0].event !== "account-credits-nudge-recorded" ||
+      auditRecords[0].action?.type !== "account-credits-nudge" ||
+      auditRecords[0].action?.method !== "account/sendAddCreditsNudgeEmail" ||
+      auditRecords[0].target?.creditType !== "usage_limit" ||
+      auditRecords[0].result?.emailSideEffect !== true ||
+      auditRecords[0].result?.accountIdentifiersReturned !== false
+    ) {
+      throw new Error("account credits nudge audit record did not preserve sanitized metadata");
+    }
+    assertNoMarkers(JSON.stringify(auditRecords), [
+      preflightPayload.preflight.token,
+      "/tmp/codex-app-port-verify",
+      "/tmp/verify-private-home",
+      "verify-private-agent",
+      "codexHome",
+      "userAgent",
+      "sk-proj-private-auth-token",
+      "acct-private",
+      "private@example.com",
+      "\"tokensReturned\":true",
+      "\"accountIdentifiersReturned\":true",
+      "\"urlsReturned\":true",
+    ]);
+
+    const historyResponse = await fetch(`${baseUrl}/api/settings-integrations`, {
+      headers: apiHeaders(token),
+    });
+    if (!historyResponse.ok) {
+      throw new Error(`account credits nudge history returned HTTP ${historyResponse.status}`);
+    }
+    assertSanitizedAccountCreditsNudgeHistory(await historyResponse.json(), {
+      token: preflightPayload.preflight.token,
+      status: "cooldown_active",
+    });
+  } finally {
+    await closeServer(server);
+    await rm(actionAuditDir, { recursive: true, force: true });
+  }
+  pass("dev server account credits nudge consumes opt-in one-time tokens without returning auth secrets");
+}
+
 async function checkAccountLogoutApi() {
   const actionAuditDir = await mkdtemp(join(tmpdir(), "codex-verify-account-logout-audit-"));
   const actionAuditLogPath = join(actionAuditDir, "actions.jsonl");
@@ -23073,6 +23250,157 @@ function assertSanitizedAccountLoginHistory(payload, { token, workspaceId = "def
       auditLogged: true,
     },
   });
+}
+
+function assertSanitizedAccountCreditsNudge(payload, { token, status }) {
+  const serialized = JSON.stringify(payload);
+  assertNoMarkers(serialized, [
+    token,
+    "/tmp/codex-app-port-verify",
+    "/tmp/verify-private-home",
+    "verify-private-agent",
+    "codexHome",
+    "userAgent",
+    "sk-proj-private-auth-token",
+    "acct-private",
+    "private@example.com",
+    "\"tokensReturned\":true",
+    "\"accountIdentifiersReturned\":true",
+    "\"urlsReturned\":true",
+    "\"rawPayloadReturned\":true",
+  ]);
+  if (
+    !payload.ok ||
+    payload.workspace?.id !== "default" ||
+    Object.hasOwn(payload.workspace, "cwd") ||
+    payload.appServer?.touched !== true ||
+    payload.appServer?.modelTraffic !== false ||
+    payload.appServer?.commandTraffic !== false ||
+    JSON.stringify(payload.appServer?.auditedMethods ?? []) !==
+      JSON.stringify(["account/sendAddCreditsNudgeEmail"]) ||
+    payload.action?.type !== "account-credits-nudge" ||
+    payload.action?.method !== "account/sendAddCreditsNudgeEmail" ||
+    payload.action?.execution !== status ||
+    payload.action?.authMutation !== true ||
+    payload.action?.emailSideEffect !== true ||
+    payload.action?.modelTraffic !== false ||
+    payload.preflight?.tokenConsumed !== true ||
+    payload.preflight?.tokenReturned !== false ||
+    payload.target?.creditType !== "usage_limit" ||
+    payload.target?.tokensReturned !== false ||
+    payload.target?.accountIdentifiersReturned !== false ||
+    payload.target?.urlsReturned !== false ||
+    payload.email?.sideEffect !== true ||
+    payload.email?.addressReturned !== false
+  ) {
+    throw new Error("account credits nudge payload did not expose sanitized mutation metadata");
+  }
+  const accountCreditsNudge = payload.probes?.accountCreditsNudge;
+  if (
+    accountCreditsNudge?.method !== "account/sendAddCreditsNudgeEmail" ||
+    accountCreditsNudge?.creditType !== "usage_limit" ||
+    accountCreditsNudge?.resultStatus !== status ||
+    accountCreditsNudge?.emailSideEffect !== true ||
+    accountCreditsNudge?.authMutation !== true ||
+    accountCreditsNudge?.modelTraffic !== false ||
+    accountCreditsNudge?.tokensReturned !== false ||
+    accountCreditsNudge?.accountIdentifiersReturned !== false ||
+    accountCreditsNudge?.urlsReturned !== false ||
+    accountCreditsNudge?.rawPayloadReturned !== false
+  ) {
+    throw new Error("account credits nudge probe did not sanitize unsafe fields");
+  }
+  if (
+    payload.policy?.appServerTraffic !== true ||
+    payload.policy?.modelTraffic !== false ||
+    payload.policy?.commandTraffic !== false ||
+    payload.policy?.authCallbacks !== false ||
+    payload.policy?.authMutations !== true ||
+    payload.policy?.emailSideEffects !== true ||
+    payload.policy?.tokensReturned !== false ||
+    payload.policy?.accountIdentifiersReturned !== false ||
+    payload.policy?.urlsReturned !== false ||
+    payload.policy?.rawPayloadReturned !== false ||
+    payload.policy?.requiresExplicitEnablement !== true ||
+    payload.policy?.preflightTokenConsumed !== true ||
+    payload.policy?.auditLogWritableChecked !== true ||
+    payload.policy?.implemented !== true
+  ) {
+    throw new Error("account credits nudge policy did not preserve opt-in safety gates");
+  }
+}
+
+function assertSanitizedAccountCreditsNudgeHistory(
+  payload,
+  { token, status, workspaceId = "default" },
+) {
+  const serialized = JSON.stringify(payload.accountCreditsNudgeHistory);
+  assertNoMarkers(serialized, [
+    token,
+    "/tmp/codex-app-port-verify",
+    "/tmp/verify-private-home",
+    "verify-private-agent",
+    "codexHome",
+    "userAgent",
+    "sk-proj-private-auth-token",
+    "acct-private",
+    "private@example.com",
+    "\"tokensReturned\":true",
+    "\"accountIdentifiersReturned\":true",
+    "\"urlsReturned\":true",
+    "\"rawPayloadReturned\":true",
+    "\"rawPayloadsReturned\":true",
+  ]);
+  if (
+    payload.policy?.accountCreditsNudgeHistoryReturned !== true ||
+    payload.policy?.accountCreditsNudgeHistoryLimit !== 20 ||
+    payload.policy?.preflightTokensReturned !== false
+  ) {
+    throw new Error("settings integrations policy did not expose bounded credits nudge history");
+  }
+  const history = payload.accountCreditsNudgeHistory;
+  if (
+    history?.count !== 1 ||
+    history?.items?.length !== 1 ||
+    history?.limit !== 20 ||
+    history?.appServerTraffic !== true ||
+    history?.authMutationsRecorded !== true ||
+    history?.emailSideEffectsRecorded !== true ||
+    history?.preflightTokensReturned !== false ||
+    history?.tokensReturned !== false ||
+    history?.accountIdentifiersReturned !== false ||
+    history?.urlsReturned !== false ||
+    history?.rawPayloadsReturned !== false
+  ) {
+    throw new Error("account credits nudge history summary did not preserve sanitized metadata");
+  }
+  const item = history.items[0];
+  if (
+    item?.workspace?.id !== workspaceId ||
+    item?.action?.type !== "account-credits-nudge" ||
+    item?.action?.method !== "account/sendAddCreditsNudgeEmail" ||
+    item?.action?.execution !== status ||
+    item?.action?.authMutation !== true ||
+    item?.action?.emailSideEffect !== true ||
+    item?.target?.creditType !== "usage_limit" ||
+    item?.result?.status !== status ||
+    item?.result?.emailSideEffect !== true ||
+    item?.result?.tokensReturned !== false ||
+    item?.result?.accountIdentifiersReturned !== false ||
+    item?.result?.urlsReturned !== false ||
+    item?.preflight?.tokenConsumed !== true ||
+    item?.preflight?.tokenReturned !== false ||
+    item?.preflight?.workspaceId !== workspaceId ||
+    item?.policy?.tokensReturned !== false ||
+    item?.policy?.accountIdentifiersReturned !== false ||
+    item?.policy?.urlsReturned !== false ||
+    item?.policy?.rawPayloadReturned !== false ||
+    item?.policy?.preflightTokenReturned !== false ||
+    item?.policy?.auditLogWritten !== true ||
+    item?.policy?.sensitivePayloadLogged !== false
+  ) {
+    throw new Error("account credits nudge history item did not preserve sanitized metadata");
+  }
 }
 
 function assertSanitizedAccountLogout(payload, { token }) {

@@ -584,9 +584,9 @@ allowlist requirements, and sanitized audit requirements without tokens,
 targets, arguments, resource content, skill content, names, URLs, paths,
 secrets, raw payloads, or app-server payloads.
 
-Device-code account login, login cancel, and account logout are the only
+Device-code account login, login cancel, account credits nudge, and account logout are the only
 dedicated auth mutation routes. Their preflight endpoints do not touch
-app-server, return one-time local tokens, and all six account auth
+app-server, return one-time local tokens, and all eight account auth
 preflight/execution responses are constrained by route-specific nested response
 schemas. `/api/account-login-start` is
 disabled unless
@@ -601,11 +601,17 @@ account IDs, emails, raw app-server payloads, cwd, paths, and preflight tokens.
 `CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN_CANCEL=1`, accepts only the opaque
 process-local cancel reference plus a matching one-time token, calls only
 `account/login/cancel`, and never returns or logs the private app-server
-`loginId`. `/api/account-logout` remains separately gated by
+`loginId`. `/api/account-credits-nudge` is separately gated by
+`CODEX_APP_PORT_ALLOW_ACCOUNT_CREDITS_NUDGE=1`, accepts only `credits` or
+`usage_limit`, consumes a matching one-time token, calls only
+`account/sendAddCreditsNudgeEmail`, and never returns or logs email addresses,
+auth tokens, account IDs, URLs, cwd, paths, or raw app-server payloads.
+`/api/account-logout` remains separately gated by
 `CODEX_APP_PORT_ALLOW_ACCOUNT_LOGOUT=1` and calls only `account/logout`.
 Auth callbacks, login/linking flows that need OAuth callback handling, and token
-access remain blocked. Successful account login/cancel/logout actions are also
-visible in capped process-local histories returned by `/api/settings-integrations`.
+access remain blocked. Successful account login/cancel/credits-nudge/logout
+actions are also visible in capped process-local histories returned by
+`/api/settings-integrations`.
 
 When the server is started with `CODEX_APP_PORT_ALLOW_INTEGRATION_INVENTORY=1`,
 the same endpoint may call `configRequirements/read`, `model/list`,
@@ -1502,6 +1508,10 @@ Current UI scope:
 - opt-in account login cancel behind one-time preflight token, with
   `account/login/cancel` only, opaque cancel references, and no login reference,
   login ID, auth URL, token, account identifier, path, raw payload, or token echo
+- opt-in account credits nudge behind one-time preflight token, with
+  `account/sendAddCreditsNudgeEmail` only, `credits`/`usage_limit` validation,
+  and no email address, token, account identifier, URL, path, raw payload, or
+  token echo
 - sanitized account logout history with method/status/audit metadata only and
   no auth token, account identifier, URL, path, raw payload, or token echo
 - sanitized account login history with method/status/audit metadata only and no

@@ -57,6 +57,12 @@ Target parity with the Codex desktop workflow:
 - `remoteControl/status/read` has an opt-in, counts-only inventory path; it
   reports status buckets and identity-field presence only, not status strings,
   server names, installation ids, environment ids, or raw payloads.
+- `account/sendAddCreditsNudgeEmail` has a separate disabled-by-default
+  `POST /api/account-credits-nudge` path behind
+  `CODEX_APP_PORT_ALLOW_ACCOUNT_CREDITS_NUDGE=1`; it consumes a matching
+  one-time preflight token, accepts only `credits` or `usage_limit`, and returns
+  only sanitized status/audit metadata, not email addresses, tokens, account
+  identifiers, URLs, cwd, paths, or raw payloads.
 - `thread/search` has a separate disabled-by-default `POST /api/thread-search`
   path behind `CODEX_APP_PORT_ALLOW_THREAD_SEARCH=1`; it may send the bounded
   search term to the local app-server, but returns only counts, cursor-presence,

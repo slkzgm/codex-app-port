@@ -6,6 +6,7 @@ export const APP_SERVER_METHODS = Object.freeze({
   accountLoginStart: "account/login/start",
   accountLoginCancel: "account/login/cancel",
   accountLogout: "account/logout",
+  accountSendAddCreditsNudgeEmail: "account/sendAddCreditsNudgeEmail",
   configRead: "config/read",
   modelList: "model/list",
   modelProviderCapabilitiesRead: "modelProvider/capabilities/read",

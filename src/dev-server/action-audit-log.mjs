@@ -15,6 +15,7 @@ export const MAX_ACTION_AUDIT_LINE_BYTES = 4096;
 
 const ACTION_AUDIT_EVENTS = new Set([
   "account-login-cancel-recorded",
+  "account-credits-nudge-recorded",
   "account-login-recorded",
   "account-logout-recorded",
   "config-batch-write-recorded",
@@ -207,6 +208,8 @@ function actionAuditEvent(actionType) {
   switch (actionType) {
     case "account-login-cancel":
       return "account-login-cancel-recorded";
+    case "account-credits-nudge":
+      return "account-credits-nudge-recorded";
     case "account-login":
       return "account-login-recorded";
     case "account-logout":
@@ -304,6 +307,17 @@ function sanitizeAction(action, actionType, { appServer }) {
       execution: safeString(action.execution, 40) ?? "started-with-redactions",
       authMutation: Boolean(action.authMutation),
       authFlowStarted: Boolean(action.authFlowStarted),
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: false,
+    };
+  }
+  if (actionType === "account-credits-nudge") {
+    return {
+      type: "account-credits-nudge",
+      method: "account/sendAddCreditsNudgeEmail",
+      execution: safeCreditsNudgeStatus(action.execution),
+      authMutation: Boolean(action.authMutation),
+      emailSideEffect: Boolean(action.emailSideEffect),
       appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
       modelTraffic: false,
     };
@@ -717,6 +731,15 @@ function sanitizeTarget(target, actionType) {
       urlsReturned: false,
     };
   }
+  if (actionType === "account-credits-nudge") {
+    return {
+      creditType: safeCreditsNudgeType(target.creditType),
+      creditTypeReturned: true,
+      accountIdentifiersReturned: false,
+      tokensReturned: false,
+      urlsReturned: false,
+    };
+  }
   if (actionType === "account-logout") {
     return {
       accountIdentifiersReturned: false,
@@ -1094,6 +1117,18 @@ function sanitizeResult(result, actionType) {
   if (actionType === "account-logout") {
     return {
       status: safeString(result.status, 80) ?? "logged-out",
+      tokensReturned: false,
+      accountIdentifiersReturned: false,
+      urlsReturned: false,
+      rawPayloadReturned: false,
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
+  if (actionType === "account-credits-nudge") {
+    return {
+      status: safeCreditsNudgeStatus(result.status),
+      emailSideEffect: true,
       tokensReturned: false,
       accountIdentifiersReturned: false,
       urlsReturned: false,
@@ -1610,9 +1645,20 @@ function sanitizeMethodList(methods) {
     .slice(0, 12);
 }
 
+function safeCreditsNudgeType(value) {
+  const clean = safeString(value, 16);
+  return clean === "credits" || clean === "usage_limit" ? clean : "credits";
+}
+
+function safeCreditsNudgeStatus(value) {
+  const clean = safeString(value, 32);
+  return clean === "sent" || clean === "cooldown_active" ? clean : "unknown";
+}
+
 function sanitizeActionType(value) {
   return [
     "account-login-cancel",
+    "account-credits-nudge",
     "account-login",
     "account-logout",
     "config-batch-write",

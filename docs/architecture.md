@@ -396,16 +396,22 @@ Current M1 status:
   references, `account/login/cancel` only, no model traffic, and sanitized
   responses/action audit records without login references, login IDs, tokens,
   account identifiers, auth URLs, cwd, paths, or raw app-server payloads
+- done: opt-in `/api/account-credits-nudge` path behind
+  `CODEX_APP_PORT_ALLOW_ACCOUNT_CREDITS_NUDGE=1`, with matching one-time
+  account-credits-nudge-preflight token consumption, `account/sendAddCreditsNudgeEmail`
+  only, `credits`/`usage_limit` enum validation, no model traffic, and sanitized
+  responses/action audit records without email addresses, tokens, account
+  identifiers, auth URLs, cwd, paths, or raw app-server payloads
 - done: opt-in `/api/account-logout` path behind
   `CODEX_APP_PORT_ALLOW_ACCOUNT_LOGOUT=1`, with matching one-time
   account-logout-preflight token consumption, `account/logout` only, no model
   traffic, and sanitized action audit records without tokens, account
   identifiers, auth URLs, cwd, paths, or raw app-server payloads
-- done: capped process-local account login/cancel/logout history exposed through
-  `/api/settings-integrations` and the UI with workspace label/id,
+- done: capped process-local account login/cancel/credits-nudge/logout history exposed through
+  `/api/settings-integrations` with workspace label/id,
   method/status, token-consumed status, and audit/redaction flags only, without
-  auth tokens, account identifiers, auth URLs, device codes, verification URLs,
-  login IDs, cancel references, preflight tokens, paths, raw intents, or raw
+  auth tokens, account identifiers, auth URLs, email addresses, device codes,
+  verification URLs, login IDs, cancel references, preflight tokens, paths, raw intents, or raw
   app-server payloads
 - done: schema-backed Settings/Auth/Apps/MCP/Skills/Plugins method audit covering
   opt-in read inventory plus blocked auth callbacks, ungated MCP tool/resource
@@ -414,7 +420,7 @@ Current M1 status:
   marketplace mutations
 - done: browser-facing `/api/settings-integrations` integration scope summary
   exposes only active read method names, local preflight/login/login-cancel/
-  logout gates, and blocked mutation method names/counts, without secrets, auth tokens, hook
+  credits-nudge/logout gates, and blocked mutation method names/counts, without secrets, auth tokens, hook
   commands, rate-limit details, ungated names, paths, URLs, or raw payloads
 - done: browser-facing `/api/settings-integrations` integration lifecycle summary
   and UI counters derived only from sanitized surfaces, scope, and bounded

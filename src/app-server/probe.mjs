@@ -3747,6 +3747,92 @@ export async function runAccountLogoutProbe({
   }
 }
 
+export async function runAccountCreditsNudgeProbe({
+  codexBin = process.env.CODEX_BIN || "codex",
+  codexArgs = ["app-server", "--listen", "stdio://"],
+  cwd = process.cwd(),
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+  creditType,
+  onNotification = null,
+} = {}) {
+  if (process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_CREDITS_NUDGE !== "1") {
+    throw new Error(
+      "account/sendAddCreditsNudgeEmail requires CODEX_APP_PORT_ALLOW_ACCOUNT_CREDITS_NUDGE=1 because it sends an account email",
+    );
+  }
+
+  if (!["credits", "usage_limit"].includes(creditType)) {
+    throw new Error("account credits nudge requires a supported credit type");
+  }
+
+  const notifications = [];
+  const client = new JsonlRpcClient({
+    command: codexBin,
+    args: codexArgs,
+    cwd,
+    timeoutMs,
+    onNotification(notification) {
+      notifications.push({
+        method: notification.method,
+      });
+      onNotification?.(notification);
+    },
+  });
+
+  await client.start();
+
+  try {
+    const initialize = normalizeInitializeResponse(
+      await client.request(APP_SERVER_METHODS.initialize, {
+        clientInfo: {
+          name: "codex_app_port",
+          title: "Codex App Port",
+          version: "0.1.0",
+        },
+        capabilities: {
+          experimentalApi: false,
+          requestAttestation: false,
+        },
+      }),
+    );
+
+    client.notify(APP_SERVER_METHODS.initialized);
+    const result = await client.request(
+      APP_SERVER_METHODS.accountSendAddCreditsNudgeEmail,
+      { creditType },
+      { timeoutMs },
+    );
+    const status = ["sent", "cooldown_active"].includes(result?.status)
+      ? result.status
+      : "unknown";
+
+    return {
+      ok: true,
+      generatedAt: new Date().toISOString(),
+      transport: "stdio-jsonl",
+      protocol: "json-rpc-2.0-without-jsonrpc-field",
+      initialize: summarizeInitialize(initialize),
+      probes: {
+        accountCreditsNudge: {
+          method: APP_SERVER_METHODS.accountSendAddCreditsNudgeEmail,
+          creditType,
+          resultStatus: status,
+          emailSideEffect: true,
+          modelTraffic: false,
+          authMutation: true,
+          tokensReturned: false,
+          accountIdentifiersReturned: false,
+          urlsReturned: false,
+          rawPayloadReturned: false,
+        },
+      },
+      notifications: notificationCounts(notifications),
+    };
+  } finally {
+    await client.close();
+  }
+}
+
 export async function runAccountLoginStartProbe({
   codexBin = process.env.CODEX_BIN || "codex",
   codexArgs = ["app-server", "--listen", "stdio://"],

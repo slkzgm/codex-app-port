@@ -610,7 +610,7 @@
   skill config write, plugin install/uninstall/share, or marketplace mutation methods until callback provenance,
   install provenance, replay protection, and secret/path redaction are
   implemented and tested.
-- Browser-facing device-code account login, login cancel, and account logout are
+- Browser-facing device-code account login, login cancel, account credits nudge, and account logout are
   the only auth mutation exceptions. They must be blocked by default. Login may
   call only `account/login/start` with `{"type":"chatgptDeviceCode"}` when
   `CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN=1` is enabled and a matching one-time
@@ -620,17 +620,21 @@
   `/api/account-login-cancel-preflight` token has been consumed, and the browser
   supplies only the opaque process-local cancel reference issued by the protected
   immediate login response; the private app-server `loginId` must remain
-  server-side. Logout may call only `account/logout` under the separate
+  server-side. Account credits nudge may call only
+  `account/sendAddCreditsNudgeEmail` with a `credits` or `usage_limit` enum value
+  when `CODEX_APP_PORT_ALLOW_ACCOUNT_CREDITS_NUDGE=1` is enabled and a matching
+  one-time `/api/account-credits-nudge-preflight` token has been consumed.
+  Logout may call only `account/logout` under the separate
   `CODEX_APP_PORT_ALLOW_ACCOUNT_LOGOUT=1` gate. The protected immediate login
   response may return only a sanitized device code, a verified OpenAI/ChatGPT
   HTTPS verification URL, and the opaque cancel reference. All account
-  login/cancel/logout preflight and execution responses are constrained by
+  login/cancel/credits-nudge/logout preflight and execution responses are constrained by
   route-specific nested response schemas. Histories and action
   audit records must not return device codes, verification URLs, login IDs,
-  cancel references, OAuth URLs, auth tokens, account identifiers, raw
+  cancel references, OAuth URLs, auth tokens, account identifiers, email addresses, raw
   app-server payloads, cwd, paths, or preflight tokens; linking, callback
   handling, and token access remain blocked.
-- Browser-facing account login/cancel/logout history may expose only capped
+- Browser-facing account login/cancel/credits-nudge/logout history may expose only capped
   process-local metadata for auth actions already performed through this server: workspace
   label/id, action type/method, result status, token-consumed state, audit
   flags, and redaction flags. It must not expose auth tokens, account

@@ -237,12 +237,16 @@ test("action audit log writes sanitized local mutation JSONL", async () => {
       event: "thread-compact-recorded",
       payload: threadCompactPayload(),
     });
+    log.append({
+      event: "account-credits-nudge-recorded",
+      payload: accountCreditsNudgePayload(),
+    });
 
     const records = (await readFile(path, "utf8"))
       .trim()
       .split("\n")
       .map((line) => JSON.parse(line));
-    assert.equal(records.length, 10);
+    assert.equal(records.length, 11);
     assert.equal(records[0].event, "file-action-recorded");
     assert.equal(records[0].action.fileAction, "writeFile");
     assert.equal(records[0].target.depth, 2);
@@ -315,6 +319,15 @@ test("action audit log writes sanitized local mutation JSONL", async () => {
     assert.equal(records[9].target.threadIdSuffix, "feedbeef");
     assert.equal(records[9].result.loadedSessionCount, 1);
     assert.equal(records[9].result.threadContentReturned, false);
+    assert.equal(records[10].event, "account-credits-nudge-recorded");
+    assert.equal(records[10].action.type, "account-credits-nudge");
+    assert.equal(records[10].action.method, "account/sendAddCreditsNudgeEmail");
+    assert.equal(records[10].action.emailSideEffect, true);
+    assert.equal(records[10].target.creditType, "usage_limit");
+    assert.equal(records[10].target.tokensReturned, false);
+    assert.equal(records[10].result.status, "sent");
+    assert.equal(records[10].result.emailSideEffect, true);
+    assert.equal(records[10].result.accountIdentifiersReturned, false);
 
     const serialized = JSON.stringify(records);
     for (const marker of [
@@ -607,6 +620,59 @@ function accountLogoutPayload() {
       token: "preflight-private-token",
       scope: {
         kind: "account-logout-preflight",
+        workspaceId: "default",
+      },
+      oneTimeUseEnforced: true,
+    },
+  };
+}
+
+function accountCreditsNudgePayload() {
+  return {
+    ok: true,
+    workspace: {
+      id: "default",
+      label: "codex-app-port-test",
+      isDefault: true,
+      cwd: "/tmp/private-workspace",
+    },
+    appServer: {
+      touched: true,
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["account/sendAddCreditsNudgeEmail"],
+    },
+    action: {
+      type: "account-credits-nudge",
+      method: "account/sendAddCreditsNudgeEmail",
+      execution: "sent",
+      authMutation: true,
+      emailSideEffect: true,
+      appServerTouched: true,
+      modelTraffic: false,
+    },
+    target: {
+      creditType: "usage_limit",
+      accountId: "acct-private-12345678",
+      email: "private@example.com",
+      token: "sk-proj-private-auth-token",
+    },
+    result: {
+      status: "sent",
+      emailSideEffect: true,
+      token: "sk-proj-private-auth-token",
+      accountId: "acct-private-12345678",
+      email: "private@example.com",
+      rawPayload: {
+        token: "sk-proj-private-auth-token",
+        email: "private@example.com",
+      },
+    },
+    preflight: {
+      tokenConsumed: true,
+      token: "preflight-private-token",
+      scope: {
+        kind: "account-credits-nudge-preflight",
         workspaceId: "default",
       },
       oneTimeUseEnforced: true,
