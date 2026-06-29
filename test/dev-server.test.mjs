@@ -289,6 +289,8 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /account-reset-credit-preflight-button/);
     assert.match(html, /account-reset-credit-button/);
     assert.match(html, /account-reset-credit-status/);
+    assert.match(html, /account-reset-credit-history-count/);
+    assert.match(html, /account-reset-credit-history-list/);
     assert.match(appScript, /runAccountResetCreditPreflight/);
     assert.match(appScript, /runAccountResetCredit/);
     assert.match(html, /account-login-history-list/);
@@ -11269,6 +11271,80 @@ test("dev server consumes account reset credits only behind explicit opt-in and 
       assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
     }
 
+    const historyResponse = await fetch(`${url}/api/settings-integrations`, {
+      headers: apiHeaders(server),
+    });
+    assert.equal(historyResponse.status, 200);
+    const historyPayload = await historyResponse.json();
+    const historySerialized = JSON.stringify(historyPayload.accountResetCreditHistory);
+    assert.equal(historyPayload.accountResetCreditHistory.count, 1);
+    assert.equal(historyPayload.accountResetCreditHistory.limit, 20);
+    assert.equal(historyPayload.accountResetCreditHistory.appServerTraffic, true);
+    assert.equal(historyPayload.accountResetCreditHistory.authMutationsRecorded, true);
+    assert.equal(historyPayload.accountResetCreditHistory.quotaMutationsRecorded, true);
+    assert.equal(historyPayload.accountResetCreditHistory.preflightTokensReturned, false);
+    assert.equal(historyPayload.accountResetCreditHistory.tokensReturned, false);
+    assert.equal(historyPayload.accountResetCreditHistory.accountIdentifiersReturned, false);
+    assert.equal(historyPayload.accountResetCreditHistory.urlsReturned, false);
+    assert.equal(historyPayload.accountResetCreditHistory.rateLimitValuesReturned, false);
+    assert.equal(historyPayload.accountResetCreditHistory.rawPayloadsReturned, false);
+    assert.equal(historyPayload.policy.accountResetCreditHistoryReturned, true);
+    assert.equal(historyPayload.policy.accountResetCreditHistoryLimit, 20);
+    assert.equal(historyPayload.integrationLifecycle.accountResetCreditHistoryCount, 1);
+    assert.equal(historyPayload.integrationLifecycle.historyCount >= 1, true);
+    assert.equal(historyPayload.integrationLifecycle.latestAction?.source, "account-reset-credit");
+    assert.equal(
+      historyPayload.integrationLifecycle.integrationManagement.accountResetCreditHistoryCount,
+      1,
+    );
+    assert.equal(
+      historyPayload.integrationLifecycle.integrationAuditContract.accountResetCreditHistoryReturned,
+      true,
+    );
+    assert.equal(
+      historyPayload.integrationLifecycle.integrationAuditContract.accountResetCreditHistoryLimit,
+      20,
+    );
+    const historyItem = historyPayload.accountResetCreditHistory.items[0];
+    assert.equal(historyItem.workspace.id, "default");
+    assert.equal(historyItem.action.type, "account-reset-credit-consume");
+    assert.equal(historyItem.action.method, "account/rateLimitResetCredit/consume");
+    assert.equal(historyItem.action.execution, "reset");
+    assert.equal(historyItem.action.authMutation, true);
+    assert.equal(historyItem.action.quotaMutation, true);
+    assert.equal(historyItem.target.idempotencyKeyGeneratedServerSide, true);
+    assert.equal(historyItem.target.idempotencyKeyReturned, false);
+    assert.equal(historyItem.target.rateLimitValuesReturned, false);
+    assert.equal(historyItem.result.outcome, "reset");
+    assert.equal(historyItem.result.quotaMutation, true);
+    assert.equal(historyItem.result.idempotencyKeyReturned, false);
+    assert.equal(historyItem.result.rateLimitValuesReturned, false);
+    assert.equal(historyItem.preflight.tokenConsumed, true);
+    assert.equal(historyItem.preflight.tokenReturned, false);
+    assert.equal(historyItem.preflight.workspaceId, "default");
+    assert.equal(historyItem.policy.quotaMutations, true);
+    assert.equal(historyItem.policy.rateLimitValuesReturned, false);
+    assert.equal(historyItem.policy.rawPayloadReturned, false);
+    assert.equal(historyItem.policy.auditLogWritten, true);
+    for (const marker of [
+      "/tmp/default-workspace",
+      "/tmp/private-home",
+      "codexHome",
+      "userAgent",
+      preflightPayload.preflight.token,
+      calls[0].idempotencyKey,
+      "codex-private-limit",
+      "\"balance\":\"100\"",
+      "\"tokensReturned\":true",
+      "\"accountIdentifiersReturned\":true",
+      "\"urlsReturned\":true",
+      "\"rateLimitValuesReturned\":true",
+      "\"rawPayloadReturned\":true",
+      "\"rawPayloadsReturned\":true",
+    ]) {
+      assert.equal(historySerialized.includes(marker), false, `leaked history ${marker}`);
+    }
+
     const replay = await fetch(`${url}/api/account-reset-credit-consume`, {
       method: "POST",
       headers: jsonHeaders(server),
@@ -17593,6 +17669,14 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.accountLoginHistory.tokensReturned, false);
     assert.equal(payload.accountLoginHistory.accountIdentifiersReturned, false);
     assert.equal(payload.accountLoginHistory.rawPayloadsReturned, false);
+    assert.equal(payload.accountResetCreditHistory.count, 0);
+    assert.deepEqual(payload.accountResetCreditHistory.items, []);
+    assert.equal(payload.accountResetCreditHistory.preflightTokensReturned, false);
+    assert.equal(payload.accountResetCreditHistory.tokensReturned, false);
+    assert.equal(payload.accountResetCreditHistory.accountIdentifiersReturned, false);
+    assert.equal(payload.accountResetCreditHistory.urlsReturned, false);
+    assert.equal(payload.accountResetCreditHistory.rateLimitValuesReturned, false);
+    assert.equal(payload.accountResetCreditHistory.rawPayloadsReturned, false);
     assert.equal(payload.accountLogoutHistory.count, 0);
     assert.deepEqual(payload.accountLogoutHistory.items, []);
     assert.equal(payload.accountLogoutHistory.preflightTokensReturned, false);
@@ -17895,6 +17979,7 @@ test("dev server exposes settings and integration boundary without app-server tr
       preflightHistoryCount: 0,
       confirmationHistoryCount: 0,
       accountLoginHistoryCount: 0,
+      accountResetCreditHistoryCount: 0,
       accountLogoutHistoryCount: 0,
       activeLoginFlowCount: 0,
       latestActionAvailable: false,
@@ -17929,6 +18014,7 @@ test("dev server exposes settings and integration boundary without app-server tr
       preflightHistoryCount: 0,
       confirmationHistoryCount: 0,
       accountLoginHistoryCount: 0,
+      accountResetCreditHistoryCount: 0,
       accountLogoutHistoryCount: 0,
       latestActionAvailable: false,
     });
@@ -18006,6 +18092,8 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.policy.preflightConfirmationHistoryReturned, true);
     assert.equal(payload.policy.accountLoginHistoryReturned, true);
     assert.equal(payload.policy.accountLoginHistoryLimit, 20);
+    assert.equal(payload.policy.accountResetCreditHistoryReturned, true);
+    assert.equal(payload.policy.accountResetCreditHistoryLimit, 20);
     assert.equal(payload.policy.accountLogoutHistoryReturned, true);
     assert.equal(payload.policy.accountLogoutHistoryLimit, 20);
     assert.equal(payload.policy.preflightTokensReturned, false);
@@ -18655,6 +18743,7 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
       preflightHistoryCount: 0,
       confirmationHistoryCount: 0,
       accountLoginHistoryCount: 0,
+      accountResetCreditHistoryCount: 0,
       accountLogoutHistoryCount: 0,
       activeLoginFlowCount: 0,
       latestActionAvailable: false,
@@ -18689,6 +18778,7 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
       preflightHistoryCount: 0,
       confirmationHistoryCount: 0,
       accountLoginHistoryCount: 0,
+      accountResetCreditHistoryCount: 0,
       accountLogoutHistoryCount: 0,
       latestActionAvailable: false,
     });
@@ -28315,10 +28405,12 @@ function assertIntegrationAuditContract(payload, expected) {
   assert.equal(contract.preflightHistoryReturned, true);
   assert.equal(contract.preflightConfirmationHistoryReturned, true);
   assert.equal(contract.accountLoginHistoryReturned, true);
+  assert.equal(contract.accountResetCreditHistoryReturned, true);
   assert.equal(contract.accountLogoutHistoryReturned, true);
   assert.equal(contract.preflightHistoryLimit, 20);
   assert.equal(contract.preflightConfirmationHistoryLimit, 20);
   assert.equal(contract.accountLoginHistoryLimit, 20);
+  assert.equal(contract.accountResetCreditHistoryLimit, 20);
   assert.equal(contract.accountLogoutHistoryLimit, 20);
   assert.equal(contract.persistentActionAuditRequiredForExecution, true);
   assert.equal(contract.actionAuditRecordsSanitized, true);

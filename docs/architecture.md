@@ -414,6 +414,10 @@ Current M1 status:
   no model traffic, and sanitized responses/action audit records with only a
   bounded outcome and no idempotency key, quota values, account identifiers,
   auth URLs, tokens, cwd, paths, or raw app-server payloads
+- done: capped process-local `/api/settings-integrations` reset-credit consume
+  history with workspace/action/outcome/token-consumed/audit metadata only, and
+  explicit redaction flags for idempotency keys, quota values, rate-limit IDs,
+  balances, tokens, account identifiers, URLs, paths, and raw app-server payloads
 - done: opt-in `/api/account-logout` path behind
   `CODEX_APP_PORT_ALLOW_ACCOUNT_LOGOUT=1`, with matching one-time
   account-logout-preflight token consumption, `account/logout` only, no model

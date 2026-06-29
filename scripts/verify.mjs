@@ -14231,6 +14231,19 @@ async function checkAccountResetCreditConsumeApi() {
       throw new Error("account reset credit consume did not call the app-server mutation once with a private idempotency key");
     }
 
+    const historyResponse = await fetch(`${baseUrl}/api/settings-integrations`, {
+      headers: apiHeaders(token),
+    });
+    if (!historyResponse.ok) {
+      throw new Error(`settings integrations for reset credit history returned HTTP ${historyResponse.status}`);
+    }
+    const historyPayload = await historyResponse.json();
+    assertSanitizedAccountResetCreditHistory(historyPayload, {
+      token: preflightPayload.preflight.token,
+      idempotencyKey: calls[0].idempotencyKey,
+      outcome: "reset",
+    });
+
     const replayResponse = await fetch(`${baseUrl}/api/account-reset-credit-consume`, {
       method: "POST",
       headers: jsonHeaders(token),
@@ -23679,6 +23692,92 @@ function assertSanitizedAccountCreditsNudgeHistory(
   }
 }
 
+function assertSanitizedAccountResetCreditHistory(
+  payload,
+  { token, idempotencyKey, outcome, workspaceId = "default" },
+) {
+  const serialized = JSON.stringify(payload.accountResetCreditHistory);
+  assertNoMarkers(serialized, [
+    token,
+    idempotencyKey,
+    "/tmp/codex-app-port-verify",
+    "/tmp/verify-private-home",
+    "verify-private-agent",
+    "codexHome",
+    "userAgent",
+    "sk-proj-private-auth-token",
+    "codex-private-limit",
+    "\"balance\":\"100\"",
+    "\"tokensReturned\":true",
+    "\"accountIdentifiersReturned\":true",
+    "\"urlsReturned\":true",
+    "\"rateLimitValuesReturned\":true",
+    "\"rawPayloadReturned\":true",
+    "\"rawPayloadsReturned\":true",
+  ]);
+  if (
+    payload.policy?.accountResetCreditHistoryReturned !== true ||
+    payload.policy?.accountResetCreditHistoryLimit !== 20 ||
+    payload.policy?.preflightTokensReturned !== false
+  ) {
+    throw new Error("settings integrations policy did not expose bounded reset credit history");
+  }
+  const history = payload.accountResetCreditHistory;
+  if (
+    history?.count !== 1 ||
+    history?.items?.length !== 1 ||
+    history?.limit !== 20 ||
+    history?.appServerTraffic !== true ||
+    history?.authMutationsRecorded !== true ||
+    history?.quotaMutationsRecorded !== true ||
+    history?.preflightTokensReturned !== false ||
+    history?.tokensReturned !== false ||
+    history?.accountIdentifiersReturned !== false ||
+    history?.urlsReturned !== false ||
+    history?.rateLimitValuesReturned !== false ||
+    history?.rawPayloadsReturned !== false
+  ) {
+    throw new Error("account reset credit history summary did not preserve sanitized metadata");
+  }
+  const item = history.items[0];
+  if (
+    item?.workspace?.id !== workspaceId ||
+    item?.action?.type !== "account-reset-credit-consume" ||
+    item?.action?.method !== "account/rateLimitResetCredit/consume" ||
+    item?.action?.execution !== outcome ||
+    item?.action?.authMutation !== true ||
+    item?.action?.quotaMutation !== true ||
+    item?.action?.appServerTouched !== true ||
+    item?.target?.idempotencyKeyGeneratedServerSide !== true ||
+    item?.target?.idempotencyKeyReturned !== false ||
+    item?.target?.rateLimitValuesReturned !== false ||
+    item?.result?.outcome !== outcome ||
+    item?.result?.quotaMutation !== true ||
+    item?.result?.idempotencyKeyReturned !== false ||
+    item?.result?.rateLimitValuesReturned !== false ||
+    item?.result?.rawPayloadReturned !== false ||
+    item?.preflight?.tokenConsumed !== true ||
+    item?.preflight?.tokenReturned !== false ||
+    item?.preflight?.workspaceId !== workspaceId ||
+    item?.policy?.quotaMutations !== true ||
+    item?.policy?.rateLimitValuesReturned !== false ||
+    item?.policy?.rawPayloadReturned !== false ||
+    item?.policy?.preflightTokenReturned !== false ||
+    item?.policy?.auditLogWritten !== true ||
+    item?.policy?.sensitivePayloadLogged !== false
+  ) {
+    throw new Error("account reset credit history item did not preserve sanitized metadata");
+  }
+  if (
+    payload.integrationLifecycle?.accountResetCreditHistoryCount !== 1 ||
+    payload.integrationLifecycle?.integrationManagement?.accountResetCreditHistoryCount !== 1 ||
+    payload.integrationLifecycle?.integrationAuditContract?.accountResetCreditHistoryReturned !== true ||
+    payload.integrationLifecycle?.integrationAuditContract?.accountResetCreditHistoryLimit !== 20
+  ) {
+    throw new Error("integration lifecycle did not include bounded reset credit history counts");
+  }
+}
+
 function assertSanitizedAccountLogout(payload, { token }) {
   const serialized = JSON.stringify(payload);
   assertNoMarkers(serialized, [
@@ -28160,6 +28259,18 @@ function assertSanitizedSettingsIntegrations(payload) {
     throw new Error("settings integrations account login history did not stay empty and sanitized");
   }
   if (
+    payload.accountResetCreditHistory?.count !== 0 ||
+    payload.accountResetCreditHistory?.items?.length !== 0 ||
+    payload.accountResetCreditHistory?.preflightTokensReturned !== false ||
+    payload.accountResetCreditHistory?.tokensReturned !== false ||
+    payload.accountResetCreditHistory?.accountIdentifiersReturned !== false ||
+    payload.accountResetCreditHistory?.urlsReturned !== false ||
+    payload.accountResetCreditHistory?.rateLimitValuesReturned !== false ||
+    payload.accountResetCreditHistory?.rawPayloadsReturned !== false
+  ) {
+    throw new Error("settings integrations account reset credit history did not stay empty and sanitized");
+  }
+  if (
     payload.accountLogoutHistory?.count !== 0 ||
     payload.accountLogoutHistory?.items?.length !== 0 ||
     payload.accountLogoutHistory?.preflightTokensReturned !== false ||
@@ -28251,6 +28362,8 @@ function assertSanitizedSettingsIntegrations(payload) {
     payload.policy?.preflightConfirmationHistoryReturned !== true ||
     payload.policy?.accountLoginHistoryReturned !== true ||
     payload.policy?.accountLoginHistoryLimit !== 20 ||
+    payload.policy?.accountResetCreditHistoryReturned !== true ||
+    payload.policy?.accountResetCreditHistoryLimit !== 20 ||
     payload.policy?.accountLogoutHistoryReturned !== true ||
     payload.policy?.accountLogoutHistoryLimit !== 20 ||
     payload.policy?.preflightTokensReturned !== false ||
@@ -28383,6 +28496,7 @@ function assertSanitizedIntegrationLifecycle(
     lifecycle?.preflightHistoryCount !== (payload.preflightHistory?.count ?? 0) ||
     lifecycle?.confirmationHistoryCount !== (payload.preflightConfirmationHistory?.count ?? 0) ||
     lifecycle?.accountLoginHistoryCount !== (payload.accountLoginHistory?.count ?? 0) ||
+    lifecycle?.accountResetCreditHistoryCount !== (payload.accountResetCreditHistory?.count ?? 0) ||
     lifecycle?.accountLogoutHistoryCount !== (payload.accountLogoutHistory?.count ?? 0) ||
     lifecycle?.activeLoginFlowCount !== (payload.surfaces?.auth?.activeLoginFlowCount ?? 0) ||
     lifecycle?.appServerTouched !== appServerTouched ||
@@ -28636,6 +28750,7 @@ function assertSanitizedIntegrationManagement(
     management?.preflightHistoryCount !== (payload.preflightHistory?.count ?? 0) ||
     management?.confirmationHistoryCount !== (payload.preflightConfirmationHistory?.count ?? 0) ||
     management?.accountLoginHistoryCount !== (payload.accountLoginHistory?.count ?? 0) ||
+    management?.accountResetCreditHistoryCount !== (payload.accountResetCreditHistory?.count ?? 0) ||
     management?.accountLogoutHistoryCount !== (payload.accountLogoutHistory?.count ?? 0) ||
     management?.activeLoginFlowCount !== (payload.surfaces?.auth?.activeLoginFlowCount ?? 0) ||
     management?.latestActionAvailable !== expectedLatestActionAvailable ||
@@ -29023,6 +29138,7 @@ function assertSanitizedIntegrationWorkflowContract(
     contract?.preflightHistoryCount !== (payload.preflightHistory?.count ?? 0) ||
     contract?.confirmationHistoryCount !== (payload.preflightConfirmationHistory?.count ?? 0) ||
     contract?.accountLoginHistoryCount !== (payload.accountLoginHistory?.count ?? 0) ||
+    contract?.accountResetCreditHistoryCount !== (payload.accountResetCreditHistory?.count ?? 0) ||
     contract?.accountLogoutHistoryCount !== (payload.accountLogoutHistory?.count ?? 0) ||
     contract?.activeLoginFlowCount !== (payload.surfaces?.auth?.activeLoginFlowCount ?? 0) ||
     contract?.latestActionAvailable !== expectedLatestActionAvailable ||
@@ -29141,16 +29257,19 @@ function assertSanitizedIntegrationAuditContract(
     contract?.preflightHistoryCount !== (payload.preflightHistory?.count ?? 0) ||
     contract?.confirmationHistoryCount !== (payload.preflightConfirmationHistory?.count ?? 0) ||
     contract?.accountLoginHistoryCount !== (payload.accountLoginHistory?.count ?? 0) ||
+    contract?.accountResetCreditHistoryCount !== (payload.accountResetCreditHistory?.count ?? 0) ||
     contract?.accountLogoutHistoryCount !== (payload.accountLogoutHistory?.count ?? 0) ||
     contract?.latestActionAvailable !== expectedLatestActionAvailable ||
     contract?.latestActionAvailable !== Boolean(management.latestActionAvailable) ||
     contract?.preflightHistoryReturned !== true ||
     contract?.preflightConfirmationHistoryReturned !== true ||
     contract?.accountLoginHistoryReturned !== true ||
+    contract?.accountResetCreditHistoryReturned !== true ||
     contract?.accountLogoutHistoryReturned !== true ||
     contract?.preflightHistoryLimit !== 20 ||
     contract?.preflightConfirmationHistoryLimit !== 20 ||
     contract?.accountLoginHistoryLimit !== 20 ||
+    contract?.accountResetCreditHistoryLimit !== 20 ||
     contract?.accountLogoutHistoryLimit !== 20 ||
     contract?.persistentActionAuditRequiredForExecution !== true ||
     contract?.actionAuditRecordsSanitized !== true ||
@@ -29467,6 +29586,7 @@ function assertSanitizedIntegrationLifecycleMatchesPayload(payload, { latestActi
     (payload.preflightHistory?.count ?? 0) +
     (payload.preflightConfirmationHistory?.count ?? 0) +
     (payload.accountLoginHistory?.count ?? 0) +
+    (payload.accountResetCreditHistory?.count ?? 0) +
     (payload.accountLogoutHistory?.count ?? 0);
   const appServerTouched = Boolean(payload.appServer?.touched);
   assertSanitizedIntegrationLifecycle(payload, {
@@ -36397,8 +36517,11 @@ async function readUiSessionToken(baseUrl) {
     !html.includes("account-login-cancel-button") ||
     !html.includes("account-reset-credit-button") ||
     !html.includes("account-reset-credit-status") ||
+    !html.includes("account-reset-credit-history-count") ||
+    !html.includes("account-reset-credit-history-list") ||
     !appScript.includes("runAccountResetCreditPreflight") ||
     !appScript.includes("runAccountResetCredit") ||
+    !appScript.includes("renderAccountResetCreditHistory") ||
     !html.includes("account-login-history-list")
   ) {
     throw new Error("dev server UI is missing the account login controls");

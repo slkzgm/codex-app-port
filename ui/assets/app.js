@@ -29,6 +29,7 @@ const elements = {
   accountResetCreditText: document.querySelector("#account-reset-credit-text"),
   activeLoginFlowCount: document.querySelector("#active-login-flow-count"),
   accountLoginHistoryCount: document.querySelector("#account-login-history-count"),
+  accountResetCreditHistoryCount: document.querySelector("#account-reset-credit-history-count"),
   accountLogoutText: document.querySelector("#account-logout-text"),
   accountLogoutHistoryCount: document.querySelector("#account-logout-history-count"),
   integrationScopeText: document.querySelector("#integration-scope-text"),
@@ -240,6 +241,7 @@ const elements = {
   integrationConfirmationHistoryCount: document.querySelector("#integration-confirmation-history-count"),
   integrationConfirmationHistoryList: document.querySelector("#integration-confirmation-history-list"),
   accountLoginHistoryList: document.querySelector("#account-login-history-list"),
+  accountResetCreditHistoryList: document.querySelector("#account-reset-credit-history-list"),
   accountLogoutHistoryList: document.querySelector("#account-logout-history-list"),
   integrationsMethodList: document.querySelector("#integrations-method-list"),
   integrationsDetailList: document.querySelector("#integrations-detail-list"),
@@ -8510,6 +8512,7 @@ function renderSettingsIntegrations(payload) {
   const methodAudit = Array.isArray(payload.methodAudit) ? payload.methodAudit : [];
   elements.integrationsAuditedText.textContent = String(methodAudit.length);
   renderAccountLoginHistory(payload.accountLoginHistory);
+  renderAccountResetCreditHistory(payload.accountResetCreditHistory);
   renderAccountLogoutHistory(payload.accountLogoutHistory);
   renderIntegrationPreflightHistory(payload.preflightHistory);
   renderIntegrationConfirmationHistory(payload.preflightConfirmationHistory);
@@ -8758,6 +8761,69 @@ function renderAccountLoginHistory(history) {
     header.append(title, meta);
     row.append(header, detail, chips);
     elements.accountLoginHistoryList.append(row);
+  }
+}
+
+function renderAccountResetCreditHistory(history) {
+  const items = Array.isArray(history?.items) ? history.items : [];
+  elements.accountResetCreditHistoryCount.textContent = String(history?.count ?? items.length);
+  elements.accountResetCreditHistoryList.replaceChildren();
+
+  if (items.length === 0) {
+    elements.accountResetCreditHistoryList.append(
+      emptyState("No account reset credit actions recorded."),
+    );
+    return;
+  }
+
+  for (const item of items) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = item.action?.method ?? "account/rateLimitResetCredit/consume";
+
+    const meta = document.createElement("span");
+    meta.textContent = joinParts([item.result?.outcome, item.recordedAt]);
+
+    const detail = document.createElement("p");
+    detail.className = "boundary-detail";
+    detail.textContent = joinParts([
+      item.action?.execution,
+      item.preflight?.tokenConsumed ? "preflight consumed" : "preflight omitted",
+      item.workspace?.label,
+    ]);
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      item.action?.authMutation ? "auth mutation" : null,
+      item.action?.quotaMutation ? "quota mutation" : null,
+      item.action?.appServerTouched ? "app-server" : null,
+      item.policy?.auditLogWritten ? "audit log" : null,
+      "idempotency key omitted",
+      "quota values omitted",
+      "rate limit ids omitted",
+      "tokens omitted",
+      "account ids omitted",
+      "raw omitted",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, detail, chips);
+    elements.accountResetCreditHistoryList.append(row);
   }
 }
 

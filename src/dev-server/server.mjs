@@ -126,6 +126,7 @@ export const MAX_THREAD_LIFECYCLE_ACTION_HISTORY_RECORDS = 20;
 export const MAX_ACCOUNT_LOGIN_FLOW_RECORDS = 20;
 export const MAX_ACCOUNT_LOGIN_HISTORY_RECORDS = 20;
 export const MAX_ACCOUNT_CREDITS_NUDGE_HISTORY_RECORDS = 20;
+export const MAX_ACCOUNT_RESET_CREDIT_HISTORY_RECORDS = 20;
 export const MAX_ACCOUNT_LOGOUT_HISTORY_RECORDS = 20;
 export const MAX_TERMINAL_COMMAND_HISTORY_RECORDS = 20;
 export const MAX_PROCESS_SPAWN_HISTORY_RECORDS = 20;
@@ -9879,6 +9880,7 @@ export function createDevServer({
   accountLoginFlowRegistry = createAccountLoginFlowRegistry(),
   accountLoginLedger = createAccountLoginLedger(),
   accountCreditsNudgeLedger = createAccountCreditsNudgeLedger(),
+  accountResetCreditLedger = createAccountResetCreditLedger(),
   accountLogoutLedger = createAccountLogoutLedger(),
   terminalCommandLedger = createTerminalCommandLedger(),
   threadShellCommandLedger = createThreadShellCommandLedger(),
@@ -10030,6 +10032,7 @@ export function createDevServer({
       accountLoginFlowRegistry,
       accountLoginLedger,
       accountCreditsNudgeLedger,
+      accountResetCreditLedger,
       accountLogoutLedger,
       terminalCommandLedger,
       threadShellCommandLedger,
@@ -11264,6 +11267,7 @@ export async function handleRequest(request, response, options) {
         auditLogWritableChecked,
       });
       sanitized.policy.auditLogWritten = writeActionAuditLog(options.actionAuditLog, sanitized);
+      options.accountResetCreditLedger?.record(sanitized);
       sendJson(response, 200, sanitized);
     } catch (error) {
       sendJson(response, error.statusCode ?? 400, {
@@ -15040,6 +15044,8 @@ export async function handleRequest(request, response, options) {
         options.accountLoginLedger?.list({ workspaceId: workspace.id }) ?? [];
       const accountCreditsNudgeHistory =
         options.accountCreditsNudgeLedger?.list({ workspaceId: workspace.id }) ?? [];
+      const accountResetCreditHistory =
+        options.accountResetCreditLedger?.list({ workspaceId: workspace.id }) ?? [];
       const accountLogoutHistory =
         options.accountLogoutLedger?.list({ workspaceId: workspace.id }) ?? [];
       const accountLoginFlowSummary =
@@ -15083,6 +15089,7 @@ export async function handleRequest(request, response, options) {
             accountLoginFlowSummary,
             accountLoginHistory,
             accountCreditsNudgeHistory,
+            accountResetCreditHistory,
             accountLogoutHistory,
           }),
         );
@@ -15119,6 +15126,7 @@ export async function handleRequest(request, response, options) {
           accountLoginFlowSummary,
           accountLoginHistory,
           accountCreditsNudgeHistory,
+          accountResetCreditHistory,
           accountLogoutHistory,
         }),
       );
@@ -16257,6 +16265,23 @@ export function createAccountCreditsNudgeLedger({ now = () => new Date().toISOSt
       const record = sanitizeAccountCreditsNudgeHistoryRecord(payload, { recordedAt: now() });
       records.unshift(record);
       records.splice(MAX_ACCOUNT_CREDITS_NUDGE_HISTORY_RECORDS);
+      return cloneJson(record);
+    },
+    list({ workspaceId = null } = {}) {
+      return records
+        .filter((record) => !workspaceId || record.workspace?.id === workspaceId)
+        .map(cloneJson);
+    },
+  };
+}
+
+export function createAccountResetCreditLedger({ now = () => new Date().toISOString() } = {}) {
+  const records = [];
+  return {
+    record(payload) {
+      const record = sanitizeAccountResetCreditHistoryRecord(payload, { recordedAt: now() });
+      records.unshift(record);
+      records.splice(MAX_ACCOUNT_RESET_CREDIT_HISTORY_RECORDS);
       return cloneJson(record);
     },
     list({ workspaceId = null } = {}) {
@@ -26622,6 +26647,7 @@ export function sanitizeSettingsIntegrationsPayload(
     accountLoginFlowSummary = null,
     accountLoginHistory = [],
     accountCreditsNudgeHistory = [],
+    accountResetCreditHistory = [],
     accountLogoutHistory = [],
   } = {},
 ) {
@@ -26641,6 +26667,9 @@ export function sanitizeSettingsIntegrationsPayload(
   const recentAccountLoginHistory = sanitizeAccountLoginHistory(accountLoginHistory);
   const recentAccountCreditsNudgeHistory = sanitizeAccountCreditsNudgeHistory(
     accountCreditsNudgeHistory,
+  );
+  const recentAccountResetCreditHistory = sanitizeAccountResetCreditHistory(
+    accountResetCreditHistory,
   );
   const recentAccountLogoutHistory = sanitizeAccountLogoutHistory(accountLogoutHistory);
   const namesReturned = Boolean(
@@ -26892,6 +26921,7 @@ export function sanitizeSettingsIntegrationsPayload(
     preflightConfirmationHistory,
     accountLoginHistory: recentAccountLoginHistory,
     accountCreditsNudgeHistory: recentAccountCreditsNudgeHistory,
+    accountResetCreditHistory: recentAccountResetCreditHistory,
     accountLogoutHistory: recentAccountLogoutHistory,
     integrationScope,
     methodAudit,
@@ -26915,6 +26945,8 @@ export function sanitizeSettingsIntegrationsPayload(
       accountLogoutHistoryLimit: MAX_ACCOUNT_LOGOUT_HISTORY_RECORDS,
       accountCreditsNudgeHistoryReturned: true,
       accountCreditsNudgeHistoryLimit: MAX_ACCOUNT_CREDITS_NUDGE_HISTORY_RECORDS,
+      accountResetCreditHistoryReturned: true,
+      accountResetCreditHistoryLimit: MAX_ACCOUNT_RESET_CREDIT_HISTORY_RECORDS,
       accountLoginHistoryReturned: true,
       accountLoginHistoryLimit: MAX_ACCOUNT_LOGIN_HISTORY_RECORDS,
       preflightTokensReturned: false,
@@ -29329,6 +29361,109 @@ function sanitizeAccountCreditsNudgeHistoryRecord(record, { recordedAt = null } 
       accountIdentifiersReturned: false,
       urlsReturned: false,
       pathsReturned: false,
+      rawPayloadReturned: false,
+      preflightTokenReturned: false,
+      auditLogPersistent: Boolean(policy.auditLogPersistent),
+      auditLogWritableChecked: Boolean(policy.auditLogWritableChecked),
+      auditLogWritten: Boolean(policy.auditLogWritten),
+      auditLogPathReturned: false,
+      sensitivePayloadLogged: false,
+      browserMethodCallsAccepted: Boolean(policy.browserMethodCallsAccepted),
+      implemented: Boolean(policy.implemented),
+    },
+  };
+}
+
+function sanitizeAccountResetCreditHistory(records) {
+  const items = Array.isArray(records)
+    ? records.slice(0, MAX_ACCOUNT_RESET_CREDIT_HISTORY_RECORDS).map((record) =>
+        sanitizeAccountResetCreditHistoryRecord(record),
+      )
+    : [];
+  return {
+    count: items.length,
+    items,
+    limit: MAX_ACCOUNT_RESET_CREDIT_HISTORY_RECORDS,
+    appServerTraffic: items.some((item) => item.action?.appServerTouched),
+    authMutationsRecorded: items.some((item) => item.action?.authMutation),
+    quotaMutationsRecorded: items.some((item) => item.action?.quotaMutation),
+    preflightTokensReturned: false,
+    tokensReturned: false,
+    accountIdentifiersReturned: false,
+    urlsReturned: false,
+    pathsReturned: false,
+    rateLimitValuesReturned: false,
+    rawPayloadsReturned: false,
+  };
+}
+
+function sanitizeAccountResetCreditHistoryRecord(record, { recordedAt = null } = {}) {
+  const action = record?.action ?? {};
+  const result = record?.result ?? {};
+  const target = record?.target ?? {};
+  const preflight = record?.preflight ?? {};
+  const policy = record?.policy ?? {};
+  const outcome = sanitizeAccountResetCreditOutcome(result.outcome ?? action.execution);
+  return {
+    recordedAt: cleanDisplayText(recordedAt ?? record?.recordedAt, 40),
+    workspace: record?.workspace
+      ? {
+          id: cleanDisplayText(record.workspace.id, 80),
+          label: cleanDisplayText(record.workspace.label, 120),
+          isDefault: Boolean(record.workspace.isDefault),
+        }
+      : null,
+    action: {
+      type: "account-reset-credit-consume",
+      method: "account/rateLimitResetCredit/consume",
+      execution: outcome,
+      authMutation: Boolean(action.authMutation),
+      quotaMutation: Boolean(action.quotaMutation),
+      appServerTouched: Boolean(action.appServerTouched),
+      modelTraffic: false,
+    },
+    target: {
+      idempotencyKeyGeneratedServerSide: target.idempotencyKeyGeneratedServerSide !== false,
+      idempotencyKeyReturned: false,
+      accountIdentifiersReturned: false,
+      tokensReturned: false,
+      urlsReturned: false,
+      rateLimitValuesReturned: false,
+    },
+    result: {
+      outcome,
+      outcomeReturned: true,
+      quotaMutation: Boolean(result.quotaMutation),
+      idempotencyKeyReturned: false,
+      tokensReturned: false,
+      accountIdentifiersReturned: false,
+      urlsReturned: false,
+      rateLimitValuesReturned: false,
+      rawPayloadReturned: false,
+      threadContentReturned: false,
+      fullIdsReturned: false,
+    },
+    preflight: {
+      tokenConsumed: Boolean(preflight.tokenConsumed),
+      tokenReturned: false,
+      workspaceId: cleanDisplayText(preflight.scope?.workspaceId ?? preflight.workspaceId, 80),
+      rawIntentStored: false,
+      rawIntentReturned: false,
+      intentHashReturned: false,
+      oneTimeUseEnforced: preflight.oneTimeUseEnforced !== false,
+    },
+    policy: {
+      readOnly: false,
+      appServerTraffic: Boolean(policy.appServerTraffic),
+      authMutations: Boolean(policy.authMutations),
+      quotaMutations: Boolean(policy.quotaMutations),
+      modelTraffic: false,
+      secretsReturned: false,
+      tokensReturned: false,
+      accountIdentifiersReturned: false,
+      urlsReturned: false,
+      pathsReturned: false,
+      rateLimitValuesReturned: false,
       rawPayloadReturned: false,
       preflightTokenReturned: false,
       auditLogPersistent: Boolean(policy.auditLogPersistent),
@@ -32640,6 +32775,7 @@ export function buildSettingsIntegrations({
   accountLoginFlowSummary = null,
   accountLoginHistory = [],
   accountCreditsNudgeHistory = [],
+  accountResetCreditHistory = [],
   accountLogoutHistory = [],
 }) {
   const methodAudit = integrationMethodAudit();
@@ -32655,6 +32791,9 @@ export function buildSettingsIntegrations({
   const recentAccountLoginHistory = sanitizeAccountLoginHistory(accountLoginHistory);
   const recentAccountCreditsNudgeHistory = sanitizeAccountCreditsNudgeHistory(
     accountCreditsNudgeHistory,
+  );
+  const recentAccountResetCreditHistory = sanitizeAccountResetCreditHistory(
+    accountResetCreditHistory,
   );
   const recentAccountLogoutHistory = sanitizeAccountLogoutHistory(accountLogoutHistory);
   const integrationScope = buildIntegrationActionScope({
@@ -32846,6 +32985,7 @@ export function buildSettingsIntegrations({
     preflightConfirmationHistory,
     accountLoginHistory: recentAccountLoginHistory,
     accountCreditsNudgeHistory: recentAccountCreditsNudgeHistory,
+    accountResetCreditHistory: recentAccountResetCreditHistory,
     accountLogoutHistory: recentAccountLogoutHistory,
     integrationScope,
     methodAudit,
@@ -32869,6 +33009,8 @@ export function buildSettingsIntegrations({
       accountLogoutHistoryLimit: MAX_ACCOUNT_LOGOUT_HISTORY_RECORDS,
       accountCreditsNudgeHistoryReturned: true,
       accountCreditsNudgeHistoryLimit: MAX_ACCOUNT_CREDITS_NUDGE_HISTORY_RECORDS,
+      accountResetCreditHistoryReturned: true,
+      accountResetCreditHistoryLimit: MAX_ACCOUNT_RESET_CREDIT_HISTORY_RECORDS,
       accountLoginHistoryReturned: true,
       accountLoginHistoryLimit: MAX_ACCOUNT_LOGIN_HISTORY_RECORDS,
       preflightTokensReturned: false,
@@ -33068,18 +33210,21 @@ function summarizeIntegrationLifecycle(payload = {}) {
   const preflightConfirmationHistory = payload.preflightConfirmationHistory ?? {};
   const accountLoginHistory = payload.accountLoginHistory ?? {};
   const accountCreditsNudgeHistory = payload.accountCreditsNudgeHistory ?? {};
+  const accountResetCreditHistory = payload.accountResetCreditHistory ?? {};
   const accountLogoutHistory = payload.accountLogoutHistory ?? {};
   const enabledMutationGateCount = countEnabledIntegrationMutationGates(integrationScope);
   const preflightHistoryCount = safeCount(preflightHistory.count);
   const confirmationHistoryCount = safeCount(preflightConfirmationHistory.count);
   const accountLoginHistoryCount = safeCount(accountLoginHistory.count);
   const accountCreditsNudgeHistoryCount = safeCount(accountCreditsNudgeHistory.count);
+  const accountResetCreditHistoryCount = safeCount(accountResetCreditHistory.count);
   const accountLogoutHistoryCount = safeCount(accountLogoutHistory.count);
   const historyCount =
     preflightHistoryCount +
     confirmationHistoryCount +
     accountLoginHistoryCount +
     accountCreditsNudgeHistoryCount +
+    accountResetCreditHistoryCount +
     accountLogoutHistoryCount;
   const appServerTouched = Boolean(payload.appServer?.touched);
   const integrationActions = summarizeIntegrationActions({
@@ -33097,6 +33242,7 @@ function summarizeIntegrationLifecycle(payload = {}) {
     confirmationHistoryCount,
     accountLoginHistoryCount,
     accountCreditsNudgeHistoryCount,
+    accountResetCreditHistoryCount,
     accountLogoutHistoryCount,
     activeLoginFlowCount: safeCount(surfaces.auth?.activeLoginFlowCount),
     appServerTouched,
@@ -33173,6 +33319,8 @@ function summarizeIntegrationLifecycle(payload = {}) {
     preflightHistoryCount,
     confirmationHistoryCount,
     accountLoginHistoryCount,
+    accountCreditsNudgeHistoryCount,
+    accountResetCreditHistoryCount,
     accountLogoutHistoryCount,
     historyCount,
     activeLoginFlowCount: safeCount(surfaces.auth?.activeLoginFlowCount),
@@ -33500,6 +33648,10 @@ function summarizeIntegrationWorkflowContract({
     preflightHistoryCount: safeCount(integrationManagement.preflightHistoryCount),
     confirmationHistoryCount: safeCount(integrationManagement.confirmationHistoryCount),
     accountLoginHistoryCount: safeCount(integrationManagement.accountLoginHistoryCount),
+    accountCreditsNudgeHistoryCount: safeCount(
+      integrationManagement.accountCreditsNudgeHistoryCount,
+    ),
+    accountResetCreditHistoryCount: safeCount(integrationManagement.accountResetCreditHistoryCount),
     accountLogoutHistoryCount: safeCount(integrationManagement.accountLogoutHistoryCount),
     activeLoginFlowCount: safeCount(integrationManagement.activeLoginFlowCount),
     latestActionAvailable: Boolean(integrationManagement.latestActionAvailable),
@@ -33558,6 +33710,9 @@ function summarizeIntegrationAuditContract({
   const accountCreditsNudgeHistoryCount = safeCount(
     integrationManagement.accountCreditsNudgeHistoryCount,
   );
+  const accountResetCreditHistoryCount = safeCount(
+    integrationManagement.accountResetCreditHistoryCount,
+  );
   const accountLogoutHistoryCount = safeCount(integrationManagement.accountLogoutHistoryCount);
   const enabledActionFamilyCount = [
     integrationActions.accountActionsEnabled,
@@ -33606,17 +33761,20 @@ function summarizeIntegrationAuditContract({
     confirmationHistoryCount,
     accountLoginHistoryCount,
     accountCreditsNudgeHistoryCount,
+    accountResetCreditHistoryCount,
     accountLogoutHistoryCount,
     latestActionAvailable: Boolean(integrationManagement.latestActionAvailable),
     preflightHistoryReturned: true,
     preflightConfirmationHistoryReturned: true,
     accountLoginHistoryReturned: true,
     accountCreditsNudgeHistoryReturned: true,
+    accountResetCreditHistoryReturned: true,
     accountLogoutHistoryReturned: true,
     preflightHistoryLimit: MAX_INTEGRATION_PREFLIGHT_HISTORY_RECORDS,
     preflightConfirmationHistoryLimit: MAX_INTEGRATION_PREFLIGHT_CONFIRMATION_HISTORY_RECORDS,
     accountLoginHistoryLimit: MAX_ACCOUNT_LOGIN_HISTORY_RECORDS,
     accountCreditsNudgeHistoryLimit: MAX_ACCOUNT_CREDITS_NUDGE_HISTORY_RECORDS,
+    accountResetCreditHistoryLimit: MAX_ACCOUNT_RESET_CREDIT_HISTORY_RECORDS,
     accountLogoutHistoryLimit: MAX_ACCOUNT_LOGOUT_HISTORY_RECORDS,
     persistentActionAuditRequiredForExecution: true,
     actionAuditRecordsSanitized: true,
@@ -33909,6 +34067,7 @@ function summarizeIntegrationManagement({
   confirmationHistoryCount = 0,
   accountLoginHistoryCount = 0,
   accountCreditsNudgeHistoryCount = 0,
+  accountResetCreditHistoryCount = 0,
   accountLogoutHistoryCount = 0,
   activeLoginFlowCount = 0,
   appServerTouched = false,
@@ -33962,6 +34121,7 @@ function summarizeIntegrationManagement({
     confirmationHistoryCount: safeCount(confirmationHistoryCount),
     accountLoginHistoryCount: safeCount(accountLoginHistoryCount),
     accountCreditsNudgeHistoryCount: safeCount(accountCreditsNudgeHistoryCount),
+    accountResetCreditHistoryCount: safeCount(accountResetCreditHistoryCount),
     accountLogoutHistoryCount: safeCount(accountLogoutHistoryCount),
     activeLoginFlowCount: safeCount(activeLoginFlowCount),
     latestActionAvailable,
@@ -34093,6 +34253,7 @@ function summarizeLatestIntegrationLifecycleAction(payload = {}) {
     ...integrationLifecycleHistoryCandidates(payload.preflightConfirmationHistory, "confirmation"),
     ...integrationLifecycleHistoryCandidates(payload.accountLoginHistory, "account-login"),
     ...integrationLifecycleHistoryCandidates(payload.accountCreditsNudgeHistory, "account-credits-nudge"),
+    ...integrationLifecycleHistoryCandidates(payload.accountResetCreditHistory, "account-reset-credit"),
     ...integrationLifecycleHistoryCandidates(payload.accountLogoutHistory, "account-logout"),
     ...integrationLifecycleHistoryCandidates(payload.preflightHistory, "preflight"),
   ].sort((a, b) => String(b.recordedAt ?? "").localeCompare(String(a.recordedAt ?? "")));

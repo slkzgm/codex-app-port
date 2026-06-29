@@ -649,13 +649,14 @@
   cancel references, OAuth URLs, auth tokens, account identifiers, email addresses, raw
   app-server payloads, cwd, paths, or preflight tokens; linking, callback
   handling, and token access remain blocked.
-- Browser-facing account login/cancel/credits-nudge/logout history may expose only capped
-  process-local metadata for auth actions already performed through this server: workspace
-  label/id, action type/method, result status, token-consumed state, audit
-  flags, and redaction flags. It must not expose auth tokens, account
-  identifiers, auth URLs, login IDs, cancel references, preflight tokens, cwd,
-  paths, raw intents, intent hashes, raw app-server payloads, or enable
-  additional auth mutations.
+- Browser-facing account login/cancel/credits-nudge/reset-credit-consume/logout
+  history may expose only capped process-local metadata for auth actions already
+  performed through this server: workspace label/id, action type/method, result
+  status or bounded outcome, token-consumed state, audit flags, and redaction
+  flags. It must not expose idempotency keys, quota values, rate-limit IDs,
+  balances, auth tokens, account identifiers, auth URLs, login IDs, cancel
+  references, preflight tokens, cwd, paths, raw intents, intent hashes, raw
+  app-server payloads, or enable additional auth mutations.
 - Browser-facing MCP tool preflight may accept server/tool names and argument
   text only for local validation and counts. It must not echo names, arguments,
   schemas, resources, invoke tools, or touch app-server.

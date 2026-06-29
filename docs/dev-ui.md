@@ -616,9 +616,11 @@ cwd, paths, or raw app-server payloads.
 `/api/account-logout` remains separately gated by
 `CODEX_APP_PORT_ALLOW_ACCOUNT_LOGOUT=1` and calls only `account/logout`.
 Auth callbacks, login/linking flows that need OAuth callback handling, and token
-access remain blocked. Successful account login/cancel/credits-nudge/logout
-actions are also visible in capped process-local histories returned by
-`/api/settings-integrations`.
+access remain blocked. Successful account login/cancel/credits-nudge/reset-credit
+consume/logout actions are also visible in capped process-local histories
+returned by `/api/settings-integrations`, with quota values, idempotency keys,
+rate-limit IDs, tokens, account identifiers, URLs, paths, and raw payloads
+omitted.
 
 When the server is started with `CODEX_APP_PORT_ALLOW_INTEGRATION_INVENTORY=1`,
 the same endpoint may call `configRequirements/read`, `model/list`,
