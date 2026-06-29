@@ -616,8 +616,9 @@
   skill config write, plugin install/uninstall/share, or marketplace mutation methods until callback provenance,
   install provenance, replay protection, and secret/path redaction are
   implemented and tested.
-- Browser-facing device-code account login, login cancel, account credits nudge, and account logout are
-  the only auth mutation exceptions. They must be blocked by default. Login may
+- Browser-facing device-code account login, login cancel, account credits nudge,
+  account reset credit consumption, and account logout are the only account
+  auth/quota mutation exceptions. They must be blocked by default. Login may
   call only `account/login/start` with `{"type":"chatgptDeviceCode"}` when
   `CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN=1` is enabled and a matching one-time
   `/api/account-login-preflight` token has been consumed before app-server
@@ -630,12 +631,20 @@
   `account/sendAddCreditsNudgeEmail` with a `credits` or `usage_limit` enum value
   when `CODEX_APP_PORT_ALLOW_ACCOUNT_CREDITS_NUDGE=1` is enabled and a matching
   one-time `/api/account-credits-nudge-preflight` token has been consumed.
+  Account reset credit consumption may call only
+  `account/rateLimitResetCredit/consume` when
+  `CODEX_APP_PORT_ALLOW_ACCOUNT_RESET_CREDIT_CONSUME=1` is enabled and a
+  matching one-time `/api/account-reset-credit-consume-preflight` token has been
+  consumed; its idempotency key must be generated server-side and must never be
+  returned or logged. It may expose only a bounded outcome enum and must not
+  return or log quota values, rate-limit IDs, balances, account identifiers,
+  auth tokens, URLs, raw app-server payloads, cwd, paths, or preflight tokens.
   Logout may call only `account/logout` under the separate
   `CODEX_APP_PORT_ALLOW_ACCOUNT_LOGOUT=1` gate. The protected immediate login
   response may return only a sanitized device code, a verified OpenAI/ChatGPT
   HTTPS verification URL, and the opaque cancel reference. All account
-  login/cancel/credits-nudge/logout preflight and execution responses are constrained by
-  route-specific nested response schemas. Histories and action
+  login/cancel/credits-nudge/reset-credit-consume/logout preflight and execution
+  responses are constrained by route-specific nested response schemas. Histories and action
   audit records must not return device codes, verification URLs, login IDs,
   cancel references, OAuth URLs, auth tokens, account identifiers, email addresses, raw
   app-server payloads, cwd, paths, or preflight tokens; linking, callback

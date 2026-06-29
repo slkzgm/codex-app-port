@@ -13,6 +13,7 @@ import {
 	  runAccountLoginCancelProbe,
 	  runAccountLoginStartProbe,
 	  runAccountLogoutProbe,
+  runAccountRateLimitResetCreditConsumeProbe,
   runAppServerProbe,
   runConfigBatchWriteProbe,
   runConfigValueWriteProbe,
@@ -429,6 +430,11 @@ export const ACTION_PREFLIGHT_CONFIRMATION_FIELD_CONTRACTS = Object.freeze({
     "preflightToken",
     "creditType",
   ),
+  "account-reset-credit-consume-preflight": bodyFields(
+    "workspace",
+    "actionType",
+    "preflightToken",
+  ),
   "account-logout-preflight": bodyFields("workspace", "actionType", "preflightToken"),
   "turn-preflight": bodyFields("workspace", "actionType", "preflightToken", "thread", "prompt"),
   "git-branch-switch": bodyFields("workspace", "actionType", "preflightToken", "branch"),
@@ -799,6 +805,14 @@ export const BROWSER_POST_BODY_CONTRACTS = Object.freeze({
     appServerTraffic: false,
   }),
   "/api/account-credits-nudge": bodyContract(["workspace", "creditType", "preflightToken"], {
+    kind: "mutation",
+    requiresPreflightToken: true,
+  }),
+  "/api/account-reset-credit-consume-preflight": bodyContract(["workspace"], {
+    kind: "preflight",
+    appServerTraffic: false,
+  }),
+  "/api/account-reset-credit-consume": bodyContract(["workspace", "preflightToken"], {
     kind: "mutation",
     requiresPreflightToken: true,
   }),
@@ -6003,6 +6017,186 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
       "requiresExplicitExecutionGate",
     ],
   }),
+  "/api/account-reset-credit-consume-preflight": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    appServer: ["touched", "modelTraffic", "commandTraffic"],
+    action: [
+      "type",
+      "method",
+      "execution",
+      "authMutation",
+      "quotaMutation",
+      "wouldConsumeResetCredit",
+      "appServerTouched",
+      "reason",
+    ],
+    target: [
+      "idempotencyKeyGeneratedServerSide",
+      "idempotencyKeyReturned",
+      "accountIdentifiersReturned",
+      "tokensReturned",
+      "urlsReturned",
+      "rateLimitValuesReturned",
+    ],
+    auth: [
+      "accountSelected",
+      "accountIdentifiersReturned",
+      "tokensReturned",
+      "urlsReturned",
+      "rateLimitValuesReturned",
+    ],
+    quota: [
+      "mutation",
+      "outcomeReturned",
+      "idempotencyKeyReturned",
+      "rateLimitValuesReturned",
+      "rawPayloadReturned",
+    ],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "modelTraffic",
+      "commandTraffic",
+      "settingsWrites",
+      "authCallbacks",
+      "authMutations",
+      "quotaMutations",
+      "toolInvocation",
+      "installsEnabled",
+      "tokensReturned",
+      "accountIdentifiersReturned",
+      "urlsReturned",
+      "pathsReturned",
+      "rateLimitValuesReturned",
+      "rawPayloadReturned",
+      "requiresExplicitEnablement",
+      "executionRouteImplemented",
+      "executionGateEnabled",
+      "browserMethodCallsAccepted",
+      "implemented",
+    ],
+    preflight: [
+      "token",
+      "tokenIssued",
+      "issuedAt",
+      "expiresAt",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseRequiredForMutation",
+      "consumed",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+  }),
+  "/api/account-reset-credit-consume": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    initialize: ["platformFamily", "platformOs"],
+    appServer: ["touched", "modelTraffic", "commandTraffic", "auditedMethods"],
+    action: [
+      "type",
+      "method",
+      "execution",
+      "authMutation",
+      "quotaMutation",
+      "wouldConsumeResetCredit",
+      "appServerTouched",
+      "modelTraffic",
+      "reason",
+    ],
+    target: [
+      "idempotencyKeyGeneratedServerSide",
+      "idempotencyKeyReturned",
+      "accountIdentifiersReturned",
+      "tokensReturned",
+      "urlsReturned",
+      "rateLimitValuesReturned",
+    ],
+    auth: [
+      "accountSelected",
+      "accountIdentifiersReturned",
+      "tokensReturned",
+      "urlsReturned",
+      "rateLimitValuesReturned",
+    ],
+    quota: [
+      "mutation",
+      "outcome",
+      "outcomeReturned",
+      "idempotencyKeyReturned",
+      "rateLimitValuesReturned",
+      "rawPayloadReturned",
+    ],
+    probes: ["accountRateLimitResetCreditConsume"],
+    "probes.accountRateLimitResetCreditConsume": [
+      "method",
+      "outcome",
+      "responseObject",
+      "responseTopLevelKeyCount",
+      "idempotencyKeyReturned",
+      "quotaMutation",
+      "modelTraffic",
+      "tokensReturned",
+      "accountIdentifiersReturned",
+      "urlsReturned",
+      "rateLimitValuesReturned",
+      "rawPayloadReturned",
+    ],
+    result: [
+      "outcome",
+      "outcomeReturned",
+      "quotaMutation",
+      "idempotencyKeyReturned",
+      "tokensReturned",
+      "accountIdentifiersReturned",
+      "urlsReturned",
+      "rateLimitValuesReturned",
+      "rawPayloadReturned",
+      "threadContentReturned",
+      "fullIdsReturned",
+    ],
+    preflight: [
+      "tokenConsumed",
+      "tokenReturned",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseEnforced",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "modelTraffic",
+      "commandTraffic",
+      "settingsWrites",
+      "authCallbacks",
+      "authMutations",
+      "quotaMutations",
+      "toolInvocation",
+      "installsEnabled",
+      "promptTextReturned",
+      "secretsReturned",
+      "tokensReturned",
+      "accountIdentifiersReturned",
+      "urlsReturned",
+      "pathsReturned",
+      "rateLimitValuesReturned",
+      "rawPayloadReturned",
+      "requiresExplicitEnablement",
+      "executionRouteImplemented",
+      "executionGateEnabled",
+      "preflightTokenConsumed",
+      "auditLogPersistent",
+      "auditLogWritableChecked",
+      "auditLogWritten",
+      "auditLogPathReturned",
+      "browserMethodCallsAccepted",
+      "implemented",
+      "requiresExplicitExecutionGate",
+    ],
+  }),
   "/api/mcp-tool-preflight": responseNestedKeySchemas({
     workspace: ["id", "label", "isDefault"],
     appServer: ["touched", "modelTraffic", "commandTraffic", "toolTraffic"],
@@ -8992,6 +9186,19 @@ const BROWSER_POST_RESPONSE_ROUTE_TOP_LEVEL_KEYS = Object.freeze({
     "email",
     "result",
   ),
+  "/api/account-reset-credit-consume-preflight": routeResponseTopLevelKeys(
+    ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
+    "target",
+    "auth",
+    "quota",
+  ),
+  "/api/account-reset-credit-consume": routeResponseTopLevelKeys(
+    ...RESPONSE_APP_SERVER_MUTATION_TOP_LEVEL_KEYS,
+    "target",
+    "auth",
+    "quota",
+    "result",
+  ),
   "/api/account-logout-preflight": routeResponseTopLevelKeys(
     ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
     "target",
@@ -9527,6 +9734,7 @@ export function createDevServer({
   accountLoginStartFn = runAccountLoginStartProbe,
   accountCreditsNudgeFn = runAccountCreditsNudgeProbe,
   accountLogoutFn = runAccountLogoutProbe,
+  accountResetCreditConsumeFn = runAccountRateLimitResetCreditConsumeProbe,
   threadTranscriptProbeFn = runThreadTranscriptProbe,
   threadChangesProbeFn = runThreadChangesProbe,
   turnStartFn = runTurnStartProbe,
@@ -9577,6 +9785,8 @@ export function createDevServer({
   accountLoginEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN === "1",
   accountCreditsNudgeEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_CREDITS_NUDGE === "1",
   accountLogoutEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_LOGOUT === "1",
+  accountResetCreditConsumeEnabled =
+    process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_RESET_CREDIT_CONSUME === "1",
   gitBranchSwitchEnabled = process.env.CODEX_APP_PORT_ALLOW_GIT_BRANCH_SWITCH === "1",
   gitBranchCreateEnabled = process.env.CODEX_APP_PORT_ALLOW_GIT_BRANCH_CREATE === "1",
   gitBranchDeleteEnabled = process.env.CODEX_APP_PORT_ALLOW_GIT_BRANCH_DELETE === "1",
@@ -9706,6 +9916,7 @@ export function createDevServer({
       accountLoginStartFn,
       accountCreditsNudgeFn,
       accountLogoutFn,
+      accountResetCreditConsumeFn,
       threadTranscriptProbeFn,
       threadChangesProbeFn,
       turnStartFn,
@@ -9755,6 +9966,7 @@ export function createDevServer({
       accountLoginEnabled,
       accountCreditsNudgeEnabled,
       accountLogoutEnabled,
+      accountResetCreditConsumeEnabled,
       gitBranchSwitchEnabled,
       gitBranchCreateEnabled,
       gitBranchDeleteEnabled,
@@ -10968,6 +11180,97 @@ export async function handleRequest(request, response, options) {
       sendJson(response, error.statusCode ?? 400, {
         ok: false,
         error: cleanDisplayText(error.message, 200) ?? "Invalid account credits nudge request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/account-reset-credit-consume-preflight") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, ["workspace"]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const payload = buildAccountResetCreditConsumePreflight({
+        workspace,
+        accountResetCreditConsumeEnabled: options.accountResetCreditConsumeEnabled,
+      });
+      sendJson(response, 200, attachActionPreflight(payload, { body, workspace, options }));
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error:
+          cleanDisplayText(error.message, 200) ??
+          "Invalid account reset credit consume preflight request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/account-reset-credit-consume") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, ["workspace", "preflightToken"]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const preflightBody = stripActionPreflightControlFields(body);
+      const preflightPayload = buildAccountResetCreditConsumePreflight({
+        workspace,
+        accountResetCreditConsumeEnabled: options.accountResetCreditConsumeEnabled,
+      });
+      if (!preflightPayload.policy.executionGateEnabled) {
+        sendJson(response, 403, buildAccountResetCreditConsumeBlocked(preflightPayload));
+        return;
+      }
+      const consumedPreflight = options.preflightRegistry.consume({
+        token: validateActionPreflightToken(body.preflightToken),
+        kind: preflightPayload.action.type,
+        workspace,
+        intent: actionPreflightIntent(preflightBody, preflightPayload),
+      });
+      const auditLogWritableChecked = ensureActionAuditLogWritable(options.actionAuditLog);
+      const payload = await options.accountResetCreditConsumeFn({
+        codexBin: options.codexBin,
+        cwd: workspace.cwd,
+        timeoutMs: options.timeoutMs,
+        idempotencyKey: buildPrivateResetCreditIdempotencyKey(consumedPreflight),
+      });
+      const sanitized = sanitizeAccountResetCreditConsumePayload(payload, {
+        workspace,
+        consumedPreflight,
+        actionAuditLog: options.actionAuditLog,
+        auditLogWritableChecked,
+      });
+      sanitized.policy.auditLogWritten = writeActionAuditLog(options.actionAuditLog, sanitized);
+      sendJson(response, 200, sanitized);
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error:
+          cleanDisplayText(error.message, 200) ??
+          "Invalid account reset credit consume request",
       });
     }
     return;
@@ -14757,6 +15060,7 @@ export async function handleRequest(request, response, options) {
             accountLoginCancelEnabled: options.accountLoginCancelEnabled,
             accountLoginEnabled: options.accountLoginEnabled,
             accountCreditsNudgeEnabled: options.accountCreditsNudgeEnabled,
+            accountResetCreditConsumeEnabled: options.accountResetCreditConsumeEnabled,
             accountLogoutEnabled: options.accountLogoutEnabled,
             configBatchWriteEnabled: options.configBatchWriteEnabled,
             configValueWriteEnabled: options.configValueWriteEnabled,
@@ -14792,6 +15096,7 @@ export async function handleRequest(request, response, options) {
           accountLoginCancelEnabled: options.accountLoginCancelEnabled,
           accountLoginEnabled: options.accountLoginEnabled,
           accountCreditsNudgeEnabled: options.accountCreditsNudgeEnabled,
+          accountResetCreditConsumeEnabled: options.accountResetCreditConsumeEnabled,
           accountLogoutEnabled: options.accountLogoutEnabled,
           configBatchWriteEnabled: options.configBatchWriteEnabled,
           configValueWriteEnabled: options.configValueWriteEnabled,
@@ -15089,6 +15394,11 @@ async function buildConfirmableActionPreflightPayload(actionType, body, { worksp
       return buildAccountLogoutPreflight({
         workspace,
         accountLogoutEnabled: options.accountLogoutEnabled,
+      });
+    case "account-reset-credit-consume-preflight":
+      return buildAccountResetCreditConsumePreflight({
+        workspace,
+        accountResetCreditConsumeEnabled: options.accountResetCreditConsumeEnabled,
       });
     case "thread-start-preflight":
       return buildThreadStartPreflight({ workspace, options });
@@ -15446,6 +15756,8 @@ function actionAuditEvent(record) {
       return "account-login-recorded";
     case "account-credits-nudge":
       return "account-credits-nudge-recorded";
+    case "account-reset-credit-consume":
+      return "account-reset-credit-consume-recorded";
     case "account-logout":
       return "account-logout-recorded";
     case "file-action":
@@ -26287,6 +26599,7 @@ export function sanitizeSettingsIntegrationsPayload(
     accountLoginCancelEnabled = false,
     accountLoginEnabled = false,
     accountCreditsNudgeEnabled = false,
+    accountResetCreditConsumeEnabled = false,
     accountLogoutEnabled = false,
     configBatchWriteEnabled = false,
     configValueWriteEnabled = false,
@@ -26318,6 +26631,7 @@ export function sanitizeSettingsIntegrationsPayload(
   const loginEnabled = Boolean(accountLoginEnabled);
   const loginCancelEnabled = Boolean(accountLoginCancelEnabled);
   const creditsNudgeEnabled = Boolean(accountCreditsNudgeEnabled);
+  const resetCreditConsumeEnabled = Boolean(accountResetCreditConsumeEnabled);
   const logoutEnabled = Boolean(accountLogoutEnabled);
   const methodAudit = integrationMethodAudit();
   const preflightHistory = sanitizeIntegrationPreflightHistory(integrationPreflightHistory);
@@ -26345,6 +26659,7 @@ export function sanitizeSettingsIntegrationsPayload(
     accountLoginCancelEnabled: loginCancelEnabled,
     accountLoginEnabled: loginEnabled,
     accountCreditsNudgeEnabled: creditsNudgeEnabled,
+    accountResetCreditConsumeEnabled: resetCreditConsumeEnabled,
     accountLogoutEnabled: logoutEnabled,
     configBatchWriteEnabled,
     configValueWriteEnabled,
@@ -28712,6 +29027,111 @@ export function sanitizeAccountLogoutPayload(
   };
 }
 
+export function sanitizeAccountResetCreditConsumePayload(
+  payload,
+  { workspace = null, consumedPreflight, actionAuditLog = null, auditLogWritableChecked = false } = {},
+) {
+  const resetCredit = sanitizeAccountResetCreditConsumeProbe(
+    payload?.probes?.accountRateLimitResetCreditConsume,
+  );
+  return {
+    ok: Boolean(payload?.ok),
+    generatedAt: payload?.generatedAt ?? new Date().toISOString(),
+    transport: cleanDisplayText(payload?.transport, 80),
+    protocol: cleanDisplayText(payload?.protocol, 80),
+    initialize: sanitizeInitialize(payload?.initialize),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: true,
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["account/rateLimitResetCredit/consume"],
+    },
+    action: {
+      type: "account-reset-credit-consume",
+      method: "account/rateLimitResetCredit/consume",
+      execution: resetCredit.outcome,
+      authMutation: true,
+      quotaMutation: true,
+      appServerTouched: true,
+      modelTraffic: false,
+      reason: "account-reset-credit-consume-executed",
+    },
+    preflight: buildConsumedPreflightSummary(consumedPreflight),
+    target: {
+      idempotencyKeyGeneratedServerSide: true,
+      idempotencyKeyReturned: false,
+      accountIdentifiersReturned: false,
+      tokensReturned: false,
+      urlsReturned: false,
+      rateLimitValuesReturned: false,
+    },
+    auth: {
+      accountSelected: false,
+      accountIdentifiersReturned: false,
+      tokensReturned: false,
+      urlsReturned: false,
+      rateLimitValuesReturned: false,
+    },
+    quota: {
+      mutation: true,
+      outcome: resetCredit.outcome,
+      outcomeReturned: true,
+      idempotencyKeyReturned: false,
+      rateLimitValuesReturned: false,
+      rawPayloadReturned: false,
+    },
+    probes: {
+      accountRateLimitResetCreditConsume: resetCredit,
+    },
+    result: {
+      outcome: resetCredit.outcome,
+      outcomeReturned: true,
+      quotaMutation: true,
+      idempotencyKeyReturned: false,
+      tokensReturned: false,
+      accountIdentifiersReturned: false,
+      urlsReturned: false,
+      rateLimitValuesReturned: false,
+      rawPayloadReturned: false,
+      threadContentReturned: false,
+      fullIdsReturned: false,
+    },
+    policy: {
+      readOnly: false,
+      appServerTraffic: true,
+      modelTraffic: false,
+      commandTraffic: false,
+      settingsWrites: false,
+      authCallbacks: false,
+      authMutations: true,
+      quotaMutations: true,
+      toolInvocation: false,
+      installsEnabled: false,
+      promptTextReturned: false,
+      secretsReturned: false,
+      tokensReturned: false,
+      accountIdentifiersReturned: false,
+      urlsReturned: false,
+      pathsReturned: false,
+      rateLimitValuesReturned: false,
+      rawPayloadReturned: false,
+      requiresExplicitEnablement: true,
+      executionRouteImplemented: true,
+      executionGateEnabled: true,
+      preflightTokenConsumed: true,
+      auditLogPersistent: Boolean(actionAuditLog?.persistent),
+      auditLogWritableChecked: Boolean(auditLogWritableChecked),
+      auditLogWritten: false,
+      auditLogPathReturned: false,
+      browserMethodCallsAccepted: true,
+      implemented: true,
+      requiresExplicitExecutionGate: true,
+    },
+    notifications: sanitizeNotificationCounts(payload?.notifications),
+  };
+}
+
 export function sanitizeAccountCreditsNudgePayload(
   payload,
   {
@@ -29046,6 +29466,79 @@ export function buildAccountLogoutPreflight({ workspace, accountLogoutEnabled = 
   };
 }
 
+export function buildAccountResetCreditConsumePreflight(
+  { workspace, accountResetCreditConsumeEnabled = false } = {},
+) {
+  const enabled = Boolean(accountResetCreditConsumeEnabled);
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: publicWorkspaces([workspace])[0],
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+    },
+    action: {
+      type: "account-reset-credit-consume-preflight",
+      method: "account/rateLimitResetCredit/consume",
+      execution: "blocked",
+      authMutation: false,
+      quotaMutation: false,
+      wouldConsumeResetCredit: false,
+      appServerTouched: false,
+      reason: enabled
+        ? "account-reset-credit-consume-requires-confirmation"
+        : "account-reset-credit-consume-requires-opt-in",
+    },
+    target: {
+      idempotencyKeyGeneratedServerSide: true,
+      idempotencyKeyReturned: false,
+      accountIdentifiersReturned: false,
+      tokensReturned: false,
+      urlsReturned: false,
+      rateLimitValuesReturned: false,
+    },
+    auth: {
+      accountSelected: false,
+      accountIdentifiersReturned: false,
+      tokensReturned: false,
+      urlsReturned: false,
+      rateLimitValuesReturned: false,
+    },
+    quota: {
+      mutation: false,
+      outcomeReturned: false,
+      idempotencyKeyReturned: false,
+      rateLimitValuesReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      settingsWrites: false,
+      authCallbacks: false,
+      authMutations: false,
+      quotaMutations: false,
+      toolInvocation: false,
+      installsEnabled: false,
+      tokensReturned: false,
+      accountIdentifiersReturned: false,
+      urlsReturned: false,
+      pathsReturned: false,
+      rateLimitValuesReturned: false,
+      rawPayloadReturned: false,
+      requiresExplicitEnablement: true,
+      executionRouteImplemented: true,
+      executionGateEnabled: enabled,
+      browserMethodCallsAccepted: false,
+      implemented: false,
+    },
+  };
+}
+
 export function buildAccountCreditsNudgePreflight(
   body,
   { workspace, accountCreditsNudgeEnabled = false } = {},
@@ -29141,6 +29634,37 @@ export function buildAccountCreditsNudgeBlocked(preflightPayload) {
       appServerTraffic: false,
       authMutations: false,
       emailSideEffects: false,
+      executionGateEnabled: false,
+      browserMethodCallsAccepted: false,
+      implemented: false,
+    },
+  };
+}
+
+export function buildAccountResetCreditConsumeBlocked(preflightPayload) {
+  return {
+    ...preflightPayload,
+    ok: false,
+    error:
+      "Account reset credit consume is disabled. Set CODEX_APP_PORT_ALLOW_ACCOUNT_RESET_CREDIT_CONSUME=1 before starting the dev server.",
+    action: {
+      ...preflightPayload.action,
+      execution: "blocked",
+      authMutation: false,
+      quotaMutation: false,
+      wouldConsumeResetCredit: false,
+      appServerTouched: false,
+      reason: "account-reset-credit-consume-disabled",
+    },
+    quota: {
+      ...preflightPayload.quota,
+      mutation: false,
+    },
+    policy: {
+      ...preflightPayload.policy,
+      appServerTraffic: false,
+      authMutations: false,
+      quotaMutations: false,
       executionGateEnabled: false,
       browserMethodCallsAccepted: false,
       implemented: false,
@@ -32083,6 +32607,7 @@ export function buildSettingsIntegrations({
   accountLoginCancelEnabled = false,
   accountLoginEnabled = false,
   accountCreditsNudgeEnabled = false,
+  accountResetCreditConsumeEnabled = false,
   accountLogoutEnabled = false,
   configBatchWriteEnabled = false,
   configValueWriteEnabled = false,
@@ -32111,6 +32636,7 @@ export function buildSettingsIntegrations({
   const loginCancelEnabled = Boolean(accountLoginCancelEnabled);
   const loginEnabled = Boolean(accountLoginEnabled);
   const creditsNudgeEnabled = Boolean(accountCreditsNudgeEnabled);
+  const resetCreditConsumeEnabled = Boolean(accountResetCreditConsumeEnabled);
   const logoutEnabled = Boolean(accountLogoutEnabled);
   const preflightHistory = sanitizeIntegrationPreflightHistory(integrationPreflightHistory);
   const preflightConfirmationHistory = sanitizeIntegrationPreflightConfirmationHistory(
@@ -32126,6 +32652,7 @@ export function buildSettingsIntegrations({
     accountLoginCancelEnabled: loginCancelEnabled,
     accountLoginEnabled: loginEnabled,
     accountCreditsNudgeEnabled: creditsNudgeEnabled,
+    accountResetCreditConsumeEnabled: resetCreditConsumeEnabled,
     accountLogoutEnabled: logoutEnabled,
     configBatchWriteEnabled,
     configValueWriteEnabled,
@@ -32386,6 +32913,7 @@ function buildIntegrationActionScope({
   accountLoginCancelEnabled = false,
   accountLoginEnabled = false,
   accountCreditsNudgeEnabled = false,
+  accountResetCreditConsumeEnabled = false,
   accountLogoutEnabled = false,
   configBatchWriteEnabled = false,
   configValueWriteEnabled = false,
@@ -32424,6 +32952,7 @@ function buildIntegrationActionScope({
     accountLoginEnabled ? "account/login/start" : null,
     accountLoginCancelEnabled ? "account/login/cancel" : null,
     accountCreditsNudgeEnabled ? "account/sendAddCreditsNudgeEmail" : null,
+    accountResetCreditConsumeEnabled ? "account/rateLimitResetCredit/consume" : null,
     accountLogoutEnabled ? "account/logout" : null,
     configBatchWriteEnabled ? "config/batchWrite" : null,
     configValueWriteEnabled ? "config/value/write" : null,
@@ -32458,6 +32987,8 @@ function buildIntegrationActionScope({
     authDeviceCodeCancelEnabled: Boolean(accountLoginCancelEnabled),
     accountCreditsNudgeEnabled: Boolean(accountCreditsNudgeEnabled),
     authCreditsNudgeEnabled: Boolean(accountCreditsNudgeEnabled),
+    accountResetCreditConsumeEnabled: Boolean(accountResetCreditConsumeEnabled),
+    authResetCreditConsumeEnabled: Boolean(accountResetCreditConsumeEnabled),
     accountLogoutEnabled: Boolean(accountLogoutEnabled),
     authCallbacksEnabled: false,
     authTokenAccessEnabled: false,
@@ -33268,6 +33799,7 @@ function summarizeIntegrationActions({
     integrationScope.accountLoginEnabled,
     integrationScope.accountLoginCancelEnabled,
     integrationScope.accountCreditsNudgeEnabled,
+    integrationScope.accountResetCreditConsumeEnabled,
     integrationScope.accountLogoutEnabled,
   ].filter(Boolean).length;
   const settingsActionCount = [
@@ -33514,6 +34046,7 @@ function countEnabledIntegrationMutationGates(integrationScope = {}) {
     integrationScope.accountLoginEnabled,
     integrationScope.accountLoginCancelEnabled,
     integrationScope.accountCreditsNudgeEnabled,
+    integrationScope.accountResetCreditConsumeEnabled,
     integrationScope.accountLogoutEnabled,
     integrationScope.settingsWriteEnabled,
     integrationScope.configBatchWriteEnabled,
@@ -35048,6 +35581,23 @@ function sanitizeAccountCreditsNudgeProbe(accountCreditsNudge, { creditType = nu
     tokensReturned: false,
     accountIdentifiersReturned: false,
     urlsReturned: false,
+    rawPayloadReturned: false,
+  };
+}
+
+function sanitizeAccountResetCreditConsumeProbe(accountResetCreditConsume) {
+  return {
+    method: "account/rateLimitResetCredit/consume",
+    outcome: sanitizeAccountResetCreditOutcome(accountResetCreditConsume?.outcome),
+    responseObject: Boolean(accountResetCreditConsume?.responseObject),
+    responseTopLevelKeyCount: safeCount(accountResetCreditConsume?.responseTopLevelKeyCount),
+    idempotencyKeyReturned: false,
+    quotaMutation: true,
+    modelTraffic: false,
+    tokensReturned: false,
+    accountIdentifiersReturned: false,
+    urlsReturned: false,
+    rateLimitValuesReturned: false,
     rawPayloadReturned: false,
   };
 }
@@ -37803,6 +38353,18 @@ function sanitizeAccountCreditsNudgeStatus(value) {
     return clean;
   }
   return "unknown";
+}
+
+function sanitizeAccountResetCreditOutcome(value) {
+  const clean = cleanDisplayText(value, 32);
+  return ["reset", "nothingToReset", "noCredit", "alreadyRedeemed"].includes(clean)
+    ? clean
+    : "unknown";
+}
+
+function buildPrivateResetCreditIdempotencyKey(consumedPreflight) {
+  const workspacePart = cleanDisplayText(consumedPreflight?.scope?.workspaceId, 32) ?? "workspace";
+  return `codex-app-port-${workspacePart}-${randomBytes(16).toString("hex")}`;
 }
 
 function validateTerminalRef(value) {

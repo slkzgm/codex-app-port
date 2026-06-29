@@ -3833,6 +3833,93 @@ export async function runAccountCreditsNudgeProbe({
   }
 }
 
+export async function runAccountRateLimitResetCreditConsumeProbe({
+  codexBin = process.env.CODEX_BIN || "codex",
+  codexArgs = ["app-server", "--listen", "stdio://"],
+  cwd = process.cwd(),
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+  idempotencyKey,
+  onNotification = null,
+} = {}) {
+  if (process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_RESET_CREDIT_CONSUME !== "1") {
+    throw new Error(
+      "account/rateLimitResetCredit/consume requires CODEX_APP_PORT_ALLOW_ACCOUNT_RESET_CREDIT_CONSUME=1 because it mutates account quota state",
+    );
+  }
+
+  if (typeof idempotencyKey !== "string" || idempotencyKey.length < 16) {
+    throw new Error("account rate-limit reset credit consume requires a server idempotency key");
+  }
+
+  const notifications = [];
+  const client = new JsonlRpcClient({
+    command: codexBin,
+    args: codexArgs,
+    cwd,
+    timeoutMs,
+    onNotification(notification) {
+      notifications.push({
+        method: notification.method,
+      });
+      onNotification?.(notification);
+    },
+  });
+
+  await client.start();
+
+  try {
+    const initialize = normalizeInitializeResponse(
+      await client.request(APP_SERVER_METHODS.initialize, {
+        clientInfo: {
+          name: "codex_app_port",
+          title: "Codex App Port",
+          version: "0.1.0",
+        },
+        capabilities: {
+          experimentalApi: false,
+          requestAttestation: false,
+        },
+      }),
+    );
+
+    client.notify(APP_SERVER_METHODS.initialized);
+    const result = await client.request(
+      APP_SERVER_METHODS.accountRateLimitResetCreditConsume,
+      { idempotencyKey },
+      { timeoutMs },
+    );
+    const outcome = sanitizeRateLimitResetCreditOutcome(result?.outcome);
+
+    return {
+      ok: true,
+      generatedAt: new Date().toISOString(),
+      transport: "stdio-jsonl",
+      protocol: "json-rpc-2.0-without-jsonrpc-field",
+      initialize: summarizeInitialize(initialize),
+      probes: {
+        accountRateLimitResetCreditConsume: {
+          method: APP_SERVER_METHODS.accountRateLimitResetCreditConsume,
+          outcome,
+          responseObject: result && typeof result === "object",
+          responseTopLevelKeyCount:
+            result && typeof result === "object" ? Object.keys(result).length : 0,
+          idempotencyKeyReturned: false,
+          quotaMutation: true,
+          modelTraffic: false,
+          tokensReturned: false,
+          accountIdentifiersReturned: false,
+          urlsReturned: false,
+          rateLimitValuesReturned: false,
+          rawPayloadReturned: false,
+        },
+      },
+      notifications: notificationCounts(notifications),
+    };
+  } finally {
+    await client.close();
+  }
+}
+
 export async function runAccountLoginStartProbe({
   codexBin = process.env.CODEX_BIN || "codex",
   codexArgs = ["app-server", "--listen", "stdio://"],
@@ -6294,6 +6381,12 @@ function cleanStreamDeltaText(value) {
       "$1$2$3[secret]",
     )
     .replace(/\bSensitive\b/g, "[redacted]");
+}
+
+function sanitizeRateLimitResetCreditOutcome(value) {
+  return ["reset", "nothingToReset", "noCredit", "alreadyRedeemed"].includes(value)
+    ? value
+    : "unknown";
 }
 
 function throwRequestError(message, statusCode) {

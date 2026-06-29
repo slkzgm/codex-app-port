@@ -336,6 +336,8 @@ test("browser POST body contracts are centralized and immutable", () => {
     "/api/account-login-cancel",
     "/api/account-credits-nudge-preflight",
     "/api/account-credits-nudge",
+    "/api/account-reset-credit-consume-preflight",
+    "/api/account-reset-credit-consume",
     "/api/account-logout-preflight",
     "/api/account-logout",
     "/api/turn-start",
@@ -11089,6 +11091,202 @@ test("dev server sends account credits nudge only behind explicit opt-in and pre
       "\"tokensReturned\":true",
       "\"accountIdentifiersReturned\":true",
       "\"urlsReturned\":true",
+    ]) {
+      assert.equal(auditSerialized.includes(marker), false, `audit leaked ${marker}`);
+    }
+  } finally {
+    await closeServer(server);
+    await rm(actionAuditDir, { recursive: true, force: true });
+  }
+});
+
+test("dev server consumes account reset credits only behind explicit opt-in and preflight token", async () => {
+  const disabledCalls = [];
+  const disabled = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    accountResetCreditConsumeEnabled: false,
+    accountResetCreditConsumeFn: async (options) => {
+      disabledCalls.push(options);
+      return { ok: true };
+    },
+  });
+
+  try {
+    const disabledPreflightResponse = await fetch(
+      `${disabled.url}/api/account-reset-credit-consume-preflight`,
+      {
+        method: "POST",
+        headers: jsonHeaders(disabled.server),
+        body: JSON.stringify({ workspace: "default" }),
+      },
+    );
+    assert.equal(disabledPreflightResponse.status, 200);
+    const disabledPreflightPayload = await disabledPreflightResponse.json();
+    assert.equal(disabledPreflightPayload.policy.executionGateEnabled, false);
+    assert.equal(disabledPreflightPayload.action.quotaMutation, false);
+
+    const disabledExecutionResponse = await fetch(
+      `${disabled.url}/api/account-reset-credit-consume`,
+      {
+        method: "POST",
+        headers: jsonHeaders(disabled.server),
+        body: JSON.stringify({
+          workspace: "default",
+          preflightToken: disabledPreflightPayload.preflight.token,
+        }),
+      },
+    );
+    assert.equal(disabledExecutionResponse.status, 403);
+    assert.equal(disabledCalls.length, 0);
+  } finally {
+    await closeServer(disabled.server);
+  }
+
+  const calls = [];
+  const actionAuditDir = await mkdtemp(join(tmpdir(), "codex-account-reset-credit-audit-"));
+  const actionAuditLogPath = join(actionAuditDir, "actions.jsonl");
+  const { server, url } = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    accountResetCreditConsumeEnabled: true,
+    accountResetCreditConsumeFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-06-29T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/private-home",
+          userAgent: "mock/0.0.0",
+        },
+        probes: {
+          accountRateLimitResetCreditConsume: {
+            method: "account/rateLimitResetCredit/consume",
+            outcome: "reset",
+            responseObject: true,
+            responseTopLevelKeyCount: 3,
+            idempotencyKeyReturned: true,
+            quotaMutation: true,
+            modelTraffic: false,
+            tokensReturned: true,
+            accountIdentifiersReturned: true,
+            urlsReturned: true,
+            rateLimitValuesReturned: true,
+            rawPayloadReturned: true,
+            privateIdempotencyKey: options.idempotencyKey,
+            limitId: "codex-private-limit",
+            balance: "100",
+          },
+        },
+        notifications: {},
+      };
+    },
+    actionAuditLog: createActionAuditLog({
+      path: actionAuditLogPath,
+      now: () => "2026-06-29T00:00:00.000Z",
+    }),
+  });
+
+  try {
+    const preflightResponse = await fetch(`${url}/api/account-reset-credit-consume-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({ workspace: "default" }),
+    });
+    assert.equal(preflightResponse.status, 200);
+    const preflightPayload = await preflightResponse.json();
+    assert.equal(preflightPayload.action.type, "account-reset-credit-consume-preflight");
+    assert.equal(preflightPayload.action.method, "account/rateLimitResetCredit/consume");
+    assert.equal(preflightPayload.action.quotaMutation, false);
+    assert.equal(preflightPayload.target.idempotencyKeyGeneratedServerSide, true);
+    assert.equal(preflightPayload.target.idempotencyKeyReturned, false);
+    assert.equal(preflightPayload.policy.executionGateEnabled, true);
+    assert.equal(preflightPayload.policy.quotaMutations, false);
+    assertActionPreflight(preflightPayload, "account-reset-credit-consume-preflight", "default");
+
+    const response = await fetch(`${url}/api/account-reset-credit-consume`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.deepEqual(payload.appServer.auditedMethods, ["account/rateLimitResetCredit/consume"]);
+    assert.equal(payload.action.type, "account-reset-credit-consume");
+    assert.equal(payload.action.authMutation, true);
+    assert.equal(payload.action.quotaMutation, true);
+    assert.equal(payload.quota.outcome, "reset");
+    assert.equal(payload.quota.idempotencyKeyReturned, false);
+    assert.equal(payload.quota.rateLimitValuesReturned, false);
+    assert.equal(payload.result.outcome, "reset");
+    assert.equal(payload.result.idempotencyKeyReturned, false);
+    assert.equal(payload.result.rateLimitValuesReturned, false);
+    assert.equal(payload.probes.accountRateLimitResetCreditConsume.idempotencyKeyReturned, false);
+    assert.equal(payload.probes.accountRateLimitResetCreditConsume.rateLimitValuesReturned, false);
+    assert.equal(payload.policy.auditLogWritableChecked, true);
+    assert.equal(payload.policy.auditLogWritten, true);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].cwd, "/tmp/default-workspace");
+    assert.equal(typeof calls[0].idempotencyKey, "string");
+    assert.match(calls[0].idempotencyKey, /^codex-app-port-/);
+    for (const marker of [
+      "/tmp/default-workspace",
+      "/tmp/private-home",
+      "codexHome",
+      "userAgent",
+      preflightPayload.preflight.token,
+      calls[0].idempotencyKey,
+      "codex-private-limit",
+      "\"balance\":\"100\"",
+      "\"tokensReturned\":true",
+      "\"accountIdentifiersReturned\":true",
+      "\"urlsReturned\":true",
+      "\"rateLimitValuesReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+
+    const replay = await fetch(`${url}/api/account-reset-credit-consume`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    assert.equal(replay.status, 409);
+
+    const auditRecords = (await readFile(actionAuditLogPath, "utf8"))
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    assert.equal(auditRecords.length, 1);
+    assert.equal(auditRecords[0].event, "account-reset-credit-consume-recorded");
+    assert.equal(auditRecords[0].action.type, "account-reset-credit-consume");
+    assert.equal(auditRecords[0].action.method, "account/rateLimitResetCredit/consume");
+    assert.equal(auditRecords[0].result.outcome, "reset");
+    assert.equal(auditRecords[0].result.idempotencyKeyReturned, false);
+    assert.equal(auditRecords[0].policy.rawRequestBodyReturned, false);
+    const auditSerialized = JSON.stringify(auditRecords);
+    for (const marker of [
+      preflightPayload.preflight.token,
+      calls[0].idempotencyKey,
+      "/tmp/default-workspace",
+      "/tmp/private-home",
+      "codexHome",
+      "userAgent",
+      "codex-private-limit",
+      "\"tokensReturned\":true",
+      "\"accountIdentifiersReturned\":true",
+      "\"rateLimitValuesReturned\":true",
     ]) {
       assert.equal(auditSerialized.includes(marker), false, `audit leaked ${marker}`);
     }

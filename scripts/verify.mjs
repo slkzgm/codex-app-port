@@ -69,6 +69,7 @@ async function main() {
   await checkAccountLoginApi();
   await checkAccountLoginCancelApi();
   await checkAccountCreditsNudgeApi();
+  await checkAccountResetCreditConsumeApi();
   await checkAccountLogoutApi();
   await checkSettingsIntegrationsInventoryApi();
   await checkSettingsIntegrationsNamesApi();
@@ -947,6 +948,11 @@ async function checkStrictBrowserPostBodies() {
       [
         "/api/account-credits-nudge",
         { creditType: "usage_limit", preflightToken: "preflight-1234567890abcdef" },
+      ],
+      ["/api/account-reset-credit-consume-preflight", { workspace: "default" }],
+      [
+        "/api/account-reset-credit-consume",
+        { workspace: "default", preflightToken: "preflight-1234567890abcdef" },
       ],
       ["/api/account-logout-preflight", {}],
       ["/api/account-logout", { preflightToken: "preflight-1234567890abcdef" }],
@@ -14097,6 +14103,181 @@ async function checkAccountCreditsNudgeApi() {
   pass("dev server account credits nudge consumes opt-in one-time tokens without returning auth secrets");
 }
 
+async function checkAccountResetCreditConsumeApi() {
+  const actionAuditDir = await mkdtemp(join(tmpdir(), "codex-verify-account-reset-credit-audit-"));
+  const actionAuditLogPath = join(actionAuditDir, "actions.jsonl");
+  const calls = [];
+  const server = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    accountResetCreditConsumeEnabled: true,
+    accountResetCreditConsumeFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-06-29T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/verify-private-home",
+          userAgent: "verify-private-agent",
+        },
+        probes: {
+          accountRateLimitResetCreditConsume: {
+            method: "account/rateLimitResetCredit/consume",
+            outcome: "reset",
+            responseObject: true,
+            responseTopLevelKeyCount: 3,
+            idempotencyKeyReturned: true,
+            quotaMutation: true,
+            modelTraffic: false,
+            tokensReturned: true,
+            accountIdentifiersReturned: true,
+            urlsReturned: true,
+            rateLimitValuesReturned: true,
+            rawPayloadReturned: true,
+            privateIdempotencyKey: options.idempotencyKey,
+            limitId: "codex-private-limit",
+            balance: "100",
+            token: "sk-proj-private-auth-token",
+          },
+        },
+        notifications: {},
+      };
+    },
+    actionAuditLog: createActionAuditLog({
+      path: actionAuditLogPath,
+      now: () => "2026-06-29T00:00:00.000Z",
+    }),
+  });
+  const port = await listenWithFallback(server, { host: "127.0.0.1", port: 0 });
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  try {
+    const token = await readUiSessionToken(baseUrl);
+    const settingsResponse = await fetch(`${baseUrl}/api/settings-integrations`, {
+      headers: apiHeaders(token),
+    });
+    if (!settingsResponse.ok) {
+      throw new Error(`settings integrations for reset credit consume returned HTTP ${settingsResponse.status}`);
+    }
+    const settingsPayload = await settingsResponse.json();
+    if (
+      settingsPayload.integrationScope?.accountResetCreditConsumeEnabled !== true ||
+      settingsPayload.integrationScope?.authResetCreditConsumeEnabled !== true ||
+      !settingsPayload.integrationScope?.enabledLocalGates?.includes(
+        "account/rateLimitResetCredit/consume",
+      )
+    ) {
+      throw new Error("settings integrations did not expose the reset-credit consume gate safely");
+    }
+    assertNoMarkers(JSON.stringify(settingsPayload), [
+      "codex-private-limit",
+      "sk-proj-private-auth-token",
+      "\"rateLimitValuesReturned\":true",
+    ]);
+
+    const preflightResponse = await fetch(
+      `${baseUrl}/api/account-reset-credit-consume-preflight`,
+      {
+        method: "POST",
+        headers: jsonHeaders(token),
+        body: JSON.stringify({ workspace: "default" }),
+      },
+    );
+    if (!preflightResponse.ok) {
+      throw new Error(`account reset credit consume preflight returned HTTP ${preflightResponse.status}`);
+    }
+    const preflightPayload = await preflightResponse.json();
+    if (
+      preflightPayload.action?.type !== "account-reset-credit-consume-preflight" ||
+      preflightPayload.action?.method !== "account/rateLimitResetCredit/consume" ||
+      preflightPayload.action?.quotaMutation !== false ||
+      preflightPayload.target?.idempotencyKeyGeneratedServerSide !== true ||
+      preflightPayload.target?.idempotencyKeyReturned !== false ||
+      preflightPayload.policy?.executionGateEnabled !== true ||
+      preflightPayload.policy?.quotaMutations !== false
+    ) {
+      throw new Error("account reset credit consume preflight did not preserve the gated shape");
+    }
+    assertActionPreflight(preflightPayload, "account-reset-credit-consume-preflight", "default");
+
+    const response = await fetch(`${baseUrl}/api/account-reset-credit-consume`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(`account reset credit consume returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    assertSanitizedAccountResetCreditConsume(payload, {
+      token: preflightPayload.preflight.token,
+      idempotencyKey: calls[0]?.idempotencyKey,
+      outcome: "reset",
+    });
+    if (
+      calls.length !== 1 ||
+      calls[0].cwd !== "/tmp/codex-app-port-verify" ||
+      typeof calls[0].idempotencyKey !== "string" ||
+      !calls[0].idempotencyKey.startsWith("codex-app-port-")
+    ) {
+      throw new Error("account reset credit consume did not call the app-server mutation once with a private idempotency key");
+    }
+
+    const replayResponse = await fetch(`${baseUrl}/api/account-reset-credit-consume`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    if (replayResponse.status !== 409) {
+      throw new Error(`account reset credit consume replay returned HTTP ${replayResponse.status}`);
+    }
+
+    const auditRecords = (await readFile(actionAuditLogPath, "utf8"))
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    if (
+      auditRecords.length !== 1 ||
+      auditRecords[0].event !== "account-reset-credit-consume-recorded" ||
+      auditRecords[0].action?.type !== "account-reset-credit-consume" ||
+      auditRecords[0].action?.method !== "account/rateLimitResetCredit/consume" ||
+      auditRecords[0].result?.outcome !== "reset" ||
+      auditRecords[0].result?.idempotencyKeyReturned !== false ||
+      auditRecords[0].result?.rateLimitValuesReturned !== false
+    ) {
+      throw new Error("account reset credit consume audit record did not preserve sanitized metadata");
+    }
+    assertNoMarkers(JSON.stringify(auditRecords), [
+      preflightPayload.preflight.token,
+      calls[0].idempotencyKey,
+      "/tmp/codex-app-port-verify",
+      "/tmp/verify-private-home",
+      "verify-private-agent",
+      "codexHome",
+      "userAgent",
+      "codex-private-limit",
+      "sk-proj-private-auth-token",
+      "\"tokensReturned\":true",
+      "\"accountIdentifiersReturned\":true",
+      "\"urlsReturned\":true",
+      "\"rateLimitValuesReturned\":true",
+    ]);
+  } finally {
+    await closeServer(server);
+    await rm(actionAuditDir, { recursive: true, force: true });
+  }
+  pass("dev server account reset credit consume uses opt-in one-time tokens and sanitized audit");
+}
+
 async function checkAccountLogoutApi() {
   const actionAuditDir = await mkdtemp(join(tmpdir(), "codex-verify-account-logout-audit-"));
   const actionAuditLogPath = join(actionAuditDir, "actions.jsonl");
@@ -23327,6 +23508,99 @@ function assertSanitizedAccountCreditsNudge(payload, { token, status }) {
     payload.policy?.implemented !== true
   ) {
     throw new Error("account credits nudge policy did not preserve opt-in safety gates");
+  }
+}
+
+function assertSanitizedAccountResetCreditConsume(payload, { token, idempotencyKey, outcome }) {
+  const serialized = JSON.stringify(payload);
+  assertNoMarkers(serialized, [
+    token,
+    idempotencyKey,
+    "/tmp/codex-app-port-verify",
+    "/tmp/verify-private-home",
+    "verify-private-agent",
+    "codexHome",
+    "userAgent",
+    "sk-proj-private-auth-token",
+    "codex-private-limit",
+    "\"balance\":\"100\"",
+    "\"tokensReturned\":true",
+    "\"accountIdentifiersReturned\":true",
+    "\"urlsReturned\":true",
+    "\"rateLimitValuesReturned\":true",
+    "\"rawPayloadReturned\":true",
+  ]);
+  if (
+    !payload.ok ||
+    payload.workspace?.id !== "default" ||
+    Object.hasOwn(payload.workspace, "cwd") ||
+    payload.appServer?.touched !== true ||
+    payload.appServer?.modelTraffic !== false ||
+    payload.appServer?.commandTraffic !== false ||
+    JSON.stringify(payload.appServer?.auditedMethods ?? []) !==
+      JSON.stringify(["account/rateLimitResetCredit/consume"]) ||
+    payload.action?.type !== "account-reset-credit-consume" ||
+    payload.action?.method !== "account/rateLimitResetCredit/consume" ||
+    payload.action?.execution !== outcome ||
+    payload.action?.authMutation !== true ||
+    payload.action?.quotaMutation !== true ||
+    payload.action?.modelTraffic !== false ||
+    payload.preflight?.tokenConsumed !== true ||
+    payload.preflight?.tokenReturned !== false ||
+    payload.target?.idempotencyKeyGeneratedServerSide !== true ||
+    payload.target?.idempotencyKeyReturned !== false ||
+    payload.target?.accountIdentifiersReturned !== false ||
+    payload.target?.tokensReturned !== false ||
+    payload.target?.urlsReturned !== false ||
+    payload.target?.rateLimitValuesReturned !== false ||
+    payload.quota?.mutation !== true ||
+    payload.quota?.outcome !== outcome ||
+    payload.quota?.idempotencyKeyReturned !== false ||
+    payload.quota?.rateLimitValuesReturned !== false ||
+    payload.result?.outcome !== outcome ||
+    payload.result?.idempotencyKeyReturned !== false ||
+    payload.result?.tokensReturned !== false ||
+    payload.result?.accountIdentifiersReturned !== false ||
+    payload.result?.urlsReturned !== false ||
+    payload.result?.rateLimitValuesReturned !== false ||
+    payload.result?.rawPayloadReturned !== false
+  ) {
+    throw new Error("account reset credit consume payload did not expose sanitized quota metadata");
+  }
+  const probe = payload.probes?.accountRateLimitResetCreditConsume;
+  if (
+    probe?.method !== "account/rateLimitResetCredit/consume" ||
+    probe?.outcome !== outcome ||
+    probe?.quotaMutation !== true ||
+    probe?.modelTraffic !== false ||
+    probe?.idempotencyKeyReturned !== false ||
+    probe?.tokensReturned !== false ||
+    probe?.accountIdentifiersReturned !== false ||
+    probe?.urlsReturned !== false ||
+    probe?.rateLimitValuesReturned !== false ||
+    probe?.rawPayloadReturned !== false
+  ) {
+    throw new Error("account reset credit consume probe did not sanitize unsafe fields");
+  }
+  if (
+    payload.policy?.appServerTraffic !== true ||
+    payload.policy?.modelTraffic !== false ||
+    payload.policy?.commandTraffic !== false ||
+    payload.policy?.authCallbacks !== false ||
+    payload.policy?.authMutations !== true ||
+    payload.policy?.quotaMutations !== true ||
+    payload.policy?.tokensReturned !== false ||
+    payload.policy?.accountIdentifiersReturned !== false ||
+    payload.policy?.urlsReturned !== false ||
+    payload.policy?.rateLimitValuesReturned !== false ||
+    payload.policy?.rawPayloadReturned !== false ||
+    payload.policy?.requiresExplicitEnablement !== true ||
+    payload.policy?.executionGateEnabled !== true ||
+    payload.policy?.preflightTokenConsumed !== true ||
+    payload.policy?.auditLogWritableChecked !== true ||
+    payload.policy?.implemented !== true
+  ) {
+    throw new Error("account reset credit consume policy did not preserve opt-in safety gates");
   }
 }
 

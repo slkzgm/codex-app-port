@@ -584,11 +584,12 @@ allowlist requirements, and sanitized audit requirements without tokens,
 targets, arguments, resource content, skill content, names, URLs, paths,
 secrets, raw payloads, or app-server payloads.
 
-Device-code account login, login cancel, account credits nudge, and account logout are the only
-dedicated auth mutation routes. Their preflight endpoints do not touch
-app-server, return one-time local tokens, and all eight account auth
-preflight/execution responses are constrained by route-specific nested response
-schemas. `/api/account-login-start` is
+Device-code account login, login cancel, account credits nudge, account reset
+credit consumption, and account logout are the only dedicated account
+auth/quota mutation routes. Their preflight endpoints do not touch app-server,
+return one-time local tokens, and all ten account auth/quota preflight/execution
+responses are constrained by route-specific nested response schemas.
+`/api/account-login-start` is
 disabled unless
 `CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN=1` is set; when enabled, it consumes the
 token before calling only `account/login/start` with
@@ -606,6 +607,12 @@ process-local cancel reference plus a matching one-time token, calls only
 `usage_limit`, consumes a matching one-time token, calls only
 `account/sendAddCreditsNudgeEmail`, and never returns or logs email addresses,
 auth tokens, account IDs, URLs, cwd, paths, or raw app-server payloads.
+`/api/account-reset-credit-consume` is separately gated by
+`CODEX_APP_PORT_ALLOW_ACCOUNT_RESET_CREDIT_CONSUME=1`, accepts only the
+matching one-time token, generates the idempotency key server-side, calls only
+`account/rateLimitResetCredit/consume`, and returns/logs only a bounded outcome
+enum without idempotency keys, quota values, account IDs, auth tokens, URLs,
+cwd, paths, or raw app-server payloads.
 `/api/account-logout` remains separately gated by
 `CODEX_APP_PORT_ALLOW_ACCOUNT_LOGOUT=1` and calls only `account/logout`.
 Auth callbacks, login/linking flows that need OAuth callback handling, and token

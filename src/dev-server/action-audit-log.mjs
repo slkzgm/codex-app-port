@@ -18,6 +18,7 @@ const ACTION_AUDIT_EVENTS = new Set([
   "account-credits-nudge-recorded",
   "account-login-recorded",
   "account-logout-recorded",
+  "account-reset-credit-consume-recorded",
   "config-batch-write-recorded",
   "config-value-write-recorded",
   "environment-add-recorded",
@@ -214,6 +215,8 @@ function actionAuditEvent(actionType) {
       return "account-login-recorded";
     case "account-logout":
       return "account-logout-recorded";
+    case "account-reset-credit-consume":
+      return "account-reset-credit-consume-recorded";
     case "config-value-write":
       return "config-value-write-recorded";
     case "config-batch-write":
@@ -328,6 +331,17 @@ function sanitizeAction(action, actionType, { appServer }) {
       method: "account/logout",
       execution: safeString(action.execution, 40) ?? "logged-out",
       authMutation: Boolean(action.authMutation),
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: false,
+    };
+  }
+  if (actionType === "account-reset-credit-consume") {
+    return {
+      type: "account-reset-credit-consume",
+      method: "account/rateLimitResetCredit/consume",
+      execution: safeRateLimitResetCreditOutcome(action.execution),
+      authMutation: Boolean(action.authMutation),
+      quotaMutation: Boolean(action.quotaMutation),
       appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
       modelTraffic: false,
     };
@@ -747,6 +761,16 @@ function sanitizeTarget(target, actionType) {
       urlsReturned: false,
     };
   }
+  if (actionType === "account-reset-credit-consume") {
+    return {
+      idempotencyKeyGeneratedServerSide: true,
+      idempotencyKeyReturned: false,
+      accountIdentifiersReturned: false,
+      tokensReturned: false,
+      urlsReturned: false,
+      rateLimitValuesReturned: false,
+    };
+  }
   if (actionType === "file-action") {
     return {
       depth: safeCount(target.depth),
@@ -1132,6 +1156,21 @@ function sanitizeResult(result, actionType) {
       tokensReturned: false,
       accountIdentifiersReturned: false,
       urlsReturned: false,
+      rawPayloadReturned: false,
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
+  if (actionType === "account-reset-credit-consume") {
+    return {
+      outcome: safeRateLimitResetCreditOutcome(result.outcome),
+      outcomeReturned: true,
+      quotaMutation: true,
+      idempotencyKeyReturned: false,
+      tokensReturned: false,
+      accountIdentifiersReturned: false,
+      urlsReturned: false,
+      rateLimitValuesReturned: false,
       rawPayloadReturned: false,
       fullIdsReturned: false,
       threadContentReturned: false,
@@ -1655,12 +1694,20 @@ function safeCreditsNudgeStatus(value) {
   return clean === "sent" || clean === "cooldown_active" ? clean : "unknown";
 }
 
+function safeRateLimitResetCreditOutcome(value) {
+  const clean = safeString(value, 32);
+  return ["reset", "nothingToReset", "noCredit", "alreadyRedeemed"].includes(clean)
+    ? clean
+    : "unknown";
+}
+
 function sanitizeActionType(value) {
   return [
     "account-login-cancel",
     "account-credits-nudge",
     "account-login",
     "account-logout",
+    "account-reset-credit-consume",
     "config-batch-write",
     "config-value-write",
     "environment-add",

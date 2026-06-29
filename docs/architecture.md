@@ -407,6 +407,13 @@ Current M1 status:
   only, `credits`/`usage_limit` enum validation, no model traffic, and sanitized
   responses/action audit records without email addresses, tokens, account
   identifiers, auth URLs, cwd, paths, or raw app-server payloads
+- done: opt-in `/api/account-reset-credit-consume` path behind
+  `CODEX_APP_PORT_ALLOW_ACCOUNT_RESET_CREDIT_CONSUME=1`, with matching one-time
+  account-reset-credit-consume-preflight token consumption,
+  `account/rateLimitResetCredit/consume` only, server-generated idempotency key,
+  no model traffic, and sanitized responses/action audit records with only a
+  bounded outcome and no idempotency key, quota values, account identifiers,
+  auth URLs, tokens, cwd, paths, or raw app-server payloads
 - done: opt-in `/api/account-logout` path behind
   `CODEX_APP_PORT_ALLOW_ACCOUNT_LOGOUT=1`, with matching one-time
   account-logout-preflight token consumption, `account/logout` only, no model
