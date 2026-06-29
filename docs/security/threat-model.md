@@ -338,6 +338,12 @@
   execpolicy / network / persistent-root scopes. They must not expose decision
   tokens, request keys, raw approval details, prompts, commands, patches, file
   contents, paths, or app-server payloads.
+- Approval detail UI may only derive from already sanitized queue metadata and
+  may show kind, route, state, local/managed scope, command/file counts,
+  permissions presence, safe decision counts, and audit flags. It must not
+  expose decision tokens, request keys, session ids, raw command text, patch
+  text, file contents, full ids, paths, prompts, raw approval objects, or raw
+  app-server payloads.
 - Approval audit logs may contain only sanitized metadata: workspace labels,
   local session ids, suffixes, request kind/method, counts, accepted
   accept-once/deny decisions, file-change grant-root presence, file-change

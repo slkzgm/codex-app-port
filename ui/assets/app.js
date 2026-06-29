@@ -350,6 +350,18 @@ const elements = {
   approvalAcceptAllButton: document.querySelector("#approval-accept-all-button"),
   approvalDenyAllButton: document.querySelector("#approval-deny-all-button"),
   approvalBulkStatus: document.querySelector("#approval-bulk-status"),
+  approvalDetailPanel: document.querySelector("#approval-detail-panel"),
+  approvalDetailTitle: document.querySelector("#approval-detail-title"),
+  approvalDetailMeta: document.querySelector("#approval-detail-meta"),
+  approvalDetailKind: document.querySelector("#approval-detail-kind"),
+  approvalDetailRoute: document.querySelector("#approval-detail-route"),
+  approvalDetailState: document.querySelector("#approval-detail-state"),
+  approvalDetailScope: document.querySelector("#approval-detail-scope"),
+  approvalDetailCommand: document.querySelector("#approval-detail-command"),
+  approvalDetailFile: document.querySelector("#approval-detail-file"),
+  approvalDetailPermissions: document.querySelector("#approval-detail-permissions"),
+  approvalDetailChoices: document.querySelector("#approval-detail-choices"),
+  approvalDetailAudit: document.querySelector("#approval-detail-audit"),
   approvalDecisionHistoryCount: document.querySelector("#approval-decision-history-count"),
   approvalLifecycleState: document.querySelector("#approval-lifecycle-state"),
   approvalLifecycleResults: document.querySelector("#approval-lifecycle-results"),
@@ -632,6 +644,7 @@ let approvalRefreshTimer = null;
 let lastApprovalQueue = [];
 let lastApprovalPayload = null;
 let approvalQueueFilter = "all";
+let selectedApprovalKey = null;
 
 elements.refreshButton.addEventListener("click", () => {
   refreshStatus();
@@ -691,6 +704,7 @@ elements.workspaceSelect.addEventListener("change", () => {
   lastApprovalPayload = null;
   lastApprovalQueue = [];
   approvalQueueFilter = "all";
+  selectedApprovalKey = null;
   elements.fileActionButton.disabled = true;
   elements.liveSessionControlButton.disabled = true;
   elements.liveSessionBulkButton.disabled = true;
@@ -7204,6 +7218,11 @@ function renderApprovalDecisions(payload) {
   const policy = payload.policy ?? {};
   const decisionScope = policy.decisionScope ?? {};
   const filteredApprovals = filterApprovalQueue(approvals, approvalQueueFilter);
+  const approvalRows = filteredApprovals.map((approval) => ({
+    approval,
+    key: approvalSelectionKey(approval, approvals.indexOf(approval)),
+  }));
+  const selectedApprovalRow = resolveSelectedApprovalRow(approvalRows);
   const denyableApprovalTotal = pendingDenyableApprovals(filteredApprovals);
   const approvableApprovalTotal = pendingApprovableApprovals(filteredApprovals);
   const denyableApprovals = limitApprovalDecisionBatch(denyableApprovalTotal, payload);
@@ -7264,6 +7283,12 @@ function renderApprovalDecisions(payload) {
     denyableTotal: denyableApprovalTotal.length,
   });
   renderApprovalFilterState(approvals, filteredApprovals);
+  renderApprovalDetail(selectedApprovalRow?.approval ?? null, {
+    filteredCount: filteredApprovals.length,
+    totalCount: approvals.length,
+    policy,
+    approvalLifecycle,
+  });
   elements.approvalPolicyText.textContent = policy.approveDecisionsAccepted
     ? "Accept once + deny"
     : policy.forwardedToAppServer
@@ -7306,10 +7331,26 @@ function renderApprovalDecisions(payload) {
     return;
   }
 
-  for (const approval of filteredApprovals) {
+  for (const { approval, key } of approvalRows) {
     const row = document.createElement("article");
-    row.className = "boundary-row";
+    const selected = key === selectedApprovalKey;
+    row.className = "boundary-row selectable-row";
     row.setAttribute("role", "listitem");
+    row.setAttribute("aria-current", selected ? "true" : "false");
+    row.tabIndex = 0;
+    row.addEventListener("click", (event) => {
+      if (event.target instanceof Element && event.target.closest("button")) {
+        return;
+      }
+      selectApproval(key);
+    });
+    row.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") {
+        return;
+      }
+      event.preventDefault();
+      selectApproval(key);
+    });
 
     const request = approval.request ?? {};
     const target = approval.target ?? {};
@@ -7365,6 +7406,119 @@ function renderApprovalDecisions(payload) {
     });
     elements.approvalQueueList.append(row);
   }
+}
+
+function approvalSelectionKey(approval, index) {
+  const request = approval?.request ?? {};
+  return [
+    approval?.sessionId ?? "local",
+    request.requestKey ??
+      request.requestIdSuffix ??
+      request.itemIdSuffix ??
+      request.turnIdSuffix ??
+      `index-${index}`,
+    request.kind ?? "approval",
+    request.method ?? "method",
+  ]
+    .map((value) => String(value))
+    .join("::");
+}
+
+function resolveSelectedApprovalRow(approvalRows) {
+  const rows = Array.isArray(approvalRows) ? approvalRows : [];
+  const selected = rows.find((row) => row.key === selectedApprovalKey) ?? rows[0] ?? null;
+  selectedApprovalKey = selected?.key ?? null;
+  return selected;
+}
+
+function selectApproval(key) {
+  selectedApprovalKey = key;
+  if (lastApprovalPayload) {
+    renderApprovalDecisions(lastApprovalPayload);
+  }
+}
+
+function renderApprovalDetail(approval, { filteredCount = 0, totalCount = 0, policy = {} } = {}) {
+  const request = approval?.request ?? {};
+  const target = approval?.target ?? {};
+  const decision = approval?.browserDecision ?? request.browserDecision ?? null;
+  const managed = approval?.sessionId?.startsWith("managed-") === true;
+  const detailTitle = approval ? (request.kind ?? "approval") : "No approval selected";
+  const detailMeta = approval
+    ? joinParts([
+        managed ? "managed" : "local",
+        target.threadIdSuffix ? `thread ${target.threadIdSuffix}` : null,
+        target.turnIdSuffix ? `turn ${target.turnIdSuffix}` : null,
+        `${filteredCount} / ${totalCount} visible`,
+      ])
+    : `${filteredCount} / ${totalCount} visible`;
+
+  elements.approvalDetailTitle.textContent = detailTitle;
+  elements.approvalDetailMeta.textContent = detailMeta;
+  elements.approvalDetailKind.textContent = approval ? (request.kind ?? "approval") : "-";
+  elements.approvalDetailRoute.textContent = approval ? (request.method ?? "unknown") : "-";
+  elements.approvalDetailState.textContent = approval
+    ? decision?.decision
+      ? `decided ${decision.decision}`
+      : "pending"
+    : "-";
+  elements.approvalDetailScope.textContent = approval
+    ? joinParts([
+        managed ? "managed" : "local",
+        policy?.decisionScope?.requestScopedOnly ? "request scoped" : null,
+        policy?.decisionScope?.sessionWideApprovalDecisionsAccepted === false ? "session blocked" : null,
+      ])
+    : "-";
+  elements.approvalDetailCommand.textContent = approvalDetailCommandText(request);
+  elements.approvalDetailFile.textContent = approvalDetailFileText(request);
+  elements.approvalDetailPermissions.textContent = approval
+    ? request.hasPermissionsProfile
+      ? "profile present / grants omitted"
+      : "none"
+    : "-";
+  elements.approvalDetailChoices.textContent = approval
+    ? `${request.safeDenyDecisions?.length ?? 0} deny / ${
+        request.safeApproveDecisions?.length ?? 0
+      } accept`
+    : "-";
+  elements.approvalDetailAudit.textContent = approval
+    ? joinParts([
+        policy?.decisionTokenRequired ? "token required" : null,
+        policy?.replayProtectionImplemented ? "replay protected" : null,
+        policy?.auditLogPersistent ? "persistent audit" : "process audit",
+        policy?.decisionScope?.rawApprovalDetailsReturned === false ? "raw omitted" : null,
+      ])
+    : "-";
+}
+
+function approvalDetailCommandText(request) {
+  if (request?.command?.present !== true) {
+    return "none";
+  }
+  const command = request.command;
+  const preview = command.approvalPreview ?? {};
+  return joinParts([
+    `${command.charCount ?? 0} chars`,
+    `${command.lineCount ?? 0} lines`,
+    preview.textReturned ? "preview returned" : "preview omitted",
+    preview.rawTextReturned === false ? "raw omitted" : null,
+  ]);
+}
+
+function approvalDetailFileText(request) {
+  const preview = request?.fileChange?.approvalPreview;
+  if (!preview) {
+    return "none";
+  }
+  return joinParts([
+    `${preview.charCount ?? 0} chars`,
+    preview.textReturned ? "preview returned" : "preview omitted",
+    preview.patchTextReturned ? "patch returned" : "patch omitted",
+    preview.fileContentsReturned ? "contents returned" : "contents omitted",
+    preview.grantRootPresent ? "root present" : null,
+    preview.grantRootBasenameReturned ? "root basename returned" : null,
+    preview.pathsReturned === false ? "paths omitted" : null,
+  ]);
 }
 
 function approvalQueueActionsText(actions) {

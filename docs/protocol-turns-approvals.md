@@ -533,6 +533,13 @@ raw app-server payloads, or the audit-log path.
 Session-owned streaming now has an opt-in per-workspace client foundation, and
 deny/accept-once forwarding exists for pending managed approvals behind the
 explicit approval gates above.
+The Approvals UI now includes a client-side selected-request detail pane derived
+only from the already sanitized `/api/approval-decisions` queue item. It renders
+kind, route, pending/decided state, local/managed scope, command/file metric
+counts, permissions presence, safe decision counts, and audit-policy flags. It
+does not render decision tokens, request keys, session ids, raw commands, raw
+approval details, patch text, file contents, full ids, paths, prompts, or raw
+app-server payloads.
 Terminal/process notifications are treated as lifecycle metadata only:
 `item/commandExecution/outputDelta`,
 `item/commandExecution/terminalInteraction`, `command/exec/outputDelta`,

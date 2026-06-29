@@ -241,6 +241,11 @@ Current M1 status:
 - done: read-only process-local `/api/turn-sessions` ledger for sanitized
   opt-in turn-start records and bounded sanitized live event snapshots without
   prompt text, full ids, paths, or accepted approval decisions
+- done: client-side Approvals detail pane derived only from sanitized queue
+  metadata, showing request kind/route/state/scope, command/file counts,
+  permissions presence, safe decision counts, and audit flags without decision
+  tokens, request keys, raw approval details, command text, patch text, file
+  contents, session ids, prompts, paths, or raw app-server payloads
 - done: sanitized turn-session lifecycle summary with session counts,
   pending/decided approval counts, returned event counts, latest sanitized
   status, explicit turn/session/approval gates, and request-scoped approval

@@ -1295,6 +1295,13 @@ requirements, local/forwarded deny and accept-once availability, batch support,
 and privileged-scope blocks without returning tokens, request keys, raw approval
 details, preview text, command text, file-change patches, file contents, paths,
 prompts, ids, or app-server payloads.
+The approval queue also keeps a client-side selected row and renders a sanitized
+detail pane for the visible request. The pane is derived from the already
+sanitized queue object and shows only kind/route/state/scope labels, command and
+file-change counts, permissions presence, safe decision counts, and audit-policy
+flags. It never displays decision tokens, request keys, session ids, raw command
+text, patch text, file contents, paths, prompts, raw approval objects, or raw
+app-server payloads.
 It also exposes `approvalRoutingContract`, derived only from sanitized queue,
 policy, action, management, readiness, and history counters. The UI renders
 local deny versus managed deny/accept-once routing, route labels, forwarding
