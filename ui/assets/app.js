@@ -314,6 +314,8 @@ const elements = {
   threadCompactStatus: document.querySelector("#thread-compact-status"),
   threadGoalButton: document.querySelector("#thread-goal-button"),
   threadGoalStatus: document.querySelector("#thread-goal-status"),
+  threadTurnsButton: document.querySelector("#thread-turns-button"),
+  threadTurnsStatus: document.querySelector("#thread-turns-status"),
   threadDetailMeta: document.querySelector("#thread-detail-meta"),
   turnTimeline: document.querySelector("#turn-timeline"),
   transcriptButton: document.querySelector("#transcript-button"),
@@ -950,6 +952,10 @@ elements.threadCompactButton.addEventListener("click", () => {
 
 elements.threadGoalButton.addEventListener("click", () => {
   loadThreadGoal();
+});
+
+elements.threadTurnsButton.addEventListener("click", () => {
+  loadThreadTurns();
 });
 
 elements.turnForm.addEventListener("submit", (event) => {
@@ -4978,6 +4984,8 @@ async function loadThreadDetail(threadIdSuffix, { archived = false } = {}) {
   elements.threadShellCommandButton.disabled = true;
   elements.threadGoalButton.disabled = false;
   elements.threadGoalStatus.textContent = "Goal not loaded.";
+  elements.threadTurnsButton.disabled = false;
+  elements.threadTurnsStatus.textContent = "Turns page not loaded.";
   updateThreadArchiveState();
   updateThreadForkState();
   updateThreadRenameState();
@@ -5047,6 +5055,41 @@ async function loadThreadGoal() {
     renderError(error);
   } finally {
     elements.threadGoalButton.disabled = !selectedThreadIdSuffix;
+  }
+}
+
+async function loadThreadTurns() {
+  if (!selectedThreadIdSuffix) {
+    elements.threadTurnsStatus.textContent = "Select thread";
+    return;
+  }
+
+  elements.threadTurnsButton.disabled = true;
+  elements.threadTurnsStatus.textContent = "Loading turns page.";
+  hideError();
+
+  try {
+    const params = new URLSearchParams();
+    params.set("thread", selectedThreadIdSuffix);
+    if (selectedWorkspaceId) {
+      params.set("workspace", selectedWorkspaceId);
+    }
+
+    const response = await fetch(`/api/thread-turns?${params.toString()}`, {
+      method: "GET",
+      headers: apiHeaders(),
+      cache: "no-store",
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderThreadTurns(payload.probes?.threadTurns ?? null, payload.policy ?? null);
+  } catch (error) {
+    elements.threadTurnsStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    elements.threadTurnsButton.disabled = !selectedThreadIdSuffix;
   }
 }
 
@@ -6895,6 +6938,24 @@ function renderThreadGoal(goal, policy) {
   ]);
 }
 
+function renderThreadTurns(page, policy) {
+  if (!page) {
+    elements.threadTurnsStatus.textContent = "No turn page metadata returned.";
+    return;
+  }
+  const enabled = policy?.turnsReadEnabled === true;
+  if (!enabled) {
+    elements.threadTurnsStatus.textContent = "Turns page read blocked.";
+    return;
+  }
+  elements.threadTurnsStatus.textContent = joinParts([
+    `${page.returnedTurnCount ?? 0} turns`,
+    page.hasNextCursor ? "next page" : null,
+    page.hasBackwardsCursor ? "previous page" : null,
+    page.itemsView === "notLoaded" ? "items hidden" : null,
+  ]);
+}
+
 function clearThreadDetail() {
   selectedThreadArchived = false;
   lastLiveSessionControlPreflight = null;
@@ -6921,6 +6982,8 @@ function clearThreadDetail() {
   elements.threadCompactStatus.textContent = "Select a loaded active thread to compact.";
   elements.threadGoalStatus.textContent = "Select a thread to inspect goal state.";
   elements.threadGoalButton.disabled = true;
+  elements.threadTurnsStatus.textContent = "Select a thread to inspect paged turn metadata.";
+  elements.threadTurnsButton.disabled = true;
   elements.threadDetailMeta.replaceChildren();
   elements.turnTimeline.replaceChildren(emptyState("Select a thread to inspect sanitized turn metadata."));
   clearTranscript();

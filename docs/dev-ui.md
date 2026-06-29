@@ -364,6 +364,15 @@ objective length/line counts. It does not receive objective text, full ids,
 exact goal timestamps, cwd/path values, raw thread payloads, or raw app-server
 payloads.
 
+`/api/thread-turns` is the separate paged-turn metadata surface for selected
+threads. It is disabled unless `CODEX_APP_PORT_ALLOW_THREAD_TURNS=1` is set
+before server startup. When enabled, it resolves the selected thread by suffix
+through `thread/list` and calls only `thread/turns/list` with
+`itemsView:notLoaded`. The browser receives turn counts, status metadata,
+cursor-presence booleans, and redaction flags. It does not receive item
+content, cursor values, full ids, exact turn timestamps, cwd/path values, raw
+thread payloads, or raw app-server payloads.
+
 Every `/api/*` route also requires a per-process session token. The server
 injects this token into the served HTML and the browser sends it back in the
 `X-Codex-App-Port-Token` header. The token is not stored on disk and is meant to

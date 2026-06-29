@@ -29,6 +29,7 @@ export const DEFAULT_THREAD_LIMIT = 5;
 export const DEFAULT_THREAD_DETAIL_SCAN_LIMIT = 100;
 export const DEFAULT_THREAD_DETAIL_TURN_LIMIT = 12;
 export const DEFAULT_THREAD_DETAIL_ITEM_LIMIT = 80;
+export const DEFAULT_THREAD_TURNS_PAGE_LIMIT = 25;
 export const DEFAULT_TRANSCRIPT_TURN_LIMIT = 20;
 export const DEFAULT_TRANSCRIPT_ITEM_LIMIT = 120;
 export const DEFAULT_TRANSCRIPT_ITEM_TEXT_LIMIT = 2_000;
@@ -230,6 +231,43 @@ export function summarizeThreadGoal(response, { threadIdSuffix = null } = {}) {
     objectiveReturned: false,
     fullIdsReturned: false,
     timestampsReturned: false,
+    rawPayloadReturned: false,
+  };
+}
+
+export function summarizeThreadTurnsPage(response, { threadIdSuffix = null, limit = DEFAULT_THREAD_TURNS_PAGE_LIMIT } = {}) {
+  const data = Array.isArray(response?.data) ? response.data : [];
+  const safeLimit = Math.max(
+    0,
+    Math.min(
+      DEFAULT_THREAD_TURNS_PAGE_LIMIT,
+      Number.isFinite(limit) ? Math.trunc(limit) : DEFAULT_THREAD_TURNS_PAGE_LIMIT,
+    ),
+  );
+  return {
+    method: APP_SERVER_METHODS.threadTurnsList,
+    threadIdSuffix: isValidSuffix(threadIdSuffix) ? threadIdSuffix : null,
+    count: data.length,
+    returnedTurnCount: Math.min(data.length, safeLimit),
+    hasNextCursor: Boolean(response?.nextCursor),
+    hasBackwardsCursor: Boolean(response?.backwardsCursor),
+    itemsView: "notLoaded",
+    sortDirection: "desc",
+    turns: data.slice(0, safeLimit).map((turn) => ({
+      idSuffix: suffix(turn?.id),
+      status: statusLabel(turn?.status),
+      itemsView: "notLoaded",
+      startedTimestampPresent: Number.isFinite(turn?.startedAt),
+      completedTimestampPresent: Number.isFinite(turn?.completedAt),
+      durationMs: Number.isFinite(turn?.durationMs) ? Math.max(0, Math.trunc(turn.durationMs)) : null,
+      itemCount: Array.isArray(turn?.items) ? turn.items.length : 0,
+      itemsReturned: false,
+    })),
+    cursorValuesReturned: false,
+    fullIdsReturned: false,
+    timestampsReturned: false,
+    itemContentReturned: false,
+    pathsReturned: false,
     rawPayloadReturned: false,
   };
 }
@@ -1185,6 +1223,89 @@ export async function runThreadGoalProbe({
       initialize: summarizeInitialize(initialize),
       probes: {
         threadGoal: summarizeThreadGoal(goal, { threadIdSuffix }),
+      },
+      notifications: notificationCounts(notifications),
+    };
+  } finally {
+    await client.close();
+  }
+}
+
+export async function runThreadTurnsProbe({
+  codexBin = process.env.CODEX_BIN || "codex",
+  codexArgs = ["app-server", "--listen", "stdio://"],
+  cwd = process.cwd(),
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+  threadIdSuffix,
+  threadScanLimit = DEFAULT_THREAD_DETAIL_SCAN_LIMIT,
+  limit = DEFAULT_THREAD_TURNS_PAGE_LIMIT,
+  onNotification = null,
+} = {}) {
+  if (process.env.CODEX_APP_PORT_ALLOW_THREAD_TURNS !== "1") {
+    throw new Error(
+      "thread/turns/list requires CODEX_APP_PORT_ALLOW_THREAD_TURNS=1 because it can inspect persisted turn metadata",
+    );
+  }
+  if (!isValidSuffix(threadIdSuffix)) {
+    throwRequestError("Thread selector must be an 8-character id suffix", 400);
+  }
+
+  const notifications = [];
+  const client = new JsonlRpcClient({
+    command: codexBin,
+    args: codexArgs,
+    cwd,
+    timeoutMs,
+    onNotification(notification) {
+      notifications.push({
+        method: notification.method,
+      });
+      onNotification?.(notification);
+    },
+  });
+
+  await client.start();
+
+  try {
+    const initialize = normalizeInitializeResponse(
+      await client.request("initialize", {
+        clientInfo: {
+          name: "codex_app_port",
+          title: "Codex App Port",
+          version: "0.1.0",
+        },
+        capabilities: {
+          experimentalApi: false,
+          requestAttestation: false,
+        },
+      }),
+    );
+
+    client.notify("initialized");
+
+    const thread = await selectThreadBySuffixFromLists(client, {
+      threadIdSuffix,
+      threadScanLimit,
+    });
+    const safeLimit = Number.isFinite(limit)
+      ? Math.max(0, Math.min(DEFAULT_THREAD_TURNS_PAGE_LIMIT, Math.trunc(limit)))
+      : DEFAULT_THREAD_TURNS_PAGE_LIMIT;
+    const turns = await client.request(APP_SERVER_METHODS.threadTurnsList, {
+      threadId: thread.id,
+      limit: safeLimit,
+      itemsView: "notLoaded",
+      sortDirection: "desc",
+      cursor: null,
+    });
+
+    return {
+      ok: true,
+      generatedAt: new Date().toISOString(),
+      transport: "stdio-jsonl",
+      protocol: "json-rpc-2.0-without-jsonrpc-field",
+      initialize: summarizeInitialize(initialize),
+      probes: {
+        threadTurns: summarizeThreadTurnsPage(turns, { threadIdSuffix, limit: safeLimit }),
       },
       notifications: notificationCounts(notifications),
     };

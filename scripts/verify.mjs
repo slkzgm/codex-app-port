@@ -65,6 +65,7 @@ async function main() {
   await checkGitWorktreePreflightApi();
   await checkThreadDetailApi();
   await checkThreadGoalApi();
+  await checkThreadTurnsApi();
   await checkThreadTranscriptApi();
   await checkThreadChangesApi();
   await checkEventStreamApi();
@@ -11143,6 +11144,103 @@ async function checkThreadGoalApi() {
     await closeServer(server);
   }
   pass("dev server thread goal API returns objective-free metadata");
+}
+
+async function checkThreadTurnsApi() {
+  const server = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    threadTurnsEnabled: true,
+    probeFn: async () => ({
+      ok: true,
+      initialize: {
+        platformOs: "linux",
+        platformFamily: "unix",
+      },
+      probes: {
+        threads: {
+          count: 1,
+          items: [
+            {
+              idSuffix: "abcd1234",
+              hasName: true,
+              hasPreview: true,
+              cwdBasename: "codex-app-port-verify",
+            },
+          ],
+        },
+      },
+      notifications: {},
+    }),
+    threadTurnsProbeFn: async () => ({
+      ok: true,
+      generatedAt: "2026-06-29T00:00:00.000Z",
+      transport: "stdio-jsonl",
+      protocol: "json-rpc-2.0-without-jsonrpc-field",
+      initialize: {
+        platformOs: "linux",
+        platformFamily: "unix",
+        userAgent: "verify-sensitive-agent",
+        codexHome: "/tmp/verify-private-home",
+      },
+      probes: {
+        threadTurns: {
+          method: "thread/turns/list",
+          threadIdSuffix: "abcd1234",
+          threadId: "private-full-thread-id-abcd1234",
+          count: 1,
+          returnedTurnCount: 1,
+          hasNextCursor: true,
+          hasBackwardsCursor: true,
+          nextCursor: "private-cursor",
+          backwardsCursor: "private-backwards-cursor",
+          itemsView: "full",
+          sortDirection: "desc",
+          turns: [
+            {
+              idSuffix: "turn1234",
+              id: "private-full-turn-id-turn1234",
+              status: "completed",
+              itemsView: "full",
+              startedAt: 1782726047,
+              completedAt: 1782726048,
+              startedTimestampPresent: true,
+              completedTimestampPresent: true,
+              durationMs: 12,
+              itemCount: 1,
+              itemsReturned: true,
+              items: [
+                {
+                  text: "Sensitive turn item text references /tmp/codex-app-port-verify/secret.txt",
+                },
+              ],
+            },
+          ],
+          cursorValuesReturned: true,
+          fullIdsReturned: true,
+          timestampsReturned: true,
+          itemContentReturned: true,
+          rawPayloadReturned: true,
+        },
+      },
+      notifications: {},
+    }),
+  });
+  const port = await listenWithFallback(server, { host: "127.0.0.1", port: 0 });
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  try {
+    const token = await readUiSessionToken(baseUrl);
+    const response = await fetch(`${baseUrl}/api/thread-turns?thread=abcd1234`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`thread turns API returned HTTP ${response.status}`);
+    }
+    assertSanitizedThreadTurns(await response.json());
+  } finally {
+    await closeServer(server);
+  }
+  pass("dev server thread turns API returns item-free metadata");
 }
 
 async function checkThreadTranscriptApi() {
@@ -36540,6 +36638,97 @@ function assertSanitizedThreadGoal(payload) {
     payload.policy?.rawPayloadReturned !== false
   ) {
     throw new Error("thread goal policy did not preserve redaction flags");
+  }
+}
+
+function assertSanitizedThreadTurns(payload) {
+  if (!payload.ok) {
+    throw new Error("thread turns payload is not ok");
+  }
+  const serialized = JSON.stringify(payload);
+  for (const marker of [
+    "Sensitive turn item text",
+    "secret.txt",
+    "private-cursor",
+    "private-backwards-cursor",
+    "private-full-thread-id",
+    "private-full-turn-id",
+    "verify-sensitive-agent",
+    "codexHome",
+    "userAgent",
+    "/tmp/codex-app-port-verify",
+    "/tmp/verify-private-home",
+    "1782726047",
+  ]) {
+    if (serialized.includes(marker)) {
+      throw new Error(`thread turns payload leaked ${marker}`);
+    }
+  }
+  const page = payload.probes?.threadTurns;
+  if (!page) {
+    throw new Error("thread turns payload is missing page metadata");
+  }
+  if (
+    page.method !== "thread/turns/list" ||
+    page.threadIdSuffix !== "abcd1234" ||
+    page.count !== 1 ||
+    page.returnedTurnCount !== 1 ||
+    page.hasNextCursor !== true ||
+    page.hasBackwardsCursor !== true ||
+    page.itemsView !== "notLoaded" ||
+    page.cursorValuesReturned !== false ||
+    page.fullIdsReturned !== false ||
+    page.timestampsReturned !== false ||
+    page.itemContentReturned !== false ||
+    page.rawPayloadReturned !== false
+  ) {
+    throw new Error("thread turns payload did not preserve sanitized page metadata");
+  }
+  for (const forbidden of [
+    "id",
+    "threadId",
+    "nextCursor",
+    "backwardsCursor",
+    "cursor",
+    "items",
+    "createdAt",
+    "updatedAt",
+    "cwd",
+    "path",
+  ]) {
+    if (Object.hasOwn(page, forbidden)) {
+      throw new Error(`thread turns page leaked ${forbidden}`);
+    }
+  }
+  const turn = page.turns?.[0];
+  if (
+    !turn ||
+    turn.idSuffix !== "turn1234" ||
+    turn.status !== "completed" ||
+    turn.itemsView !== "notLoaded" ||
+    turn.startedTimestampPresent !== true ||
+    turn.completedTimestampPresent !== true ||
+    turn.durationMs !== 12 ||
+    turn.itemCount !== 1 ||
+    turn.itemsReturned !== false
+  ) {
+    throw new Error("thread turns payload did not preserve sanitized turn metadata");
+  }
+  for (const forbidden of ["id", "items", "text", "content", "startedAt", "completedAt"]) {
+    if (Object.hasOwn(turn, forbidden)) {
+      throw new Error(`thread turn item leaked ${forbidden}`);
+    }
+  }
+  if (
+    payload.policy?.turnsReadEnabled !== true ||
+    payload.policy?.forcedItemsView !== "notLoaded" ||
+    payload.policy?.cursorValuesReturned !== false ||
+    payload.policy?.fullIdsReturned !== false ||
+    payload.policy?.timestampsReturned !== false ||
+    payload.policy?.itemContentReturned !== false ||
+    payload.policy?.rawPayloadReturned !== false
+  ) {
+    throw new Error("thread turns policy did not preserve redaction flags");
   }
 }
 

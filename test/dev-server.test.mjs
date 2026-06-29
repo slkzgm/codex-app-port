@@ -27489,6 +27489,143 @@ test("dev server exposes thread goal metadata only behind opt-in without objecti
   }
 });
 
+test("dev server exposes thread turns metadata only behind opt-in without turn items", async () => {
+  const blockedCalls = [];
+  const blockedServer = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    threadTurnsProbeFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+
+  try {
+    const response = await fetch(`${blockedServer.url}/api/thread-turns?thread=b0153f06`, {
+      headers: apiHeaders(blockedServer.server),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, false);
+    assert.equal(payload.policy.turnsReadEnabled, false);
+    assert.equal(payload.probes.threadTurns.threadIdSuffix, "b0153f06");
+    assert.equal(blockedCalls.length, 0);
+  } finally {
+    await closeServer(blockedServer.server);
+  }
+
+  const calls = [];
+  const { server, url } = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    threadTurnsEnabled: true,
+    threadTurnsProbeFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-06-29T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/private-home",
+          userAgent: "mock/0.0.0",
+        },
+        probes: {
+          threadTurns: {
+            method: "thread/turns/list",
+            threadIdSuffix: "b0153f06",
+            threadId: "private-full-thread-id-b0153f06",
+            count: 2,
+            returnedTurnCount: 2,
+            hasNextCursor: true,
+            hasBackwardsCursor: true,
+            nextCursor: "private-cursor",
+            backwardsCursor: "private-backwards-cursor",
+            itemsView: "full",
+            sortDirection: "desc",
+            turns: [
+              {
+                idSuffix: "turn1111",
+                id: "private-full-turn-id-turn1111",
+                status: "completed",
+                itemsView: "full",
+                startedAt: 1782726047,
+                completedAt: 1782726048,
+                startedTimestampPresent: true,
+                completedTimestampPresent: true,
+                durationMs: 99,
+                itemCount: 3,
+                itemsReturned: true,
+                items: [{ text: "Sensitive turn item text", content: "secret" }],
+              },
+              {
+                idSuffix: "turn2222",
+                status: "running",
+                itemsView: "summary",
+                startedTimestampPresent: true,
+                completedTimestampPresent: false,
+                durationMs: null,
+                itemCount: 0,
+                itemsReturned: false,
+              },
+            ],
+            cursorValuesReturned: true,
+            fullIdsReturned: true,
+            timestampsReturned: true,
+            itemContentReturned: true,
+            rawPayloadReturned: true,
+          },
+        },
+        notifications: {
+          "turn/moderationMetadata": 1,
+        },
+      };
+    },
+  });
+
+  try {
+    const response = await fetch(`${url}/api/thread-turns?thread=b0153f06`, {
+      headers: apiHeaders(server),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(calls[0].threadIdSuffix, "b0153f06");
+    assert.equal(calls[0].cwd, "/tmp/default-workspace");
+    assert.equal(payload.appServer.touched, true);
+    assert.deepEqual(payload.appServer.auditedMethods, ["thread/list", "thread/turns/list"]);
+    assert.equal(payload.policy.turnsReadEnabled, true);
+    assert.equal(payload.probes.threadTurns.returnedTurnCount, 2);
+    assert.equal(payload.probes.threadTurns.hasNextCursor, true);
+    assert.equal(payload.probes.threadTurns.hasBackwardsCursor, true);
+    assert.equal(payload.probes.threadTurns.cursorValuesReturned, false);
+    assert.equal(payload.probes.threadTurns.fullIdsReturned, false);
+    assert.equal(payload.probes.threadTurns.timestampsReturned, false);
+    assert.equal(payload.probes.threadTurns.itemContentReturned, false);
+    assert.equal(payload.probes.threadTurns.rawPayloadReturned, false);
+    assert.equal(payload.probes.threadTurns.turns[0].itemsView, "notLoaded");
+    assert.equal(payload.probes.threadTurns.turns[0].itemsReturned, false);
+    assert.equal(payload.probes.threadTurns.turns[0].durationMs, 99);
+    for (const marker of [
+      "Sensitive turn item text",
+      "private-cursor",
+      "private-backwards-cursor",
+      "private-full-thread-id",
+      "private-full-turn-id",
+      "/tmp/default-workspace",
+      "/tmp/private-home",
+      "1782726047",
+      "userAgent",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    await closeServer(server);
+  }
+});
+
 test("dev server exposes bounded sanitized thread transcript text", async () => {
   const calls = [];
   const { server, url } = await startTestServer({

@@ -287,8 +287,8 @@ Implemented local policy:
 
 Keep `/api/thread-start`, `/api/thread-archive-action`,
 `/api/thread-delete-action`, `/api/thread-compact-start`, and `/api/turn-start`
-returning `403` by default. Keep `/api/thread-goal` blocked by default without
-app-server traffic.
+returning `403` by default. Keep `/api/thread-goal` and `/api/thread-turns`
+blocked by default without app-server traffic.
 
 When the server is started with `CODEX_APP_PORT_ALLOW_THREAD_START=1`,
 `/api/thread-start` may call `thread/start` only after consuming a matching
@@ -306,6 +306,14 @@ goal presence/status, token/time usage, token budget presence/value, and
 objective length/line counts. They do not return objective text, full ids,
 exact goal timestamps, cwd, paths, thread content, raw app-server payloads, or
 preflight tokens.
+
+When the server is started with `CODEX_APP_PORT_ALLOW_THREAD_TURNS=1`,
+`/api/thread-turns` may call `thread/list` to resolve the selected suffix and
+then `thread/turns/list` with `itemsView:notLoaded` for that thread. Browser
+responses return only suffix, turn status/count metadata, cursor-presence
+booleans, and redaction flags. They do not return item content, cursor values,
+full ids, exact turn timestamps, cwd, paths, thread content, raw app-server
+payloads, or preflight tokens.
 
 When the server is started with `CODEX_APP_PORT_ALLOW_THREAD_ARCHIVE=1`,
 `/api/thread-archive-action` may call `thread/archive` or `thread/unarchive`
