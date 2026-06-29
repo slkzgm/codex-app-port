@@ -40,7 +40,7 @@ Target parity with the Codex desktop workflow:
   335 JSON Schema files, up from the prior `0.130.0` snapshot of 286.
 - The refreshed protocol adds remote control, permission profiles, account
   usage/credits/messages, remote environments, plugin checkout/install,
-  skills extra roots, thread delete/search/settings/background terminal
+  skills extra roots, thread name set/delete/search/settings/background terminal
   controls, realtime speech, attestation, current time, import progress,
   model safety buffering, and turn moderation metadata surfaces that must be
   classified before parity work continues.

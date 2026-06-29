@@ -138,6 +138,15 @@
   names, previews, transcript content, cwd, paths, raw app-server payloads,
   raw thread payloads, or preflight tokens. The preflight and execution
   responses are constrained by route-specific nested response schemas.
+- Browser-facing thread rename must be blocked by default and opt-in only.
+  When `CODEX_APP_PORT_ALLOW_THREAD_RENAME=1` is enabled,
+  `/api/thread-rename-action` must consume a matching one-time preflight token
+  before resolving a suffix through `thread/list` and calling only
+  `thread/name/set`. Responses and action audit records must not return the
+  name text, full ids, previews, transcript content, cwd, paths, raw app-server
+  payloads, raw thread payloads, or preflight tokens. The preflight and
+  execution responses are constrained by route-specific nested response
+  schemas.
 - Browser-facing thread compaction must be blocked by default and opt-in only.
   Because `thread/compact/start` can trigger model traffic, it also requires the
   persistent session manager gate. When `CODEX_APP_PORT_ALLOW_THREAD_COMPACT=1`

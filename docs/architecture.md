@@ -179,7 +179,7 @@ Current M1 status:
   one-time preflight requirements without prompts, full ids, paths, tokens,
   thread content, or raw app-server payloads
 - done: sanitized append-only action audit log for successful thread creation,
-  thread archive/unarchive actions, thread deletion, thread compaction starts, individual and
+  thread archive/unarchive actions, thread deletion, thread renaming, thread compaction starts, individual and
   bulk live-session controls, allowlisted terminal command executions,
   background terminal cleanup requests, and local file actions launched through
   `scripts/dev-server.mjs`, with appendability checked before app-server or
@@ -211,7 +211,7 @@ Current M1 status:
   sanitized action audit records without prompt text, transcript content, full
   ids, cwd, paths, or raw app-server payloads
 - done: capped process-local thread lifecycle action history exposed through
-  `/api/execution-gate` and the UI for start/archive/delete/compact actions, with only
+  `/api/execution-gate` and the UI for start/archive/delete/rename/compact actions, with only
   suffix/count/status/token-consumed/audit metadata and no prompts, tokens, full
   ids, cwd, paths, names, previews, transcript content, or raw app-server
   payloads

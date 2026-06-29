@@ -1032,7 +1032,20 @@
               <span id="selected-thread-text" class="count-pill">None</span>
             </div>
           </div>
+          <div class="thread-tools">
+            <label class="search-control" for="thread-rename-input">
+              <span>Name</span>
+              <input id="thread-rename-input" type="text" autocomplete="off" maxlength="120" disabled />
+            </label>
+            <button id="thread-rename-preflight-button" class="secondary-button" type="button" disabled>
+              Rename Check
+            </button>
+            <button id="thread-rename-button" class="secondary-button" type="button" disabled>
+              Rename
+            </button>
+          </div>
           <p id="thread-archive-status" class="empty-state">Select a thread to manage archive state.</p>
+          <p id="thread-rename-status" class="empty-state">Select a thread to rename.</p>
           <p id="thread-delete-status" class="empty-state">Select a thread to delete.</p>
           <p id="thread-compact-status" class="empty-state">Select a loaded active thread to compact.</p>
           <dl id="thread-detail-meta" class="agent-grid"></dl>

@@ -234,6 +234,10 @@ const elements = {
   threadArchivePreflightButton: document.querySelector("#thread-archive-preflight-button"),
   threadArchiveButton: document.querySelector("#thread-archive-button"),
   threadArchiveStatus: document.querySelector("#thread-archive-status"),
+  threadRenameInput: document.querySelector("#thread-rename-input"),
+  threadRenamePreflightButton: document.querySelector("#thread-rename-preflight-button"),
+  threadRenameButton: document.querySelector("#thread-rename-button"),
+  threadRenameStatus: document.querySelector("#thread-rename-status"),
   threadDeletePreflightButton: document.querySelector("#thread-delete-preflight-button"),
   threadDeleteButton: document.querySelector("#thread-delete-button"),
   threadDeleteStatus: document.querySelector("#thread-delete-status"),
@@ -544,6 +548,7 @@ let lastThreadShellCommandPreflight = null;
 let lastTerminalControlPreflight = null;
 let lastThreadStartPreflight = null;
 let lastThreadArchivePreflight = null;
+let lastThreadRenamePreflight = null;
 let lastThreadDeletePreflight = null;
 let lastThreadCompactPreflight = null;
 let lastAccountLoginPreflight = null;
@@ -595,6 +600,7 @@ elements.workspaceSelect.addEventListener("change", () => {
   lastTerminalControlPreflight = null;
   lastThreadStartPreflight = null;
   lastThreadArchivePreflight = null;
+  lastThreadRenamePreflight = null;
   lastThreadDeletePreflight = null;
   lastThreadCompactPreflight = null;
   lastAccountLoginPreflight = null;
@@ -627,12 +633,14 @@ elements.workspaceSelect.addEventListener("change", () => {
   elements.terminalControlRunButton.disabled = true;
   elements.threadStartButton.disabled = true;
   elements.threadArchiveButton.disabled = true;
+  elements.threadRenameButton.disabled = true;
   elements.threadCompactButton.disabled = true;
   elements.accountLoginButton.disabled = true;
   elements.accountLoginCancelPreflightButton.disabled = true;
   elements.accountLoginCancelButton.disabled = true;
   elements.accountLogoutButton.disabled = true;
   lastGitWorktreePreflight = null;
+  lastThreadRenamePreflight = null;
   clearThreadDetail();
   clearGitWorktree();
   stopEventStream();
@@ -762,6 +770,19 @@ elements.threadArchivePreflightButton.addEventListener("click", () => {
 
 elements.threadArchiveButton.addEventListener("click", () => {
   runThreadArchiveAction();
+});
+
+elements.threadRenameInput.addEventListener("input", () => {
+  lastThreadRenamePreflight = null;
+  updateThreadRenameState();
+});
+
+elements.threadRenamePreflightButton.addEventListener("click", () => {
+  runThreadRenamePreflight();
+});
+
+elements.threadRenameButton.addEventListener("click", () => {
+  runThreadRenameAction();
 });
 
 elements.threadDeletePreflightButton.addEventListener("click", () => {
@@ -1252,6 +1273,14 @@ function threadArchivePreflightEndpoint() {
 
 function threadArchiveEndpoint() {
   return "/api/thread-archive-action";
+}
+
+function threadRenamePreflightEndpoint() {
+  return "/api/thread-rename-preflight";
+}
+
+function threadRenameEndpoint() {
+  return "/api/thread-rename-action";
 }
 
 function threadDeletePreflightEndpoint() {
@@ -4170,6 +4199,7 @@ async function loadThreadDetail(threadIdSuffix, { archived = false } = {}) {
   lastMcpToolPreflight = null;
   lastThreadShellCommandPreflight = null;
   lastThreadArchivePreflight = null;
+  lastThreadRenamePreflight = null;
   lastThreadDeletePreflight = null;
   lastThreadCompactPreflight = null;
   elements.liveSessionControlThread.value = threadIdSuffix;
@@ -4179,6 +4209,7 @@ async function loadThreadDetail(threadIdSuffix, { archived = false } = {}) {
   elements.mcpToolRunButton.disabled = true;
   elements.threadShellCommandButton.disabled = true;
   updateThreadArchiveState();
+  updateThreadRenameState();
   updateThreadDeleteState();
   updateThreadCompactState();
   updateTurnDraftState();
@@ -4438,9 +4469,93 @@ async function runThreadArchiveAction() {
     renderError(error);
   } finally {
     lastThreadArchivePreflight = null;
+    lastThreadRenamePreflight = null;
     lastThreadDeletePreflight = null;
     updateThreadArchiveState();
+    updateThreadRenameState();
     updateThreadDeleteState();
+  }
+}
+
+async function runThreadRenamePreflight() {
+  if (!selectedThreadIdSuffix) {
+    elements.threadRenameStatus.textContent = "Select a thread first";
+    return;
+  }
+  const name = elements.threadRenameInput.value.trim();
+  if (!name) {
+    elements.threadRenameStatus.textContent = "Name required";
+    return;
+  }
+
+  setThreadRenameLoading(true);
+  lastThreadRenamePreflight = null;
+  elements.threadRenameButton.disabled = true;
+  hideError();
+
+  const body = {
+    workspace: selectedWorkspaceId,
+    thread: selectedThreadIdSuffix,
+    name,
+  };
+
+  try {
+    const response = await fetch(threadRenamePreflightEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify(body),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    lastThreadRenamePreflight = {
+      body,
+      token: payload.preflight?.token ?? null,
+      enabled: payload.policy?.executionGateEnabled === true,
+    };
+    renderThreadRenamePreflight(payload);
+  } catch (error) {
+    elements.threadRenameStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    setThreadRenameLoading(false);
+  }
+}
+
+async function runThreadRenameAction() {
+  if (!lastThreadRenamePreflight?.token || !lastThreadRenamePreflight?.body) {
+    elements.threadRenameStatus.textContent = "Run rename check first";
+    return;
+  }
+
+  elements.threadRenameButton.disabled = true;
+  elements.threadRenameStatus.textContent = "Renaming";
+  hideError();
+
+  try {
+    const response = await fetch(threadRenameEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify({
+        ...lastThreadRenamePreflight.body,
+        preflightToken: lastThreadRenamePreflight.token,
+      }),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderThreadRenameAction(payload);
+    lastThreadRenamePreflight = null;
+    await refreshStatus({ manageLoading: false });
+  } catch (error) {
+    elements.threadRenameStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    updateThreadRenameState();
   }
 }
 
@@ -4521,6 +4636,8 @@ async function runThreadDeleteAction() {
     renderError(error);
   } finally {
     lastThreadDeletePreflight = null;
+    lastThreadRenamePreflight = null;
+    updateThreadRenameState();
     updateThreadDeleteState();
   }
 }
@@ -5177,6 +5294,23 @@ function renderThreadArchiveAction(payload) {
   elements.threadArchiveStatus.textContent = archived ? "Archived" : "Unarchived";
 }
 
+function renderThreadRenamePreflight(payload) {
+  const count = Number.isSafeInteger(payload.name?.charCount) ? payload.name.charCount : 0;
+  elements.threadRenameStatus.textContent = payload.policy?.executionGateEnabled
+    ? `Rename ready (${count})`
+    : "Rename blocked";
+  elements.threadRenameButton.disabled =
+    !lastThreadRenamePreflight?.token || lastThreadRenamePreflight.enabled !== true;
+}
+
+function renderThreadRenameAction(payload) {
+  const count = Number.isSafeInteger(payload.target?.nameCharCount)
+    ? payload.target.nameCharCount
+    : 0;
+  elements.threadRenameStatus.textContent =
+    payload.target?.renamed === true ? `Renamed (${count})` : "Rename done";
+}
+
 function renderThreadDeletePreflight(payload) {
   elements.threadDeleteStatus.textContent = payload.policy?.executionGateEnabled
     ? "Delete ready"
@@ -5633,12 +5767,16 @@ function clearThreadDetail() {
   selectedThreadArchived = false;
   lastLiveSessionControlPreflight = null;
   lastThreadArchivePreflight = null;
+  lastThreadRenamePreflight = null;
   lastThreadDeletePreflight = null;
   lastThreadCompactPreflight = null;
   elements.liveSessionControlThread.value = "";
   elements.liveSessionControlButton.disabled = true;
+  elements.threadRenameInput.value = "";
+  elements.threadRenameInput.disabled = true;
   elements.selectedThreadText.textContent = "None";
   elements.threadArchiveStatus.textContent = "Select a thread to manage archive state.";
+  elements.threadRenameStatus.textContent = "Select a thread to rename.";
   elements.threadDeleteStatus.textContent = "Select a thread to delete.";
   elements.threadCompactStatus.textContent = "Select a loaded active thread to compact.";
   elements.threadDetailMeta.replaceChildren();
@@ -5647,6 +5785,7 @@ function clearThreadDetail() {
   clearChanges();
   updateTurnDraftState();
   updateThreadArchiveState();
+  updateThreadRenameState();
   updateThreadDeleteState();
   updateThreadCompactState();
   renderThreadsSelection();
@@ -5719,6 +5858,20 @@ function updateThreadArchiveState() {
   elements.threadArchiveButton.textContent = actionLabel;
   if (!hasThread) {
     elements.threadArchiveStatus.textContent = "Select a thread to manage archive state.";
+  }
+}
+
+function updateThreadRenameState() {
+  const hasThread = Boolean(selectedThreadIdSuffix);
+  const hasName = elements.threadRenameInput.value.trim().length > 0;
+  elements.threadRenameInput.disabled = !hasThread;
+  elements.threadRenamePreflightButton.disabled = !hasThread || !hasName;
+  elements.threadRenameButton.disabled =
+    !lastThreadRenamePreflight?.token || lastThreadRenamePreflight.enabled !== true;
+  if (!hasThread) {
+    elements.threadRenameStatus.textContent = "Select a thread to rename.";
+  } else if (!hasName && elements.threadRenameStatus.textContent !== "Renamed") {
+    elements.threadRenameStatus.textContent = "Name required.";
   }
 }
 
@@ -5987,6 +6140,8 @@ function renderThreadLifecycleActionHistory(history) {
       action.method,
       target.threadIdSuffix ? `thread ${target.threadIdSuffix}` : null,
       typeof target.archived === "boolean" ? (target.archived ? "archived" : "active") : null,
+      typeof target.renamed === "boolean" && target.renamed ? "renamed" : null,
+      target.nameCharCount ? `${target.nameCharCount} chars` : null,
       action.modelTraffic ? "model traffic" : "no model",
     ]);
 
@@ -6004,6 +6159,7 @@ function renderThreadLifecycleActionHistory(history) {
     for (const value of [
       action.appServerTouched ? "app-server" : "local",
       action.threadCreated ? "created" : null,
+      action.threadRenamed ? "renamed" : null,
       action.threadStateMutated ? "state changed" : null,
       action.threadCompactionStarted ? "compact started" : null,
       item.policy?.auditLogWritten ? "audit log" : null,
@@ -9390,6 +9546,19 @@ function setThreadArchiveLoading(isLoading) {
   elements.threadArchivePreflightButton.textContent = isLoading ? "Checking" : "Preflight";
   if (isLoading) {
     elements.threadArchiveStatus.textContent = "Checking";
+  }
+}
+
+function setThreadRenameLoading(isLoading) {
+  const hasThread = Boolean(selectedThreadIdSuffix);
+  const hasName = elements.threadRenameInput.value.trim().length > 0;
+  elements.threadRenameInput.disabled = isLoading || !hasThread;
+  elements.threadRenamePreflightButton.disabled = isLoading || !hasThread || !hasName;
+  elements.threadRenameButton.disabled =
+    isLoading || !lastThreadRenamePreflight?.token || lastThreadRenamePreflight.enabled !== true;
+  elements.threadRenamePreflightButton.textContent = isLoading ? "Checking" : "Rename Check";
+  if (isLoading) {
+    elements.threadRenameStatus.textContent = "Checking";
   }
 }
 

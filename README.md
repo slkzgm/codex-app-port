@@ -231,7 +231,7 @@ session manager. It returns only loaded/attempted/succeeded/failed counts and
 method metadata; no thread suffix array, full ids, prompt text, transcript
 content, paths, terminal output, or raw app-server payload is returned.
 When launched through `scripts/dev-server.mjs` or the desktop launcher,
-successful thread creation, thread archive/unarchive actions, thread deletion,
+successful thread creation, thread archive/unarchive actions, thread deletion, thread renaming,
 individual and bulk live-session controls, allowlisted terminal command executions,
 allowlisted process spawn executions, background terminal cleanup requests, and
 local file actions are also written to a sanitized append-only action audit log
@@ -635,6 +635,15 @@ matching token, resolves the suffix through sanitized `thread/list` metadata,
 and calls only `thread/delete`. Responses and action audit records return
 suffix/state/method metadata only, never full ids, names, previews, transcript
 content, cwd, paths, raw app-server payloads, or the preflight token.
+Thread renaming is separately gated. `/api/thread-rename-preflight` validates a
+selected thread suffix and bounded name locally without app-server traffic.
+`/api/thread-rename-action` is disabled unless
+`CODEX_APP_PORT_ALLOW_THREAD_RENAME=1` is set; when enabled it consumes the
+matching token, resolves the suffix through sanitized `thread/list` metadata,
+and calls only `thread/name/set`. Responses and action audit records return
+suffix/status/name-count/method metadata only, never the name text, full ids,
+previews, transcript content, cwd, paths, raw app-server payloads, or the
+preflight token.
 Thread compaction is more sensitive because it can trigger model traffic.
 `/api/thread-compact-preflight` validates a selected thread suffix locally and
 returns a one-time token without app-server traffic. `/api/thread-compact-start`
@@ -654,7 +663,7 @@ result counts, cursor-presence booleans, and per-result suffix/status/source
 metadata only. Search terms, snippets, names, previews, full ids, paths,
 cursors, and raw payloads are omitted.
 `/api/execution-gate` also returns a capped process-local thread lifecycle
-history for successful start/archive/delete/compact actions. That history is UI-facing
+history for successful start/archive/delete/rename/compact actions. That history is UI-facing
 metadata only: action type/method, suffix, status/counts, token-consumed state,
 and audit flags. It never returns preflight tokens, prompts, full ids, paths,
 names, previews, transcript content, or raw app-server payloads.
@@ -807,7 +816,7 @@ decisions, including file-change accept-once decisions, are journaled before
 the browser decision is forwarded, so an unavailable persistent audit log fails
 closed for that browser-originated decision.
 The launcher also writes successful account logout, thread creation, thread
-archive/unarchive actions, thread deletion, thread compaction starts, live-session controls,
+archive/unarchive actions, thread deletion, thread renaming, thread compaction starts, live-session controls,
 allowlisted terminal command executions, allowlisted process spawn executions,
 background terminal cleanup requests, and local file actions to the sanitized
 action audit log described above.

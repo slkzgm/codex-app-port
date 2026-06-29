@@ -42,6 +42,7 @@ export const DEFAULT_STREAM_DELTA_TEXT_LIMIT = 1_000;
 export const DEFAULT_LOADED_SESSION_LIMIT = 50;
 export const DEFAULT_THREAD_SEARCH_LIMIT = 20;
 export const DEFAULT_THREAD_SEARCH_TERM_LIMIT = 200;
+export const DEFAULT_THREAD_RENAME_LIMIT = 120;
 export const DEFAULT_STEER_PROMPT_LIMIT = 4_000;
 export const DEFAULT_TURN_EVENT_LOG_LIMIT = 100;
 export const DEFAULT_INTEGRATION_ITEM_LIMIT = 20;
@@ -2728,6 +2729,102 @@ export async function runThreadDeleteProbe({
   }
 }
 
+export async function runThreadRenameProbe({
+  codexBin = process.env.CODEX_BIN || "codex",
+  codexArgs = ["app-server", "--listen", "stdio://"],
+  cwd = process.cwd(),
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+  threadIdSuffix,
+  name,
+  threadScanLimit = DEFAULT_THREAD_DETAIL_SCAN_LIMIT,
+  onNotification = null,
+} = {}) {
+  if (process.env.CODEX_APP_PORT_ALLOW_THREAD_RENAME !== "1") {
+    throw new Error(
+      "thread/name/set requires CODEX_APP_PORT_ALLOW_THREAD_RENAME=1 because it mutates local thread metadata",
+    );
+  }
+  if (!isValidSuffix(threadIdSuffix)) {
+    throwRequestError("Thread selector must be an 8-character id suffix", 400);
+  }
+  const safeName = validateThreadRenameName(name);
+
+  const notifications = [];
+  const client = new JsonlRpcClient({
+    command: codexBin,
+    args: codexArgs,
+    cwd,
+    timeoutMs,
+    onNotification(notification) {
+      notifications.push({
+        method: notification.method,
+      });
+      onNotification?.(notification);
+    },
+  });
+
+  await client.start();
+
+  try {
+    const initialize = normalizeInitializeResponse(
+      await client.request(APP_SERVER_METHODS.initialize, {
+        clientInfo: {
+          name: "codex_app_port",
+          title: "Codex App Port",
+          version: "0.1.0",
+        },
+        capabilities: {
+          experimentalApi: false,
+          requestAttestation: false,
+        },
+      }),
+    );
+
+    client.notify(APP_SERVER_METHODS.initialized);
+
+    const thread = await selectThreadBySuffixFromLists(client, {
+      threadIdSuffix,
+      threadScanLimit,
+    });
+    await client.request(
+      APP_SERVER_METHODS.threadSetName,
+      {
+        threadId: thread.id,
+        name: safeName,
+      },
+      { timeoutMs },
+    );
+
+    return {
+      ok: true,
+      generatedAt: new Date().toISOString(),
+      transport: "stdio-jsonl",
+      protocol: "json-rpc-2.0-without-jsonrpc-field",
+      initialize: summarizeInitialize(initialize),
+      probes: {
+        threadRename: {
+          method: APP_SERVER_METHODS.threadSetName,
+          threadIdSuffix: suffix(thread.id),
+          status: "renamed",
+          methodsUsed: [APP_SERVER_METHODS.threadList, APP_SERVER_METHODS.threadSetName],
+          nameCharCount: safeName.length,
+          nameLineCount: countLines(safeName),
+          nameReturned: false,
+          threadContentReturned: false,
+          fullIdsReturned: false,
+          cwdReturned: false,
+          pathsReturned: false,
+          previewsReturned: false,
+          rawPayloadReturned: false,
+        },
+      },
+      notifications: notificationCounts(notifications),
+    };
+  } finally {
+    await client.close();
+  }
+}
+
 export async function runAccountLogoutProbe({
   codexBin = process.env.CODEX_BIN || "codex",
   codexArgs = ["app-server", "--listen", "stdio://"],
@@ -4780,6 +4877,23 @@ function validateThreadSearchTerm(value) {
     );
   }
   return value;
+}
+
+function validateThreadRenameName(value) {
+  if (typeof value !== "string") {
+    throwRequestError("Thread name must be a string", 400);
+  }
+  const trimmed = value.trim();
+  if (trimmed.length === 0) {
+    throwRequestError("Thread name is required", 400);
+  }
+  if (value.includes("\0")) {
+    throwRequestError("Thread name contains unsupported text", 400);
+  }
+  if (value.length > DEFAULT_THREAD_RENAME_LIMIT) {
+    throwRequestError(`Thread name must be ${DEFAULT_THREAD_RENAME_LIMIT} characters or fewer`, 400);
+  }
+  return trimmed;
 }
 
 function validateThreadSearchLimit(value) {

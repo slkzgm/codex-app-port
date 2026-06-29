@@ -23,6 +23,7 @@ import {
   runThreadChangesProbe,
   runThreadDeleteProbe,
   runThreadDetailProbe,
+  runThreadRenameProbe,
   runThreadSearchProbe,
   runThreadStartProbe,
   runThreadTranscriptProbe,
@@ -1544,6 +1545,57 @@ test("runThreadStartProbe creates a thread without model traffic or path leaks",
       delete process.env.CODEX_APP_PORT_ALLOW_THREAD_START;
     } else {
       process.env.CODEX_APP_PORT_ALLOW_THREAD_START = previous;
+    }
+  }
+});
+
+test("runThreadRenameProbe renames by suffix without returning names, ids, paths, or content", async () => {
+  const previous = process.env.CODEX_APP_PORT_ALLOW_THREAD_RENAME;
+  process.env.CODEX_APP_PORT_ALLOW_THREAD_RENAME = "1";
+  try {
+    const summary = await runThreadRenameProbe({
+      codexBin: process.execPath,
+      codexArgs: [mockServer.pathname],
+      cwd: process.cwd(),
+      timeoutMs: 1_000,
+      threadIdSuffix: "00000001",
+      name: "Sensitive private thread name",
+    });
+
+    assert.equal(summary.ok, true);
+    const rename = summary.probes.threadRename;
+    assert.equal(rename.method, "thread/name/set");
+    assert.equal(rename.threadIdSuffix, "00000001");
+    assert.equal(rename.status, "renamed");
+    assert.deepEqual(rename.methodsUsed, ["thread/list", "thread/name/set"]);
+    assert.equal(rename.nameCharCount, 29);
+    assert.equal(rename.nameLineCount, 1);
+    assert.equal(rename.nameReturned, false);
+    assert.equal(rename.threadContentReturned, false);
+    assert.equal(rename.fullIdsReturned, false);
+    assert.equal(rename.cwdReturned, false);
+    assert.equal(rename.pathsReturned, false);
+    assert.equal(rename.previewsReturned, false);
+    assert.equal(rename.rawPayloadReturned, false);
+
+    const serialized = JSON.stringify(summary);
+    for (const marker of [
+      "thread-00000001",
+      "Sensitive private thread name",
+      "Sensitive rename",
+      "rename-secret.txt",
+      "/tmp/mock-workspace",
+      "mock-codex-home",
+      "userAgent",
+      "codexHome",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    if (previous === undefined) {
+      delete process.env.CODEX_APP_PORT_ALLOW_THREAD_RENAME;
+    } else {
+      process.env.CODEX_APP_PORT_ALLOW_THREAD_RENAME = previous;
     }
   }
 });

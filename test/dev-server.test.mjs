@@ -282,6 +282,8 @@ test("browser POST body contracts are centralized and immutable", () => {
     "/api/thread-archive-action",
     "/api/thread-delete-preflight",
     "/api/thread-delete-action",
+    "/api/thread-rename-preflight",
+    "/api/thread-rename-action",
     "/api/thread-compact-preflight",
     "/api/thread-compact-start",
     "/api/thread-search",
@@ -362,6 +364,17 @@ test("browser POST body contracts are centralized and immutable", () => {
     "workspace",
     "thread",
     "archived",
+    "preflightToken",
+  ]);
+  assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/thread-rename-preflight"].allowedFields], [
+    "workspace",
+    "thread",
+    "name",
+  ]);
+  assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/thread-rename-action"].allowedFields], [
+    "workspace",
+    "thread",
+    "name",
     "preflightToken",
   ]);
   assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/terminal-command"].allowedFields], [
@@ -939,6 +952,21 @@ test("browser POST response contracts block unsafe response values", () => {
   assert.equal(threadDeleteActionContract.nestedKeySchemas.result.includes("deleted"), true);
   assert.equal(threadDeleteActionContract.nestedKeySchemas.policy.includes("rawPayloadReturned"), true);
   assert.equal(threadDeleteActionContract.nestedKeySchemas.policy.includes("unexpected"), false);
+  const threadRenamePreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-rename-preflight"];
+  assert.equal(threadRenamePreflightContract.usesRouteSpecificNestedKeySchemas, true);
+  assert.equal(threadRenamePreflightContract.nestedKeySchemas.name.includes("charCount"), true);
+  assert.equal(threadRenamePreflightContract.nestedKeySchemas.name.includes("rawTextReturned"), true);
+  assert.equal(threadRenamePreflightContract.nestedKeySchemas.policy.includes("threadRenamed"), true);
+  assert.equal(threadRenamePreflightContract.nestedKeySchemas.policy.includes("unexpected"), false);
+  const threadRenameActionContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-rename-action"];
+  assert.equal(threadRenameActionContract.usesRouteSpecificNestedKeySchemas, true);
+  assert.equal(threadRenameActionContract.nestedKeySchemas["probes.threadRename"].includes("methodsUsed"), true);
+  assert.equal(threadRenameActionContract.nestedKeySchemas.target.includes("nameCharCount"), true);
+  assert.equal(threadRenameActionContract.nestedKeySchemas.result.includes("renamed"), true);
+  assert.equal(threadRenameActionContract.nestedKeySchemas.policy.includes("requiresExplicitExecutionGate"), true);
+  assert.equal(threadRenameActionContract.nestedKeySchemas.policy.includes("unexpected"), false);
   const threadCompactPreflightContract =
     BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-compact-preflight"];
   assert.equal(threadCompactPreflightContract.usesRouteSpecificNestedKeySchemas, true);
@@ -9173,6 +9201,220 @@ test("dev server deletes threads only behind explicit opt-in and preflight token
       "userAgent",
       "Sensitive delete preview",
       "delete-secret.txt",
+      "\"threadContentReturned\":true",
+      "\"fullIdsReturned\":true",
+      "\"pathsReturned\":true",
+    ]) {
+      assert.equal(auditSerialized.includes(marker), false, `audit leaked ${marker}`);
+    }
+  } finally {
+    await closeServer(server);
+    await rm(actionAuditDir, { recursive: true, force: true });
+  }
+});
+
+test("dev server renames threads only behind explicit opt-in and preflight token", async () => {
+  const calls = [];
+  const actionAuditDir = await mkdtemp(join(tmpdir(), "codex-thread-rename-action-audit-"));
+  const actionAuditLogPath = join(actionAuditDir, "actions.jsonl");
+  const { server, url } = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    threadRenameEnabled: true,
+    threadRenameFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-06-29T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/private-home",
+          userAgent: "mock/0.0.0",
+        },
+        probes: {
+          threadRename: {
+            method: "thread/name/set",
+            threadIdSuffix: "abcd1234",
+            status: "renamed",
+            methodsUsed: ["thread/list", "thread/name/set"],
+            nameCharCount: 29,
+            nameLineCount: 1,
+            nameReturned: true,
+            threadContentReturned: true,
+            fullIdsReturned: true,
+            cwdReturned: true,
+            pathsReturned: true,
+            previewsReturned: true,
+            rawPayloadReturned: true,
+            privateName: "Sensitive private thread name",
+            privatePath: "/tmp/default-workspace/rename-secret.txt",
+          },
+        },
+        notifications: {
+          "thread/renamed": 1,
+        },
+      };
+    },
+    actionAuditLog: createActionAuditLog({
+      path: actionAuditLogPath,
+      now: () => "2026-06-29T00:00:00.000Z",
+    }),
+  });
+
+  try {
+    const getResponse = await fetch(`${url}/api/thread-rename-preflight`, {
+      headers: apiHeaders(server),
+    });
+    assert.equal(getResponse.status, 405);
+
+    const preflightResponse = await fetch(`${url}/api/thread-rename-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        thread: "abcd1234",
+        name: "Sensitive private thread name",
+      }),
+    });
+    assert.equal(preflightResponse.status, 200);
+    const preflightPayload = await preflightResponse.json();
+    const preflightSerialized = JSON.stringify(preflightPayload);
+    assert.equal(preflightPayload.action.type, "thread-rename-preflight");
+    assert.equal(preflightPayload.action.method, "thread/name/set");
+    assert.equal(preflightPayload.action.threadRenamed, false);
+    assert.equal(preflightPayload.thread.threadIdSuffix, "abcd1234");
+    assert.equal(preflightPayload.name.charCount, 29);
+    assert.equal(preflightPayload.name.lineCount, 1);
+    assert.equal(preflightPayload.name.textReturned, false);
+    assert.equal(preflightPayload.name.rawTextReturned, false);
+    assert.equal(preflightPayload.policy.executionGateEnabled, true);
+    assert.equal(preflightPayload.policy.threadRenamed, false);
+    assertActionPreflight(preflightPayload, "thread-rename-preflight", "default");
+    assert.equal(preflightSerialized.includes("/tmp/default-workspace"), false);
+    assert.equal(preflightSerialized.includes("Sensitive private thread name"), false);
+    assert.equal(calls.length, 0);
+
+    const response = await fetch(`${url}/api/thread-rename-action`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        thread: "abcd1234",
+        name: "Sensitive private thread name",
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, true);
+    assert.equal(payload.appServer.modelTraffic, false);
+    assert.deepEqual(payload.appServer.auditedMethods, ["thread/list", "thread/name/set"]);
+    assert.equal(payload.action.type, "thread-rename");
+    assert.equal(payload.action.threadRenamed, true);
+    assert.equal(payload.action.threadStateMutated, true);
+    assert.equal(payload.preflight.tokenConsumed, true);
+    assert.equal(payload.thread.threadIdSuffix, "abcd1234");
+    assert.equal(payload.name.charCount, 29);
+    assert.equal(payload.name.textReturned, false);
+    assert.equal(payload.target.threadIdSuffix, "abcd1234");
+    assert.equal(payload.target.renamed, true);
+    assert.equal(payload.target.nameCharCount, 29);
+    assert.equal(payload.target.fullIdsReturned, false);
+    assert.equal(payload.probes.threadRename.nameReturned, false);
+    assert.equal(payload.probes.threadRename.threadContentReturned, false);
+    assert.equal(payload.probes.threadRename.fullIdsReturned, false);
+    assert.equal(payload.probes.threadRename.cwdReturned, false);
+    assert.equal(payload.probes.threadRename.pathsReturned, false);
+    assert.equal(payload.probes.threadRename.previewsReturned, false);
+    assert.equal(payload.probes.threadRename.rawPayloadReturned, false);
+    assert.equal(payload.policy.threadRenamed, true);
+    assert.equal(payload.policy.threadStateMutated, true);
+    assert.equal(payload.policy.turnStarted, false);
+    assert.equal(payload.policy.auditLogPersistent, true);
+    assert.equal(payload.policy.auditLogWritableChecked, true);
+    assert.equal(payload.policy.auditLogWritten, true);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].cwd, "/tmp/default-workspace");
+    assert.equal(calls[0].threadIdSuffix, "abcd1234");
+    assert.equal(calls[0].name, "Sensitive private thread name");
+    for (const marker of [
+      "/tmp/default-workspace",
+      "/tmp/private-home",
+      "codexHome",
+      "userAgent",
+      "Sensitive private thread name",
+      "rename-secret.txt",
+      preflightPayload.preflight.token,
+      "\"nameReturned\":true",
+      "\"threadContentReturned\":true",
+      "\"fullIdsReturned\":true",
+      "\"pathsReturned\":true",
+      "\"previewsReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+
+    const gateResponse = await fetch(`${url}/api/execution-gate`, {
+      headers: apiHeaders(server),
+    });
+    assert.equal(gateResponse.status, 200);
+    assertThreadLifecycleHistory(await gateResponse.json(), {
+      count: 1,
+      type: "thread-rename",
+      method: "thread/name/set",
+      threadIdSuffix: "abcd1234",
+      token: preflightPayload.preflight.token,
+      appServerTraffic: true,
+      modelTraffic: false,
+      threadRenamed: true,
+      threadStateMutated: true,
+      renamed: true,
+      nameCharCount: 29,
+      nameLineCount: 1,
+    });
+
+    const replay = await fetch(`${url}/api/thread-rename-action`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        thread: "abcd1234",
+        name: "Sensitive private thread name",
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    assert.equal(replay.status, 409);
+
+    const auditRecords = (await readFile(actionAuditLogPath, "utf8"))
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    assert.equal(auditRecords.length, 1);
+    assert.equal(auditRecords[0].event, "thread-rename-recorded");
+    assert.equal(auditRecords[0].action.type, "thread-rename");
+    assert.equal(auditRecords[0].action.method, "thread/name/set");
+    assert.equal(auditRecords[0].target.threadIdSuffix, "abcd1234");
+    assert.equal(auditRecords[0].target.renamed, true);
+    assert.equal(auditRecords[0].target.nameCharCount, 29);
+    assert.equal(auditRecords[0].result.renamed, true);
+    assert.equal(auditRecords[0].result.nameCharCount, 29);
+    assert.equal(auditRecords[0].result.threadContentReturned, false);
+    assert.equal(auditRecords[0].policy.rawRequestBodyReturned, false);
+    const auditSerialized = JSON.stringify(auditRecords);
+    for (const marker of [
+      preflightPayload.preflight.token,
+      "/tmp/default-workspace",
+      "/tmp/private-home",
+      "codexHome",
+      "userAgent",
+      "Sensitive private thread name",
+      "rename-secret.txt",
+      "\"nameReturned\":true",
       "\"threadContentReturned\":true",
       "\"fullIdsReturned\":true",
       "\"pathsReturned\":true",
@@ -25458,11 +25700,15 @@ function assertThreadLifecycleHistory(
     modelTraffic = false,
     threadArchiveAction = null,
     threadCreated = false,
+    threadRenamed = false,
     threadDeleted = false,
     threadStateMutated = false,
     threadCompactionStarted = false,
     archived = null,
     deleted = null,
+    renamed = null,
+    nameCharCount = 0,
+    nameLineCount = 0,
   },
 ) {
   const history = payload.threadLifecycleActionHistory;
@@ -25475,7 +25721,7 @@ function assertThreadLifecycleHistory(
   assert.equal(history.modelTraffic, modelTraffic);
   assert.equal(
     history.threadStateMutationsRecorded,
-    threadCreated || threadStateMutated || threadDeleted || threadCompactionStarted,
+    threadCreated || threadRenamed || threadStateMutated || threadDeleted || threadCompactionStarted,
   );
   assert.equal(history.preflightTokensReturned, false);
   assert.equal(history.promptsReturned, false);
@@ -25525,6 +25771,7 @@ function assertThreadLifecycleHistory(
   assert.equal(item.action.method, method);
   assert.equal(item.action.threadArchiveAction, threadArchiveAction);
   assert.equal(item.action.threadCreated, threadCreated);
+  assert.equal(item.action.threadRenamed, threadRenamed);
   assert.equal(item.action.threadDeleted, threadDeleted);
   assert.equal(item.action.threadStateMutated, threadStateMutated);
   assert.equal(item.action.threadCompactionStarted, threadCompactionStarted);
@@ -25534,9 +25781,15 @@ function assertThreadLifecycleHistory(
   assert.equal(item.target.threadIdSuffix, threadIdSuffix);
   assert.equal(item.target.archived, archived);
   assert.equal(item.target.deleted, deleted);
+  assert.equal(item.target.renamed, renamed);
+  assert.equal(item.target.nameCharCount, nameCharCount);
+  assert.equal(item.target.nameLineCount, nameLineCount);
   assert.equal(item.target.fullIdsReturned, false);
   assert.equal(item.target.pathsReturned, false);
   assert.equal(item.result.deleted, deleted);
+  assert.equal(item.result.renamed, renamed);
+  assert.equal(item.result.nameCharCount, nameCharCount);
+  assert.equal(item.result.nameLineCount, nameLineCount);
   assert.equal(item.result.threadContentReturned, false);
   assert.equal(item.result.fullIdsReturned, false);
   assert.equal(item.preflight.tokenConsumed, true);
@@ -25548,6 +25801,7 @@ function assertThreadLifecycleHistory(
   assert.equal(item.policy.promptsReturned, false);
   assert.equal(item.policy.promptTextReturned, false);
   assert.equal(item.policy.threadContentReturned, false);
+  assert.equal(item.policy.threadRenamed, threadRenamed);
   assert.equal(item.policy.threadDeleted, threadDeleted);
   assert.equal(item.policy.fullIdsReturned, false);
   assert.equal(item.policy.pathsReturned, false);

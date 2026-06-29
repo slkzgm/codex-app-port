@@ -26,6 +26,7 @@ test("protocol contracts name the app-server methods currently used", () => {
   assert.equal(APP_SERVER_METHODS.threadArchive, "thread/archive");
   assert.equal(APP_SERVER_METHODS.threadUnarchive, "thread/unarchive");
   assert.equal(APP_SERVER_METHODS.threadDelete, "thread/delete");
+  assert.equal(APP_SERVER_METHODS.threadSetName, "thread/name/set");
   assert.equal(APP_SERVER_METHODS.threadStart, "thread/start");
   assert.equal(APP_SERVER_METHODS.threadCompactStart, "thread/compact/start");
   assert.equal(APP_SERVER_METHODS.threadLoadedList, "thread/loaded/list");

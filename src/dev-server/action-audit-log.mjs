@@ -40,6 +40,7 @@ const ACTION_AUDIT_EVENTS = new Set([
   "thread-archive-recorded",
   "thread-compact-recorded",
   "thread-delete-recorded",
+  "thread-rename-recorded",
   "thread-start-recorded",
 ]);
 
@@ -227,6 +228,8 @@ function actionAuditEvent(actionType) {
       return "thread-compact-recorded";
     case "thread-delete":
       return "thread-delete-recorded";
+    case "thread-rename":
+      return "thread-rename-recorded";
     case "thread-start":
       return "thread-start-recorded";
     case "live-session-control":
@@ -504,6 +507,17 @@ function sanitizeAction(action, actionType, { appServer }) {
       modelTraffic: false,
     };
   }
+  if (actionType === "thread-rename") {
+    return {
+      type: "thread-rename",
+      method: "thread/name/set",
+      execution: safeString(action.execution, 40) ?? "renamed",
+      threadRenamed: Boolean(action.threadRenamed),
+      threadStateMutated: Boolean(action.threadStateMutated),
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: false,
+    };
+  }
   if (actionType === "thread-compact") {
     return {
       type: "thread-compact",
@@ -761,6 +775,16 @@ function sanitizeTarget(target, actionType) {
       threadIdSuffix: safeString(target.threadIdSuffix, 16),
       deleted: Boolean(target.deleted),
       sourceArchived: Boolean(target.sourceArchived),
+      fullIdsReturned: false,
+      pathsReturned: false,
+    };
+  }
+  if (actionType === "thread-rename") {
+    return {
+      threadIdSuffix: safeString(target.threadIdSuffix, 16),
+      renamed: Boolean(target.renamed),
+      nameCharCount: safeCount(target.nameCharCount),
+      nameLineCount: safeCount(target.nameLineCount),
       fullIdsReturned: false,
       pathsReturned: false,
     };
@@ -1121,6 +1145,16 @@ function sanitizeResult(result, actionType) {
       threadContentReturned: false,
     };
   }
+  if (actionType === "thread-rename") {
+    return {
+      status: safeString(result.status, 80) ?? "renamed",
+      renamed: Boolean(result.renamed),
+      nameCharCount: safeCount(result.nameCharCount),
+      nameLineCount: safeCount(result.nameLineCount),
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
   if (actionType === "thread-compact") {
     return {
       status: safeString(result.status, 80) ?? "compact-started",
@@ -1256,6 +1290,7 @@ function sanitizeActionType(value) {
     "thread-archive",
     "thread-compact",
     "thread-delete",
+    "thread-rename",
     "thread-start",
   ].includes(value)
     ? value

@@ -179,7 +179,7 @@ The server binds to `127.0.0.1` by default and serves:
   previews, full ids, paths, cursors, thread content, or raw payloads
 - `/api/execution-gate`: blocked approval/execution state with no app-server
   traffic plus a capped, sanitized process-local history of successful thread
-  start/archive/delete/compact actions
+  start/archive/delete/rename/compact actions
 - `/api/approval-decisions`: deny-only browser decision intake for sanitized
   turn-session approvals, including a bounded tokenized `decisions` batch for
   queue denial and gated accept-once actions; pending managed approvals may be
@@ -205,6 +205,11 @@ The server binds to `127.0.0.1` by default and serves:
   `CODEX_APP_PORT_ALLOW_THREAD_DELETE=1` and a matching one-time preflight
   token; responses omit full ids, names, previews, cwd, paths, conversation
   content, raw app-server payloads, and preflight tokens
+- `/api/thread-rename-preflight` and `/api/thread-rename-action`: local rename
+  validation plus opt-in app-server `thread/name/set` behind
+  `CODEX_APP_PORT_ALLOW_THREAD_RENAME=1` and a matching one-time preflight
+  token; responses omit the name text, full ids, previews, cwd, paths,
+  conversation content, raw app-server payloads, and preflight tokens
 - `/api/thread-compact-preflight` and `/api/thread-compact-start`: local
   compaction validation plus opt-in persistent app-server
   `thread/compact/start` behind `CODEX_APP_PORT_ALLOW_THREAD_COMPACT=1`,
@@ -360,7 +365,7 @@ When launched through `scripts/dev-server.mjs`, successful controls are also
 written to a sanitized append-only action audit log under the user state
 directory by default, or to `--action-audit-log` /
 `CODEX_APP_PORT_ACTION_AUDIT_LOG` when configured. The same log covers thread
-archive/unarchive actions, thread deletion, thread compaction starts, background terminal
+archive/unarchive actions, thread deletion, thread renaming, thread compaction starts, background terminal
 cleanup, and local file actions. The server checks that log is appendable before
 the app-server or local filesystem mutation and logs only metadata: action,
 method, thread/turn suffixes, prompt/content counts, result status, method names, and
@@ -922,7 +927,7 @@ or return the prompt text. Its response contains only counts, selected thread
 suffix, workspace id/label, the explicit blocked execution policy, and a local
 preflight token bound to hashed intent. The opt-in turn-start route must consume
 that matching token before it can call app-server. Turn preflight and the
-thread start/archive/delete/compact preflight and execution routes are all constrained
+thread start/archive/delete/rename/compact preflight and execution routes are all constrained
 by route-specific nested response schemas.
 
 The thread-start preflight endpoint validates only the selected workspace for a
@@ -956,6 +961,16 @@ suffix, source archive state, method, status, and policy metadata only. They do
 not return full ids, names, previews, transcript content, cwd, paths, raw
 app-server payloads, or preflight tokens.
 
+The thread rename preflight endpoint validates only a selected thread suffix
+and bounded name, then returns a local token without touching app-server. The
+matching `/api/thread-rename-action` route is disabled unless
+`CODEX_APP_PORT_ALLOW_THREAD_RENAME=1` is set; when enabled, it consumes the
+one-time token, resolves the suffix through `thread/list`, and calls only
+`thread/name/set`. Browser responses and sanitized action audit records return
+suffix, name character/line counts, method, status, and policy metadata only.
+They do not return the name text, full ids, previews, transcript content, cwd,
+paths, raw app-server payloads, or preflight tokens.
+
 The thread compact preflight endpoint validates only a selected thread suffix
 and returns a local token without touching app-server. The matching
 `/api/thread-compact-start` route is disabled unless both
@@ -968,9 +983,9 @@ suffix, loaded-session count, method, status, and policy metadata. They do not
 return prompt text, full ids, transcript content, cwd, paths, raw app-server
 payloads, or preflight tokens.
 
-Successful thread start/archive/delete/compact actions are also visible in the
+Successful thread start/archive/delete/rename/compact actions are also visible in the
 Execution Gate panel through a capped process-local lifecycle history. The
-history keeps only action type/method, thread suffix, archive/delete/model-traffic
+history keeps only action type/method, thread suffix, archive/delete/rename/model-traffic
 status, safe counts, token-consumed state, and audit flags. It omits preflight
 tokens, prompts, full ids, cwd, paths, names, previews, transcript content, and
 raw app-server payloads.
@@ -1424,7 +1439,7 @@ Current UI scope:
 - active-session operations UI summary for inventory/control/bulk/routing state
   without prompts, tokens, full ids, paths, thread content, or raw payloads
 - blocked execution-gate status for future approvals
-- process-local thread lifecycle action history for start/archive/delete/compact with
+- process-local thread lifecycle action history for start/archive/delete/rename/compact with
   suffix/status/count/token-consumed/audit metadata only
 - deny-only browser approval decision intake without app-server forwarding
 - request-scoped approval policy UI showing local deny, forwarded deny,

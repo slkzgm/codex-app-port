@@ -1417,6 +1417,29 @@ function handle(message) {
     return;
   }
 
+  if (message.method === "thread/name/set") {
+    send({
+      id: message.id,
+      result: {
+        ok: true,
+        threadId: message.params?.threadId,
+        name: message.params?.name,
+        privatePath: "/tmp/mock-workspace/rename-secret.txt",
+        preview: "Sensitive rename response must not leave sanitizer",
+      },
+    });
+    send({
+      method: "thread/renamed",
+      params: {
+        threadId: message.params?.threadId,
+        name: message.params?.name,
+        cwd: "/tmp/mock-workspace",
+        preview: "Sensitive rename notification must not leave sanitizer",
+      },
+    });
+    return;
+  }
+
   if (message.method === "thread/backgroundTerminals/list") {
     send({
       id: message.id,

@@ -108,6 +108,7 @@ async function main() {
   await checkThreadStartApi();
   await checkThreadArchiveApi();
   await checkThreadDeleteApi();
+  await checkThreadRenameApi();
   await checkThreadCompactApi();
   await checkTurnStartGuardApi();
   await checkTurnStartOptInApi();
@@ -876,6 +877,15 @@ async function checkStrictBrowserPostBodies() {
         {
           thread: "12345678",
           archived: false,
+          preflightToken: "preflight-1234567890abcdef",
+        },
+      ],
+      ["/api/thread-rename-preflight", { thread: "12345678", name: "private name" }],
+      [
+        "/api/thread-rename-action",
+        {
+          thread: "12345678",
+          name: "private name",
           preflightToken: "preflight-1234567890abcdef",
         },
       ],
@@ -1759,6 +1769,35 @@ function assertBrowserPostBodyContracts(cases) {
     threadDeleteActionContract.nestedKeySchemas.policy?.includes("unexpected")
   ) {
     throw new Error("thread-delete-action response contract is missing nested schemas");
+  }
+  const threadRenamePreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-rename-preflight"];
+  if (
+    threadRenamePreflightContract.usesRouteSpecificNestedKeySchemas !== true ||
+    !Object.isFrozen(threadRenamePreflightContract.nestedKeySchemas.policy) ||
+    !threadRenamePreflightContract.nestedKeySchemas.name?.includes("charCount") ||
+    !threadRenamePreflightContract.nestedKeySchemas.name?.includes("rawTextReturned") ||
+    !threadRenamePreflightContract.nestedKeySchemas.policy?.includes("threadRenamed") ||
+    threadRenamePreflightContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("thread-rename-preflight response contract is missing nested schemas");
+  }
+  const threadRenameActionContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-rename-action"];
+  if (
+    threadRenameActionContract.usesRouteSpecificNestedKeySchemas !== true ||
+    !Object.isFrozen(threadRenameActionContract.nestedKeySchemas.policy) ||
+    !threadRenameActionContract.nestedKeySchemas["probes.threadRename"]?.includes(
+      "methodsUsed",
+    ) ||
+    !threadRenameActionContract.nestedKeySchemas.target?.includes("nameCharCount") ||
+    !threadRenameActionContract.nestedKeySchemas.result?.includes("renamed") ||
+    !threadRenameActionContract.nestedKeySchemas.policy?.includes(
+      "requiresExplicitExecutionGate",
+    ) ||
+    threadRenameActionContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("thread-rename-action response contract is missing nested schemas");
   }
   const threadCompactPreflightContract =
     BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-compact-preflight"];
@@ -4690,6 +4729,144 @@ function assertBrowserPostBodyContracts(cases) {
           readOnly: false,
           appServerTraffic: true,
           threadDeleted: true,
+          rawPayloadReturned: false,
+          preflightTokenConsumed: true,
+          requiresExplicitExecutionGate: true,
+          implemented: true,
+        },
+      },
+    ],
+    [
+      "/api/thread-rename-preflight",
+      {
+        ok: true,
+        appServer: {
+          touched: false,
+          modelTraffic: false,
+          commandTraffic: false,
+        },
+        action: {
+          type: "thread-rename-preflight",
+          method: "thread/name/set",
+          execution: "blocked",
+          wouldRenameThread: false,
+          threadRenamed: false,
+          threadStateMutated: false,
+          appServerTouched: false,
+        },
+        thread: {
+          threadIdSuffix: "thread1234",
+          fullIdsReturned: false,
+          contentReturned: false,
+          namesReturned: false,
+          previewsReturned: false,
+          pathsReturned: false,
+        },
+        name: {
+          present: true,
+          charCount: 12,
+          lineCount: 1,
+          textReturned: false,
+          rawTextReturned: false,
+        },
+        preflight: {
+          token: "preflight-1234567890abcdef",
+          tokenIssued: true,
+          scope: {
+            kind: "thread-rename-preflight",
+            workspaceId: "default",
+          },
+        },
+        policy: {
+          readOnly: true,
+          appServerTraffic: false,
+          threadStateMutated: false,
+          threadRenamed: false,
+          executionGateEnabled: true,
+          implemented: false,
+        },
+      },
+    ],
+    [
+      "/api/thread-rename-action",
+      {
+        ok: true,
+        appServer: {
+          touched: true,
+          modelTraffic: false,
+          commandTraffic: false,
+          auditedMethods: ["thread/list", "thread/name/set"],
+        },
+        action: {
+          type: "thread-rename",
+          method: "thread/name/set",
+          execution: "renamed",
+          wouldRenameThread: true,
+          threadRenamed: true,
+          threadStateMutated: true,
+          appServerTouched: true,
+        },
+        thread: {
+          threadIdSuffix: "thread1234",
+          fullIdsReturned: false,
+          contentReturned: false,
+          namesReturned: false,
+          previewsReturned: false,
+          pathsReturned: false,
+        },
+        name: {
+          present: true,
+          charCount: 12,
+          lineCount: 1,
+          textReturned: false,
+          rawTextReturned: false,
+        },
+        target: {
+          threadIdSuffix: "thread1234",
+          renamed: true,
+          nameCharCount: 12,
+          nameLineCount: 1,
+          fullIdsReturned: false,
+          pathsReturned: false,
+        },
+        probes: {
+          threadRename: {
+            method: "thread/name/set",
+            threadIdSuffix: "thread1234",
+            status: "renamed",
+            methodsUsed: ["thread/list", "thread/name/set"],
+            nameCharCount: 12,
+            nameLineCount: 1,
+            nameReturned: false,
+            threadContentReturned: false,
+            fullIdsReturned: false,
+            cwdReturned: false,
+            pathsReturned: false,
+            previewsReturned: false,
+            rawPayloadReturned: false,
+          },
+        },
+        result: {
+          status: "renamed",
+          renamed: true,
+          nameCharCount: 12,
+          nameLineCount: 1,
+          fullIdsReturned: false,
+          threadContentReturned: false,
+        },
+        preflight: {
+          tokenConsumed: true,
+          tokenReturned: false,
+          scope: {
+            kind: "thread-rename-preflight",
+            workspaceId: "default",
+          },
+        },
+        policy: {
+          readOnly: false,
+          appServerTraffic: true,
+          threadStateMutated: true,
+          threadRenamed: true,
           rawPayloadReturned: false,
           preflightTokenConsumed: true,
           requiresExplicitExecutionGate: true,
@@ -10618,6 +10795,178 @@ async function checkThreadDeleteApi() {
     await rm(actionAuditDir, { recursive: true, force: true });
   }
   pass("dev server thread delete consumes opt-in one-time tokens without model traffic");
+}
+
+async function checkThreadRenameApi() {
+  const actionAuditDir = await mkdtemp(join(tmpdir(), "codex-verify-thread-rename-audit-"));
+  const actionAuditLogPath = join(actionAuditDir, "actions.jsonl");
+  const calls = [];
+  const server = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    threadRenameEnabled: true,
+    threadRenameFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-06-29T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/verify-private-home",
+          userAgent: "verify-private-agent",
+        },
+        probes: {
+          threadRename: {
+            method: "thread/name/set",
+            threadIdSuffix: "abcd1234",
+            status: "renamed",
+            methodsUsed: ["thread/list", "thread/name/set"],
+            nameCharCount: 29,
+            nameLineCount: 1,
+            nameReturned: true,
+            threadContentReturned: true,
+            fullIdsReturned: true,
+            cwdReturned: true,
+            pathsReturned: true,
+            previewsReturned: true,
+            rawPayloadReturned: true,
+            privateName: "Sensitive private thread name",
+            privatePath: "/tmp/codex-app-port-verify/rename-secret.txt",
+          },
+        },
+        notifications: {
+          "thread/renamed": 1,
+        },
+      };
+    },
+    actionAuditLog: createActionAuditLog({
+      path: actionAuditLogPath,
+      now: () => "2026-06-29T00:00:00.000Z",
+    }),
+  });
+  const port = await listenWithFallback(server, { host: "127.0.0.1", port: 0 });
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  try {
+    const token = await readUiSessionToken(baseUrl);
+    const preflightResponse = await fetch(`${baseUrl}/api/thread-rename-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        thread: "abcd1234",
+        name: "Sensitive private thread name",
+      }),
+    });
+    if (!preflightResponse.ok) {
+      throw new Error(`thread rename preflight returned HTTP ${preflightResponse.status}`);
+    }
+    const preflightPayload = await preflightResponse.json();
+    if (
+      preflightPayload.action?.type !== "thread-rename-preflight" ||
+      preflightPayload.action?.method !== "thread/name/set" ||
+      preflightPayload.policy?.executionGateEnabled !== true ||
+      preflightPayload.name?.charCount !== 29 ||
+      preflightPayload.name?.textReturned !== false
+    ) {
+      throw new Error("thread rename preflight did not preserve the gated shape");
+    }
+    assertActionPreflight(preflightPayload, "thread-rename-preflight", "default");
+    assertNoMarkers(JSON.stringify(preflightPayload), ["Sensitive private thread name"]);
+
+    const response = await fetch(`${baseUrl}/api/thread-rename-action`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        thread: "abcd1234",
+        name: "Sensitive private thread name",
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(`thread rename returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    assertSanitizedThreadRename(payload, {
+      token: preflightPayload.preflight.token,
+    });
+    if (
+      calls.length !== 1 ||
+      calls[0].cwd !== "/tmp/codex-app-port-verify" ||
+      calls[0].threadIdSuffix !== "abcd1234" ||
+      calls[0].name !== "Sensitive private thread name"
+    ) {
+      throw new Error("thread rename did not call the app-server rename probe once");
+    }
+
+    const replayResponse = await fetch(`${baseUrl}/api/thread-rename-action`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        thread: "abcd1234",
+        name: "Sensitive private thread name",
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    if (replayResponse.status !== 409) {
+      throw new Error(`thread rename replay returned HTTP ${replayResponse.status}`);
+    }
+
+    const auditRecords = (await readFile(actionAuditLogPath, "utf8"))
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    if (
+      auditRecords.length !== 1 ||
+      auditRecords[0].event !== "thread-rename-recorded" ||
+      auditRecords[0].action?.type !== "thread-rename" ||
+      auditRecords[0].target?.threadIdSuffix !== "abcd1234" ||
+      auditRecords[0].target?.renamed !== true ||
+      auditRecords[0].target?.nameCharCount !== 29
+    ) {
+      throw new Error("thread rename audit record did not preserve sanitized metadata");
+    }
+    assertNoMarkers(JSON.stringify(auditRecords), [
+      preflightPayload.preflight.token,
+      "/tmp/codex-app-port-verify",
+      "/tmp/verify-private-home",
+      "verify-private-agent",
+      "Sensitive private thread name",
+      "rename-secret.txt",
+      "\"nameReturned\":true",
+      "\"threadContentReturned\":true",
+      "\"fullIdsReturned\":true",
+      "\"pathsReturned\":true",
+      "\"previewsReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]);
+
+    const gateResponse = await fetch(`${baseUrl}/api/execution-gate`, {
+      headers: jsonHeaders(token),
+    });
+    if (!gateResponse.ok) {
+      throw new Error(`thread rename execution gate history returned HTTP ${gateResponse.status}`);
+    }
+    assertSanitizedThreadLifecycleActionHistory(await gateResponse.json(), {
+      count: 1,
+      type: "thread-rename",
+      method: "thread/name/set",
+      threadIdSuffix: "abcd1234",
+      consumedPreflightToken: preflightPayload.preflight.token,
+      appServerTraffic: true,
+      modelTraffic: false,
+      threadRenamed: true,
+      threadStateMutated: true,
+      renamed: true,
+      nameCharCount: 29,
+      nameLineCount: 1,
+    });
+  } finally {
+    await closeServer(server);
+    await rm(actionAuditDir, { recursive: true, force: true });
+  }
+  pass("dev server thread rename consumes opt-in one-time tokens without model traffic");
 }
 
 async function checkThreadCompactApi() {
@@ -20101,6 +20450,88 @@ function assertSanitizedThreadDelete(payload, { token }) {
   }
 }
 
+function assertSanitizedThreadRename(payload, { token }) {
+  const serialized = JSON.stringify(payload);
+  assertNoMarkers(serialized, [
+    token,
+    "/tmp/codex-app-port-verify",
+    "/tmp/verify-private-home",
+    "verify-private-agent",
+    "codexHome",
+    "userAgent",
+    "Sensitive private thread name",
+    "rename-secret.txt",
+    "\"nameReturned\":true",
+    "\"threadContentReturned\":true",
+    "\"fullIdsReturned\":true",
+    "\"cwdReturned\":true",
+    "\"pathsReturned\":true",
+    "\"previewsReturned\":true",
+    "\"rawPayloadReturned\":true",
+  ]);
+  if (
+    !payload.ok ||
+    payload.workspace?.id !== "default" ||
+    Object.hasOwn(payload.workspace, "cwd") ||
+    payload.appServer?.touched !== true ||
+    payload.appServer?.modelTraffic !== false ||
+    payload.appServer?.commandTraffic !== false ||
+    payload.action?.type !== "thread-rename" ||
+    payload.action?.method !== "thread/name/set" ||
+    payload.action?.execution !== "renamed" ||
+    payload.action?.threadRenamed !== true ||
+    payload.action?.threadStateMutated !== true ||
+    payload.preflight?.tokenConsumed !== true ||
+    payload.preflight?.tokenReturned !== false ||
+    payload.name?.charCount !== 29 ||
+    payload.name?.lineCount !== 1 ||
+    payload.name?.textReturned !== false ||
+    payload.name?.rawTextReturned !== false ||
+    payload.target?.threadIdSuffix !== "abcd1234" ||
+    payload.target?.renamed !== true ||
+    payload.target?.nameCharCount !== 29 ||
+    payload.target?.fullIdsReturned !== false
+  ) {
+    throw new Error("thread rename payload did not expose sanitized mutation metadata");
+  }
+  const threadRename = payload.probes?.threadRename;
+  if (
+    threadRename?.method !== "thread/name/set" ||
+    threadRename?.threadIdSuffix !== "abcd1234" ||
+    threadRename?.status !== "renamed" ||
+    threadRename?.nameCharCount !== 29 ||
+    threadRename?.nameLineCount !== 1 ||
+    threadRename?.nameReturned !== false ||
+    threadRename?.threadContentReturned !== false ||
+    threadRename?.fullIdsReturned !== false ||
+    threadRename?.cwdReturned !== false ||
+    threadRename?.pathsReturned !== false ||
+    threadRename?.previewsReturned !== false ||
+    threadRename?.rawPayloadReturned !== false
+  ) {
+    throw new Error("thread rename probe did not sanitize unsafe fields");
+  }
+  if (
+    payload.policy?.appServerTraffic !== true ||
+    payload.policy?.modelTraffic !== false ||
+    payload.policy?.commandTraffic !== false ||
+    payload.policy?.threadRenamed !== true ||
+    payload.policy?.threadStateMutated !== true ||
+    payload.policy?.turnStarted !== false ||
+    payload.policy?.threadContentReturned !== false ||
+    payload.policy?.fullIdsReturned !== false ||
+    payload.policy?.pathsReturned !== false ||
+    payload.policy?.namesReturned !== false ||
+    payload.policy?.rawPayloadReturned !== false ||
+    payload.policy?.requiresExplicitEnablement !== true ||
+    payload.policy?.preflightTokenConsumed !== true ||
+    payload.policy?.auditLogWritableChecked !== true ||
+    payload.policy?.implemented !== true
+  ) {
+    throw new Error("thread rename policy did not preserve opt-in safety gates");
+  }
+}
+
 function assertSanitizedAccountLogin(payload, { token }) {
   const serialized = JSON.stringify(payload);
   assertNoMarkers(serialized, [
@@ -23065,11 +23496,15 @@ function assertSanitizedThreadLifecycleActionHistory(
     modelTraffic = false,
     threadArchiveAction = null,
     threadCreated = false,
+    threadRenamed = false,
     threadDeleted = false,
     threadStateMutated = false,
     threadCompactionStarted = false,
     archived = null,
     deleted = null,
+    renamed = null,
+    nameCharCount = 0,
+    nameLineCount = 0,
   },
 ) {
   const history = payload.threadLifecycleActionHistory;
@@ -23095,7 +23530,7 @@ function assertSanitizedThreadLifecycleActionHistory(
     }
   }
   const mutationRecorded =
-    threadCreated || threadStateMutated || threadDeleted || threadCompactionStarted;
+    threadCreated || threadRenamed || threadStateMutated || threadDeleted || threadCompactionStarted;
   if (
     payload.gate?.threadLifecycleActionHistoryVisible !== true ||
     payload.gate?.recentThreadLifecycleActionCount !== count ||
@@ -23137,6 +23572,7 @@ function assertSanitizedThreadLifecycleActionHistory(
     item?.action?.method !== method ||
     item?.action?.threadArchiveAction !== threadArchiveAction ||
     item?.action?.threadCreated !== threadCreated ||
+    item?.action?.threadRenamed !== threadRenamed ||
     item?.action?.threadDeleted !== threadDeleted ||
     item?.action?.threadStateMutated !== threadStateMutated ||
     item?.action?.threadCompactionStarted !== threadCompactionStarted ||
@@ -23146,9 +23582,15 @@ function assertSanitizedThreadLifecycleActionHistory(
     item?.target?.threadIdSuffix !== threadIdSuffix ||
     item?.target?.archived !== archived ||
     item?.target?.deleted !== deleted ||
+    item?.target?.renamed !== renamed ||
+    item?.target?.nameCharCount !== nameCharCount ||
+    item?.target?.nameLineCount !== nameLineCount ||
     item?.target?.fullIdsReturned !== false ||
     item?.target?.pathsReturned !== false ||
     item?.result?.deleted !== deleted ||
+    item?.result?.renamed !== renamed ||
+    item?.result?.nameCharCount !== nameCharCount ||
+    item?.result?.nameLineCount !== nameLineCount ||
     item?.result?.threadContentReturned !== false ||
     item?.result?.fullIdsReturned !== false ||
     item?.preflight?.tokenConsumed !== true ||
@@ -23160,6 +23602,7 @@ function assertSanitizedThreadLifecycleActionHistory(
     item?.policy?.promptsReturned !== false ||
     item?.policy?.promptTextReturned !== false ||
     item?.policy?.threadContentReturned !== false ||
+    item?.policy?.threadRenamed !== threadRenamed ||
     item?.policy?.threadDeleted !== threadDeleted ||
     item?.policy?.fullIdsReturned !== false ||
     item?.policy?.pathsReturned !== false ||
