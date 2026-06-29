@@ -36840,6 +36840,9 @@ async function readUiSessionToken(baseUrl) {
   if (!html.includes("approval-accept-all-button")) {
     throw new Error("dev server UI is missing the visible approval accept control");
   }
+  if (!html.includes("approval-refresh-button") || !html.includes("approval-refresh-state")) {
+    throw new Error("dev server UI is missing the approval refresh control");
+  }
   const appResponse = await fetch(`${baseUrl}/assets/app.js`);
   if (!appResponse.ok) {
     throw new Error(`dev server UI script returned HTTP ${appResponse.status}`);
@@ -36855,6 +36858,8 @@ async function readUiSessionToken(baseUrl) {
     "approvalAuditContractText",
     "approvalAuthorityContractText",
     "approvalInteractionContractText",
+    "manualRefreshApprovalDecisions",
+    "setApprovalRefreshState",
     "turnExecutionAuthorityText",
     "turnSessionReadinessText",
     "turnSessionRoutingContractText",

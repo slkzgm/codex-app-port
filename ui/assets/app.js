@@ -359,6 +359,8 @@ const elements = {
   executionDecisionsText: document.querySelector("#execution-decisions-text"),
   approvalFilterButtons: Array.from(document.querySelectorAll("[data-approval-filter]")),
   approvalFilterSummary: document.querySelector("#approval-filter-summary"),
+  approvalRefreshButton: document.querySelector("#approval-refresh-button"),
+  approvalRefreshState: document.querySelector("#approval-refresh-state"),
   approvalAcceptAllButton: document.querySelector("#approval-accept-all-button"),
   approvalDenyAllButton: document.querySelector("#approval-deny-all-button"),
   approvalBulkStatus: document.querySelector("#approval-bulk-status"),
@@ -977,6 +979,10 @@ elements.approvalDenyAllButton.addEventListener("click", () => {
 
 elements.approvalAcceptAllButton.addEventListener("click", () => {
   acceptPendingApprovalQueue();
+});
+
+elements.approvalRefreshButton.addEventListener("click", () => {
+  manualRefreshApprovalDecisions();
 });
 
 for (const button of elements.approvalFilterButtons) {
@@ -1951,6 +1957,24 @@ async function refreshApprovalDecisions() {
   }
 
   renderApprovalDecisions(payload);
+}
+
+async function manualRefreshApprovalDecisions() {
+  elements.approvalRefreshButton.disabled = true;
+  setApprovalRefreshState("Refreshing");
+  hideError();
+
+  try {
+    await refreshApprovalDecisions();
+    await refreshTurnSessions();
+    await refreshExecutionGate();
+    setApprovalRefreshState(approvalRefreshTimer ? "Polling" : "Manual");
+  } catch (error) {
+    setApprovalRefreshState("Failed");
+    renderError(error);
+  } finally {
+    elements.approvalRefreshButton.disabled = false;
+  }
 }
 
 async function recordApprovalDecision(
@@ -5915,6 +5939,7 @@ function startApprovalPolling() {
   if (approvalRefreshTimer) {
     return;
   }
+  setApprovalRefreshState("Polling");
   approvalRefreshTimer = window.setInterval(() => {
     refreshApprovalDecisions().catch(() => {});
   }, 1000);
@@ -5922,10 +5947,16 @@ function startApprovalPolling() {
 
 function stopApprovalPolling() {
   if (!approvalRefreshTimer) {
+    setApprovalRefreshState("Manual");
     return;
   }
   window.clearInterval(approvalRefreshTimer);
   approvalRefreshTimer = null;
+  setApprovalRefreshState("Manual");
+}
+
+function setApprovalRefreshState(state) {
+  elements.approvalRefreshState.textContent = state;
 }
 
 async function startEventStream() {

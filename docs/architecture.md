@@ -355,7 +355,11 @@ Current M1 status:
   request-scoped deny/gated accept-once controls with in-flight disablement, and
   single bounded visible-subset deny plus gated accept batches so managed
   approvals can be accepted once or denied without enabling session-wide
-  approvals
+  approvals; the queue also has a client-only manual refresh control plus
+  Manual/Polling/Refreshing status that reuses the existing sanitized approval,
+  turn-session, and execution-gate refreshes without adding API fields, tokens,
+  raw approval details, commands, patches, file contents, paths, prompts, ids,
+  or app-server payloads
 - done: sanitized approval workflow contract in `/api/approval-decisions` and
   the UI for client-side filters, row controls, visible-subset batch support,
   replay/audit protection state, detail-preview gates, and request-scoped

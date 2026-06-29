@@ -670,6 +670,11 @@ managed source, and command/file-change/permissions kind is applied only to that
 already sanitized queue. The visible-subset deny and gated accept controls still
 submit the same bounded tokenized `decisions` batch and cannot bypass
 decision-token checks or server-side safe-decision validation.
+The approval panel also exposes a client-only manual refresh control and
+Manual/Polling/Refreshing state indicator. That control reuses the existing
+sanitized approval, turn-session, and execution-gate refresh paths and does not
+add API fields, decision scopes, tokens, raw approval details, commands,
+patches, file contents, paths, prompts, ids, or app-server payloads.
 The same GET payload exposes an `approvalLifecycle` summary derived only from
 the already sanitized queue and process-local decision history. It can return
 state labels, aggregate queue/history counts, local versus forwarded decision

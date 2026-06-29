@@ -1418,6 +1418,11 @@ decision tokens in one bounded batch capped to the server-advertised limit and
 refreshing the sanitized queue once the batch completes. It also renders the
 sanitized decision history so a completed decision remains visible without
 returning reusable request keys or decision tokens.
+The queue also has a dedicated manual refresh control and Manual/Polling/
+Refreshing state indicator. That control reuses the existing sanitized
+approval, turn-session, and execution-gate refresh paths and does not add API
+fields, decision scopes, tokens, raw approval details, commands, patches, file
+contents, paths, prompts, ids, or app-server payloads.
 The queue summary gives operators counts for local versus managed requests,
 safe deny and accept choices, token-required requests,
 command/file-change/permissions requests, and redacted preview availability
