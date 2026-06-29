@@ -510,6 +510,15 @@ must consume a matching one-time `/api/plugin-uninstall-preflight` token before
 calling `plugin/uninstall`; responses and action audit records return only
 target length and response-shape counts, with plugin ids/names, paths, URLs,
 tokens, and raw app-server payloads omitted.
+Shared plugin checkout is also a separate mutation path because it can
+materialize external code. `/api/plugin-share-checkout` is disabled unless
+`CODEX_APP_PORT_ALLOW_PLUGIN_SHARE_CHECKOUT=1` is set and the remote plugin id
+exactly matches `CODEX_APP_PORT_PLUGIN_SHARE_CHECKOUT_ALLOWLIST`. It must
+consume a matching one-time `/api/plugin-share-checkout-preflight` token before
+calling `plugin/share/checkout` with only `{remotePluginId}`. Responses and
+action audit records return only target length, allowlist status, response
+shape, and field-presence booleans; remote plugin ids, marketplace/plugin
+names, paths, versions, tokens, and raw app-server payloads stay omitted.
 Plugin content preflight accepts only audited blocked `plugin/skill/read` and
 `plugin/share/list` intent and returns method plus target/argument counts. It
 does not echo skill text, sharing URLs, sharing principals, plugin names,
@@ -579,8 +588,9 @@ one-time token is supplied. Responses and action audit records return only
 updated/enabled/disabled counts plus response shape metadata; feature names,
 enablement values, config paths, tokens, and raw payloads stay omitted.
 Integration action preflight covers audited settings/auth/MCP/skills/plugins
-mutation methods such as config writes, auth flows, plugin installs/uninstalls, sharing,
-and marketplace actions. It accepts only allowlisted blocked methods, returns
+mutation methods such as config writes, auth flows, plugin installs/uninstalls,
+shared-plugin checkout, generic sharing, and marketplace actions. It accepts
+only allowlisted blocked methods, returns
 target/argument counts only, and does not echo targets, names, URLs, arguments,
 invoke tools, install or uninstall plugins, write settings, start auth callbacks, or touch
 app-server.

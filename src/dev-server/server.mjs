@@ -25,6 +25,7 @@ import {
   runMcpResourceReadProbe,
   runPluginContentReadProbe,
   runPluginReadProbe,
+  runPluginShareCheckoutProbe,
   runPluginUninstallProbe,
   runProcessSpawnProbe,
   runRemoteControlDisableProbe,
@@ -573,6 +574,17 @@ export const ACTION_PREFLIGHT_CONFIRMATION_FIELD_CONTRACTS = Object.freeze({
     "target",
     "preflightToken",
   ),
+  "plugin-share-checkout-preflight": bodyFields(
+    "workspace",
+    "actionType",
+    "preflightToken",
+    "target",
+  ),
+  "plugin-share-checkout": bodyFields(
+    "workspace",
+    "target",
+    "preflightToken",
+  ),
   "plugin-content-preflight": bodyFields(
     "workspace",
     "actionType",
@@ -947,6 +959,14 @@ export const BROWSER_POST_BODY_CONTRACTS = Object.freeze({
     kind: "mutation",
     requiresPreflightToken: true,
   }),
+  "/api/plugin-share-checkout-preflight": bodyContract(["workspace", "target"], {
+    kind: "preflight",
+    appServerTraffic: false,
+  }),
+  "/api/plugin-share-checkout": bodyContract(["workspace", "target", "preflightToken"], {
+    kind: "mutation",
+    requiresPreflightToken: true,
+  }),
   "/api/plugin-content-preflight": bodyContract(
     ["workspace", "method", "target", "arguments"],
     {
@@ -1069,6 +1089,7 @@ const BROWSER_POST_RESPONSE_TOP_LEVEL_KEYS = Object.freeze({
     "mcpResourceRead",
     "pluginRead",
     "pluginUninstall",
+    "pluginShareCheckout",
     "pluginContentRead",
     "skillsConfigWrite",
     "content",
@@ -1250,6 +1271,7 @@ const BROWSER_POST_RESPONSE_FORBIDDEN_TRUTHY_FLAG_KEYS = Object.freeze([
   "resourceContentReturned",
   "resourceUriReturned",
   "resourceUrisReturned",
+  "remotePluginIdReturned",
   "schemasReturned",
   "secretsReturned",
   "sessionIdentifierReturned",
@@ -6353,6 +6375,203 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
       "implemented",
     ],
   }),
+  "/api/plugin-share-checkout-preflight": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    appServer: ["touched", "modelTraffic", "commandTraffic", "pluginMutationTraffic"],
+    action: [
+      "type",
+      "method",
+      "category",
+      "execution",
+      "wouldCheckoutPlugin",
+      "wouldMaterializeExternalCode",
+      "wouldMutatePlugins",
+      "appServerTouched",
+      "modelTraffic",
+      "reason",
+    ],
+    integrationAction: ["method", "category", "target", "arguments", "methodAllowedByAudit"],
+    "integrationAction.target": ["present", "charCount", "lineCount", "textReturned"],
+    "integrationAction.arguments": [
+      "present",
+      "charCount",
+      "lineCount",
+      "validJsonObject",
+      "topLevelKeyCount",
+      "textReturned",
+    ],
+    pluginShareCheckout: [
+      "method",
+      "targetCharCount",
+      "allowlistMatched",
+      "allowlistEntryCount",
+      "remotePluginIdReturned",
+      "marketplaceNamesReturned",
+      "pluginNamesReturned",
+      "idsReturned",
+      "pathsReturned",
+      "urlsReturned",
+      "rawPayloadReturned",
+    ],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "pluginMutation",
+      "pluginShareCheckout",
+      "pluginShareCheckoutEnabled",
+      "externalCodeMaterialization",
+      "executionRouteImplemented",
+      "executionGateEnabled",
+      "allowlistRequired",
+      "allowlistMatched",
+      "remotePluginIdReturned",
+      "marketplaceNamesReturned",
+      "pluginNamesReturned",
+      "idsReturned",
+      "namesReturned",
+      "targetReturned",
+      "argumentTextReturned",
+      "pathsReturned",
+      "urlsReturned",
+      "rawPayloadsReturned",
+      "requiresApprovalPipeline",
+      "requiresIntegrationProvenance",
+      "requiresExplicitEnablement",
+      "browserMethodCallsAccepted",
+      "implemented",
+    ],
+    preflight: [
+      "token",
+      "tokenIssued",
+      "issuedAt",
+      "expiresAt",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseRequiredForMutation",
+      "consumed",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+  }),
+  "/api/plugin-share-checkout": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    initialize: ["platformFamily", "platformOs"],
+    appServer: [
+      "touched",
+      "modelTraffic",
+      "commandTraffic",
+      "pluginMutationTraffic",
+      "auditedMethods",
+    ],
+    action: [
+      "type",
+      "method",
+      "execution",
+      "pluginMutation",
+      "pluginShareCheckout",
+      "appServerTouched",
+      "modelTraffic",
+      "reason",
+    ],
+    target: [
+      "targetCharCount",
+      "remotePluginIdReturned",
+      "marketplaceNamesReturned",
+      "pluginNamesReturned",
+      "idsReturned",
+      "pathsReturned",
+      "urlsReturned",
+      "rawPayloadReturned",
+    ],
+    pluginShareCheckout: [
+      "status",
+      "method",
+      "targetCharCount",
+      "responseObject",
+      "responseTopLevelKeyCount",
+      "marketplaceNamePresent",
+      "marketplacePathPresent",
+      "pluginIdPresent",
+      "pluginNamePresent",
+      "pluginPathPresent",
+      "remotePluginIdPresent",
+      "remoteVersionPresent",
+      "responseReturned",
+      "remotePluginIdReturned",
+      "marketplaceNamesReturned",
+      "pluginNamesReturned",
+      "idsReturned",
+      "pathsReturned",
+      "urlsReturned",
+      "rawPayloadReturned",
+    ],
+    result: [
+      "status",
+      "responseObject",
+      "responseTopLevelKeyCount",
+      "marketplaceNamePresent",
+      "marketplacePathPresent",
+      "pluginIdPresent",
+      "pluginNamePresent",
+      "pluginPathPresent",
+      "remotePluginIdPresent",
+      "remoteVersionPresent",
+      "responseReturned",
+      "remotePluginIdReturned",
+      "marketplaceNamesReturned",
+      "pluginNamesReturned",
+      "idsReturned",
+      "pathsReturned",
+      "urlsReturned",
+      "rawPayloadReturned",
+      "fullIdsReturned",
+      "threadContentReturned",
+    ],
+    preflight: [
+      "tokenConsumed",
+      "tokenReturned",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseEnforced",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "modelTraffic",
+      "commandTraffic",
+      "pluginMutation",
+      "pluginShareCheckout",
+      "pluginShareCheckoutEnabled",
+      "externalCodeMaterialization",
+      "executionRouteImplemented",
+      "executionGateEnabled",
+      "allowlistRequired",
+      "allowlistMatched",
+      "remotePluginIdReturned",
+      "marketplaceNamesReturned",
+      "pluginNamesReturned",
+      "idsReturned",
+      "namesReturned",
+      "targetReturned",
+      "argumentTextReturned",
+      "pathsReturned",
+      "urlsReturned",
+      "rawPayloadsReturned",
+      "preflightTokenReturned",
+      "auditLogPersistent",
+      "auditLogPathReturned",
+      "auditLogWritableChecked",
+      "auditLogWritten",
+      "requiresExplicitEnablement",
+      "preflightTokenRequired",
+      "browserMethodCallsAccepted",
+      "implemented",
+    ],
+  }),
   "/api/plugin-content-preflight": responseNestedKeySchemas({
     workspace: ["id", "label", "isDefault"],
     appServer: ["touched", "modelTraffic", "commandTraffic", "pluginContentTraffic"],
@@ -8411,6 +8630,17 @@ const BROWSER_POST_RESPONSE_ROUTE_TOP_LEVEL_KEYS = Object.freeze({
     "pluginUninstall",
     "result",
   ),
+  "/api/plugin-share-checkout-preflight": routeResponseTopLevelKeys(
+    ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
+    "integrationAction",
+    "pluginShareCheckout",
+  ),
+  "/api/plugin-share-checkout": routeResponseTopLevelKeys(
+    ...RESPONSE_APP_SERVER_MUTATION_TOP_LEVEL_KEYS,
+    "target",
+    "pluginShareCheckout",
+    "result",
+  ),
   "/api/plugin-content-preflight": routeResponseTopLevelKeys(
     ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
     "integrationAction",
@@ -8608,6 +8838,7 @@ export function createDevServer({
   mcpResourceReadFn = runMcpResourceReadProbe,
   pluginContentReadFn = runPluginContentReadProbe,
   pluginReadFn = runPluginReadProbe,
+  pluginShareCheckoutFn = runPluginShareCheckoutProbe,
   pluginUninstallFn = runPluginUninstallProbe,
   processSpawnFn = runProcessSpawnProbe,
   remoteControlDisableFn = runRemoteControlDisableProbe,
@@ -8673,6 +8904,11 @@ export function createDevServer({
   mcpResourceReadEnabled = process.env.CODEX_APP_PORT_ALLOW_MCP_RESOURCE_READ === "1",
   pluginContentReadEnabled = process.env.CODEX_APP_PORT_ALLOW_PLUGIN_CONTENT_READ === "1",
   pluginReadEnabled = process.env.CODEX_APP_PORT_ALLOW_PLUGIN_READ === "1",
+  pluginShareCheckoutEnabled =
+    process.env.CODEX_APP_PORT_ALLOW_PLUGIN_SHARE_CHECKOUT === "1",
+  pluginShareCheckoutAllowlist = parsePluginShareCheckoutAllowlist(
+    process.env.CODEX_APP_PORT_PLUGIN_SHARE_CHECKOUT_ALLOWLIST,
+  ),
   pluginUninstallEnabled = process.env.CODEX_APP_PORT_ALLOW_PLUGIN_UNINSTALL === "1",
   pluginUninstallAllowlist = parsePluginUninstallAllowlist(
     process.env.CODEX_APP_PORT_PLUGIN_UNINSTALL_ALLOWLIST,
@@ -8767,6 +9003,7 @@ export function createDevServer({
       mcpResourceReadFn,
       pluginContentReadFn,
       pluginReadFn,
+      pluginShareCheckoutFn,
       pluginUninstallFn,
       processSpawnFn,
       remoteControlDisableFn,
@@ -8820,6 +9057,8 @@ export function createDevServer({
       mcpResourceReadEnabled,
       pluginContentReadEnabled,
       pluginReadEnabled,
+      pluginShareCheckoutEnabled,
+      pluginShareCheckoutAllowlist,
       pluginUninstallEnabled,
       pluginUninstallAllowlist,
       pluginShareListEnabled,
@@ -12421,6 +12660,107 @@ export async function handleRequest(request, response, options) {
     return;
   }
 
+  if (url.pathname === "/api/plugin-share-checkout-preflight") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, ["workspace", "target"]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const payload = buildPluginShareCheckoutPreflight(body, {
+        workspace,
+        pluginShareCheckoutEnabled: options.pluginShareCheckoutEnabled,
+        pluginShareCheckoutAllowlist: options.pluginShareCheckoutAllowlist,
+      });
+      const attached = attachActionPreflight(payload, { body, workspace, options });
+      options.integrationPreflightLedger?.record(attached);
+      sendJson(response, 200, attached);
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error:
+          cleanDisplayText(error.message, 200) ?? "Invalid plugin share checkout preflight request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/plugin-share-checkout") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, [
+        "workspace",
+        "target",
+        "preflightToken",
+      ]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const preflightBody = stripActionPreflightControlFields(body);
+      const preflightPayload = buildPluginShareCheckoutPreflight(preflightBody, {
+        workspace,
+        pluginShareCheckoutEnabled: options.pluginShareCheckoutEnabled,
+        pluginShareCheckoutAllowlist: options.pluginShareCheckoutAllowlist,
+      });
+      if (!preflightPayload.policy.executionGateEnabled) {
+        sendJson(response, 403, buildPluginShareCheckoutBlocked(preflightPayload));
+        return;
+      }
+      const pluginParams = validatePluginShareCheckoutExecutionParams(
+        preflightBody.target,
+        options.pluginShareCheckoutAllowlist,
+      );
+      const consumedPreflight = options.preflightRegistry.consume({
+        token: validateActionPreflightToken(body.preflightToken),
+        kind: preflightPayload.action.type,
+        workspace,
+        intent: actionPreflightIntent(preflightBody, preflightPayload),
+      });
+      const auditLogWritableChecked = ensureActionAuditLogWritable(options.actionAuditLog);
+      const payload = await options.pluginShareCheckoutFn({
+        codexBin: options.codexBin,
+        cwd: workspace.cwd,
+        timeoutMs: options.timeoutMs,
+        ...pluginParams,
+      });
+      const sanitized = sanitizePluginShareCheckoutPayload(payload, {
+        workspace,
+        preflightPayload,
+        consumedPreflight,
+        actionAuditLog: options.actionAuditLog,
+        auditLogWritableChecked,
+      });
+      sanitized.policy.auditLogWritten = writeActionAuditLog(options.actionAuditLog, sanitized);
+      sendJson(response, 200, sanitized);
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid plugin share checkout request",
+      });
+    }
+    return;
+  }
+
   if (url.pathname === "/api/plugin-content-preflight") {
     if (request.method !== "POST") {
       sendJson(response, 405, { ok: false, error: "Method not allowed" });
@@ -13339,6 +13679,7 @@ export async function handleRequest(request, response, options) {
             mcpResourceReadEnabled: options.mcpResourceReadEnabled,
             pluginContentReadEnabled: options.pluginContentReadEnabled,
             pluginReadEnabled: options.pluginReadEnabled,
+            pluginShareCheckoutEnabled: options.pluginShareCheckoutEnabled,
             pluginUninstallEnabled: options.pluginUninstallEnabled,
             pluginShareListEnabled: options.pluginShareListEnabled,
             skillsConfigWriteEnabled: options.skillsConfigWriteEnabled,
@@ -13370,6 +13711,7 @@ export async function handleRequest(request, response, options) {
           mcpResourceReadEnabled: options.mcpResourceReadEnabled,
           pluginContentReadEnabled: options.pluginContentReadEnabled,
           pluginReadEnabled: options.pluginReadEnabled,
+          pluginShareCheckoutEnabled: options.pluginShareCheckoutEnabled,
           pluginUninstallEnabled: options.pluginUninstallEnabled,
           pluginShareListEnabled: options.pluginShareListEnabled,
           skillsConfigWriteEnabled: options.skillsConfigWriteEnabled,
@@ -13842,6 +14184,12 @@ async function buildConfirmableActionPreflightPayload(actionType, body, { worksp
         pluginUninstallEnabled: options.pluginUninstallEnabled,
         pluginUninstallAllowlist: options.pluginUninstallAllowlist,
       });
+    case "plugin-share-checkout-preflight":
+      return buildPluginShareCheckoutPreflight(body, {
+        workspace,
+        pluginShareCheckoutEnabled: options.pluginShareCheckoutEnabled,
+        pluginShareCheckoutAllowlist: options.pluginShareCheckoutAllowlist,
+      });
     case "plugin-content-preflight":
       return buildPluginContentPreflight(body, {
         workspace,
@@ -13937,6 +14285,7 @@ function isIntegrationPreflightActionType(actionType) {
     actionType === "mcp-resource-preflight" ||
     actionType === "plugin-read-preflight" ||
     actionType === "plugin-uninstall-preflight" ||
+    actionType === "plugin-share-checkout-preflight" ||
     actionType === "plugin-content-preflight" ||
     actionType === "skills-config-preflight" ||
     actionType === "skills-extra-roots-clear-preflight" ||
@@ -13999,6 +14348,8 @@ function actionAuditEvent(record) {
       return "plugin-read-recorded";
     case "plugin-uninstall":
       return "plugin-uninstall-recorded";
+    case "plugin-share-checkout":
+      return "plugin-share-checkout-recorded";
     case "plugin-content-read":
       return "plugin-content-read-recorded";
     case "process-spawn":
@@ -14654,6 +15005,20 @@ export function parseExperimentalFeatureAllowlist(value) {
 }
 
 export function parsePluginUninstallAllowlist(value) {
+  if (!value) {
+    return [];
+  }
+  return Array.from(
+    new Set(
+      value
+        .split(",")
+        .map((entry) => entry.trim())
+        .filter(isSafePluginName),
+    ),
+  ).slice(0, 100);
+}
+
+export function parsePluginShareCheckoutAllowlist(value) {
   if (!value) {
     return [];
   }
@@ -21647,6 +22012,332 @@ function summarizePluginUninstallResult(value) {
   };
 }
 
+export function buildPluginShareCheckoutPreflight(
+  body,
+  {
+    workspace,
+    pluginShareCheckoutEnabled = false,
+    pluginShareCheckoutAllowlist = [],
+  } = {},
+) {
+  const methodAudit = integrationMethodAudit();
+  const auditEntry = methodAudit.find((entry) => entry.method === "plugin/share/checkout");
+  const remotePluginId = validatePluginReadName(body?.target, "Remote plugin");
+  const target = {
+    present: true,
+    charCount: remotePluginId.length,
+    lineCount: 1,
+    textReturned: false,
+  };
+  const allowlisted = isPluginShareCheckoutAllowed(remotePluginId, pluginShareCheckoutAllowlist);
+  const executionGateEnabled = Boolean(pluginShareCheckoutEnabled && allowlisted);
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: publicWorkspaces([workspace])[0],
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      pluginMutationTraffic: false,
+    },
+    action: {
+      type: "plugin-share-checkout-preflight",
+      method: "plugin/share/checkout",
+      category: auditEntry?.category ?? "plugins-share",
+      execution: executionGateEnabled ? "requires-confirmation" : "blocked",
+      wouldCheckoutPlugin: false,
+      wouldMaterializeExternalCode: false,
+      wouldMutatePlugins: false,
+      appServerTouched: false,
+      modelTraffic: false,
+      reason: executionGateEnabled
+        ? "plugin-share-checkout-requires-preflight-token"
+        : pluginShareCheckoutEnabled
+          ? "plugin-share-checkout-not-allowlisted"
+          : "plugin-share-checkout-disabled",
+    },
+    integrationAction: {
+      method: "plugin/share/checkout",
+      category: auditEntry?.category ?? "plugins-share",
+      target,
+      arguments: {
+        present: false,
+        charCount: 0,
+        lineCount: 0,
+        validJsonObject: true,
+        topLevelKeyCount: 0,
+        textReturned: false,
+      },
+      methodAllowedByAudit: auditEntry?.status === "blocked",
+    },
+    pluginShareCheckout: {
+      method: "plugin/share/checkout",
+      targetCharCount: remotePluginId.length,
+      allowlistMatched: allowlisted,
+      allowlistEntryCount: sanitizePluginShareCheckoutAllowlist(pluginShareCheckoutAllowlist).length,
+      remotePluginIdReturned: false,
+      marketplaceNamesReturned: false,
+      pluginNamesReturned: false,
+      idsReturned: false,
+      pathsReturned: false,
+      urlsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: false,
+      pluginMutation: false,
+      pluginShareCheckout: false,
+      pluginShareCheckoutEnabled: Boolean(pluginShareCheckoutEnabled),
+      externalCodeMaterialization: false,
+      executionRouteImplemented: true,
+      executionGateEnabled,
+      allowlistRequired: true,
+      allowlistMatched: allowlisted,
+      remotePluginIdReturned: false,
+      marketplaceNamesReturned: false,
+      pluginNamesReturned: false,
+      idsReturned: false,
+      namesReturned: false,
+      targetReturned: false,
+      argumentTextReturned: false,
+      pathsReturned: false,
+      urlsReturned: false,
+      rawPayloadsReturned: false,
+      requiresApprovalPipeline: true,
+      requiresIntegrationProvenance: true,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: executionGateEnabled,
+      implemented: true,
+    },
+  };
+}
+
+function buildPluginShareCheckoutBlocked(preflightPayload) {
+  const checkout = preflightPayload.pluginShareCheckout ?? {};
+  return {
+    ok: false,
+    generatedAt: new Date().toISOString(),
+    workspace: preflightPayload.workspace,
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      pluginMutationTraffic: false,
+    },
+    action: {
+      type: "plugin-share-checkout",
+      method: "plugin/share/checkout",
+      execution: "blocked",
+      pluginMutation: false,
+      pluginShareCheckout: false,
+      appServerTouched: false,
+      modelTraffic: false,
+      reason: preflightPayload.policy?.pluginShareCheckoutEnabled
+        ? "plugin-share-checkout-not-allowlisted"
+        : "plugin-share-checkout-disabled",
+    },
+    target: {
+      targetCharCount: safeCount(checkout.targetCharCount),
+      remotePluginIdReturned: false,
+      marketplaceNamesReturned: false,
+      pluginNamesReturned: false,
+      idsReturned: false,
+      pathsReturned: false,
+      urlsReturned: false,
+      rawPayloadReturned: false,
+    },
+    pluginShareCheckout: {
+      status: "blocked",
+      method: "plugin/share/checkout",
+      targetCharCount: safeCount(checkout.targetCharCount),
+      responseObject: false,
+      responseTopLevelKeyCount: 0,
+      marketplaceNamePresent: false,
+      marketplacePathPresent: false,
+      pluginIdPresent: false,
+      pluginNamePresent: false,
+      pluginPathPresent: false,
+      remotePluginIdPresent: false,
+      remoteVersionPresent: false,
+      responseReturned: false,
+      remotePluginIdReturned: false,
+      marketplaceNamesReturned: false,
+      pluginNamesReturned: false,
+      idsReturned: false,
+      pathsReturned: false,
+      urlsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: false,
+      pluginMutation: false,
+      pluginShareCheckout: false,
+      pluginShareCheckoutEnabled: Boolean(preflightPayload.policy?.pluginShareCheckoutEnabled),
+      externalCodeMaterialization: false,
+      executionRouteImplemented: true,
+      executionGateEnabled: false,
+      allowlistRequired: true,
+      allowlistMatched: Boolean(checkout.allowlistMatched),
+      remotePluginIdReturned: false,
+      marketplaceNamesReturned: false,
+      pluginNamesReturned: false,
+      idsReturned: false,
+      namesReturned: false,
+      pathsReturned: false,
+      urlsReturned: false,
+      rawPayloadsReturned: false,
+      requiresExplicitEnablement: true,
+      preflightTokenRequired: true,
+      implemented: true,
+    },
+  };
+}
+
+function sanitizePluginShareCheckoutPayload(
+  payload,
+  {
+    workspace,
+    preflightPayload = null,
+    consumedPreflight = null,
+    actionAuditLog = null,
+    auditLogWritableChecked = false,
+  } = {},
+) {
+  const summary = summarizePluginShareCheckoutResult(payload?.probes?.pluginShareCheckout);
+  const checkout = preflightPayload?.pluginShareCheckout ?? {};
+  return {
+    ok: Boolean(payload?.ok),
+    generatedAt: payload?.generatedAt ?? new Date().toISOString(),
+    transport: cleanDisplayText(payload?.transport, 80),
+    protocol: cleanDisplayText(payload?.protocol, 80),
+    initialize: sanitizeInitialize(payload?.initialize),
+    workspace: publicWorkspaces([workspace])[0],
+    appServer: {
+      touched: true,
+      modelTraffic: false,
+      commandTraffic: false,
+      pluginMutationTraffic: true,
+      auditedMethods: ["plugin/share/checkout"],
+    },
+    action: {
+      type: "plugin-share-checkout",
+      method: "plugin/share/checkout",
+      execution: "completed",
+      pluginMutation: true,
+      pluginShareCheckout: true,
+      appServerTouched: true,
+      modelTraffic: false,
+      reason: "plugin-share-checkout-completed",
+    },
+    target: {
+      targetCharCount: safeCount(checkout.targetCharCount),
+      remotePluginIdReturned: false,
+      marketplaceNamesReturned: false,
+      pluginNamesReturned: false,
+      idsReturned: false,
+      pathsReturned: false,
+      urlsReturned: false,
+      rawPayloadReturned: false,
+    },
+    pluginShareCheckout: {
+      status: "completed",
+      method: "plugin/share/checkout",
+      targetCharCount: safeCount(checkout.targetCharCount),
+      responseObject: summary.responseObject,
+      responseTopLevelKeyCount: summary.responseTopLevelKeyCount,
+      marketplaceNamePresent: summary.marketplaceNamePresent,
+      marketplacePathPresent: summary.marketplacePathPresent,
+      pluginIdPresent: summary.pluginIdPresent,
+      pluginNamePresent: summary.pluginNamePresent,
+      pluginPathPresent: summary.pluginPathPresent,
+      remotePluginIdPresent: summary.remotePluginIdPresent,
+      remoteVersionPresent: summary.remoteVersionPresent,
+      responseReturned: false,
+      remotePluginIdReturned: false,
+      marketplaceNamesReturned: false,
+      pluginNamesReturned: false,
+      idsReturned: false,
+      pathsReturned: false,
+      urlsReturned: false,
+      rawPayloadReturned: false,
+    },
+    result: {
+      status: "completed",
+      responseObject: summary.responseObject,
+      responseTopLevelKeyCount: summary.responseTopLevelKeyCount,
+      marketplaceNamePresent: summary.marketplaceNamePresent,
+      marketplacePathPresent: summary.marketplacePathPresent,
+      pluginIdPresent: summary.pluginIdPresent,
+      pluginNamePresent: summary.pluginNamePresent,
+      pluginPathPresent: summary.pluginPathPresent,
+      remotePluginIdPresent: summary.remotePluginIdPresent,
+      remoteVersionPresent: summary.remoteVersionPresent,
+      responseReturned: false,
+      remotePluginIdReturned: false,
+      marketplaceNamesReturned: false,
+      pluginNamesReturned: false,
+      idsReturned: false,
+      pathsReturned: false,
+      urlsReturned: false,
+      rawPayloadReturned: false,
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    },
+    preflight: buildConsumedPreflightSummary(consumedPreflight),
+    policy: {
+      readOnly: false,
+      appServerTraffic: true,
+      modelTraffic: false,
+      commandTraffic: false,
+      pluginMutation: true,
+      pluginShareCheckout: true,
+      pluginShareCheckoutEnabled: true,
+      externalCodeMaterialization: true,
+      executionRouteImplemented: true,
+      executionGateEnabled: true,
+      allowlistRequired: true,
+      allowlistMatched: true,
+      remotePluginIdReturned: false,
+      marketplaceNamesReturned: false,
+      pluginNamesReturned: false,
+      idsReturned: false,
+      namesReturned: false,
+      targetReturned: false,
+      argumentTextReturned: false,
+      pathsReturned: false,
+      urlsReturned: false,
+      rawPayloadsReturned: false,
+      preflightTokenReturned: false,
+      auditLogPersistent: Boolean(actionAuditLog?.persistent),
+      auditLogPathReturned: false,
+      auditLogWritableChecked: Boolean(auditLogWritableChecked),
+      auditLogWritten: false,
+      requiresExplicitEnablement: true,
+      preflightTokenRequired: true,
+      browserMethodCallsAccepted: true,
+      implemented: true,
+    },
+    notifications: sanitizeNotificationCounts(payload?.notifications),
+  };
+}
+
+function summarizePluginShareCheckoutResult(value) {
+  return {
+    responseObject: Boolean(value?.responseObject),
+    responseTopLevelKeyCount: safeCount(value?.responseTopLevelKeyCount),
+    marketplaceNamePresent: Boolean(value?.marketplaceNamePresent),
+    marketplacePathPresent: Boolean(value?.marketplacePathPresent),
+    pluginIdPresent: Boolean(value?.pluginIdPresent),
+    pluginNamePresent: Boolean(value?.pluginNamePresent),
+    pluginPathPresent: Boolean(value?.pluginPathPresent),
+    remotePluginIdPresent: Boolean(value?.remotePluginIdPresent),
+    remoteVersionPresent: Boolean(value?.remoteVersionPresent),
+  };
+}
+
 export function buildPluginContentPreflight(
   body,
   { workspace, pluginContentReadEnabled = false, pluginShareListEnabled = false },
@@ -23536,6 +24227,7 @@ export function sanitizeSettingsIntegrationsPayload(
     mcpResourceReadEnabled = false,
     pluginContentReadEnabled = false,
     pluginReadEnabled = false,
+    pluginShareCheckoutEnabled = false,
     pluginUninstallEnabled = false,
     pluginShareListEnabled = false,
     skillsConfigWriteEnabled = false,
@@ -23586,6 +24278,7 @@ export function sanitizeSettingsIntegrationsPayload(
     mcpResourceReadEnabled,
     pluginContentReadEnabled,
     pluginReadEnabled,
+    pluginShareCheckoutEnabled,
     pluginUninstallEnabled,
     pluginShareListEnabled,
     skillsConfigWriteEnabled,
@@ -23759,6 +24452,7 @@ export function sanitizeSettingsIntegrationsPayload(
         state:
           inventory.plugins.ok ||
           pluginReadEnabled ||
+          pluginShareCheckoutEnabled ||
           pluginUninstallEnabled ||
           pluginContentReadEnabled ||
           pluginShareListEnabled
@@ -23767,12 +24461,13 @@ export function sanitizeSettingsIntegrationsPayload(
         listingAvailable: inventory.plugins.ok,
         installedListingAvailable: inventory.installedPlugins.ok,
         detailReadEnabled: Boolean(pluginReadEnabled),
+        shareCheckoutEnabled: Boolean(pluginShareCheckoutEnabled),
         uninstallEnabled: Boolean(pluginUninstallEnabled),
         contentReadEnabled: Boolean(pluginContentReadEnabled),
         shareListEnabled: Boolean(pluginShareListEnabled),
         installEnabled: false,
         executionEnabled: false,
-        mutationEnabled: Boolean(pluginUninstallEnabled),
+        mutationEnabled: Boolean(pluginUninstallEnabled || pluginShareCheckoutEnabled),
         reason: inventory.plugins.ok
           ? inventory.plugins.namesReturned
             ? "names-and-counts"
@@ -29005,6 +29700,7 @@ export function buildSettingsIntegrations({
   mcpResourceReadEnabled = false,
   pluginContentReadEnabled = false,
   pluginReadEnabled = false,
+  pluginShareCheckoutEnabled = false,
   pluginUninstallEnabled = false,
   pluginShareListEnabled = false,
   skillsConfigWriteEnabled = false,
@@ -29040,6 +29736,7 @@ export function buildSettingsIntegrations({
     mcpResourceReadEnabled,
     pluginContentReadEnabled,
     pluginReadEnabled,
+    pluginShareCheckoutEnabled,
     pluginUninstallEnabled,
     pluginShareListEnabled,
     skillsConfigWriteEnabled,
@@ -29165,6 +29862,7 @@ export function buildSettingsIntegrations({
       plugins: {
         state:
           pluginReadEnabled ||
+          pluginShareCheckoutEnabled ||
           pluginUninstallEnabled ||
           pluginContentReadEnabled ||
           pluginShareListEnabled
@@ -29172,12 +29870,13 @@ export function buildSettingsIntegrations({
             : "blocked",
         listingAvailable: false,
         detailReadEnabled: Boolean(pluginReadEnabled),
+        shareCheckoutEnabled: Boolean(pluginShareCheckoutEnabled),
         uninstallEnabled: Boolean(pluginUninstallEnabled),
         contentReadEnabled: Boolean(pluginContentReadEnabled),
         shareListEnabled: Boolean(pluginShareListEnabled),
         installEnabled: false,
         executionEnabled: false,
-        mutationEnabled: Boolean(pluginUninstallEnabled),
+        mutationEnabled: Boolean(pluginUninstallEnabled || pluginShareCheckoutEnabled),
         reason: "requires-explicit-inventory-enable",
       },
     },
@@ -29281,6 +29980,7 @@ function buildIntegrationActionScope({
   mcpResourceReadEnabled = false,
   pluginContentReadEnabled = false,
   pluginReadEnabled = false,
+  pluginShareCheckoutEnabled = false,
   pluginUninstallEnabled = false,
   pluginShareListEnabled = false,
   skillsConfigWriteEnabled = false,
@@ -29297,6 +29997,7 @@ function buildIntegrationActionScope({
     "mcp-resource-preflight",
     "plugin-read-preflight",
     "plugin-uninstall-preflight",
+    "plugin-share-checkout-preflight",
     "plugin-content-preflight",
     "config-value-preflight",
     "config-batch-preflight",
@@ -29313,6 +30014,7 @@ function buildIntegrationActionScope({
     mcpToolCallEnabled ? "mcpServer/tool/call" : null,
     mcpResourceReadEnabled ? "mcpServer/resource/read" : null,
     pluginReadEnabled ? "plugin/read" : null,
+    pluginShareCheckoutEnabled ? "plugin/share/checkout" : null,
     pluginUninstallEnabled ? "plugin/uninstall" : null,
     pluginContentReadEnabled ? "plugin/skill/read" : null,
     pluginShareListEnabled ? "plugin/share/list" : null,
@@ -29355,6 +30057,7 @@ function buildIntegrationActionScope({
     skillsConfigWriteEnabled: Boolean(skillsConfigWriteEnabled),
     skillsExtraRootsClearEnabled: Boolean(skillsExtraRootsClearEnabled),
     pluginReadEnabled: Boolean(pluginReadEnabled),
+    pluginShareCheckoutEnabled: Boolean(pluginShareCheckoutEnabled),
     pluginUninstallEnabled: Boolean(pluginUninstallEnabled),
     pluginInstallEnabled: false,
     pluginShareEnabled: false,
@@ -29504,6 +30207,7 @@ function summarizeIntegrationLifecycle(payload = {}) {
     ),
     pluginActionEnabled: Boolean(
       integrationScope.pluginReadEnabled ||
+        integrationScope.pluginShareCheckoutEnabled ||
         integrationScope.pluginUninstallEnabled ||
         integrationScope.pluginContentReadEnabled ||
         integrationScope.pluginShareListEnabled,
@@ -29694,6 +30398,7 @@ function summarizeIntegrationExternalCodeContract({
     mcpToolInvocationEnabled: Boolean(integrationScope.mcpToolInvocationEnabled),
     mcpResourceReadEnabled: Boolean(integrationScope.mcpResourceReadEnabled),
     pluginReadEnabled: Boolean(integrationScope.pluginReadEnabled),
+    pluginShareCheckoutEnabled: Boolean(integrationScope.pluginShareCheckoutEnabled),
     pluginContentReadEnabled: Boolean(integrationScope.pluginContentReadEnabled),
     pluginShareListEnabled: Boolean(integrationScope.pluginShareListEnabled),
     pluginUninstallEnabled: Boolean(integrationScope.pluginUninstallEnabled),
@@ -30140,6 +30845,7 @@ function summarizeIntegrationActions({
   ].filter(Boolean).length;
   const pluginActionCount = [
     integrationScope.pluginReadEnabled,
+    integrationScope.pluginShareCheckoutEnabled,
     integrationScope.pluginUninstallEnabled,
     integrationScope.pluginContentReadEnabled,
     integrationScope.pluginShareListEnabled,
@@ -30376,6 +31082,7 @@ function countEnabledIntegrationMutationGates(integrationScope = {}) {
     integrationScope.mcpResourceReadEnabled,
     integrationScope.skillsConfigWriteEnabled,
     integrationScope.pluginReadEnabled,
+    integrationScope.pluginShareCheckoutEnabled,
     integrationScope.pluginUninstallEnabled,
     integrationScope.pluginContentReadEnabled,
     integrationScope.pluginShareListEnabled,
@@ -33740,6 +34447,16 @@ function sanitizePluginUninstallAllowlist(allowlist) {
     .slice(0, 100);
 }
 
+function sanitizePluginShareCheckoutAllowlist(allowlist) {
+  if (!Array.isArray(allowlist)) {
+    return [];
+  }
+  return allowlist
+    .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
+    .filter(isSafePluginName)
+    .slice(0, 100);
+}
+
 function isSafeMcpAllowlistPart(value) {
   return typeof value === "string" && /^[A-Za-z0-9_.@-]{1,120}$/.test(value);
 }
@@ -33783,6 +34500,10 @@ function isExperimentalFeatureAllowed(feature, allowlist = []) {
 
 function isPluginUninstallAllowed(pluginId, allowlist = []) {
   return sanitizePluginUninstallAllowlist(allowlist).includes(pluginId);
+}
+
+function isPluginShareCheckoutAllowed(remotePluginId, allowlist = []) {
+  return sanitizePluginShareCheckoutAllowlist(allowlist).includes(remotePluginId);
 }
 
 function validateTerminalControlAction(value) {
@@ -34381,6 +35102,16 @@ function validatePluginUninstallExecutionParams(targetValue, allowlist = []) {
   }
   return {
     pluginId,
+  };
+}
+
+function validatePluginShareCheckoutExecutionParams(targetValue, allowlist = []) {
+  const remotePluginId = validatePluginReadName(targetValue, "Remote plugin");
+  if (!isPluginShareCheckoutAllowed(remotePluginId, allowlist)) {
+    throwRequestError("Plugin share checkout target is not allowlisted", 403);
+  }
+  return {
+    remotePluginId,
   };
 }
 

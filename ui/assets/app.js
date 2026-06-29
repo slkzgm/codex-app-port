@@ -148,6 +148,19 @@ const elements = {
   pluginUninstallText: document.querySelector("#plugin-uninstall-text"),
   pluginUninstallResponseKeys: document.querySelector("#plugin-uninstall-response-keys"),
   pluginUninstallDetailsText: document.querySelector("#plugin-uninstall-details-text"),
+  pluginShareCheckoutForm: document.querySelector("#plugin-share-checkout-form"),
+  pluginShareCheckoutTargetInput: document.querySelector("#plugin-share-checkout-target-input"),
+  pluginShareCheckoutButton: document.querySelector("#plugin-share-checkout-button"),
+  pluginShareCheckoutRunButton: document.querySelector("#plugin-share-checkout-run-button"),
+  pluginShareCheckoutStatus: document.querySelector("#plugin-share-checkout-status"),
+  pluginShareCheckoutTargetChars: document.querySelector("#plugin-share-checkout-target-chars"),
+  pluginShareCheckoutText: document.querySelector("#plugin-share-checkout-text"),
+  pluginShareCheckoutResponseKeys: document.querySelector(
+    "#plugin-share-checkout-response-keys",
+  ),
+  pluginShareCheckoutDetailsText: document.querySelector(
+    "#plugin-share-checkout-details-text",
+  ),
   pluginContentForm: document.querySelector("#plugin-content-form"),
   pluginContentMethodSelect: document.querySelector("#plugin-content-method-select"),
   pluginContentTargetInput: document.querySelector("#plugin-content-target-input"),
@@ -563,6 +576,7 @@ let lastExperimentalFeaturePreflight = null;
 let lastMcpResourcePreflight = null;
 let lastPluginContentPreflight = null;
 let lastPluginReadPreflight = null;
+let lastPluginShareCheckoutPreflight = null;
 let lastPluginUninstallPreflight = null;
 let lastSkillsConfigPreflight = null;
 let lastSkillsExtraRootsClearPreflight = null;
@@ -620,6 +634,7 @@ elements.workspaceSelect.addEventListener("change", () => {
   lastMcpResourcePreflight = null;
   lastPluginContentPreflight = null;
   lastPluginReadPreflight = null;
+  lastPluginShareCheckoutPreflight = null;
   lastPluginUninstallPreflight = null;
   lastSkillsConfigPreflight = null;
   lastSkillsExtraRootsClearPreflight = null;
@@ -659,6 +674,7 @@ elements.workspaceSelect.addEventListener("change", () => {
   elements.pluginContentRunButton.disabled = true;
   elements.pluginReadRunButton.disabled = true;
   elements.pluginUninstallRunButton.disabled = true;
+  elements.pluginShareCheckoutRunButton.disabled = true;
   elements.skillsConfigRunButton.disabled = true;
   elements.skillsExtraRootsClearButton.disabled = true;
   elements.remoteControlDisableButton.disabled = true;
@@ -1102,6 +1118,20 @@ elements.pluginUninstallRunButton.addEventListener("click", () => {
   runPluginUninstall();
 });
 
+elements.pluginShareCheckoutForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  runPluginShareCheckoutPreflight();
+});
+
+elements.pluginShareCheckoutTargetInput.addEventListener("input", () => {
+  lastPluginShareCheckoutPreflight = null;
+  elements.pluginShareCheckoutRunButton.disabled = true;
+});
+
+elements.pluginShareCheckoutRunButton.addEventListener("click", () => {
+  runPluginShareCheckout();
+});
+
 elements.pluginContentForm.addEventListener("submit", (event) => {
   event.preventDefault();
   runPluginContentPreflight();
@@ -1480,6 +1510,14 @@ function pluginUninstallPreflightEndpoint() {
 
 function pluginUninstallEndpoint() {
   return "/api/plugin-uninstall";
+}
+
+function pluginShareCheckoutPreflightEndpoint() {
+  return "/api/plugin-share-checkout-preflight";
+}
+
+function pluginShareCheckoutEndpoint() {
+  return "/api/plugin-share-checkout";
 }
 
 function pluginContentPreflightEndpoint() {
@@ -2353,6 +2391,76 @@ async function runPluginUninstall() {
     lastPluginUninstallPreflight = null;
     elements.pluginUninstallRunButton.disabled = true;
     setPluginUninstallLoading(false);
+  }
+}
+
+async function runPluginShareCheckoutPreflight() {
+  setPluginShareCheckoutLoading(true);
+  hideError();
+
+  try {
+    lastPluginShareCheckoutPreflight = null;
+    elements.pluginShareCheckoutRunButton.disabled = true;
+    const body = {
+      workspace: selectedWorkspaceId,
+      target: elements.pluginShareCheckoutTargetInput.value,
+    };
+    const response = await fetch(pluginShareCheckoutPreflightEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify(body),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    lastPluginShareCheckoutPreflight = {
+      body,
+      token: payload.preflight?.token,
+      enabled: payload.policy?.executionGateEnabled === true,
+    };
+    renderPluginShareCheckoutPreflight(payload);
+    await refreshSettingsIntegrations().catch(() => {});
+  } catch (error) {
+    elements.pluginShareCheckoutStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    setPluginShareCheckoutLoading(false);
+  }
+}
+
+async function runPluginShareCheckout() {
+  if (!lastPluginShareCheckoutPreflight?.token || !lastPluginShareCheckoutPreflight?.body) {
+    return;
+  }
+
+  setPluginShareCheckoutLoading(true);
+  hideError();
+
+  try {
+    const response = await fetch(pluginShareCheckoutEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify({
+        ...lastPluginShareCheckoutPreflight.body,
+        preflightToken: lastPluginShareCheckoutPreflight.token,
+      }),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderPluginShareCheckout(payload);
+    await refreshSettingsIntegrations().catch(() => {});
+  } catch (error) {
+    elements.pluginShareCheckoutStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    lastPluginShareCheckoutPreflight = null;
+    elements.pluginShareCheckoutRunButton.disabled = true;
+    setPluginShareCheckoutLoading(false);
   }
 }
 
@@ -8233,6 +8341,7 @@ function renderIntegrationPreflightHistory(history) {
     } else if (
       item.action?.type === "plugin-read-preflight" ||
       item.action?.type === "plugin-content-preflight" ||
+      item.action?.type === "plugin-share-checkout-preflight" ||
       item.action?.type === "plugin-uninstall-preflight"
     ) {
       detail.textContent = joinParts([
@@ -8344,6 +8453,7 @@ function renderIntegrationConfirmationHistory(history) {
     } else if (
       item.action?.type === "plugin-read-preflight" ||
       item.action?.type === "plugin-content-preflight" ||
+      item.action?.type === "plugin-share-checkout-preflight" ||
       item.action?.type === "plugin-uninstall-preflight"
     ) {
       detail.textContent = joinParts([
@@ -8609,6 +8719,33 @@ function renderPluginUninstall(payload) {
     ? "Uninstalled"
     : "Blocked";
   elements.pluginUninstallDetailsText.textContent = "Omitted";
+}
+
+function renderPluginShareCheckoutPreflight(payload) {
+  const checkout = payload.pluginShareCheckout ?? {};
+  elements.pluginShareCheckoutStatus.textContent = payload.action?.execution ?? "blocked";
+  elements.pluginShareCheckoutTargetChars.textContent = String(checkout.targetCharCount ?? 0);
+  elements.pluginShareCheckoutResponseKeys.textContent = "0";
+  elements.pluginShareCheckoutText.textContent = payload.policy?.executionGateEnabled
+    ? "Enabled"
+    : "Blocked";
+  elements.pluginShareCheckoutDetailsText.textContent = "Omitted";
+  elements.pluginShareCheckoutRunButton.disabled =
+    !lastPluginShareCheckoutPreflight?.token ||
+    lastPluginShareCheckoutPreflight.enabled !== true;
+}
+
+function renderPluginShareCheckout(payload) {
+  const checkout = payload.pluginShareCheckout ?? {};
+  elements.pluginShareCheckoutStatus.textContent = payload.action?.execution ?? "completed";
+  elements.pluginShareCheckoutTargetChars.textContent = String(checkout.targetCharCount ?? 0);
+  elements.pluginShareCheckoutResponseKeys.textContent = String(
+    checkout.responseTopLevelKeyCount ?? 0,
+  );
+  elements.pluginShareCheckoutText.textContent = payload.policy?.pluginShareCheckout
+    ? "Checked out"
+    : "Blocked";
+  elements.pluginShareCheckoutDetailsText.textContent = "Omitted";
 }
 
 function renderPluginContentPreflight(payload) {
@@ -10477,6 +10614,18 @@ function setPluginUninstallLoading(isLoading) {
   elements.pluginUninstallButton.textContent = isLoading ? "Checking" : "Uninstall Check";
   if (isLoading) {
     elements.pluginUninstallStatus.textContent = "Checking";
+  }
+}
+
+function setPluginShareCheckoutLoading(isLoading) {
+  elements.pluginShareCheckoutButton.disabled = isLoading;
+  elements.pluginShareCheckoutRunButton.disabled =
+    isLoading ||
+    !lastPluginShareCheckoutPreflight?.token ||
+    lastPluginShareCheckoutPreflight.enabled !== true;
+  elements.pluginShareCheckoutButton.textContent = isLoading ? "Checking" : "Checkout Check";
+  if (isLoading) {
+    elements.pluginShareCheckoutStatus.textContent = "Checking";
   }
 }
 

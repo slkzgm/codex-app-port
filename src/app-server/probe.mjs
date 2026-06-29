@@ -2343,6 +2343,96 @@ export async function runPluginUninstallProbe({
   }
 }
 
+export function summarizePluginShareCheckout(response) {
+  const object = response && typeof response === "object" && !Array.isArray(response) ? response : {};
+  return {
+    method: APP_SERVER_METHODS.pluginShareCheckout,
+    responseObject: Boolean(response && typeof response === "object" && !Array.isArray(response)),
+    responseTopLevelKeyCount: Object.keys(object).length,
+    marketplaceNamePresent: typeof object.marketplaceName === "string" && object.marketplaceName.length > 0,
+    marketplacePathPresent: typeof object.marketplacePath === "string" && object.marketplacePath.length > 0,
+    pluginIdPresent: typeof object.pluginId === "string" && object.pluginId.length > 0,
+    pluginNamePresent: typeof object.pluginName === "string" && object.pluginName.length > 0,
+    pluginPathPresent: typeof object.pluginPath === "string" && object.pluginPath.length > 0,
+    remotePluginIdPresent:
+      typeof object.remotePluginId === "string" && object.remotePluginId.length > 0,
+    remoteVersionPresent:
+      typeof object.remoteVersion === "string" && object.remoteVersion.length > 0,
+    namesReturned: false,
+    idsReturned: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    rawPayloadReturned: false,
+  };
+}
+
+export async function runPluginShareCheckoutProbe({
+  codexBin = process.env.CODEX_BIN || "codex",
+  codexArgs = ["app-server", "--listen", "stdio://"],
+  cwd = process.cwd(),
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+  remotePluginId,
+  onNotification = null,
+} = {}) {
+  if (process.env.CODEX_APP_PORT_ALLOW_PLUGIN_SHARE_CHECKOUT !== "1") {
+    throw new Error(
+      "plugin share checkout requires CODEX_APP_PORT_ALLOW_PLUGIN_SHARE_CHECKOUT=1 because it materializes shared plugin code",
+    );
+  }
+
+  const notifications = [];
+  const client = new JsonlRpcClient({
+    command: codexBin,
+    args: codexArgs,
+    cwd,
+    timeoutMs,
+    onNotification(notification) {
+      notifications.push({
+        method: notification.method,
+      });
+      onNotification?.(notification);
+    },
+  });
+
+  await client.start();
+
+  try {
+    const initialize = normalizeInitializeResponse(
+      await client.request(APP_SERVER_METHODS.initialize, {
+        clientInfo: {
+          name: "codex_app_port",
+          title: "Codex App Port",
+          version: "0.1.0",
+        },
+        capabilities: {
+          experimentalApi: false,
+          requestAttestation: false,
+        },
+      }),
+    );
+
+    client.notify(APP_SERVER_METHODS.initialized);
+
+    const pluginShareCheckout = await client.request(APP_SERVER_METHODS.pluginShareCheckout, {
+      remotePluginId,
+    });
+
+    return {
+      ok: true,
+      generatedAt: new Date().toISOString(),
+      transport: "stdio-jsonl",
+      protocol: "json-rpc-2.0-without-jsonrpc-field",
+      initialize: summarizeInitialize(initialize),
+      probes: {
+        pluginShareCheckout: summarizePluginShareCheckout(pluginShareCheckout),
+      },
+      notifications: notificationCounts(notifications),
+    };
+  } finally {
+    await client.close();
+  }
+}
+
 export async function runSkillsConfigWriteProbe({
   codexBin = process.env.CODEX_BIN || "codex",
   codexArgs = ["app-server", "--listen", "stdio://"],

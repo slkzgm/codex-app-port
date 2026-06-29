@@ -83,6 +83,7 @@ async function main() {
   await checkPluginReadPreflightApi();
   await checkPluginReadApi();
   await checkPluginUninstallApi();
+  await checkPluginShareCheckoutApi();
   await checkPluginContentPreflightApi();
   await checkPluginContentReadApi();
   await checkSkillsConfigWriteApi();
@@ -1095,6 +1096,14 @@ async function checkStrictBrowserPostBodies() {
           preflightToken: "preflight-1234567890abcdef",
         },
       ],
+      ["/api/plugin-share-checkout-preflight", { target: "safe-remote-plugin" }],
+      [
+        "/api/plugin-share-checkout",
+        {
+          target: "safe-remote-plugin",
+          preflightToken: "preflight-1234567890abcdef",
+        },
+      ],
       [
         "/api/plugin-content-preflight",
         { method: "plugin/skill/read", target: "safe-plugin", arguments: "{}" },
@@ -1647,6 +1656,37 @@ function assertBrowserPostBodyContracts(cases) {
     pluginUninstallContract.nestedKeySchemas.policy?.includes("unexpected")
   ) {
     throw new Error("plugin-uninstall response contract is missing nested schemas");
+  }
+  const pluginShareCheckoutPreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/plugin-share-checkout-preflight"];
+  if (
+    pluginShareCheckoutPreflightContract.usesRouteSpecificNestedKeySchemas !== true ||
+    !Object.isFrozen(pluginShareCheckoutPreflightContract.nestedKeySchemas.policy) ||
+    !pluginShareCheckoutPreflightContract.nestedKeySchemas.pluginShareCheckout?.includes(
+      "allowlistMatched",
+    ) ||
+    !pluginShareCheckoutPreflightContract.nestedKeySchemas.policy?.includes(
+      "pluginShareCheckout",
+    ) ||
+    pluginShareCheckoutPreflightContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("plugin-share-checkout-preflight response contract is missing nested schemas");
+  }
+  const pluginShareCheckoutContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/plugin-share-checkout"];
+  if (
+    pluginShareCheckoutContract.usesRouteSpecificNestedKeySchemas !== true ||
+    !Object.isFrozen(pluginShareCheckoutContract.nestedKeySchemas.policy) ||
+    !pluginShareCheckoutContract.nestedKeySchemas.pluginShareCheckout?.includes(
+      "marketplacePathPresent",
+    ) ||
+    !pluginShareCheckoutContract.nestedKeySchemas.result?.includes("pluginPathPresent") ||
+    !pluginShareCheckoutContract.nestedKeySchemas.policy?.includes(
+      "externalCodeMaterialization",
+    ) ||
+    pluginShareCheckoutContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("plugin-share-checkout response contract is missing nested schemas");
   }
   const pluginContentPreflightContract =
     BROWSER_POST_RESPONSE_CONTRACTS["/api/plugin-content-preflight"];
@@ -16700,6 +16740,179 @@ async function checkPluginUninstallApi() {
   pass("dev server plugin uninstall is opt-in, allowlisted, preflighted, and sanitized");
 }
 
+async function checkPluginShareCheckoutApi() {
+  const auditDir = await mkdtemp(join(tmpdir(), "codex-app-port-verify-plugin-share-checkout-"));
+  const auditLogPath = join(auditDir, "actions.jsonl");
+  const calls = [];
+  const target = "verify-safe-remote-plugin";
+  const pluginShareCheckoutFn = async (options) => {
+    calls.push(options);
+    return {
+      ok: true,
+      generatedAt: "2026-05-17T00:00:00.000Z",
+      transport: "stdio-jsonl",
+      protocol: "json-rpc-2.0-without-jsonrpc-field",
+      initialize: { platformOs: "linux", platformFamily: "unix" },
+      probes: {
+        pluginShareCheckout: {
+          responseObject: true,
+          responseTopLevelKeyCount: 7,
+          marketplaceNamePresent: true,
+          marketplacePathPresent: true,
+          pluginIdPresent: true,
+          pluginNamePresent: true,
+          pluginPathPresent: true,
+          remotePluginIdPresent: true,
+          remoteVersionPresent: true,
+          marketplaceName: "verify-private-share-marketplace",
+          pluginPath: "/tmp/codex-app-port-verify-extra/private-checked-out-plugin",
+          remotePluginId: options.remotePluginId,
+        },
+      },
+      notifications: { "plugin/share/checkout/private": 1 },
+    };
+  };
+
+  const disabled = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    workspaceInputs: ["/tmp/codex-app-port-verify-extra"],
+    pluginShareCheckoutFn,
+  });
+  const disabledPort = await listenWithFallback(disabled, { host: "127.0.0.1", port: 0 });
+  const disabledBaseUrl = `http://127.0.0.1:${disabledPort}`;
+
+  try {
+    const token = await readUiSessionToken(disabledBaseUrl);
+    const preflight = await fetch(`${disabledBaseUrl}/api/plugin-share-checkout-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        target,
+      }),
+    });
+    if (!preflight.ok) {
+      throw new Error(`disabled plugin share checkout preflight returned HTTP ${preflight.status}`);
+    }
+    const preflightPayload = await preflight.json();
+    assertSanitizedPluginShareCheckoutPreflight(preflightPayload, {
+      targetLength: target.length,
+      gateEnabled: false,
+    });
+    const blocked = await fetch(`${disabledBaseUrl}/api/plugin-share-checkout`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        target,
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    if (blocked.status !== 403) {
+      throw new Error(`disabled plugin share checkout returned HTTP ${blocked.status}`);
+    }
+    if (calls.length !== 0) {
+      throw new Error("disabled plugin share checkout called the app-server probe");
+    }
+  } finally {
+    await closeServer(disabled);
+  }
+
+  const server = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    workspaceInputs: ["/tmp/codex-app-port-verify-extra"],
+    pluginShareCheckoutEnabled: true,
+    pluginShareCheckoutAllowlist: [target],
+    pluginShareCheckoutFn,
+    actionAuditLog: createActionAuditLog({ path: auditLogPath }),
+  });
+  const port = await listenWithFallback(server, { host: "127.0.0.1", port: 0 });
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  try {
+    const token = await readUiSessionToken(baseUrl);
+    const preflight = await fetch(`${baseUrl}/api/plugin-share-checkout-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        target,
+      }),
+    });
+    if (!preflight.ok) {
+      throw new Error(`plugin share checkout preflight returned HTTP ${preflight.status}`);
+    }
+    const preflightPayload = await preflight.json();
+    assertSanitizedPluginShareCheckoutPreflight(preflightPayload, {
+      targetLength: target.length,
+      gateEnabled: true,
+    });
+
+    const rejectedTarget = await fetch(`${baseUrl}/api/plugin-share-checkout`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        target: "not-allowlisted",
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    if (rejectedTarget.status !== 403 || calls.length !== 0) {
+      throw new Error("unallowlisted plugin share checkout was not rejected before app-server traffic");
+    }
+
+    const response = await fetch(`${baseUrl}/api/plugin-share-checkout`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        target,
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(`plugin share checkout returned HTTP ${response.status}`);
+    }
+    assertSanitizedPluginShareCheckout(await response.json(), {
+      token: preflightPayload.preflight.token,
+      targetLength: target.length,
+    });
+    if (
+      calls.length !== 1 ||
+      calls[0].cwd !== "/tmp/codex-app-port-verify-extra" ||
+      calls[0].remotePluginId !== target
+    ) {
+      throw new Error("plugin share checkout did not call the app-server probe with expected parameters");
+    }
+
+    const replay = await fetch(`${baseUrl}/api/plugin-share-checkout`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        target,
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    if (replay.status !== 409 || calls.length !== 1) {
+      throw new Error("plugin share checkout preflight token replay was not rejected before app-server traffic");
+    }
+
+    const records = (await readFile(auditLogPath, "utf8"))
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    assertSanitizedPluginShareCheckoutAudit(records, {
+      token: preflightPayload.preflight.token,
+      targetLength: target.length,
+    });
+  } finally {
+    await closeServer(server);
+    await rm(auditDir, { recursive: true, force: true });
+  }
+  pass("dev server plugin share checkout is opt-in, allowlisted, preflighted, and sanitized");
+}
+
 async function checkPluginContentPreflightApi() {
   let probeCalled = false;
   const server = createDevServer({
@@ -22468,7 +22681,7 @@ function assertSanitizedAccountLoginHistory(payload, { token, workspaceId = "def
     partialSurfaceCount: 2,
     blockedSurfaceCount: 5,
     readMethodCount: 1,
-    localGateCount: 11,
+    localGateCount: 12,
     enabledMutationGateCount: 1,
     historyCount: 1,
     appServerTouched: false,
@@ -22629,7 +22842,7 @@ function assertSanitizedAccountLogoutHistory(payload, { token, workspaceId = "de
     partialSurfaceCount: 2,
     blockedSurfaceCount: 5,
     readMethodCount: 1,
-    localGateCount: 11,
+    localGateCount: 12,
     enabledMutationGateCount: 1,
     historyCount: 1,
     appServerTouched: false,
@@ -26981,12 +27194,13 @@ function assertSanitizedSettingsIntegrations(payload) {
     payload.integrationScope?.enabledReadMethodCount !== 1 ||
     JSON.stringify(payload.integrationScope?.enabledReadMethods ?? []) !==
       JSON.stringify(["config/read"]) ||
-    payload.integrationScope?.enabledLocalGateCount !== 10 ||
+    payload.integrationScope?.enabledLocalGateCount !== 11 ||
     !payload.integrationScope?.enabledLocalGates?.includes("mcp-tool-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("mcp-oauth-login-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("mcp-resource-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("plugin-read-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("plugin-uninstall-preflight") ||
+    !payload.integrationScope?.enabledLocalGates?.includes("plugin-share-checkout-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("plugin-content-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("config-value-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("config-batch-preflight") ||
@@ -27037,7 +27251,7 @@ function assertSanitizedSettingsIntegrations(payload) {
     partialSurfaceCount: 1,
     blockedSurfaceCount: 6,
     readMethodCount: 1,
-    localGateCount: 10,
+    localGateCount: 11,
     enabledMutationGateCount: 0,
     historyCount: 0,
     appServerTouched: false,
@@ -27310,6 +27524,7 @@ function assertSanitizedIntegrationActions(
   ].filter(Boolean).length;
   const pluginActionCount = [
     scope.pluginReadEnabled,
+    scope.pluginShareCheckoutEnabled,
     scope.pluginUninstallEnabled,
     scope.pluginContentReadEnabled,
     scope.pluginShareListEnabled,
@@ -28380,7 +28595,7 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
       ["config/read", ...optInIntegrationReadMethods()].length ||
     JSON.stringify(payload.integrationScope?.enabledReadMethods ?? []) !==
       JSON.stringify(["config/read", ...optInIntegrationReadMethods()]) ||
-    payload.integrationScope?.enabledLocalGateCount !== 10 ||
+    payload.integrationScope?.enabledLocalGateCount !== 11 ||
     payload.integrationScope?.blockedMutationMethodCount !==
       blockedIntegrationMutationMethods().length ||
     payload.integrationScope?.accountLoginEnabled !== false ||
@@ -28410,7 +28625,7 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
     partialSurfaceCount: 7,
     blockedSurfaceCount: 0,
     readMethodCount: ["config/read", ...optInIntegrationReadMethods()].length,
-    localGateCount: 10,
+    localGateCount: 11,
     enabledMutationGateCount: 0,
     historyCount: 0,
     appServerTouched: true,
@@ -30659,6 +30874,175 @@ function assertSanitizedPluginUninstallAudit(records, { token, targetLength }) {
   ]) {
     if (serialized.includes(marker)) {
       throw new Error(`plugin uninstall audit leaked ${marker}`);
+    }
+  }
+}
+
+function assertSanitizedPluginShareCheckoutPreflight(payload, { targetLength, gateEnabled }) {
+  if (!payload.ok) {
+    throw new Error("plugin share checkout preflight payload is not ok");
+  }
+  const serialized = JSON.stringify(payload);
+  for (const marker of [
+    "/tmp/codex-app-port-verify",
+    "/tmp/codex-app-port-verify-extra",
+    "verify-safe-remote-plugin",
+    "verify-private-share-marketplace",
+    "private-checked-out-plugin",
+    "codexHome",
+    "userAgent",
+  ]) {
+    if (serialized.includes(marker)) {
+      throw new Error(`plugin share checkout preflight payload leaked ${marker}`);
+    }
+  }
+  if (
+    payload.appServer?.touched !== false ||
+    payload.appServer?.modelTraffic !== false ||
+    payload.appServer?.pluginMutationTraffic !== false
+  ) {
+    throw new Error("plugin share checkout preflight unexpectedly touched app-server");
+  }
+  if (
+    payload.action?.type !== "plugin-share-checkout-preflight" ||
+    payload.action?.method !== "plugin/share/checkout" ||
+    payload.action?.category !== "plugins-share" ||
+    payload.action?.execution !== (gateEnabled ? "requires-confirmation" : "blocked") ||
+    payload.action?.wouldCheckoutPlugin !== false ||
+    payload.action?.wouldMaterializeExternalCode !== false ||
+    payload.action?.wouldMutatePlugins !== false ||
+    payload.action?.appServerTouched !== false
+  ) {
+    throw new Error("plugin share checkout preflight did not preserve action metadata");
+  }
+  assertActionPreflight(payload, "plugin-share-checkout-preflight", "workspace-2");
+  if (
+    payload.pluginShareCheckout?.targetCharCount !== targetLength ||
+    payload.pluginShareCheckout?.allowlistMatched !== gateEnabled ||
+    payload.pluginShareCheckout?.allowlistEntryCount !== (gateEnabled ? 1 : 0) ||
+    payload.pluginShareCheckout?.remotePluginIdReturned !== false ||
+    payload.pluginShareCheckout?.marketplaceNamesReturned !== false ||
+    payload.pluginShareCheckout?.pluginNamesReturned !== false ||
+    payload.pluginShareCheckout?.idsReturned !== false ||
+    payload.pluginShareCheckout?.pathsReturned !== false ||
+    payload.pluginShareCheckout?.rawPayloadReturned !== false
+  ) {
+    throw new Error("plugin share checkout preflight did not preserve count-only metadata");
+  }
+  if (
+    payload.policy?.readOnly !== true ||
+    payload.policy?.appServerTraffic !== false ||
+    payload.policy?.pluginMutation !== false ||
+    payload.policy?.pluginShareCheckout !== false ||
+    payload.policy?.pluginShareCheckoutEnabled !== gateEnabled ||
+    payload.policy?.externalCodeMaterialization !== false ||
+    payload.policy?.executionGateEnabled !== gateEnabled ||
+    payload.policy?.allowlistRequired !== true ||
+    payload.policy?.allowlistMatched !== gateEnabled ||
+    payload.policy?.remotePluginIdReturned !== false ||
+    payload.policy?.marketplaceNamesReturned !== false ||
+    payload.policy?.pluginNamesReturned !== false ||
+    payload.policy?.idsReturned !== false ||
+    payload.policy?.pathsReturned !== false ||
+    payload.policy?.rawPayloadsReturned !== false ||
+    payload.policy?.requiresExplicitEnablement !== true ||
+    payload.policy?.implemented !== true
+  ) {
+    throw new Error("plugin share checkout preflight policy did not preserve execution guardrails");
+  }
+}
+
+function assertSanitizedPluginShareCheckout(payload, { token, targetLength }) {
+  if (!payload.ok) {
+    throw new Error("plugin share checkout payload is not ok");
+  }
+  const serialized = JSON.stringify(payload);
+  for (const marker of [
+    "/tmp/codex-app-port-verify",
+    "/tmp/codex-app-port-verify-extra",
+    "verify-safe-remote-plugin",
+    "verify-private-share-marketplace",
+    "private-checked-out-plugin",
+    token,
+  ]) {
+    if (serialized.includes(marker)) {
+      throw new Error(`plugin share checkout payload leaked ${marker}`);
+    }
+  }
+  if (
+    payload.appServer?.touched !== true ||
+    payload.appServer?.modelTraffic !== false ||
+    payload.appServer?.pluginMutationTraffic !== true ||
+    !payload.appServer?.auditedMethods?.includes("plugin/share/checkout")
+  ) {
+    throw new Error("plugin share checkout payload did not record sanitized app-server traffic");
+  }
+  if (
+    payload.action?.type !== "plugin-share-checkout" ||
+    payload.action?.method !== "plugin/share/checkout" ||
+    payload.action?.pluginShareCheckout !== true ||
+    payload.action?.modelTraffic !== false
+  ) {
+    throw new Error("plugin share checkout payload did not expose expected action metadata");
+  }
+  if (
+    payload.pluginShareCheckout?.targetCharCount !== targetLength ||
+    payload.pluginShareCheckout?.responseTopLevelKeyCount !== 7 ||
+    payload.pluginShareCheckout?.marketplacePathPresent !== true ||
+    payload.pluginShareCheckout?.pluginPathPresent !== true ||
+    payload.pluginShareCheckout?.remotePluginIdReturned !== false ||
+    payload.pluginShareCheckout?.marketplaceNamesReturned !== false ||
+    payload.pluginShareCheckout?.pluginNamesReturned !== false ||
+    payload.pluginShareCheckout?.idsReturned !== false ||
+    payload.pluginShareCheckout?.pathsReturned !== false ||
+    payload.pluginShareCheckout?.rawPayloadReturned !== false
+  ) {
+    throw new Error("plugin share checkout payload did not preserve count-only metadata");
+  }
+  if (
+    payload.preflight?.tokenConsumed !== true ||
+    payload.preflight?.tokenReturned !== false ||
+    payload.policy?.pluginShareCheckout !== true ||
+    payload.policy?.externalCodeMaterialization !== true ||
+    payload.policy?.preflightTokenReturned !== false ||
+    payload.policy?.auditLogWritten !== true ||
+    payload.policy?.executionGateEnabled !== true ||
+    payload.policy?.implemented !== true
+  ) {
+    throw new Error("plugin share checkout payload policy did not preserve execution guardrails");
+  }
+}
+
+function assertSanitizedPluginShareCheckoutAudit(records, { token, targetLength }) {
+  if (
+    records.length !== 1 ||
+    records[0]?.event !== "plugin-share-checkout-recorded" ||
+    records[0]?.action?.type !== "plugin-share-checkout" ||
+    records[0]?.action?.method !== "plugin/share/checkout" ||
+    records[0]?.action?.pluginShareCheckout !== true ||
+    records[0]?.appServer?.pluginMutationTraffic !== true ||
+    records[0]?.target?.targetCharCount !== targetLength ||
+    records[0]?.target?.remotePluginIdReturned !== false ||
+    records[0]?.result?.responseTopLevelKeyCount !== 7 ||
+    records[0]?.result?.pluginPathPresent !== true ||
+    records[0]?.result?.remotePluginIdReturned !== false ||
+    records[0]?.result?.pathsReturned !== false ||
+    records[0]?.preflight?.tokenConsumed !== true ||
+    records[0]?.preflight?.tokenReturned !== false
+  ) {
+    throw new Error("plugin share checkout audit record was not sanitized as expected");
+  }
+  const serialized = JSON.stringify(records);
+  for (const marker of [
+    "/tmp/codex-app-port-verify",
+    "/tmp/codex-app-port-verify-extra",
+    "verify-safe-remote-plugin",
+    "verify-private-share-marketplace",
+    "private-checked-out-plugin",
+    token,
+  ]) {
+    if (serialized.includes(marker)) {
+      throw new Error(`plugin share checkout audit leaked ${marker}`);
     }
   }
 }

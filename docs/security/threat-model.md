@@ -692,6 +692,18 @@
   response-shape counts; they must not return plugin ids, plugin names, paths,
   URLs, secrets, preflight tokens, raw request bodies, or raw app-server
   payloads.
+- Browser-facing shared plugin checkout preflight and execution responses are
+  constrained by route-specific nested response-key schemas. The execution
+  route may call `plugin/share/checkout` only when
+  `CODEX_APP_PORT_ALLOW_PLUGIN_SHARE_CHECKOUT=1` is set, after rebuilding the
+  matching preflight, requiring an exact
+  `CODEX_APP_PORT_PLUGIN_SHARE_CHECKOUT_ALLOWLIST` remote-plugin-id match, and
+  consuming the one-time local token. Execution must pass only
+  `{remotePluginId}` to app-server. Browser responses and action audit records
+  may expose only target length, allowlist status, response shape, and
+  field-presence booleans; they must not return remote plugin ids,
+  marketplace/plugin names, paths, versions, secrets, preflight tokens, raw
+  request bodies, or raw app-server payloads.
 - Browser-facing plugin content preflight may accept only audited
   `plugin/skill/read` or `plugin/share/list` intent for local validation and
   counts, behind a route-specific nested response-key schema. It must not echo

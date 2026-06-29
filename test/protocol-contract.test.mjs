@@ -59,6 +59,7 @@ test("protocol contracts name the app-server methods currently used", () => {
   assert.equal(APP_SERVER_METHODS.mcpToolCall, "mcpServer/tool/call");
   assert.equal(APP_SERVER_METHODS.mcpResourceRead, "mcpServer/resource/read");
   assert.equal(APP_SERVER_METHODS.pluginRead, "plugin/read");
+  assert.equal(APP_SERVER_METHODS.pluginShareCheckout, "plugin/share/checkout");
   assert.equal(APP_SERVER_METHODS.pluginShareList, "plugin/share/list");
   assert.equal(APP_SERVER_METHODS.pluginSkillRead, "plugin/skill/read");
   assert.equal(APP_SERVER_METHODS.pluginUninstall, "plugin/uninstall");

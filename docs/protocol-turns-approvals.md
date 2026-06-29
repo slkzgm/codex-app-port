@@ -382,6 +382,16 @@ route requires `CODEX_APP_PORT_ALLOW_PLUGIN_UNINSTALL=1`, an exact
 validation, and a matching one-time preflight token, and returns only target
 length plus response-shape counts without plugin ids/names, paths, URLs,
 tokens, or raw payloads.
+`plugin/share/checkout` is exposed through its own
+`/api/plugin-share-checkout-preflight` and `/api/plugin-share-checkout` pair,
+not through generic plugin sharing. The execution route requires
+`CODEX_APP_PORT_ALLOW_PLUGIN_SHARE_CHECKOUT=1`, an exact
+`CODEX_APP_PORT_PLUGIN_SHARE_CHECKOUT_ALLOWLIST` remote-plugin-id match, safe
+target validation, and a matching one-time preflight token. It calls
+app-server with only `{remotePluginId}` and returns only target length,
+allowlist status, response-shape counts, and field-presence booleans without
+remote plugin ids, marketplace/plugin names, paths, versions, tokens, or raw
+payloads.
 `plugin/skill/read` and `plugin/share/list` stay behind the same local
 preflight pattern through `/api/plugin-content-preflight`; it returns only the
 audited method plus target/argument counts and omits skill text, sharing URLs,

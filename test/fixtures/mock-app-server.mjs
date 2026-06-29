@@ -633,6 +633,38 @@ function handle(message) {
     return;
   }
 
+  if (message.method === "plugin/share/checkout") {
+    if (
+      !message.params ||
+      typeof message.params !== "object" ||
+      Array.isArray(message.params) ||
+      typeof message.params.remotePluginId !== "string" ||
+      Object.keys(message.params).length !== 1
+    ) {
+      send({
+        id: message.id,
+        error: {
+          code: -32602,
+          message: "invalid plugin share checkout params",
+        },
+      });
+      return;
+    }
+    send({
+      id: message.id,
+      result: {
+        marketplaceName: "private-share-marketplace",
+        marketplacePath: "/tmp/mock-workspace/.codex/plugins/private-share-marketplace",
+        pluginId: "private-checked-out-plugin-id",
+        pluginName: "private-checked-out-plugin",
+        pluginPath: "/tmp/mock-workspace/.codex/plugins/private-checked-out-plugin",
+        remotePluginId: message.params.remotePluginId,
+        remoteVersion: "private-remote-version",
+      },
+    });
+    return;
+  }
+
   if (message.method === "plugin/share/list") {
     send({
       id: message.id,

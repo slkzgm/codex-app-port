@@ -552,6 +552,15 @@ Current M1 status:
   validation by default, route-specific nested response schemas, and responses
   plus action audit records reduced to target length and response-shape counts
   without plugin ids/names, paths, URLs, tokens, or raw payloads
+- done: opt-in `/api/plugin-share-checkout` behind
+  `CODEX_APP_PORT_ALLOW_PLUGIN_SHARE_CHECKOUT=1`, exact
+  `CODEX_APP_PORT_PLUGIN_SHARE_CHECKOUT_ALLOWLIST` remote-plugin-id match, safe
+  target validation, and a matching one-time preflight token, with preflight-only
+  validation by default, route-specific nested response schemas, a fixed
+  `{remotePluginId}` app-server payload, and responses plus action audit records
+  reduced to target length, allowlist status, response-shape counts, and
+  field-presence booleans without remote plugin ids, marketplace/plugin names,
+  paths, versions, tokens, or raw payloads
 - done: opt-in `/api/plugin-content-read` behind
   `CODEX_APP_PORT_ALLOW_PLUGIN_CONTENT_READ=1` for `plugin/skill/read` and
   `CODEX_APP_PORT_ALLOW_PLUGIN_SHARE_LIST=1` for `plugin/share/list`, with
@@ -740,9 +749,10 @@ Current M1 status:
 - done: route-specific nested response-key schemas for high-risk turn-start,
   approval-decision, MCP tool-call preflight/execution, MCP resource-read
   execution, MCP OAuth-login preflight/execution, MCP server-reload
-  preflight/execution, skills-config preflight/execution, config-value
-  preflight/execution, config-batch preflight/execution, experimental-feature
-  preflight/execution, and generic integration mutation preflight routes,
+  preflight/execution, plugin-share-checkout preflight/execution, skills-config
+  preflight/execution, config-value preflight/execution, config-batch
+  preflight/execution, experimental-feature preflight/execution, and generic
+  integration mutation preflight routes,
   fail-closing unexpected keys inside
   sanitized turn/probe/event, decision, queue, history, target, argument/risk,
   result, method-specific risk summary, `policy`, and `preflight` objects before

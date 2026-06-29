@@ -48,6 +48,7 @@ export const APP_SERVER_METHODS = Object.freeze({
   mcpResourceRead: "mcpServer/resource/read",
   pluginInstalled: "plugin/installed",
   pluginRead: "plugin/read",
+  pluginShareCheckout: "plugin/share/checkout",
   pluginShareList: "plugin/share/list",
   pluginSkillRead: "plugin/skill/read",
   pluginUninstall: "plugin/uninstall",

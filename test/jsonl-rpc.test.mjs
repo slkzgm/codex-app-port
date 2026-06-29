@@ -15,6 +15,7 @@ import {
   runMcpResourceReadProbe,
   runPluginContentReadProbe,
   runPluginReadProbe,
+  runPluginShareCheckoutProbe,
   runPluginUninstallProbe,
   runProcessSpawnProbe,
   runRemoteControlDisableProbe,
@@ -1005,6 +1006,56 @@ test("runPluginUninstallProbe returns count-only plugin mutation metadata", asyn
       delete process.env.CODEX_APP_PORT_ALLOW_PLUGIN_UNINSTALL;
     } else {
       process.env.CODEX_APP_PORT_ALLOW_PLUGIN_UNINSTALL = previous;
+    }
+  }
+});
+
+test("runPluginShareCheckoutProbe returns count-only plugin materialization metadata", async () => {
+  const previous = process.env.CODEX_APP_PORT_ALLOW_PLUGIN_SHARE_CHECKOUT;
+  process.env.CODEX_APP_PORT_ALLOW_PLUGIN_SHARE_CHECKOUT = "1";
+  try {
+    const summary = await runPluginShareCheckoutProbe({
+      codexBin: process.execPath,
+      codexArgs: [mockServer.pathname],
+      cwd: process.cwd(),
+      timeoutMs: 1_000,
+      remotePluginId: "private-remote-plugin-id",
+    });
+
+    const checkout = summary.probes.pluginShareCheckout;
+    assert.equal(summary.ok, true);
+    assert.equal(checkout.method, "plugin/share/checkout");
+    assert.equal(checkout.responseObject, true);
+    assert.equal(checkout.responseTopLevelKeyCount, 7);
+    assert.equal(checkout.marketplaceNamePresent, true);
+    assert.equal(checkout.marketplacePathPresent, true);
+    assert.equal(checkout.pluginIdPresent, true);
+    assert.equal(checkout.pluginNamePresent, true);
+    assert.equal(checkout.pluginPathPresent, true);
+    assert.equal(checkout.remotePluginIdPresent, true);
+    assert.equal(checkout.remoteVersionPresent, true);
+    assert.equal(checkout.namesReturned, false);
+    assert.equal(checkout.idsReturned, false);
+    assert.equal(checkout.pathsReturned, false);
+    assert.equal(checkout.rawPayloadReturned, false);
+
+    const serialized = JSON.stringify(summary);
+    for (const marker of [
+      "private-remote-plugin-id",
+      "private-share-marketplace",
+      "private-checked-out-plugin",
+      "private-checked-out-plugin-id",
+      "private-remote-version",
+      "/tmp/mock-workspace",
+      ".codex/plugins",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    if (previous == null) {
+      delete process.env.CODEX_APP_PORT_ALLOW_PLUGIN_SHARE_CHECKOUT;
+    } else {
+      process.env.CODEX_APP_PORT_ALLOW_PLUGIN_SHARE_CHECKOUT = previous;
     }
   }
 });

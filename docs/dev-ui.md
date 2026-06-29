@@ -90,6 +90,14 @@ The server binds to `127.0.0.1` by default and serves:
   matching one-time preflight token; responses and audit records return only
   target length and response-shape counts and omit plugin ids/names, paths,
   URLs, tokens, and raw payloads
+- `/api/plugin-share-checkout-preflight` and `/api/plugin-share-checkout`:
+  opt-in `plugin/share/checkout` behind
+  `CODEX_APP_PORT_ALLOW_PLUGIN_SHARE_CHECKOUT=1`, an exact
+  `CODEX_APP_PORT_PLUGIN_SHARE_CHECKOUT_ALLOWLIST` remote-plugin-id match, and
+  a matching one-time preflight token; execution sends only `{remotePluginId}`,
+  returns only allowlist/target/response-shape metadata, and omits remote
+  plugin ids, marketplace/plugin names, paths, versions, tokens, and raw
+  payloads
 - `/api/plugin-content-preflight`: local plugin skill/share-list validation
   with skill text, sharing state, plugin/marketplace text, and app-server reads
   blocked
@@ -692,6 +700,17 @@ same preflight, consumes a matching token once, calls `plugin/uninstall`, and
 reduces the result to target length and response-shape counts only behind its
 own nested response schema. It does not return or audit plugin ids/names, paths,
 URLs, tokens, or raw payloads.
+
+The plugin-share-checkout-preflight endpoint accepts only a safe remote plugin
+id and validates whether the dedicated checkout gate and exact allowlist match
+without touching app-server. The matching `/api/plugin-share-checkout` route is
+fail-closed unless `CODEX_APP_PORT_ALLOW_PLUGIN_SHARE_CHECKOUT=1` was set before
+launch, the target exactly matches
+`CODEX_APP_PORT_PLUGIN_SHARE_CHECKOUT_ALLOWLIST`, and the one-time preflight
+token matches the rebuilt intent. Execution calls `plugin/share/checkout` with
+only `{remotePluginId}` and reduces the app-server result to response-shape and
+field-presence metadata. It does not return or audit remote plugin ids,
+marketplace/plugin names, paths, versions, tokens, or raw payloads.
 
 The plugin-content-preflight endpoint accepts only audited blocked
 `plugin/skill/read` and `plugin/share/list` intent for local validation behind a

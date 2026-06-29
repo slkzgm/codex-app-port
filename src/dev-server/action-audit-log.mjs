@@ -29,6 +29,7 @@ const ACTION_AUDIT_EVENTS = new Set([
   "mcp-resource-read-recorded",
   "plugin-content-read-recorded",
   "plugin-read-recorded",
+  "plugin-share-checkout-recorded",
   "plugin-uninstall-recorded",
   "process-spawn-recorded",
   "remote-control-disable-recorded",
@@ -134,7 +135,9 @@ export function sanitizeActionAuditRecord(record, { generatedAt = null } = {}) {
       pluginContentTraffic:
         actionType === "plugin-content-read" ? Boolean(appServer.pluginContentTraffic) : false,
       pluginMutationTraffic:
-        actionType === "plugin-uninstall" ? Boolean(appServer.pluginMutationTraffic) : false,
+        actionType === "plugin-uninstall" || actionType === "plugin-share-checkout"
+          ? Boolean(appServer.pluginMutationTraffic)
+          : false,
       skillsConfigTraffic:
         actionType === "skills-config-write" ? Boolean(appServer.skillsConfigTraffic) : false,
       skillsExtraRootsTraffic:
@@ -220,6 +223,8 @@ function actionAuditEvent(actionType) {
       return "plugin-read-recorded";
     case "plugin-uninstall":
       return "plugin-uninstall-recorded";
+    case "plugin-share-checkout":
+      return "plugin-share-checkout-recorded";
     case "plugin-content-read":
       return "plugin-content-read-recorded";
     case "process-spawn":
@@ -421,6 +426,17 @@ function sanitizeAction(action, actionType, { appServer }) {
       execution: safeString(action.execution, 40) ?? "completed",
       pluginMutation: Boolean(action.pluginMutation),
       pluginUninstall: Boolean(action.pluginUninstall),
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: false,
+    };
+  }
+  if (actionType === "plugin-share-checkout") {
+    return {
+      type: "plugin-share-checkout",
+      method: "plugin/share/checkout",
+      execution: safeString(action.execution, 40) ?? "completed",
+      pluginMutation: Boolean(action.pluginMutation),
+      pluginShareCheckout: Boolean(action.pluginShareCheckout),
       appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
       modelTraffic: false,
     };
@@ -779,6 +795,18 @@ function sanitizeTarget(target, actionType) {
       targetCharCount: safeCount(target.targetCharCount),
       pluginIdReturned: false,
       namesReturned: false,
+      pathsReturned: false,
+      urlsReturned: false,
+      rawPayloadReturned: false,
+    };
+  }
+  if (actionType === "plugin-share-checkout") {
+    return {
+      targetCharCount: safeCount(target.targetCharCount),
+      remotePluginIdReturned: false,
+      marketplaceNamesReturned: false,
+      pluginNamesReturned: false,
+      idsReturned: false,
       pathsReturned: false,
       urlsReturned: false,
       rawPayloadReturned: false,
@@ -1168,6 +1196,29 @@ function sanitizeResult(result, actionType) {
       threadContentReturned: false,
     };
   }
+  if (actionType === "plugin-share-checkout") {
+    return {
+      status: safeString(result.status, 80) ?? "completed",
+      responseObject: Boolean(result.responseObject),
+      responseTopLevelKeyCount: safeCount(result.responseTopLevelKeyCount),
+      marketplaceNamePresent: Boolean(result.marketplaceNamePresent),
+      marketplacePathPresent: Boolean(result.marketplacePathPresent),
+      pluginIdPresent: Boolean(result.pluginIdPresent),
+      pluginNamePresent: Boolean(result.pluginNamePresent),
+      pluginPathPresent: Boolean(result.pluginPathPresent),
+      remotePluginIdPresent: Boolean(result.remotePluginIdPresent),
+      remoteVersionPresent: Boolean(result.remoteVersionPresent),
+      remotePluginIdReturned: false,
+      marketplaceNamesReturned: false,
+      pluginNamesReturned: false,
+      idsReturned: false,
+      pathsReturned: false,
+      urlsReturned: false,
+      rawPayloadReturned: false,
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
   if (actionType === "plugin-content-read") {
     return {
       status: safeString(result.status, 80) ?? "completed",
@@ -1467,6 +1518,7 @@ function sanitizeActionType(value) {
     "mcp-oauth-login",
     "plugin-content-read",
     "plugin-read",
+    "plugin-share-checkout",
     "plugin-uninstall",
     "process-spawn",
     "remote-control-disable",
