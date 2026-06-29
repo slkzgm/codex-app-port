@@ -282,6 +282,8 @@ test("browser POST body contracts are centralized and immutable", () => {
     "/api/thread-archive-action",
     "/api/thread-delete-preflight",
     "/api/thread-delete-action",
+    "/api/thread-fork-preflight",
+    "/api/thread-fork-action",
     "/api/thread-rename-preflight",
     "/api/thread-rename-action",
     "/api/thread-compact-preflight",
@@ -364,6 +366,15 @@ test("browser POST body contracts are centralized and immutable", () => {
     "workspace",
     "thread",
     "archived",
+    "preflightToken",
+  ]);
+  assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/thread-fork-preflight"].allowedFields], [
+    "workspace",
+    "thread",
+  ]);
+  assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/thread-fork-action"].allowedFields], [
+    "workspace",
+    "thread",
     "preflightToken",
   ]);
   assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/thread-rename-preflight"].allowedFields], [
@@ -952,6 +963,20 @@ test("browser POST response contracts block unsafe response values", () => {
   assert.equal(threadDeleteActionContract.nestedKeySchemas.result.includes("deleted"), true);
   assert.equal(threadDeleteActionContract.nestedKeySchemas.policy.includes("rawPayloadReturned"), true);
   assert.equal(threadDeleteActionContract.nestedKeySchemas.policy.includes("unexpected"), false);
+  const threadForkPreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-fork-preflight"];
+  assert.equal(threadForkPreflightContract.usesRouteSpecificNestedKeySchemas, true);
+  assert.equal(threadForkPreflightContract.nestedKeySchemas.thread.includes("sourceThreadIdSuffix"), true);
+  assert.equal(threadForkPreflightContract.nestedKeySchemas.policy.includes("threadForked"), true);
+  assert.equal(threadForkPreflightContract.nestedKeySchemas.policy.includes("unexpected"), false);
+  const threadForkActionContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-fork-action"];
+  assert.equal(threadForkActionContract.usesRouteSpecificNestedKeySchemas, true);
+  assert.equal(threadForkActionContract.nestedKeySchemas["probes.threadFork"].includes("methodsUsed"), true);
+  assert.equal(threadForkActionContract.nestedKeySchemas.target.includes("forked"), true);
+  assert.equal(threadForkActionContract.nestedKeySchemas.result.includes("excludeTurns"), true);
+  assert.equal(threadForkActionContract.nestedKeySchemas.policy.includes("requiresExplicitExecutionGate"), true);
+  assert.equal(threadForkActionContract.nestedKeySchemas.policy.includes("unexpected"), false);
   const threadRenamePreflightContract =
     BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-rename-preflight"];
   assert.equal(threadRenamePreflightContract.usesRouteSpecificNestedKeySchemas, true);
@@ -9201,6 +9226,212 @@ test("dev server deletes threads only behind explicit opt-in and preflight token
       "userAgent",
       "Sensitive delete preview",
       "delete-secret.txt",
+      "\"threadContentReturned\":true",
+      "\"fullIdsReturned\":true",
+      "\"pathsReturned\":true",
+    ]) {
+      assert.equal(auditSerialized.includes(marker), false, `audit leaked ${marker}`);
+    }
+  } finally {
+    await closeServer(server);
+    await rm(actionAuditDir, { recursive: true, force: true });
+  }
+});
+
+test("dev server forks threads only behind explicit opt-in and preflight token", async () => {
+  const calls = [];
+  const actionAuditDir = await mkdtemp(join(tmpdir(), "codex-thread-fork-action-audit-"));
+  const actionAuditLogPath = join(actionAuditDir, "actions.jsonl");
+  const { server, url } = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    threadForkEnabled: true,
+    threadForkFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-06-29T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/private-home",
+          userAgent: "mock/0.0.0",
+        },
+        probes: {
+          threadFork: {
+            method: "thread/fork",
+            sourceThreadIdSuffix: "abcd1234",
+            threadIdSuffix: "fork9999",
+            status: "idle",
+            methodsUsed: ["thread/list", "thread/fork"],
+            excludeTurns: true,
+            threadContentReturned: true,
+            fullIdsReturned: true,
+            cwdReturned: true,
+            pathsReturned: true,
+            namesReturned: true,
+            previewsReturned: true,
+            rawPayloadReturned: true,
+            privateName: "Sensitive fork name",
+            privatePath: "/tmp/default-workspace/fork-secret.txt",
+          },
+        },
+        notifications: {
+          "thread/forked": 1,
+        },
+      };
+    },
+    actionAuditLog: createActionAuditLog({
+      path: actionAuditLogPath,
+      now: () => "2026-06-29T00:00:00.000Z",
+    }),
+  });
+
+  try {
+    const getResponse = await fetch(`${url}/api/thread-fork-preflight`, {
+      headers: apiHeaders(server),
+    });
+    assert.equal(getResponse.status, 405);
+
+    const preflightResponse = await fetch(`${url}/api/thread-fork-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        thread: "abcd1234",
+      }),
+    });
+    assert.equal(preflightResponse.status, 200);
+    const preflightPayload = await preflightResponse.json();
+    const preflightSerialized = JSON.stringify(preflightPayload);
+    assert.equal(preflightPayload.action.type, "thread-fork-preflight");
+    assert.equal(preflightPayload.action.method, "thread/fork");
+    assert.equal(preflightPayload.action.threadForked, false);
+    assert.equal(preflightPayload.thread.sourceThreadIdSuffix, "abcd1234");
+    assert.equal(preflightPayload.policy.executionGateEnabled, true);
+    assert.equal(preflightPayload.policy.threadForked, false);
+    assertActionPreflight(preflightPayload, "thread-fork-preflight", "default");
+    assert.equal(preflightSerialized.includes("/tmp/default-workspace"), false);
+    assert.equal(calls.length, 0);
+
+    const response = await fetch(`${url}/api/thread-fork-action`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        thread: "abcd1234",
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, true);
+    assert.equal(payload.appServer.modelTraffic, false);
+    assert.deepEqual(payload.appServer.auditedMethods, ["thread/list", "thread/fork"]);
+    assert.equal(payload.action.type, "thread-fork");
+    assert.equal(payload.action.threadForked, true);
+    assert.equal(payload.action.threadStateMutated, true);
+    assert.equal(payload.preflight.tokenConsumed, true);
+    assert.equal(payload.thread.sourceThreadIdSuffix, "abcd1234");
+    assert.equal(payload.thread.threadIdSuffix, "fork9999");
+    assert.equal(payload.thread.excludeTurns, true);
+    assert.equal(payload.target.sourceThreadIdSuffix, "abcd1234");
+    assert.equal(payload.target.threadIdSuffix, "fork9999");
+    assert.equal(payload.target.forked, true);
+    assert.equal(payload.target.excludeTurns, true);
+    assert.equal(payload.target.fullIdsReturned, false);
+    assert.equal(payload.probes.threadFork.threadContentReturned, false);
+    assert.equal(payload.probes.threadFork.fullIdsReturned, false);
+    assert.equal(payload.probes.threadFork.cwdReturned, false);
+    assert.equal(payload.probes.threadFork.pathsReturned, false);
+    assert.equal(payload.probes.threadFork.namesReturned, false);
+    assert.equal(payload.probes.threadFork.previewsReturned, false);
+    assert.equal(payload.probes.threadFork.rawPayloadReturned, false);
+    assert.equal(payload.policy.threadForked, true);
+    assert.equal(payload.policy.threadStateMutated, true);
+    assert.equal(payload.policy.turnStarted, false);
+    assert.equal(payload.policy.auditLogPersistent, true);
+    assert.equal(payload.policy.auditLogWritableChecked, true);
+    assert.equal(payload.policy.auditLogWritten, true);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].cwd, "/tmp/default-workspace");
+    assert.equal(calls[0].threadIdSuffix, "abcd1234");
+    for (const marker of [
+      "/tmp/default-workspace",
+      "/tmp/private-home",
+      "codexHome",
+      "userAgent",
+      "Sensitive fork name",
+      "fork-secret.txt",
+      preflightPayload.preflight.token,
+      "\"threadContentReturned\":true",
+      "\"fullIdsReturned\":true",
+      "\"pathsReturned\":true",
+      "\"namesReturned\":true",
+      "\"previewsReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+
+    const gateResponse = await fetch(`${url}/api/execution-gate`, {
+      headers: apiHeaders(server),
+    });
+    assert.equal(gateResponse.status, 200);
+    assertThreadLifecycleHistory(await gateResponse.json(), {
+      count: 1,
+      type: "thread-fork",
+      method: "thread/fork",
+      sourceThreadIdSuffix: "abcd1234",
+      threadIdSuffix: "fork9999",
+      token: preflightPayload.preflight.token,
+      appServerTraffic: true,
+      modelTraffic: false,
+      threadForked: true,
+      threadStateMutated: true,
+      forked: true,
+      excludeTurns: true,
+    });
+
+    const replay = await fetch(`${url}/api/thread-fork-action`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        thread: "abcd1234",
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    assert.equal(replay.status, 409);
+
+    const auditRecords = (await readFile(actionAuditLogPath, "utf8"))
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    assert.equal(auditRecords.length, 1);
+    assert.equal(auditRecords[0].event, "thread-fork-recorded");
+    assert.equal(auditRecords[0].action.type, "thread-fork");
+    assert.equal(auditRecords[0].action.method, "thread/fork");
+    assert.equal(auditRecords[0].target.sourceThreadIdSuffix, "abcd1234");
+    assert.equal(auditRecords[0].target.threadIdSuffix, "fork9999");
+    assert.equal(auditRecords[0].target.forked, true);
+    assert.equal(auditRecords[0].target.excludeTurns, true);
+    assert.equal(auditRecords[0].result.forked, true);
+    assert.equal(auditRecords[0].result.excludeTurns, true);
+    assert.equal(auditRecords[0].result.threadContentReturned, false);
+    assert.equal(auditRecords[0].policy.rawRequestBodyReturned, false);
+    const auditSerialized = JSON.stringify(auditRecords);
+    for (const marker of [
+      preflightPayload.preflight.token,
+      "/tmp/default-workspace",
+      "/tmp/private-home",
+      "codexHome",
+      "userAgent",
+      "Sensitive fork name",
+      "fork-secret.txt",
       "\"threadContentReturned\":true",
       "\"fullIdsReturned\":true",
       "\"pathsReturned\":true",
@@ -25700,13 +25931,17 @@ function assertThreadLifecycleHistory(
     modelTraffic = false,
     threadArchiveAction = null,
     threadCreated = false,
+    threadForked = false,
     threadRenamed = false,
     threadDeleted = false,
     threadStateMutated = false,
     threadCompactionStarted = false,
     archived = null,
     deleted = null,
+    forked = null,
     renamed = null,
+    excludeTurns = null,
+    sourceThreadIdSuffix = null,
     nameCharCount = 0,
     nameLineCount = 0,
   },
@@ -25721,7 +25956,12 @@ function assertThreadLifecycleHistory(
   assert.equal(history.modelTraffic, modelTraffic);
   assert.equal(
     history.threadStateMutationsRecorded,
-    threadCreated || threadRenamed || threadStateMutated || threadDeleted || threadCompactionStarted,
+    threadCreated ||
+      threadForked ||
+      threadRenamed ||
+      threadStateMutated ||
+      threadDeleted ||
+      threadCompactionStarted,
   );
   assert.equal(history.preflightTokensReturned, false);
   assert.equal(history.promptsReturned, false);
@@ -25771,6 +26011,7 @@ function assertThreadLifecycleHistory(
   assert.equal(item.action.method, method);
   assert.equal(item.action.threadArchiveAction, threadArchiveAction);
   assert.equal(item.action.threadCreated, threadCreated);
+  assert.equal(item.action.threadForked, threadForked);
   assert.equal(item.action.threadRenamed, threadRenamed);
   assert.equal(item.action.threadDeleted, threadDeleted);
   assert.equal(item.action.threadStateMutated, threadStateMutated);
@@ -25778,16 +26019,21 @@ function assertThreadLifecycleHistory(
   assert.equal(item.action.appServerTouched, appServerTraffic);
   assert.equal(item.action.modelTraffic, modelTraffic);
   assert.equal(item.action.sendsPromptToAppServer, false);
+  assert.equal(item.target.sourceThreadIdSuffix, sourceThreadIdSuffix);
   assert.equal(item.target.threadIdSuffix, threadIdSuffix);
   assert.equal(item.target.archived, archived);
   assert.equal(item.target.deleted, deleted);
+  assert.equal(item.target.forked, forked);
   assert.equal(item.target.renamed, renamed);
+  assert.equal(item.target.excludeTurns, excludeTurns);
   assert.equal(item.target.nameCharCount, nameCharCount);
   assert.equal(item.target.nameLineCount, nameLineCount);
   assert.equal(item.target.fullIdsReturned, false);
   assert.equal(item.target.pathsReturned, false);
   assert.equal(item.result.deleted, deleted);
+  assert.equal(item.result.forked, forked);
   assert.equal(item.result.renamed, renamed);
+  assert.equal(item.result.excludeTurns, excludeTurns);
   assert.equal(item.result.nameCharCount, nameCharCount);
   assert.equal(item.result.nameLineCount, nameLineCount);
   assert.equal(item.result.threadContentReturned, false);
@@ -25801,6 +26047,7 @@ function assertThreadLifecycleHistory(
   assert.equal(item.policy.promptsReturned, false);
   assert.equal(item.policy.promptTextReturned, false);
   assert.equal(item.policy.threadContentReturned, false);
+  assert.equal(item.policy.threadForked, threadForked);
   assert.equal(item.policy.threadRenamed, threadRenamed);
   assert.equal(item.policy.threadDeleted, threadDeleted);
   assert.equal(item.policy.fullIdsReturned, false);

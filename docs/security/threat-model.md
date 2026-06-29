@@ -138,6 +138,16 @@
   names, previews, transcript content, cwd, paths, raw app-server payloads,
   raw thread payloads, or preflight tokens. The preflight and execution
   responses are constrained by route-specific nested response schemas.
+- Browser-facing thread fork must be blocked by default and opt-in only. When
+  `CODEX_APP_PORT_ALLOW_THREAD_FORK=1` is enabled, `/api/thread-fork-action`
+  must consume a matching one-time preflight token before resolving a source
+  suffix through `thread/list` and calling only `thread/fork` with
+  `excludeTurns: true`. The browser must not provide app-server `path`, `cwd`,
+  model, sandbox, instruction, permission, or runtime-root overrides. Responses
+  and action audit records must not return full ids, names, previews,
+  transcript content, cwd, paths, raw app-server payloads, raw thread payloads,
+  or preflight tokens. The preflight and execution responses are constrained by
+  route-specific nested response schemas.
 - Browser-facing thread rename must be blocked by default and opt-in only.
   When `CODEX_APP_PORT_ALLOW_THREAD_RENAME=1` is enabled,
   `/api/thread-rename-action` must consume a matching one-time preflight token

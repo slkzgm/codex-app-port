@@ -108,6 +108,7 @@ async function main() {
   await checkThreadStartApi();
   await checkThreadArchiveApi();
   await checkThreadDeleteApi();
+  await checkThreadForkApi();
   await checkThreadRenameApi();
   await checkThreadCompactApi();
   await checkTurnStartGuardApi();
@@ -877,6 +878,14 @@ async function checkStrictBrowserPostBodies() {
         {
           thread: "12345678",
           archived: false,
+          preflightToken: "preflight-1234567890abcdef",
+        },
+      ],
+      ["/api/thread-fork-preflight", { thread: "12345678" }],
+      [
+        "/api/thread-fork-action",
+        {
+          thread: "12345678",
           preflightToken: "preflight-1234567890abcdef",
         },
       ],
@@ -1769,6 +1778,36 @@ function assertBrowserPostBodyContracts(cases) {
     threadDeleteActionContract.nestedKeySchemas.policy?.includes("unexpected")
   ) {
     throw new Error("thread-delete-action response contract is missing nested schemas");
+  }
+  const threadForkPreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-fork-preflight"];
+  if (
+    threadForkPreflightContract.usesRouteSpecificNestedKeySchemas !== true ||
+    !Object.isFrozen(threadForkPreflightContract.nestedKeySchemas.policy) ||
+    !threadForkPreflightContract.nestedKeySchemas.thread?.includes(
+      "sourceThreadIdSuffix",
+    ) ||
+    !threadForkPreflightContract.nestedKeySchemas.policy?.includes("threadForked") ||
+    threadForkPreflightContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("thread-fork-preflight response contract is missing nested schemas");
+  }
+  const threadForkActionContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-fork-action"];
+  if (
+    threadForkActionContract.usesRouteSpecificNestedKeySchemas !== true ||
+    !Object.isFrozen(threadForkActionContract.nestedKeySchemas.policy) ||
+    !threadForkActionContract.nestedKeySchemas["probes.threadFork"]?.includes(
+      "methodsUsed",
+    ) ||
+    !threadForkActionContract.nestedKeySchemas.target?.includes("forked") ||
+    !threadForkActionContract.nestedKeySchemas.result?.includes("excludeTurns") ||
+    !threadForkActionContract.nestedKeySchemas.policy?.includes(
+      "requiresExplicitExecutionGate",
+    ) ||
+    threadForkActionContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("thread-fork-action response contract is missing nested schemas");
   }
   const threadRenamePreflightContract =
     BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-rename-preflight"];
@@ -4729,6 +4768,131 @@ function assertBrowserPostBodyContracts(cases) {
           readOnly: false,
           appServerTraffic: true,
           threadDeleted: true,
+          rawPayloadReturned: false,
+          preflightTokenConsumed: true,
+          requiresExplicitExecutionGate: true,
+          implemented: true,
+        },
+      },
+    ],
+    [
+      "/api/thread-fork-preflight",
+      {
+        ok: true,
+        appServer: {
+          touched: false,
+          modelTraffic: false,
+          commandTraffic: false,
+        },
+        action: {
+          type: "thread-fork-preflight",
+          method: "thread/fork",
+          execution: "blocked",
+          wouldForkThread: false,
+          threadForked: false,
+          threadStateMutated: false,
+          appServerTouched: false,
+        },
+        thread: {
+          sourceThreadIdSuffix: "thread1234",
+          fullIdsReturned: false,
+          contentReturned: false,
+          namesReturned: false,
+          previewsReturned: false,
+          pathsReturned: false,
+        },
+        preflight: {
+          token: "preflight-1234567890abcdef",
+          tokenIssued: true,
+          scope: {
+            kind: "thread-fork-preflight",
+            workspaceId: "default",
+          },
+        },
+        policy: {
+          readOnly: true,
+          appServerTraffic: false,
+          threadStateMutated: false,
+          threadForked: false,
+          executionGateEnabled: true,
+          implemented: false,
+        },
+      },
+    ],
+    [
+      "/api/thread-fork-action",
+      {
+        ok: true,
+        appServer: {
+          touched: true,
+          modelTraffic: false,
+          commandTraffic: false,
+          auditedMethods: ["thread/list", "thread/fork"],
+        },
+        action: {
+          type: "thread-fork",
+          method: "thread/fork",
+          execution: "forked",
+          wouldForkThread: true,
+          threadForked: true,
+          threadStateMutated: true,
+          appServerTouched: true,
+        },
+        thread: {
+          sourceThreadIdSuffix: "thread1234",
+          threadIdSuffix: "fork1234",
+          excludeTurns: true,
+          fullIdsReturned: false,
+          contentReturned: false,
+          namesReturned: false,
+          previewsReturned: false,
+          pathsReturned: false,
+        },
+        target: {
+          sourceThreadIdSuffix: "thread1234",
+          threadIdSuffix: "fork1234",
+          forked: true,
+          excludeTurns: true,
+          fullIdsReturned: false,
+          pathsReturned: false,
+        },
+        probes: {
+          threadFork: {
+            method: "thread/fork",
+            sourceThreadIdSuffix: "thread1234",
+            threadIdSuffix: "fork1234",
+            status: "idle",
+            methodsUsed: ["thread/list", "thread/fork"],
+            excludeTurns: true,
+            threadContentReturned: false,
+            fullIdsReturned: false,
+            cwdReturned: false,
+            pathsReturned: false,
+            namesReturned: false,
+            previewsReturned: false,
+            rawPayloadReturned: false,
+          },
+        },
+        result: {
+          status: "idle",
+          forked: true,
+          excludeTurns: true,
+          fullIdsReturned: false,
+          threadContentReturned: false,
+        },
+        preflight: {
+          tokenConsumed: true,
+          tokenReturned: false,
+          scope: {
+            kind: "thread-fork-preflight",
+            workspaceId: "default",
+          },
+        },
+        policy: {
+          readOnly: false,
+          appServerTraffic: true,
+          threadStateMutated: true,
+          threadForked: true,
           rawPayloadReturned: false,
           preflightTokenConsumed: true,
           requiresExplicitExecutionGate: true,
@@ -10795,6 +10959,173 @@ async function checkThreadDeleteApi() {
     await rm(actionAuditDir, { recursive: true, force: true });
   }
   pass("dev server thread delete consumes opt-in one-time tokens without model traffic");
+}
+
+async function checkThreadForkApi() {
+  const actionAuditDir = await mkdtemp(join(tmpdir(), "codex-verify-thread-fork-audit-"));
+  const actionAuditLogPath = join(actionAuditDir, "actions.jsonl");
+  const calls = [];
+  const server = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    threadForkEnabled: true,
+    threadForkFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-06-29T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/verify-private-home",
+          userAgent: "verify-private-agent",
+        },
+        probes: {
+          threadFork: {
+            method: "thread/fork",
+            sourceThreadIdSuffix: "abcd1234",
+            threadIdSuffix: "fork9999",
+            status: "idle",
+            methodsUsed: ["thread/list", "thread/fork"],
+            excludeTurns: true,
+            threadContentReturned: true,
+            fullIdsReturned: true,
+            cwdReturned: true,
+            pathsReturned: true,
+            namesReturned: true,
+            previewsReturned: true,
+            rawPayloadReturned: true,
+            privateName: "Sensitive fork name",
+            privatePath: "/tmp/codex-app-port-verify/fork-secret.txt",
+          },
+        },
+        notifications: {
+          "thread/forked": 1,
+        },
+      };
+    },
+    actionAuditLog: createActionAuditLog({
+      path: actionAuditLogPath,
+      now: () => "2026-06-29T00:00:00.000Z",
+    }),
+  });
+  const port = await listenWithFallback(server, { host: "127.0.0.1", port: 0 });
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  try {
+    const token = await readUiSessionToken(baseUrl);
+    const preflightResponse = await fetch(`${baseUrl}/api/thread-fork-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        thread: "abcd1234",
+      }),
+    });
+    if (!preflightResponse.ok) {
+      throw new Error(`thread fork preflight returned HTTP ${preflightResponse.status}`);
+    }
+    const preflightPayload = await preflightResponse.json();
+    if (
+      preflightPayload.action?.type !== "thread-fork-preflight" ||
+      preflightPayload.action?.method !== "thread/fork" ||
+      preflightPayload.policy?.executionGateEnabled !== true ||
+      preflightPayload.thread?.sourceThreadIdSuffix !== "abcd1234" ||
+      preflightPayload.policy?.threadForked !== false
+    ) {
+      throw new Error("thread fork preflight did not preserve the gated shape");
+    }
+    assertActionPreflight(preflightPayload, "thread-fork-preflight", "default");
+
+    const response = await fetch(`${baseUrl}/api/thread-fork-action`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        thread: "abcd1234",
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(`thread fork returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    assertSanitizedThreadFork(payload, {
+      token: preflightPayload.preflight.token,
+    });
+    if (
+      calls.length !== 1 ||
+      calls[0].cwd !== "/tmp/codex-app-port-verify" ||
+      calls[0].threadIdSuffix !== "abcd1234"
+    ) {
+      throw new Error("thread fork did not call the app-server fork probe once");
+    }
+
+    const replayResponse = await fetch(`${baseUrl}/api/thread-fork-action`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        thread: "abcd1234",
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    if (replayResponse.status !== 409) {
+      throw new Error(`thread fork replay returned HTTP ${replayResponse.status}`);
+    }
+
+    const auditRecords = (await readFile(actionAuditLogPath, "utf8"))
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    if (
+      auditRecords.length !== 1 ||
+      auditRecords[0].event !== "thread-fork-recorded" ||
+      auditRecords[0].action?.type !== "thread-fork" ||
+      auditRecords[0].target?.sourceThreadIdSuffix !== "abcd1234" ||
+      auditRecords[0].target?.threadIdSuffix !== "fork9999" ||
+      auditRecords[0].target?.forked !== true
+    ) {
+      throw new Error("thread fork audit record did not preserve sanitized metadata");
+    }
+    assertNoMarkers(JSON.stringify(auditRecords), [
+      preflightPayload.preflight.token,
+      "/tmp/codex-app-port-verify",
+      "/tmp/verify-private-home",
+      "verify-private-agent",
+      "Sensitive fork name",
+      "fork-secret.txt",
+      "\"threadContentReturned\":true",
+      "\"fullIdsReturned\":true",
+      "\"pathsReturned\":true",
+      "\"namesReturned\":true",
+      "\"previewsReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]);
+
+    const gateResponse = await fetch(`${baseUrl}/api/execution-gate`, {
+      headers: jsonHeaders(token),
+    });
+    if (!gateResponse.ok) {
+      throw new Error(`thread fork execution gate history returned HTTP ${gateResponse.status}`);
+    }
+    assertSanitizedThreadLifecycleActionHistory(await gateResponse.json(), {
+      count: 1,
+      type: "thread-fork",
+      method: "thread/fork",
+      sourceThreadIdSuffix: "abcd1234",
+      threadIdSuffix: "fork9999",
+      consumedPreflightToken: preflightPayload.preflight.token,
+      appServerTraffic: true,
+      modelTraffic: false,
+      threadForked: true,
+      threadStateMutated: true,
+      forked: true,
+      excludeTurns: true,
+    });
+  } finally {
+    await closeServer(server);
+    await rm(actionAuditDir, { recursive: true, force: true });
+  }
+  pass("dev server thread fork consumes opt-in one-time tokens without model traffic");
 }
 
 async function checkThreadRenameApi() {
@@ -20450,6 +20781,88 @@ function assertSanitizedThreadDelete(payload, { token }) {
   }
 }
 
+function assertSanitizedThreadFork(payload, { token }) {
+  const serialized = JSON.stringify(payload);
+  assertNoMarkers(serialized, [
+    token,
+    "/tmp/codex-app-port-verify",
+    "/tmp/verify-private-home",
+    "verify-private-agent",
+    "codexHome",
+    "userAgent",
+    "Sensitive fork name",
+    "fork-secret.txt",
+    "\"threadContentReturned\":true",
+    "\"fullIdsReturned\":true",
+    "\"cwdReturned\":true",
+    "\"pathsReturned\":true",
+    "\"namesReturned\":true",
+    "\"previewsReturned\":true",
+    "\"rawPayloadReturned\":true",
+  ]);
+  if (
+    !payload.ok ||
+    payload.workspace?.id !== "default" ||
+    Object.hasOwn(payload.workspace, "cwd") ||
+    payload.appServer?.touched !== true ||
+    payload.appServer?.modelTraffic !== false ||
+    payload.appServer?.commandTraffic !== false ||
+    payload.action?.type !== "thread-fork" ||
+    payload.action?.method !== "thread/fork" ||
+    payload.action?.execution !== "forked" ||
+    payload.action?.threadForked !== true ||
+    payload.action?.threadStateMutated !== true ||
+    payload.preflight?.tokenConsumed !== true ||
+    payload.preflight?.tokenReturned !== false ||
+    payload.thread?.sourceThreadIdSuffix !== "abcd1234" ||
+    payload.thread?.threadIdSuffix !== "fork9999" ||
+    payload.thread?.excludeTurns !== true ||
+    payload.target?.sourceThreadIdSuffix !== "abcd1234" ||
+    payload.target?.threadIdSuffix !== "fork9999" ||
+    payload.target?.forked !== true ||
+    payload.target?.excludeTurns !== true ||
+    payload.target?.fullIdsReturned !== false
+  ) {
+    throw new Error("thread fork payload did not expose sanitized mutation metadata");
+  }
+  const threadFork = payload.probes?.threadFork;
+  if (
+    threadFork?.method !== "thread/fork" ||
+    threadFork?.sourceThreadIdSuffix !== "abcd1234" ||
+    threadFork?.threadIdSuffix !== "fork9999" ||
+    threadFork?.status !== "idle" ||
+    threadFork?.excludeTurns !== true ||
+    threadFork?.threadContentReturned !== false ||
+    threadFork?.fullIdsReturned !== false ||
+    threadFork?.cwdReturned !== false ||
+    threadFork?.pathsReturned !== false ||
+    threadFork?.namesReturned !== false ||
+    threadFork?.previewsReturned !== false ||
+    threadFork?.rawPayloadReturned !== false
+  ) {
+    throw new Error("thread fork probe did not sanitize unsafe fields");
+  }
+  if (
+    payload.policy?.appServerTraffic !== true ||
+    payload.policy?.modelTraffic !== false ||
+    payload.policy?.commandTraffic !== false ||
+    payload.policy?.threadForked !== true ||
+    payload.policy?.threadStateMutated !== true ||
+    payload.policy?.turnStarted !== false ||
+    payload.policy?.threadContentReturned !== false ||
+    payload.policy?.fullIdsReturned !== false ||
+    payload.policy?.pathsReturned !== false ||
+    payload.policy?.namesReturned !== false ||
+    payload.policy?.rawPayloadReturned !== false ||
+    payload.policy?.requiresExplicitEnablement !== true ||
+    payload.policy?.preflightTokenConsumed !== true ||
+    payload.policy?.auditLogWritableChecked !== true ||
+    payload.policy?.implemented !== true
+  ) {
+    throw new Error("thread fork policy did not preserve opt-in safety gates");
+  }
+}
+
 function assertSanitizedThreadRename(payload, { token }) {
   const serialized = JSON.stringify(payload);
   assertNoMarkers(serialized, [
@@ -23496,13 +23909,17 @@ function assertSanitizedThreadLifecycleActionHistory(
     modelTraffic = false,
     threadArchiveAction = null,
     threadCreated = false,
+    threadForked = false,
     threadRenamed = false,
     threadDeleted = false,
     threadStateMutated = false,
     threadCompactionStarted = false,
     archived = null,
     deleted = null,
+    forked = null,
     renamed = null,
+    excludeTurns = null,
+    sourceThreadIdSuffix = null,
     nameCharCount = 0,
     nameLineCount = 0,
   },
@@ -23530,7 +23947,12 @@ function assertSanitizedThreadLifecycleActionHistory(
     }
   }
   const mutationRecorded =
-    threadCreated || threadRenamed || threadStateMutated || threadDeleted || threadCompactionStarted;
+    threadCreated ||
+    threadForked ||
+    threadRenamed ||
+    threadStateMutated ||
+    threadDeleted ||
+    threadCompactionStarted;
   if (
     payload.gate?.threadLifecycleActionHistoryVisible !== true ||
     payload.gate?.recentThreadLifecycleActionCount !== count ||
@@ -23572,6 +23994,7 @@ function assertSanitizedThreadLifecycleActionHistory(
     item?.action?.method !== method ||
     item?.action?.threadArchiveAction !== threadArchiveAction ||
     item?.action?.threadCreated !== threadCreated ||
+    item?.action?.threadForked !== threadForked ||
     item?.action?.threadRenamed !== threadRenamed ||
     item?.action?.threadDeleted !== threadDeleted ||
     item?.action?.threadStateMutated !== threadStateMutated ||
@@ -23579,16 +24002,21 @@ function assertSanitizedThreadLifecycleActionHistory(
     item?.action?.appServerTouched !== appServerTraffic ||
     item?.action?.modelTraffic !== modelTraffic ||
     item?.action?.sendsPromptToAppServer !== false ||
+    item?.target?.sourceThreadIdSuffix !== sourceThreadIdSuffix ||
     item?.target?.threadIdSuffix !== threadIdSuffix ||
     item?.target?.archived !== archived ||
     item?.target?.deleted !== deleted ||
+    item?.target?.forked !== forked ||
     item?.target?.renamed !== renamed ||
+    item?.target?.excludeTurns !== excludeTurns ||
     item?.target?.nameCharCount !== nameCharCount ||
     item?.target?.nameLineCount !== nameLineCount ||
     item?.target?.fullIdsReturned !== false ||
     item?.target?.pathsReturned !== false ||
     item?.result?.deleted !== deleted ||
+    item?.result?.forked !== forked ||
     item?.result?.renamed !== renamed ||
+    item?.result?.excludeTurns !== excludeTurns ||
     item?.result?.nameCharCount !== nameCharCount ||
     item?.result?.nameLineCount !== nameLineCount ||
     item?.result?.threadContentReturned !== false ||
@@ -23602,6 +24030,7 @@ function assertSanitizedThreadLifecycleActionHistory(
     item?.policy?.promptsReturned !== false ||
     item?.policy?.promptTextReturned !== false ||
     item?.policy?.threadContentReturned !== false ||
+    item?.policy?.threadForked !== threadForked ||
     item?.policy?.threadRenamed !== threadRenamed ||
     item?.policy?.threadDeleted !== threadDeleted ||
     item?.policy?.fullIdsReturned !== false ||

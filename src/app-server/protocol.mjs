@@ -18,6 +18,7 @@ export const APP_SERVER_METHODS = Object.freeze({
   threadUnarchive: "thread/unarchive",
   threadDelete: "thread/delete",
   threadSetName: "thread/name/set",
+  threadFork: "thread/fork",
   threadStart: "thread/start",
   threadCompactStart: "thread/compact/start",
   threadLoadedList: "thread/loaded/list",

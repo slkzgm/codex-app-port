@@ -33,6 +33,7 @@ import {
   runThreadArchiveProbe,
   runThreadDeleteProbe,
   runThreadDetailProbe,
+  runThreadForkProbe,
   runThreadRenameProbe,
   runThreadSearchProbe,
   runThreadStartProbe,
@@ -351,6 +352,12 @@ export const ACTION_PREFLIGHT_CONFIRMATION_FIELD_CONTRACTS = Object.freeze({
     "thread",
     "archived",
   ),
+  "thread-fork-preflight": bodyFields(
+    "workspace",
+    "actionType",
+    "preflightToken",
+    "thread",
+  ),
   "thread-rename-preflight": bodyFields(
     "workspace",
     "actionType",
@@ -611,6 +618,14 @@ export const BROWSER_POST_BODY_CONTRACTS = Object.freeze({
     appServerTraffic: false,
   }),
   "/api/thread-delete-action": bodyContract(["workspace", "thread", "archived", "preflightToken"], {
+    kind: "mutation",
+    requiresPreflightToken: true,
+  }),
+  "/api/thread-fork-preflight": bodyContract(["workspace", "thread"], {
+    kind: "preflight",
+    appServerTraffic: false,
+  }),
+  "/api/thread-fork-action": bodyContract(["workspace", "thread", "preflightToken"], {
     kind: "mutation",
     requiresPreflightToken: true,
   }),
@@ -2691,6 +2706,156 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
       "modelTraffic",
       "commandTraffic",
       "threadDeleted",
+      "turnStarted",
+      "promptTextReturned",
+      "threadContentReturned",
+      "fullIdsReturned",
+      "pathsReturned",
+      "namesReturned",
+      "previewsReturned",
+      "rawPayloadReturned",
+      "requiresExplicitEnablement",
+      "executionRouteImplemented",
+      "executionGateEnabled",
+      "preflightTokenConsumed",
+      "auditLogPersistent",
+      "auditLogWritableChecked",
+      "auditLogWritten",
+      "auditLogPathReturned",
+      "browserMethodCallsAccepted",
+      "implemented",
+      "requiresExplicitExecutionGate",
+    ],
+  }),
+  "/api/thread-fork-preflight": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    appServer: ["touched", "modelTraffic", "commandTraffic"],
+    action: [
+      "type",
+      "method",
+      "execution",
+      "wouldForkThread",
+      "threadForked",
+      "threadStateMutated",
+      "appServerTouched",
+      "reason",
+    ],
+    thread: [
+      "sourceThreadIdSuffix",
+      "fullIdsReturned",
+      "contentReturned",
+      "namesReturned",
+      "previewsReturned",
+      "pathsReturned",
+    ],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "modelTraffic",
+      "commandTraffic",
+      "threadStateMutated",
+      "threadForked",
+      "turnStarted",
+      "promptTextReturned",
+      "threadContentReturned",
+      "fullIdsReturned",
+      "pathsReturned",
+      "namesReturned",
+      "previewsReturned",
+      "rawPayloadReturned",
+      "requiresExplicitEnablement",
+      "executionRouteImplemented",
+      "executionGateEnabled",
+      "browserMethodCallsAccepted",
+      "implemented",
+    ],
+    preflight: [
+      "token",
+      "tokenIssued",
+      "issuedAt",
+      "expiresAt",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseRequiredForMutation",
+      "consumed",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+  }),
+  "/api/thread-fork-action": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    initialize: ["platformFamily", "platformOs"],
+    appServer: ["touched", "modelTraffic", "commandTraffic", "auditedMethods"],
+    action: [
+      "type",
+      "method",
+      "execution",
+      "wouldForkThread",
+      "threadForked",
+      "threadStateMutated",
+      "appServerTouched",
+      "modelTraffic",
+      "reason",
+    ],
+    thread: [
+      "sourceThreadIdSuffix",
+      "threadIdSuffix",
+      "excludeTurns",
+      "fullIdsReturned",
+      "contentReturned",
+      "namesReturned",
+      "previewsReturned",
+      "pathsReturned",
+    ],
+    target: [
+      "sourceThreadIdSuffix",
+      "threadIdSuffix",
+      "forked",
+      "excludeTurns",
+      "fullIdsReturned",
+      "pathsReturned",
+    ],
+    probes: ["threadFork"],
+    "probes.threadFork": [
+      "method",
+      "sourceThreadIdSuffix",
+      "threadIdSuffix",
+      "status",
+      "methodsUsed",
+      "excludeTurns",
+      "threadContentReturned",
+      "fullIdsReturned",
+      "cwdReturned",
+      "pathsReturned",
+      "namesReturned",
+      "previewsReturned",
+      "rawPayloadReturned",
+    ],
+    result: [
+      "status",
+      "forked",
+      "excludeTurns",
+      "fullIdsReturned",
+      "threadContentReturned",
+    ],
+    preflight: [
+      "tokenConsumed",
+      "tokenReturned",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseEnforced",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "modelTraffic",
+      "commandTraffic",
+      "threadStateMutated",
+      "threadForked",
       "turnStarted",
       "promptTextReturned",
       "threadContentReturned",
@@ -7174,6 +7339,16 @@ const BROWSER_POST_RESPONSE_ROUTE_TOP_LEVEL_KEYS = Object.freeze({
     "thread",
     "result",
   ),
+  "/api/thread-fork-preflight": routeResponseTopLevelKeys(
+    ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
+    "thread",
+  ),
+  "/api/thread-fork-action": routeResponseTopLevelKeys(
+    ...RESPONSE_APP_SERVER_MUTATION_TOP_LEVEL_KEYS,
+    "target",
+    "thread",
+    "result",
+  ),
   "/api/thread-rename-preflight": routeResponseTopLevelKeys(
     ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
     "thread",
@@ -7689,6 +7864,7 @@ export function createDevServer({
   threadStartFn = runThreadStartProbe,
   threadArchiveFn = runThreadArchiveProbe,
   threadDeleteFn = runThreadDeleteProbe,
+  threadForkFn = runThreadForkProbe,
   threadRenameFn = runThreadRenameProbe,
   accountLoginCancelFn = runAccountLoginCancelProbe,
   accountLoginStartFn = runAccountLoginStartProbe,
@@ -7728,6 +7904,7 @@ export function createDevServer({
   threadStartEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_START === "1",
   threadArchiveEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_ARCHIVE === "1",
   threadDeleteEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_DELETE === "1",
+  threadForkEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_FORK === "1",
   threadRenameEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_RENAME === "1",
   threadCompactEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_COMPACT === "1",
   accountLoginCancelEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN_CANCEL === "1",
@@ -7835,6 +8012,7 @@ export function createDevServer({
       threadStartFn,
       threadArchiveFn,
       threadDeleteFn,
+      threadForkFn,
       threadRenameFn,
       accountLoginCancelFn,
       accountLoginStartFn,
@@ -7873,6 +8051,7 @@ export function createDevServer({
       threadStartEnabled,
       threadArchiveEnabled,
       threadDeleteEnabled,
+      threadForkEnabled,
       threadRenameEnabled,
       threadCompactEnabled,
       accountLoginCancelEnabled,
@@ -8292,6 +8471,94 @@ export async function handleRequest(request, response, options) {
       sendJson(response, error.statusCode ?? 400, {
         ok: false,
         error: cleanDisplayText(error.message, 200) ?? "Invalid thread delete request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/thread-fork-preflight") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, ["workspace", "thread"]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const payload = buildThreadForkPreflight(body, {
+        workspace,
+        threadForkEnabled: options.threadForkEnabled,
+      });
+      sendJson(response, 200, attachActionPreflight(payload, { body, workspace, options }));
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid thread fork preflight request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/thread-fork-action") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, ["workspace", "thread", "preflightToken"]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const preflightBody = stripActionPreflightControlFields(body);
+      const preflightPayload = buildThreadForkPreflight(preflightBody, {
+        workspace,
+        threadForkEnabled: options.threadForkEnabled,
+      });
+      if (!preflightPayload.policy.executionGateEnabled) {
+        sendJson(response, 403, buildThreadForkBlocked(preflightPayload));
+        return;
+      }
+      const consumedPreflight = options.preflightRegistry.consume({
+        token: validateActionPreflightToken(body.preflightToken),
+        kind: preflightPayload.action.type,
+        workspace,
+        intent: actionPreflightIntent(preflightBody, preflightPayload),
+      });
+      const auditLogWritableChecked = ensureActionAuditLogWritable(options.actionAuditLog);
+      const payload = await options.threadForkFn({
+        codexBin: options.codexBin,
+        cwd: workspace.cwd,
+        timeoutMs: options.timeoutMs,
+        threadIdSuffix: preflightPayload.thread.sourceThreadIdSuffix,
+      });
+      const sanitized = sanitizeThreadForkPayload(payload, {
+        workspace,
+        consumedPreflight,
+        actionAuditLog: options.actionAuditLog,
+        auditLogWritableChecked,
+      });
+      sanitized.policy.auditLogWritten = writeActionAuditLog(options.actionAuditLog, sanitized);
+      options.threadLifecycleActionLedger?.record(sanitized);
+      sendJson(response, 200, sanitized);
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid thread fork request",
       });
     }
     return;
@@ -12286,6 +12553,11 @@ async function buildConfirmableActionPreflightPayload(actionType, body, { worksp
         workspace,
         threadDeleteEnabled: options.threadDeleteEnabled,
       });
+    case "thread-fork-preflight":
+      return buildThreadForkPreflight(body, {
+        workspace,
+        threadForkEnabled: options.threadForkEnabled,
+      });
     case "thread-rename-preflight":
       return buildThreadRenamePreflight(body, {
         workspace,
@@ -12613,6 +12885,8 @@ function actionAuditEvent(record) {
       return "thread-compact-recorded";
     case "thread-delete":
       return "thread-delete-recorded";
+    case "thread-fork":
+      return "thread-fork-recorded";
     case "thread-rename":
       return "thread-rename-recorded";
     case "thread-start":
@@ -22291,6 +22565,178 @@ export function sanitizeThreadDeletePayload(
   };
 }
 
+export function sanitizeThreadForkPayload(
+  payload,
+  { workspace = null, consumedPreflight, actionAuditLog = null, auditLogWritableChecked = false } = {},
+) {
+  const threadFork = sanitizeThreadForkProbe(payload?.probes?.threadFork);
+  return {
+    ok: Boolean(payload?.ok),
+    generatedAt: payload?.generatedAt ?? new Date().toISOString(),
+    transport: cleanDisplayText(payload?.transport, 80),
+    protocol: cleanDisplayText(payload?.protocol, 80),
+    initialize: sanitizeInitialize(payload?.initialize),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: true,
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: threadFork.methodsUsed,
+    },
+    action: {
+      type: "thread-fork",
+      method: "thread/fork",
+      execution: "forked",
+      wouldForkThread: true,
+      threadForked: true,
+      threadStateMutated: true,
+      appServerTouched: true,
+      modelTraffic: false,
+    },
+    preflight: buildConsumedPreflightSummary(consumedPreflight),
+    thread: {
+      sourceThreadIdSuffix: threadFork.sourceThreadIdSuffix,
+      threadIdSuffix: threadFork.threadIdSuffix,
+      excludeTurns: true,
+      fullIdsReturned: false,
+      contentReturned: false,
+      namesReturned: false,
+      previewsReturned: false,
+      pathsReturned: false,
+    },
+    target: {
+      sourceThreadIdSuffix: threadFork.sourceThreadIdSuffix,
+      threadIdSuffix: threadFork.threadIdSuffix,
+      forked: true,
+      excludeTurns: true,
+      fullIdsReturned: false,
+      pathsReturned: false,
+    },
+    probes: {
+      threadFork,
+    },
+    result: {
+      status: threadFork.status,
+      forked: true,
+      excludeTurns: true,
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    },
+    policy: {
+      readOnly: false,
+      appServerTraffic: true,
+      modelTraffic: false,
+      commandTraffic: false,
+      threadStateMutated: true,
+      threadForked: true,
+      turnStarted: false,
+      promptTextReturned: false,
+      threadContentReturned: false,
+      fullIdsReturned: false,
+      pathsReturned: false,
+      namesReturned: false,
+      previewsReturned: false,
+      rawPayloadReturned: false,
+      requiresExplicitEnablement: true,
+      executionRouteImplemented: true,
+      executionGateEnabled: true,
+      preflightTokenConsumed: true,
+      auditLogPersistent: Boolean(actionAuditLog?.persistent),
+      auditLogWritableChecked: Boolean(auditLogWritableChecked),
+      auditLogWritten: false,
+      auditLogPathReturned: false,
+      browserMethodCallsAccepted: true,
+      implemented: true,
+      requiresExplicitExecutionGate: true,
+    },
+    notifications: sanitizeNotificationCounts(payload?.notifications),
+  };
+}
+
+export function buildThreadForkPreflight(
+  body,
+  { workspace, threadForkEnabled = false } = {},
+) {
+  const sourceThreadIdSuffix = validateThreadSuffix(body?.thread);
+  const enabled = Boolean(threadForkEnabled);
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: publicWorkspaces([workspace])[0],
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+    },
+    action: {
+      type: "thread-fork-preflight",
+      method: "thread/fork",
+      execution: "blocked",
+      wouldForkThread: false,
+      threadForked: false,
+      threadStateMutated: false,
+      appServerTouched: false,
+      reason: enabled ? "thread-fork-requires-confirmation" : "thread-fork-requires-opt-in",
+    },
+    thread: {
+      sourceThreadIdSuffix,
+      fullIdsReturned: false,
+      contentReturned: false,
+      namesReturned: false,
+      previewsReturned: false,
+      pathsReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      threadStateMutated: false,
+      threadForked: false,
+      turnStarted: false,
+      promptTextReturned: false,
+      threadContentReturned: false,
+      fullIdsReturned: false,
+      pathsReturned: false,
+      namesReturned: false,
+      previewsReturned: false,
+      rawPayloadReturned: false,
+      requiresExplicitEnablement: true,
+      executionRouteImplemented: true,
+      executionGateEnabled: enabled,
+      browserMethodCallsAccepted: false,
+      implemented: false,
+    },
+  };
+}
+
+export function buildThreadForkBlocked(preflightPayload) {
+  return {
+    ...preflightPayload,
+    ok: false,
+    error:
+      "Thread fork is disabled. Set CODEX_APP_PORT_ALLOW_THREAD_FORK=1 before starting the dev server.",
+    action: {
+      ...preflightPayload.action,
+      execution: "blocked",
+      wouldForkThread: false,
+      threadForked: false,
+      threadStateMutated: false,
+      appServerTouched: false,
+      reason: "thread-fork-disabled",
+    },
+    policy: {
+      ...preflightPayload.policy,
+      appServerTraffic: false,
+      threadStateMutated: false,
+      threadForked: false,
+      executionGateEnabled: false,
+      browserMethodCallsAccepted: false,
+      implemented: false,
+    },
+  };
+}
+
 export function sanitizeThreadRenamePayload(
   payload,
   {
@@ -22643,6 +23089,7 @@ function sanitizeThreadLifecycleActionHistory(records) {
     threadStateMutationsRecorded: items.some(
       (item) =>
         item.action?.threadCreated ||
+        item.action?.threadForked ||
         item.action?.threadStateMutated ||
         item.action?.threadDeleted ||
         item.action?.threadCompactionStarted,
@@ -22685,6 +23132,7 @@ function sanitizeThreadLifecycleActionHistoryRecord(record, { recordedAt = null 
         action.threadArchiveAction,
       ),
       threadCreated: Boolean(action.threadCreated),
+      threadForked: Boolean(action.threadForked),
       threadRenamed: Boolean(action.threadRenamed),
       threadDeleted: Boolean(action.threadDeleted),
       threadStateMutated: Boolean(action.threadStateMutated || threadCompactionStarted),
@@ -22694,10 +23142,13 @@ function sanitizeThreadLifecycleActionHistoryRecord(record, { recordedAt = null 
       sendsPromptToAppServer: false,
     },
     target: {
+      sourceThreadIdSuffix: cleanDisplayText(target.sourceThreadIdSuffix, 16),
       threadIdSuffix: cleanDisplayText(target.threadIdSuffix, 16),
       archived: typeof target.archived === "boolean" ? target.archived : null,
       deleted: typeof target.deleted === "boolean" ? target.deleted : null,
+      forked: typeof target.forked === "boolean" ? target.forked : null,
       renamed: typeof target.renamed === "boolean" ? target.renamed : null,
+      excludeTurns: typeof target.excludeTurns === "boolean" ? target.excludeTurns : null,
       nameCharCount: safeCount(target.nameCharCount),
       nameLineCount: safeCount(target.nameLineCount),
       sourceArchived: typeof target.sourceArchived === "boolean" ? target.sourceArchived : null,
@@ -22708,7 +23159,9 @@ function sanitizeThreadLifecycleActionHistoryRecord(record, { recordedAt = null 
       status: cleanDisplayText(result.status, 80),
       archived: typeof result.archived === "boolean" ? result.archived : null,
       deleted: typeof result.deleted === "boolean" ? result.deleted : null,
+      forked: typeof result.forked === "boolean" ? result.forked : null,
       renamed: typeof result.renamed === "boolean" ? result.renamed : null,
+      excludeTurns: typeof result.excludeTurns === "boolean" ? result.excludeTurns : null,
       nameCharCount: safeCount(result.nameCharCount),
       nameLineCount: safeCount(result.nameLineCount),
       loadedSessionCount: safeCount(result.loadedSessionCount),
@@ -22729,6 +23182,7 @@ function sanitizeThreadLifecycleActionHistoryRecord(record, { recordedAt = null 
       appServerTraffic: Boolean(policy.appServerTraffic),
       modelTraffic: Boolean(policy.modelTraffic),
       threadCreated: Boolean(policy.threadCreated),
+      threadForked: Boolean(policy.threadForked),
       threadRenamed: Boolean(policy.threadRenamed),
       threadDeleted: Boolean(policy.threadDeleted),
       threadStateMutated: Boolean(policy.threadStateMutated),
@@ -22758,6 +23212,7 @@ function sanitizeThreadLifecycleActionType(type) {
     "thread-start",
     "thread-archive",
     "thread-delete",
+    "thread-fork",
     "thread-rename",
     "thread-compact",
   ].includes(type)
@@ -22772,6 +23227,7 @@ function sanitizeThreadLifecycleActionMethod(method, type) {
       "thread/archive",
       "thread/unarchive",
       "thread/delete",
+      "thread/fork",
       "thread/name/set",
       "thread/compact/start",
     ].includes(method)
@@ -22785,6 +23241,8 @@ function sanitizeThreadLifecycleActionMethod(method, type) {
       return "thread/archive";
     case "thread-delete":
       return "thread/delete";
+    case "thread-fork":
+      return "thread/fork";
     case "thread-rename":
       return "thread/name/set";
     case "thread-compact":
@@ -29299,6 +29757,27 @@ function sanitizeThreadDeleteProbe(threadDelete) {
     sourceArchived: Boolean(threadDelete?.sourceArchived),
     status: cleanDisplayText(threadDelete?.status, 80) ?? "deleted",
     methodsUsed: methodsUsed.length > 0 ? methodsUsed : ["thread/list", "thread/delete"],
+    threadContentReturned: false,
+    fullIdsReturned: false,
+    cwdReturned: false,
+    pathsReturned: false,
+    namesReturned: false,
+    previewsReturned: false,
+    rawPayloadReturned: false,
+  };
+}
+
+function sanitizeThreadForkProbe(threadFork) {
+  const methodsUsed = sanitizeMethodList(threadFork?.methodsUsed).filter((method) =>
+    ["thread/list", "thread/fork"].includes(method),
+  );
+  return {
+    method: "thread/fork",
+    sourceThreadIdSuffix: cleanDisplayText(threadFork?.sourceThreadIdSuffix, 16),
+    threadIdSuffix: cleanDisplayText(threadFork?.threadIdSuffix, 16),
+    status: cleanDisplayText(threadFork?.status, 80) ?? "forked",
+    methodsUsed: methodsUsed.length > 0 ? methodsUsed : ["thread/list", "thread/fork"],
+    excludeTurns: threadFork?.excludeTurns !== false,
     threadContentReturned: false,
     fullIdsReturned: false,
     cwdReturned: false,

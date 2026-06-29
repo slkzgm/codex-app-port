@@ -40,6 +40,7 @@ const ACTION_AUDIT_EVENTS = new Set([
   "thread-archive-recorded",
   "thread-compact-recorded",
   "thread-delete-recorded",
+  "thread-fork-recorded",
   "thread-rename-recorded",
   "thread-start-recorded",
 ]);
@@ -228,6 +229,8 @@ function actionAuditEvent(actionType) {
       return "thread-compact-recorded";
     case "thread-delete":
       return "thread-delete-recorded";
+    case "thread-fork":
+      return "thread-fork-recorded";
     case "thread-rename":
       return "thread-rename-recorded";
     case "thread-start":
@@ -507,6 +510,17 @@ function sanitizeAction(action, actionType, { appServer }) {
       modelTraffic: false,
     };
   }
+  if (actionType === "thread-fork") {
+    return {
+      type: "thread-fork",
+      method: "thread/fork",
+      execution: safeString(action.execution, 40) ?? "forked",
+      threadForked: Boolean(action.threadForked),
+      threadStateMutated: Boolean(action.threadStateMutated),
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: false,
+    };
+  }
   if (actionType === "thread-rename") {
     return {
       type: "thread-rename",
@@ -775,6 +789,16 @@ function sanitizeTarget(target, actionType) {
       threadIdSuffix: safeString(target.threadIdSuffix, 16),
       deleted: Boolean(target.deleted),
       sourceArchived: Boolean(target.sourceArchived),
+      fullIdsReturned: false,
+      pathsReturned: false,
+    };
+  }
+  if (actionType === "thread-fork") {
+    return {
+      sourceThreadIdSuffix: safeString(target.sourceThreadIdSuffix, 16),
+      threadIdSuffix: safeString(target.threadIdSuffix, 16),
+      forked: Boolean(target.forked),
+      excludeTurns: target.excludeTurns !== false,
       fullIdsReturned: false,
       pathsReturned: false,
     };
@@ -1145,6 +1169,15 @@ function sanitizeResult(result, actionType) {
       threadContentReturned: false,
     };
   }
+  if (actionType === "thread-fork") {
+    return {
+      status: safeString(result.status, 80) ?? "forked",
+      forked: Boolean(result.forked),
+      excludeTurns: result.excludeTurns !== false,
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
   if (actionType === "thread-rename") {
     return {
       status: safeString(result.status, 80) ?? "renamed",
@@ -1290,6 +1323,7 @@ function sanitizeActionType(value) {
     "thread-archive",
     "thread-compact",
     "thread-delete",
+    "thread-fork",
     "thread-rename",
     "thread-start",
   ].includes(value)

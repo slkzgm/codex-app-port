@@ -23,6 +23,7 @@ import {
   runThreadChangesProbe,
   runThreadDeleteProbe,
   runThreadDetailProbe,
+  runThreadForkProbe,
   runThreadRenameProbe,
   runThreadSearchProbe,
   runThreadStartProbe,
@@ -1177,6 +1178,57 @@ test("runThreadDeleteProbe deletes by suffix without returning ids, paths, or co
       delete process.env.CODEX_APP_PORT_ALLOW_THREAD_DELETE;
     } else {
       process.env.CODEX_APP_PORT_ALLOW_THREAD_DELETE = previous;
+    }
+  }
+});
+
+test("runThreadForkProbe forks by suffix without returning ids, paths, names, or content", async () => {
+  const previous = process.env.CODEX_APP_PORT_ALLOW_THREAD_FORK;
+  process.env.CODEX_APP_PORT_ALLOW_THREAD_FORK = "1";
+  try {
+    const summary = await runThreadForkProbe({
+      codexBin: process.execPath,
+      codexArgs: [mockServer.pathname],
+      cwd: process.cwd(),
+      timeoutMs: 1_000,
+      threadIdSuffix: "00000001",
+    });
+
+    assert.equal(summary.ok, true);
+    const fork = summary.probes.threadFork;
+    assert.equal(fork.method, "thread/fork");
+    assert.equal(fork.sourceThreadIdSuffix, "00000001");
+    assert.equal(fork.threadIdSuffix, "abcd9999");
+    assert.equal(fork.status, "idle");
+    assert.deepEqual(fork.methodsUsed, ["thread/list", "thread/fork"]);
+    assert.equal(fork.excludeTurns, true);
+    assert.equal(fork.threadContentReturned, false);
+    assert.equal(fork.fullIdsReturned, false);
+    assert.equal(fork.cwdReturned, false);
+    assert.equal(fork.pathsReturned, false);
+    assert.equal(fork.namesReturned, false);
+    assert.equal(fork.previewsReturned, false);
+    assert.equal(fork.rawPayloadReturned, false);
+
+    const serialized = JSON.stringify(summary);
+    for (const marker of [
+      "thread-00000001",
+      "thread-fork-private-abcd9999",
+      "Sensitive fork",
+      "fork-secret",
+      "turn-private-fork",
+      "/tmp/mock-workspace",
+      "mock-codex-home",
+      "userAgent",
+      "codexHome",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    if (previous === undefined) {
+      delete process.env.CODEX_APP_PORT_ALLOW_THREAD_FORK;
+    } else {
+      process.env.CODEX_APP_PORT_ALLOW_THREAD_FORK = previous;
     }
   }
 });

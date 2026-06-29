@@ -2729,6 +2729,102 @@ export async function runThreadDeleteProbe({
   }
 }
 
+export async function runThreadForkProbe({
+  codexBin = process.env.CODEX_BIN || "codex",
+  codexArgs = ["app-server", "--listen", "stdio://"],
+  cwd = process.cwd(),
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+  threadIdSuffix,
+  threadScanLimit = DEFAULT_THREAD_DETAIL_SCAN_LIMIT,
+  onNotification = null,
+} = {}) {
+  if (process.env.CODEX_APP_PORT_ALLOW_THREAD_FORK !== "1") {
+    throw new Error(
+      "thread/fork requires CODEX_APP_PORT_ALLOW_THREAD_FORK=1 because it creates local thread metadata",
+    );
+  }
+  if (!isValidSuffix(threadIdSuffix)) {
+    throwRequestError("Thread selector must be an 8-character id suffix", 400);
+  }
+
+  const notifications = [];
+  const client = new JsonlRpcClient({
+    command: codexBin,
+    args: codexArgs,
+    cwd,
+    timeoutMs,
+    onNotification(notification) {
+      notifications.push({
+        method: notification.method,
+      });
+      onNotification?.(notification);
+    },
+  });
+
+  await client.start();
+
+  try {
+    const initialize = normalizeInitializeResponse(
+      await client.request(APP_SERVER_METHODS.initialize, {
+        clientInfo: {
+          name: "codex_app_port",
+          title: "Codex App Port",
+          version: "0.1.0",
+        },
+        capabilities: {
+          experimentalApi: false,
+          requestAttestation: false,
+        },
+      }),
+    );
+
+    client.notify(APP_SERVER_METHODS.initialized);
+
+    const sourceThread = await selectThreadBySuffixFromLists(client, {
+      threadIdSuffix,
+      threadScanLimit,
+    });
+    const fork = normalizeThreadStartResponse(
+      await client.request(
+        APP_SERVER_METHODS.threadFork,
+        {
+          threadId: sourceThread.id,
+          excludeTurns: true,
+        },
+        { timeoutMs },
+      ),
+    );
+
+    return {
+      ok: true,
+      generatedAt: new Date().toISOString(),
+      transport: "stdio-jsonl",
+      protocol: "json-rpc-2.0-without-jsonrpc-field",
+      initialize: summarizeInitialize(initialize),
+      probes: {
+        threadFork: {
+          method: APP_SERVER_METHODS.threadFork,
+          sourceThreadIdSuffix: suffix(sourceThread.id),
+          threadIdSuffix: suffix(fork.thread.id),
+          status: statusLabel(fork.thread.status),
+          methodsUsed: [APP_SERVER_METHODS.threadList, APP_SERVER_METHODS.threadFork],
+          excludeTurns: true,
+          threadContentReturned: false,
+          fullIdsReturned: false,
+          cwdReturned: false,
+          pathsReturned: false,
+          namesReturned: false,
+          previewsReturned: false,
+          rawPayloadReturned: false,
+        },
+      },
+      notifications: notificationCounts(notifications),
+    };
+  } finally {
+    await client.close();
+  }
+}
+
 export async function runThreadRenameProbe({
   codexBin = process.env.CODEX_BIN || "codex",
   codexArgs = ["app-server", "--listen", "stdio://"],

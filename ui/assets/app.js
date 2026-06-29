@@ -234,6 +234,9 @@ const elements = {
   threadArchivePreflightButton: document.querySelector("#thread-archive-preflight-button"),
   threadArchiveButton: document.querySelector("#thread-archive-button"),
   threadArchiveStatus: document.querySelector("#thread-archive-status"),
+  threadForkPreflightButton: document.querySelector("#thread-fork-preflight-button"),
+  threadForkButton: document.querySelector("#thread-fork-button"),
+  threadForkStatus: document.querySelector("#thread-fork-status"),
   threadRenameInput: document.querySelector("#thread-rename-input"),
   threadRenamePreflightButton: document.querySelector("#thread-rename-preflight-button"),
   threadRenameButton: document.querySelector("#thread-rename-button"),
@@ -548,6 +551,7 @@ let lastThreadShellCommandPreflight = null;
 let lastTerminalControlPreflight = null;
 let lastThreadStartPreflight = null;
 let lastThreadArchivePreflight = null;
+let lastThreadForkPreflight = null;
 let lastThreadRenamePreflight = null;
 let lastThreadDeletePreflight = null;
 let lastThreadCompactPreflight = null;
@@ -600,6 +604,7 @@ elements.workspaceSelect.addEventListener("change", () => {
   lastTerminalControlPreflight = null;
   lastThreadStartPreflight = null;
   lastThreadArchivePreflight = null;
+  lastThreadForkPreflight = null;
   lastThreadRenamePreflight = null;
   lastThreadDeletePreflight = null;
   lastThreadCompactPreflight = null;
@@ -770,6 +775,14 @@ elements.threadArchivePreflightButton.addEventListener("click", () => {
 
 elements.threadArchiveButton.addEventListener("click", () => {
   runThreadArchiveAction();
+});
+
+elements.threadForkPreflightButton.addEventListener("click", () => {
+  runThreadForkPreflight();
+});
+
+elements.threadForkButton.addEventListener("click", () => {
+  runThreadForkAction();
 });
 
 elements.threadRenameInput.addEventListener("input", () => {
@@ -1273,6 +1286,14 @@ function threadArchivePreflightEndpoint() {
 
 function threadArchiveEndpoint() {
   return "/api/thread-archive-action";
+}
+
+function threadForkPreflightEndpoint() {
+  return "/api/thread-fork-preflight";
+}
+
+function threadForkEndpoint() {
+  return "/api/thread-fork-action";
 }
 
 function threadRenamePreflightEndpoint() {
@@ -4199,6 +4220,7 @@ async function loadThreadDetail(threadIdSuffix, { archived = false } = {}) {
   lastMcpToolPreflight = null;
   lastThreadShellCommandPreflight = null;
   lastThreadArchivePreflight = null;
+  lastThreadForkPreflight = null;
   lastThreadRenamePreflight = null;
   lastThreadDeletePreflight = null;
   lastThreadCompactPreflight = null;
@@ -4209,6 +4231,7 @@ async function loadThreadDetail(threadIdSuffix, { archived = false } = {}) {
   elements.mcpToolRunButton.disabled = true;
   elements.threadShellCommandButton.disabled = true;
   updateThreadArchiveState();
+  updateThreadForkState();
   updateThreadRenameState();
   updateThreadDeleteState();
   updateThreadCompactState();
@@ -4469,11 +4492,96 @@ async function runThreadArchiveAction() {
     renderError(error);
   } finally {
     lastThreadArchivePreflight = null;
+    lastThreadForkPreflight = null;
     lastThreadRenamePreflight = null;
     lastThreadDeletePreflight = null;
     updateThreadArchiveState();
+    updateThreadForkState();
     updateThreadRenameState();
     updateThreadDeleteState();
+  }
+}
+
+async function runThreadForkPreflight() {
+  if (!selectedThreadIdSuffix) {
+    elements.threadForkStatus.textContent = "Select a thread first";
+    return;
+  }
+
+  setThreadForkLoading(true);
+  lastThreadForkPreflight = null;
+  elements.threadForkButton.disabled = true;
+  hideError();
+
+  const body = {
+    workspace: selectedWorkspaceId,
+    thread: selectedThreadIdSuffix,
+  };
+
+  try {
+    const response = await fetch(threadForkPreflightEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify(body),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    lastThreadForkPreflight = {
+      body,
+      token: payload.preflight?.token ?? null,
+      enabled: payload.policy?.executionGateEnabled === true,
+    };
+    renderThreadForkPreflight(payload);
+  } catch (error) {
+    elements.threadForkStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    setThreadForkLoading(false);
+  }
+}
+
+async function runThreadForkAction() {
+  if (!lastThreadForkPreflight?.token || !lastThreadForkPreflight?.body) {
+    elements.threadForkStatus.textContent = "Run fork check first";
+    return;
+  }
+
+  elements.threadForkButton.disabled = true;
+  elements.threadForkStatus.textContent = "Forking";
+  hideError();
+
+  try {
+    const response = await fetch(threadForkEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify({
+        ...lastThreadForkPreflight.body,
+        preflightToken: lastThreadForkPreflight.token,
+      }),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderThreadForkAction(payload);
+    const threadIdSuffix = payload.target?.threadIdSuffix;
+    if (threadIdSuffix) {
+      pendingRoute = {
+        workspaceId: selectedWorkspaceId,
+        threadIdSuffix,
+      };
+    }
+    await refreshStatus({ manageLoading: false });
+  } catch (error) {
+    elements.threadForkStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    lastThreadForkPreflight = null;
+    updateThreadForkState();
   }
 }
 
@@ -4556,6 +4664,7 @@ async function runThreadRenameAction() {
     renderError(error);
   } finally {
     updateThreadRenameState();
+    updateThreadForkState();
   }
 }
 
@@ -4636,7 +4745,9 @@ async function runThreadDeleteAction() {
     renderError(error);
   } finally {
     lastThreadDeletePreflight = null;
+    lastThreadForkPreflight = null;
     lastThreadRenamePreflight = null;
+    updateThreadForkState();
     updateThreadRenameState();
     updateThreadDeleteState();
   }
@@ -5294,6 +5405,20 @@ function renderThreadArchiveAction(payload) {
   elements.threadArchiveStatus.textContent = archived ? "Archived" : "Unarchived";
 }
 
+function renderThreadForkPreflight(payload) {
+  elements.threadForkStatus.textContent = payload.policy?.executionGateEnabled
+    ? "Fork ready"
+    : "Fork blocked";
+  elements.threadForkButton.disabled =
+    !lastThreadForkPreflight?.token || lastThreadForkPreflight.enabled !== true;
+}
+
+function renderThreadForkAction(payload) {
+  const suffix = payload.target?.threadIdSuffix;
+  elements.threadForkStatus.textContent =
+    payload.target?.forked === true && suffix ? `Forked ${suffix}` : "Forked";
+}
+
 function renderThreadRenamePreflight(payload) {
   const count = Number.isSafeInteger(payload.name?.charCount) ? payload.name.charCount : 0;
   elements.threadRenameStatus.textContent = payload.policy?.executionGateEnabled
@@ -5767,6 +5892,7 @@ function clearThreadDetail() {
   selectedThreadArchived = false;
   lastLiveSessionControlPreflight = null;
   lastThreadArchivePreflight = null;
+  lastThreadForkPreflight = null;
   lastThreadRenamePreflight = null;
   lastThreadDeletePreflight = null;
   lastThreadCompactPreflight = null;
@@ -5776,6 +5902,7 @@ function clearThreadDetail() {
   elements.threadRenameInput.disabled = true;
   elements.selectedThreadText.textContent = "None";
   elements.threadArchiveStatus.textContent = "Select a thread to manage archive state.";
+  elements.threadForkStatus.textContent = "Select a thread to fork.";
   elements.threadRenameStatus.textContent = "Select a thread to rename.";
   elements.threadDeleteStatus.textContent = "Select a thread to delete.";
   elements.threadCompactStatus.textContent = "Select a loaded active thread to compact.";
@@ -5785,6 +5912,7 @@ function clearThreadDetail() {
   clearChanges();
   updateTurnDraftState();
   updateThreadArchiveState();
+  updateThreadForkState();
   updateThreadRenameState();
   updateThreadDeleteState();
   updateThreadCompactState();
@@ -5858,6 +5986,16 @@ function updateThreadArchiveState() {
   elements.threadArchiveButton.textContent = actionLabel;
   if (!hasThread) {
     elements.threadArchiveStatus.textContent = "Select a thread to manage archive state.";
+  }
+}
+
+function updateThreadForkState() {
+  const hasThread = Boolean(selectedThreadIdSuffix);
+  elements.threadForkPreflightButton.disabled = !hasThread;
+  elements.threadForkButton.disabled =
+    !lastThreadForkPreflight?.token || lastThreadForkPreflight.enabled !== true;
+  if (!hasThread && elements.threadForkStatus.textContent !== "Forked") {
+    elements.threadForkStatus.textContent = "Select a thread to fork.";
   }
 }
 
@@ -6138,8 +6276,10 @@ function renderThreadLifecycleActionHistory(history) {
     const meta = document.createElement("span");
     meta.textContent = joinParts([
       action.method,
+      target.sourceThreadIdSuffix ? `source ${target.sourceThreadIdSuffix}` : null,
       target.threadIdSuffix ? `thread ${target.threadIdSuffix}` : null,
       typeof target.archived === "boolean" ? (target.archived ? "archived" : "active") : null,
+      typeof target.forked === "boolean" && target.forked ? "forked" : null,
       typeof target.renamed === "boolean" && target.renamed ? "renamed" : null,
       target.nameCharCount ? `${target.nameCharCount} chars` : null,
       action.modelTraffic ? "model traffic" : "no model",
@@ -6159,6 +6299,7 @@ function renderThreadLifecycleActionHistory(history) {
     for (const value of [
       action.appServerTouched ? "app-server" : "local",
       action.threadCreated ? "created" : null,
+      action.threadForked ? "forked" : null,
       action.threadRenamed ? "renamed" : null,
       action.threadStateMutated ? "state changed" : null,
       action.threadCompactionStarted ? "compact started" : null,
@@ -9546,6 +9687,16 @@ function setThreadArchiveLoading(isLoading) {
   elements.threadArchivePreflightButton.textContent = isLoading ? "Checking" : "Preflight";
   if (isLoading) {
     elements.threadArchiveStatus.textContent = "Checking";
+  }
+}
+
+function setThreadForkLoading(isLoading) {
+  elements.threadForkPreflightButton.disabled = isLoading || !selectedThreadIdSuffix;
+  elements.threadForkButton.disabled =
+    isLoading || !lastThreadForkPreflight?.token || lastThreadForkPreflight.enabled !== true;
+  elements.threadForkPreflightButton.textContent = isLoading ? "Checking" : "Fork Check";
+  if (isLoading) {
+    elements.threadForkStatus.textContent = "Checking";
   }
 }
 

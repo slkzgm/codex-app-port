@@ -76,6 +76,16 @@ requires `CODEX_APP_PORT_ALLOW_THREAD_DELETE=1` plus the matching one-time
 token before resolving the suffix through `thread/list` and calling only
 `thread/delete`. It returns suffix/state/method metadata only, with no full ids,
 names, previews, paths, thread content, preflight tokens, or raw payloads. The
+new `thread/fork` route is similarly disabled by default:
+`POST /api/thread-fork-preflight` validates only the source suffix without
+app-server traffic, and `POST /api/thread-fork-action` requires
+`CODEX_APP_PORT_ALLOW_THREAD_FORK=1` plus the matching one-time token before
+resolving the source suffix through `thread/list` and calling only
+`thread/fork` with `excludeTurns: true`. Browser-supplied path, cwd, model,
+sandbox, instruction, permission, and runtime-root overrides are rejected by
+omission from the route body contract. It returns source suffix, forked suffix,
+status, method, and exclude-turns metadata only, with no full ids, names,
+previews, paths, thread content, preflight tokens, or raw payloads. The
 other refreshed 0.142 methods remain blocked until separately audited.
 
 New server request methods and request-shape changes:
@@ -247,6 +257,17 @@ resolves the thread by suffix through `thread/list`, sends no prompt or model
 request, and returns only suffix/source-archive/method/status metadata. Browser
 responses and action audit records exclude full ids, names, previews, thread
 content, cwd, paths, raw app-server payloads, and preflight tokens.
+
+When the server is started with `CODEX_APP_PORT_ALLOW_THREAD_FORK=1`,
+`/api/thread-fork-action` may call `thread/fork` only after consuming a matching
+one-time `/api/thread-fork-preflight` token. Missing, stale, or
+intent-mismatched tokens fail before app-server traffic. That opt-in path
+resolves the source thread by suffix through `thread/list`, sends no prompt or
+model request, passes only the resolved `threadId` plus `excludeTurns: true`,
+and returns only source suffix, forked suffix, method, status, and
+exclude-turns metadata. Browser responses and action audit records exclude full
+ids, names, previews, thread content, cwd, paths, raw app-server payloads, and
+preflight tokens.
 
 When the server is started with both `CODEX_APP_PORT_ALLOW_THREAD_COMPACT=1`
 and `CODEX_APP_PORT_ALLOW_SESSION_MANAGER=1`, `/api/thread-compact-start` may
@@ -422,7 +443,7 @@ individual and bulk controls: recent action counts, succeeded/failed counts, and
 latest-control method/status/suffix/count metadata only, with no prompt text,
 preflight tokens, full ids, paths, thread content, or raw app-server payloads.
 Persistent action audit logging is available through `scripts/dev-server.mjs`: successful
-device-code account login, account login cancel, account logout, thread creation, thread archive/unarchive, thread deletion, thread renaming, thread compaction,
+device-code account login, account login cancel, account logout, thread creation, thread archive/unarchive, thread deletion, thread forking, thread renaming, thread compaction,
 individual and bulk live-session controls, allowlisted terminal command executions, separate
 allowlisted process-spawn executions, exact-allowlisted thread shell command
 submissions, background terminal cleanup requests,

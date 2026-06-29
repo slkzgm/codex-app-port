@@ -1230,6 +1230,69 @@ function handle(message) {
     return;
   }
 
+  if (message.method === "thread/fork") {
+    send({
+      id: message.id,
+      result: {
+        thread: {
+          id: "thread-fork-private-abcd9999",
+          sessionId: "session-fork-private",
+          forkedFromId: message.params?.threadId,
+          preview: "Sensitive fork preview must not leave sanitizer",
+          ephemeral: false,
+          modelProvider: "openai",
+          createdAt: 0,
+          updatedAt: 0,
+          status: "idle",
+          path: "/tmp/mock-workspace/fork-secret.jsonl",
+          cwd: "/tmp/mock-workspace",
+          cliVersion: "0.0.0",
+          source: "appServer",
+          threadSource: null,
+          agentNickname: null,
+          agentRole: null,
+          gitInfo: null,
+          name: "Sensitive fork name must not leave sanitizer",
+          turns: [
+            {
+              id: "turn-private-fork",
+              items: [
+                {
+                  type: "agentMessage",
+                  text: "Sensitive fork transcript must not leave sanitizer",
+                },
+              ],
+            },
+          ],
+        },
+        model: "gpt-test",
+        modelProvider: "openai",
+        serviceTier: null,
+        cwd: "/tmp/mock-workspace",
+        runtimeWorkspaceRoots: ["/tmp/mock-workspace"],
+        instructionSources: ["/tmp/mock-workspace/AGENTS.md"],
+        approvalPolicy: "on-request",
+        approvalsReviewer: "user",
+        sandbox: {
+          mode: "read-only",
+        },
+        activePermissionProfile: null,
+        reasoningEffort: null,
+        privatePath: "/tmp/mock-workspace/fork-response-secret.txt",
+      },
+    });
+    send({
+      method: "thread/forked",
+      params: {
+        threadId: "thread-fork-private-abcd9999",
+        forkedFromId: message.params?.threadId,
+        cwd: "/tmp/mock-workspace",
+        preview: "Sensitive fork notification must not leave sanitizer",
+      },
+    });
+    return;
+  }
+
   if (message.method === "thread/compact/start") {
     send({
       id: message.id,

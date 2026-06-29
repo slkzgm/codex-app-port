@@ -44,6 +44,7 @@ test("generated app-server schema snapshot covers critical client and server met
     "initialize",
     "config/read",
     "thread/start",
+    "thread/fork",
     "thread/read",
     "thread/name/set",
     "thread/loaded/list",
