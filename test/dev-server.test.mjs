@@ -5439,6 +5439,12 @@ test("browser POST response contracts block unsafe response values", () => {
           approvalRequests: [
             {
               kind: "command",
+              browserDecision: {
+                decision: "decline",
+                forwarded: true,
+                appServerTouched: true,
+                auditLogged: true,
+              },
               command: {
                 present: true,
                 approvalPreview: {
@@ -13714,6 +13720,121 @@ test("dev server can route opt-in turn-start through persistent session manager"
     await closeServer(server);
   }
   assert.equal(calls.some((call) => call.method === "closeAll"), true);
+});
+
+test("dev server preserves managed turn-start approval browser decisions in sessions", async () => {
+  const sessionManager = {
+    async startTurn() {
+      return {
+        ok: true,
+        generatedAt: "2026-05-16T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        probes: {
+          turnStart: {
+            threadIdSuffix: "abcd1234",
+            turnIdSuffix: "turn5678",
+            completedStatus: "completed",
+            approvalRequestCount: 1,
+            deniedApprovalCount: 1,
+            unsupportedApprovalCount: 0,
+            approvalRequests: [
+              {
+                kind: "command",
+                method: "item/commandExecution/requestApproval",
+                requestIdSuffix: "request1234",
+                threadIdSuffix: "abcd1234",
+                turnIdSuffix: "turn5678",
+                itemIdSuffix: "item9999",
+                command: {
+                  present: true,
+                  charCount: 36,
+                  lineCount: 1,
+                },
+                safeDenyDecisions: ["decline", "cancel"],
+                handled: true,
+                decision: "decline",
+                browserDecision: {
+                  decision: "decline",
+                  recordedAt: "2026-05-16T00:00:00.000Z",
+                  forwarded: true,
+                  appServerTouched: true,
+                  auditLogged: true,
+                  reason: "approval-decision-forwarded-deny-only",
+                },
+              },
+            ],
+            eventCount: 0,
+            returnedEventCount: 0,
+            events: [],
+          },
+        },
+        sessionManager: {
+          enabled: true,
+          persistentClient: true,
+          promptTextReturned: false,
+          fullIdsReturned: false,
+        },
+      };
+    },
+    async closeAll() {},
+  };
+  const { server, url } = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    turnStartEnabled: true,
+    sessionManagerEnabled: true,
+    sessionManager,
+  });
+
+  try {
+    const preflightResponse = await fetch(`${url}/api/turn-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        thread: "abcd1234",
+        prompt: "Sensitive managed approval prompt",
+      }),
+    });
+    assert.equal(preflightResponse.status, 200);
+    const preflightPayload = await preflightResponse.json();
+
+    const turnResponse = await fetch(`${url}/api/turn-start`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        thread: "abcd1234",
+        prompt: "Sensitive managed approval prompt",
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    assert.equal(turnResponse.status, 200);
+    const turnPayload = await turnResponse.json();
+    const turnApproval = turnPayload.probes.turnStart.approvalRequests[0];
+    assert.equal(turnApproval.browserDecision.decision, "decline");
+    assert.equal(turnApproval.browserDecision.forwarded, true);
+    assert.equal(turnApproval.browserDecision.appServerTouched, true);
+    assert.equal(turnApproval.browserDecision.auditLogged, true);
+
+    const sessionsResponse = await fetch(`${url}/api/turn-sessions`, {
+      headers: apiHeaders(server),
+    });
+    assert.equal(sessionsResponse.status, 200);
+    const sessionsPayload = await sessionsResponse.json();
+    const sessionApproval = sessionsPayload.sessions[0].approvals.requests[0];
+    assert.equal(sessionsPayload.lifecycle.pendingApprovalCount, 0);
+    assert.equal(sessionsPayload.lifecycle.decidedApprovalCount, 1);
+    assert.equal(sessionsPayload.lifecycle.approvalPolicy.pendingRequestCount, 0);
+    assert.equal(sessionsPayload.lifecycle.approvalPolicy.decidedRequestCount, 1);
+    assert.equal(sessionApproval.decisionToken, undefined);
+    assert.equal(sessionApproval.browserDecision.decision, "decline");
+    assert.equal(sessionApproval.browserDecision.forwarded, true);
+    assert.equal(sessionApproval.browserDecision.appServerTouched, true);
+    assert.equal(sessionApproval.browserDecision.reason, "approval-decision-forwarded-deny-only");
+  } finally {
+    await closeServer(server);
+  }
 });
 
 test("dev server can forward pending manager approvals as deny-only decisions", async () => {

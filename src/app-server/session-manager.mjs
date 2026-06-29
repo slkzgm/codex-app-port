@@ -925,6 +925,7 @@ class ManagedWorkspaceSession {
     this.resolvedApprovals.add(key);
     entry.record.request.handled = true;
     entry.record.request.decision = browserDecision.decision;
+    entry.record.request.browserDecision = browserDecision;
     delete entry.record.request.decisionToken;
     entry.record.browserDecision = browserDecision;
     entry.resolve(approval.response);

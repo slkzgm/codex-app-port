@@ -160,6 +160,17 @@ function writeApprovalAuditLog(approvalAuditLog, record) {
 function sanitizeTurnSession(payload, { recordedAt, sessionId, decisionToken }) {
   const turnStart = payload?.probes?.turnStart ?? {};
   const approvals = Array.isArray(turnStart.approvalRequests) ? turnStart.approvalRequests : [];
+  const requests = approvals
+    .slice(0, MAX_TURN_SESSION_APPROVALS)
+    .map((approval, index) => sanitizeApproval(approval, index, { decisionToken }));
+  const browserDecisions = {};
+  for (const request of requests) {
+    if (!request.browserDecision || !request.requestKey) {
+      continue;
+    }
+    browserDecisions[request.requestKey] = request.browserDecision;
+    delete request.decisionToken;
+  }
   return {
     sessionId,
     recordedAt: safeString(recordedAt, 40),
@@ -186,11 +197,9 @@ function sanitizeTurnSession(payload, { recordedAt, sessionId, decisionToken }) 
       deniedCount: safeCount(turnStart.deniedApprovalCount),
       unsupportedCount: safeCount(turnStart.unsupportedApprovalCount),
       returnedRequestCount: Math.min(approvals.length, MAX_TURN_SESSION_APPROVALS),
-      requests: approvals
-        .slice(0, MAX_TURN_SESSION_APPROVALS)
-        .map((approval, index) => sanitizeApproval(approval, index, { decisionToken })),
+      requests,
     },
-    browserDecisions: {},
+    browserDecisions,
     events: sanitizeTurnEvents(turnStart),
     notifications: sanitizeCounts(payload?.notifications),
   };
@@ -232,6 +241,25 @@ function sanitizeApproval(approval, index, { decisionToken }) {
       : [],
     handled: Boolean(approval?.handled),
     decision: safeString(approval?.decision, 40),
+    browserDecision: sanitizeBrowserDecision(approval?.browserDecision),
+  };
+}
+
+function sanitizeBrowserDecision(decision) {
+  if (!decision || typeof decision !== "object" || Array.isArray(decision)) {
+    return null;
+  }
+  const safeDecision = safeString(decision.decision, 40);
+  if (!safeDecision) {
+    return null;
+  }
+  return {
+    decision: safeDecision,
+    recordedAt: safeString(decision.recordedAt, 40),
+    forwarded: Boolean(decision.forwarded),
+    appServerTouched: Boolean(decision.appServerTouched),
+    auditLogged: Boolean(decision.auditLogged),
+    reason: safeString(decision.reason, 100),
   };
 }
 

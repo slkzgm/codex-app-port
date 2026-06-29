@@ -331,6 +331,10 @@ test("app-server session manager can forward pending deny-only approval decision
     const approval = started.probes.turnStart.approvalRequests[0];
     assert.equal(approval.handled, true);
     assert.equal(approval.decision, "decline");
+    assert.equal(approval.browserDecision.decision, "decline");
+    assert.equal(approval.browserDecision.forwarded, true);
+    assert.equal(approval.browserDecision.appServerTouched, true);
+    assert.equal(approval.browserDecision.auditLogged, true);
     assert.equal(started.sessionManager.approvalForwardingEnabled, true);
 
     const auditRecords = (await readFile(auditLogPath, "utf8"))
@@ -434,6 +438,9 @@ test("app-server session manager forwards permissions approvals only as empty de
     assert.equal(approval.kind, "permissions");
     assert.equal(approval.handled, true);
     assert.equal(approval.decision, "decline");
+    assert.equal(approval.browserDecision.decision, "decline");
+    assert.equal(approval.browserDecision.forwarded, true);
+    assert.equal(approval.browserDecision.appServerTouched, true);
     assert.equal(started.probes.turnStart.unsupportedApprovalCount, 0);
 
     const auditRecords = (await readFile(auditLogPath, "utf8"))
@@ -539,6 +546,8 @@ test("app-server session manager can forward opt-in accept-once approval decisio
 
     const started = await startedPromise;
     assert.equal(started.probes.turnStart.approvalRequests[0].decision, "accept");
+    assert.equal(started.probes.turnStart.approvalRequests[0].browserDecision.decision, "accept");
+    assert.equal(started.probes.turnStart.approvalRequests[0].browserDecision.forwarded, true);
 
     const auditRecords = (await readFile(auditLogPath, "utf8"))
       .trim()

@@ -5184,6 +5184,15 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
       "safeApproveDecisions",
       "handled",
       "decision",
+      "browserDecision",
+    ],
+    "probes.turnStart.approvalRequests.*.browserDecision": [
+      "decision",
+      "recordedAt",
+      "forwarded",
+      "appServerTouched",
+      "auditLogged",
+      "reason",
     ],
     "probes.turnStart.approvalRequests.*.command": [
       "present",
@@ -33860,7 +33869,9 @@ function sanitizeTurnStartProbe(turnStart) {
     approvalRequestCount: safeCount(turnStart?.approvalRequestCount),
     deniedApprovalCount: safeCount(turnStart?.deniedApprovalCount),
     unsupportedApprovalCount: safeCount(turnStart?.unsupportedApprovalCount),
-    approvalRequests: approvalRequests.slice(0, 50).map(sanitizeApprovalRequestSummary),
+    approvalRequests: approvalRequests
+      .slice(0, 50)
+      .map((request) => sanitizeApprovalRequestSummary(request, { includeBrowserDecision: true })),
     eventCount: safeCount(turnStart?.eventCount ?? events.length),
     returnedEventCount: Math.min(events.length, MAX_TURN_SESSION_EVENTS),
     events: events.slice(-MAX_TURN_SESSION_EVENTS).map(sanitizeStreamEvent),
@@ -34395,9 +34406,10 @@ function sanitizeTurnSessionRecord(session) {
             ? {
                 decision: cleanDisplayText(browserDecision.decision, 40),
                 recordedAt: cleanDisplayText(browserDecision.recordedAt, 40),
-                forwarded: false,
-                appServerTouched: false,
+                forwarded: Boolean(browserDecision.forwarded),
+                appServerTouched: Boolean(browserDecision.appServerTouched),
                 auditLogged: Boolean(browserDecision.auditLogged),
+                reason: cleanDisplayText(browserDecision.reason, 100),
               }
           : null,
         };
@@ -34577,7 +34589,11 @@ function sanitizeApprovalDecisionHistoryRecord(record, { recordedAt = null } = {
 
 function sanitizeApprovalRequestSummary(
   request,
-  { approvalDetailsEnabled = false, approvalAcceptEnabled = false } = {},
+  {
+    approvalDetailsEnabled = false,
+    approvalAcceptEnabled = false,
+    includeBrowserDecision = false,
+  } = {},
 ) {
   const command = request?.command && typeof request.command === "object" ? request.command : {};
   const grantRootBasename = safeBasename(request?.grantRootBasename);
@@ -34594,7 +34610,7 @@ function sanitizeApprovalRequestSummary(
         grantRootPresent: Boolean(request?.hasGrantRoot),
         grantRootBasename,
       });
-  return {
+  const summary = {
     requestKey: cleanDisplayText(request?.requestKey, 80),
     decisionToken: cleanDisplayText(request?.decisionToken, 128),
     decisionTokenRequired: Boolean(request?.decisionToken),
@@ -34639,6 +34655,28 @@ function sanitizeApprovalRequestSummary(
       .slice(0, 1),
     handled: Boolean(request?.handled),
     decision: cleanDisplayText(request?.decision, 40),
+  };
+  if (includeBrowserDecision) {
+    summary.browserDecision = sanitizeApprovalBrowserDecisionSummary(request?.browserDecision);
+  }
+  return summary;
+}
+
+function sanitizeApprovalBrowserDecisionSummary(decision) {
+  if (!decision || typeof decision !== "object" || Array.isArray(decision)) {
+    return null;
+  }
+  const safeDecision = cleanDisplayText(decision.decision, 40);
+  if (!safeDecision) {
+    return null;
+  }
+  return {
+    decision: safeDecision,
+    recordedAt: cleanDisplayText(decision.recordedAt, 40),
+    forwarded: Boolean(decision.forwarded),
+    appServerTouched: Boolean(decision.appServerTouched),
+    auditLogged: Boolean(decision.auditLogged),
+    reason: cleanDisplayText(decision.reason, 100),
   };
 }
 
