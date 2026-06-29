@@ -1,0 +1,6 @@
+{
+  "generator": "codex app-server generate-json-schema --experimental",
+  "codexVersion": "codex-cli 0.142.4",
+  "schemaCount": 335,
+  "output": "json"
+}

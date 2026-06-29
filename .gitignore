@@ -1,0 +1,13 @@
+node_modules/
+coverage/
+dist/
+build/
+tmp/
+*.log
+.env
+.env.*
+!.env.example
+
+# Generated or downloaded app artifacts must stay out of the repo.
+*.dmg
+codex-linux/

@@ -1,0 +1,23 @@
+{
+  "name": "codex-app-port",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Secure Omarchy/Linux Codex app port experiments.",
+  "scripts": {
+    "launch": "node scripts/desktop-launcher.mjs",
+    "dev": "node scripts/dev-server.mjs",
+    "protocol:generate": "node scripts/generate-protocol-schemas.mjs",
+    "package:arch": "node scripts/package-arch.mjs",
+    "package:local": "node scripts/package-local.mjs",
+    "goal:audit": "node scripts/goal-audit.mjs",
+    "install:local": "node scripts/install-local.mjs",
+    "smoke:app-server": "node scripts/app-server-smoke.mjs",
+    "test": "node --test 'test/**/*.test.mjs'",
+    "url:validate": "node scripts/url-handler.mjs",
+    "verify": "node scripts/verify.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

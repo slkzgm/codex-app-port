@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Codex App Port
+Comment=Local Codex app-server UI for Omarchy/Linux
+Exec=node /opt/codex-app-port/scripts/desktop-launcher.mjs
+Icon=/opt/codex-app-port/assets/app-icon.svg
+Terminal=false
+Categories=Development;
+StartupNotify=false

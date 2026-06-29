@@ -1,0 +1,2121 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="codex-app-port-token" content="__CODEX_APP_PORT_SESSION_TOKEN__" />
+    <title>Codex App Port</title>
+    <link rel="stylesheet" href="/assets/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Workspace navigation">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">C</div>
+          <div>
+            <h1>Codex App Port</h1>
+            <p>Omarchy local client</p>
+          </div>
+        </div>
+
+        <nav class="nav-list" aria-label="Primary">
+          <a class="nav-item active" href="#overview">Overview</a>
+          <a class="nav-item" href="#threads">Threads</a>
+          <a class="nav-item" href="#transcript">Transcript</a>
+          <a class="nav-item" href="#changes">Changes</a>
+          <a class="nav-item" href="#worktree">Worktree</a>
+          <a class="nav-item" href="#settings">Settings</a>
+          <a class="nav-item" href="#draft">Draft</a>
+          <a class="nav-item" href="#approvals">Approvals</a>
+          <a class="nav-item" href="#terminal">Terminal</a>
+          <a class="nav-item" href="#events">Events</a>
+          <a class="nav-item" href="#agent">Agent</a>
+          <a class="nav-item" href="#security">Security</a>
+        </nav>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Local app-server</p>
+            <h2 id="overview">Desktop shell probe</h2>
+          </div>
+          <div class="topbar-actions">
+            <label class="workspace-control" for="workspace-select">
+              <span>Workspace</span>
+              <select id="workspace-select"></select>
+            </label>
+            <button id="refresh-button" class="primary-button" type="button">Refresh</button>
+          </div>
+        </header>
+
+        <section class="status-strip" aria-live="polite">
+          <div>
+            <span class="label">Status</span>
+            <strong id="status-text">Checking</strong>
+          </div>
+          <div>
+            <span class="label">Platform</span>
+            <strong id="platform-text">-</strong>
+          </div>
+          <div>
+            <span class="label">Transport</span>
+            <strong id="transport-text">-</strong>
+          </div>
+          <div>
+            <span class="label">Updated</span>
+            <strong id="updated-text">-</strong>
+          </div>
+        </section>
+
+        <section class="content-grid">
+          <section class="panel" aria-labelledby="config-heading">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Runtime</p>
+                <h3 id="config-heading">Effective Config</h3>
+              </div>
+            </div>
+            <dl class="metric-list">
+              <div>
+                <dt>Model</dt>
+                <dd id="model-text">-</dd>
+              </div>
+              <div>
+                <dt>Provider</dt>
+                <dd id="provider-text">-</dd>
+              </div>
+              <div>
+                <dt>Sandbox</dt>
+                <dd id="sandbox-text">-</dd>
+              </div>
+              <div>
+                <dt>Approvals</dt>
+                <dd id="approval-text">-</dd>
+              </div>
+            </dl>
+          </section>
+
+          <section class="panel" aria-labelledby="security-heading" id="security">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Guardrails</p>
+                <h3 id="security-heading">Read-Only Probe</h3>
+              </div>
+            </div>
+            <ul class="guard-list">
+              <li>No package install</li>
+              <li>No agent turn by default</li>
+              <li>No shell execution; command/exec requires explicit allowlist opt-in</li>
+              <li>No Git subprocess execution without explicit branch-switch opt-in</li>
+              <li>No non-loopback listener</li>
+              <li>No thread preview content in API responses</li>
+              <li>No absolute workspace paths in browser API responses</li>
+              <li>No raw transcript payloads in browser API responses</li>
+              <li>No unbounded raw file-change patch payloads in browser API responses</li>
+              <li>No drafted prompt execution in preflight</li>
+              <li>No turn-start execution without explicit opt-in</li>
+              <li>No approval forwarding to app-server without explicit opt-in</li>
+              <li>No terminal write, resize, or terminate actions yet</li>
+              <li>No raw terminal output, stdin, command text, or process ids in browser responses</li>
+              <li>No Git commit object or ref writes yet</li>
+              <li>No auth or plugin mutations yet; MCP tool calls and skills config writes require explicit opt-in</li>
+              <li>No loaded session inventory without explicit opt-in</li>
+            </ul>
+          </section>
+        </section>
+
+        <section class="panel full-width" aria-labelledby="worktree-heading" id="worktree">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Read-only workspace</p>
+              <h3 id="worktree-heading">Git Worktree</h3>
+            </div>
+            <div class="button-row">
+              <button id="git-delete-button" class="secondary-button" type="button" disabled>Delete</button>
+              <button id="git-switch-button" class="secondary-button" type="button" disabled>Switch</button>
+              <button id="git-button" class="secondary-button" type="button">Refresh</button>
+            </div>
+          </div>
+          <dl class="agent-grid">
+            <div>
+              <dt>Repository</dt>
+              <dd id="git-repo-text">Checking</dd>
+            </div>
+            <div>
+              <dt>Head</dt>
+              <dd id="git-head-text">-</dd>
+            </div>
+            <div>
+              <dt>Remotes</dt>
+              <dd id="git-remotes-text">0</dd>
+            </div>
+            <div>
+              <dt>Linked</dt>
+              <dd id="git-linked-text">No</dd>
+            </div>
+            <div>
+              <dt>Branches</dt>
+              <dd id="git-branches-text">0</dd>
+            </div>
+            <div>
+              <dt>Actions</dt>
+              <dd id="git-actions-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Status</dt>
+              <dd id="git-status-text">Unavailable</dd>
+            </div>
+            <div>
+              <dt>Changed</dt>
+              <dd id="git-changed-text">0</dd>
+            </div>
+            <div>
+              <dt>Switch Risks</dt>
+              <dd id="git-switch-risk-text">Unknown</dd>
+            </div>
+          </dl>
+          <p id="git-preflight-state" class="empty-state">Select a non-current branch to preflight a blocked switch.</p>
+          <form id="git-create-form" class="inline-form">
+            <input
+              id="git-create-input"
+              name="branch"
+              type="text"
+              autocomplete="off"
+              placeholder="feature/local"
+            />
+            <button id="git-create-preflight-button" class="secondary-button" type="submit">Preflight</button>
+            <button id="git-create-button" class="secondary-button" type="button" disabled>Create</button>
+          </form>
+          <p id="git-create-state" class="empty-state">Branch creation disabled by default.</p>
+          <p id="git-delete-state" class="empty-state">Select a non-current branch to preflight deletion.</p>
+          <form id="git-commit-form" class="inline-form two-column">
+            <input
+              id="git-commit-input"
+              name="message"
+              type="text"
+              autocomplete="off"
+              maxlength="2000"
+              placeholder="Commit message"
+            />
+            <button id="git-commit-preflight-button" class="secondary-button" type="submit">Preflight</button>
+            <button id="git-commit-button" class="secondary-button" type="button" disabled>Commit</button>
+          </form>
+          <p id="git-commit-state" class="empty-state">Commit creation disabled by default.</p>
+          <form id="git-worktree-form" class="inline-form worktree-form">
+            <select id="git-worktree-action" name="action">
+              <option value="create">Create worktree</option>
+              <option value="remove">Remove worktree</option>
+            </select>
+            <input
+              id="git-worktree-path"
+              name="path"
+              type="text"
+              autocomplete="off"
+              maxlength="240"
+              placeholder="worktrees/local"
+            />
+            <input
+              id="git-worktree-branch"
+              name="branch"
+              type="text"
+              autocomplete="off"
+              maxlength="120"
+              placeholder="branch"
+            />
+            <button id="git-worktree-preflight-button" class="secondary-button" type="submit">Preflight</button>
+            <button id="git-worktree-button" class="secondary-button" type="button" disabled>Apply</button>
+          </form>
+          <p id="git-worktree-state" class="empty-state">Worktree actions disabled by default.</p>
+          <p id="git-state-text" class="empty-state">No Git metadata loaded.</p>
+          <div id="git-detail-list" class="git-detail-list" role="list"></div>
+        </section>
+
+        <section class="panel full-width" aria-labelledby="settings-heading" id="settings">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Read-only boundary</p>
+              <h3 id="settings-heading">Settings &amp; Integrations</h3>
+            </div>
+            <span id="settings-state-text" class="count-pill">Blocked</span>
+          </div>
+          <dl class="agent-grid">
+            <div>
+              <dt>Settings</dt>
+              <dd id="settings-source-text">Checking</dd>
+            </div>
+            <div>
+              <dt>Requirements</dt>
+              <dd id="requirements-state-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Models</dt>
+              <dd id="model-inventory-state-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Capabilities</dt>
+              <dd id="model-capabilities-state-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Modes</dt>
+              <dd id="collaboration-modes-state-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Profiles</dt>
+              <dd id="permission-profiles-state-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Remote Control</dt>
+              <dd id="remote-control-state-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Hooks</dt>
+              <dd id="hooks-state-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Mutations</dt>
+              <dd id="settings-mutations-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Auth</dt>
+              <dd id="auth-state-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Rate Limits</dt>
+              <dd id="rate-limits-state-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Usage</dt>
+              <dd id="account-usage-state-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Messages</dt>
+              <dd id="workspace-messages-state-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Callbacks</dt>
+              <dd id="auth-callback-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Login</dt>
+              <dd id="account-login-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Cancel Login</dt>
+              <dd id="account-login-cancel-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Active Logins</dt>
+              <dd id="active-login-flow-count">0</dd>
+            </div>
+            <div>
+              <dt>Logout</dt>
+              <dd id="account-logout-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Login history</dt>
+              <dd id="account-login-history-count">0</dd>
+            </div>
+            <div>
+              <dt>Logout history</dt>
+              <dd id="account-logout-history-count">0</dd>
+            </div>
+            <div>
+              <dt>Scope</dt>
+              <dd id="integration-scope-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Lifecycle</dt>
+              <dd id="integration-lifecycle-state">Read-only</dd>
+            </div>
+            <div>
+              <dt>Activity</dt>
+              <dd id="integration-lifecycle-activity">0 history / 0 enabled</dd>
+            </div>
+            <div>
+              <dt>Action gates</dt>
+              <dd id="integration-action-gates">0 preflight / 0 local</dd>
+            </div>
+            <div>
+              <dt>Management</dt>
+              <dd id="integration-management">Blocked</dd>
+            </div>
+            <div>
+              <dt>Readiness</dt>
+              <dd id="integration-execution-readiness">Blocked</dd>
+            </div>
+            <div>
+              <dt>Safety contract</dt>
+              <dd id="integration-safety-contract">Blocked</dd>
+            </div>
+            <div>
+              <dt>Routing contract</dt>
+              <dd id="integration-routing-contract">Blocked</dd>
+            </div>
+            <div>
+              <dt>Workflow</dt>
+              <dd id="integration-workflow-contract">Blocked</dd>
+            </div>
+            <div>
+              <dt>Audit</dt>
+              <dd id="integration-audit-contract">Blocked</dd>
+            </div>
+            <div>
+              <dt>Provenance</dt>
+              <dd id="integration-provenance-contract">Blocked</dd>
+            </div>
+            <div>
+              <dt>External code</dt>
+              <dd id="integration-external-code-contract">Blocked</dd>
+            </div>
+            <div>
+              <dt>Executable</dt>
+              <dd id="integration-executable-actions">0 actions</dd>
+            </div>
+            <div>
+              <dt>Latest</dt>
+              <dd id="integration-lifecycle-latest">-</dd>
+            </div>
+            <div>
+              <dt>Blocked methods</dt>
+              <dd id="integration-blocked-count">0</dd>
+            </div>
+            <div>
+              <dt>MCP</dt>
+              <dd id="mcp-state-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Apps</dt>
+              <dd id="apps-state-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>External Config</dt>
+              <dd id="external-config-state-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Import history</dt>
+              <dd id="external-config-import-history-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Skills</dt>
+              <dd id="skills-state-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Plugins</dt>
+              <dd id="plugins-state-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Installed</dt>
+              <dd id="installed-plugins-state-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Traffic</dt>
+              <dd id="integrations-traffic-text">None</dd>
+            </div>
+            <div>
+              <dt>Audited</dt>
+              <dd id="integrations-audited-text">0</dd>
+            </div>
+          </dl>
+          <div class="turn-actions">
+            <button id="account-login-preflight-button" class="secondary-button" type="button">
+              Login Check
+            </button>
+            <button id="account-login-button" class="secondary-button" type="button" disabled>
+              Start Device Login
+            </button>
+            <span id="account-login-status" class="empty-state">Auth login disabled by default.</span>
+          </div>
+          <dl class="agent-grid">
+            <div>
+              <dt>Device Code</dt>
+              <dd id="account-login-code-text">-</dd>
+            </div>
+            <div>
+              <dt>Verification</dt>
+              <dd id="account-login-url-text">-</dd>
+            </div>
+          </dl>
+          <div class="turn-actions">
+            <button id="account-login-cancel-preflight-button" class="secondary-button" type="button" disabled>
+              Cancel Check
+            </button>
+            <button id="account-login-cancel-button" class="secondary-button" type="button" disabled>
+              Cancel Login
+            </button>
+            <span id="account-login-cancel-status" class="empty-state">No active device login.</span>
+          </div>
+          <div class="turn-actions">
+            <button id="account-logout-preflight-button" class="secondary-button" type="button">
+              Logout Check
+            </button>
+            <button id="account-logout-button" class="secondary-button" type="button" disabled>
+              Logout
+            </button>
+            <span id="account-logout-status" class="empty-state">Auth logout disabled by default.</span>
+          </div>
+          <div class="turn-actions">
+            <button id="mcp-server-reload-preflight-button" class="secondary-button" type="button">
+              Reload Check
+            </button>
+            <button id="mcp-server-reload-button" class="secondary-button" type="button" disabled>
+              Reload MCP
+            </button>
+            <span id="mcp-server-reload-status" class="empty-state">MCP reload disabled by default.</span>
+          </div>
+          <form id="mcp-oauth-form" class="turn-form">
+            <div class="thread-tools">
+              <label class="search-control" for="mcp-oauth-server-input">
+                <span>MCP server</span>
+                <input id="mcp-oauth-server-input" type="text" autocomplete="off" maxlength="120" />
+              </label>
+            </div>
+            <div class="turn-actions">
+              <button id="mcp-oauth-button" class="secondary-button" type="submit">
+                OAuth Check
+              </button>
+              <button id="mcp-oauth-run-button" class="secondary-button" type="button" disabled>
+                Start OAuth
+              </button>
+              <span id="mcp-oauth-status" class="empty-state">MCP OAuth disabled by default.</span>
+            </div>
+          </form>
+          <dl class="agent-grid">
+            <div>
+              <dt>Server chars</dt>
+              <dd id="mcp-oauth-server-chars">0</dd>
+            </div>
+            <div>
+              <dt>OAuth</dt>
+              <dd id="mcp-oauth-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>URL</dt>
+              <dd id="mcp-oauth-url-text">Omitted</dd>
+            </div>
+            <div>
+              <dt>Response keys</dt>
+              <dd id="mcp-oauth-response-keys">0</dd>
+            </div>
+          </dl>
+          <form id="config-value-form" class="turn-form">
+            <div class="thread-tools">
+              <label class="search-control" for="config-value-key-input">
+                <span>Config key</span>
+                <input id="config-value-key-input" type="text" autocomplete="off" maxlength="120" />
+              </label>
+              <label class="workspace-control" for="config-value-merge-select">
+                <span>Merge</span>
+                <select id="config-value-merge-select">
+                  <option value="replace">replace</option>
+                  <option value="upsert">upsert</option>
+                </select>
+              </label>
+            </div>
+            <textarea
+              id="config-value-input"
+              maxlength="8000"
+              rows="3"
+              placeholder='"gpt-5"'
+            ></textarea>
+            <div class="turn-actions">
+              <button id="config-value-button" class="secondary-button" type="submit">
+                Config Check
+              </button>
+              <button id="config-value-run-button" class="secondary-button" type="button" disabled>
+                Write
+              </button>
+              <span id="config-value-status" class="empty-state">Blocked</span>
+            </div>
+          </form>
+          <dl class="agent-grid">
+            <div>
+              <dt>Key chars</dt>
+              <dd id="config-value-key-chars">0</dd>
+            </div>
+            <div>
+              <dt>Value chars</dt>
+              <dd id="config-value-chars">0</dd>
+            </div>
+            <div>
+              <dt>Value type</dt>
+              <dd id="config-value-type-text">Unknown</dd>
+            </div>
+            <div>
+              <dt>Config write</dt>
+              <dd id="config-value-write-text">Blocked</dd>
+            </div>
+          </dl>
+          <form id="config-batch-form" class="turn-form">
+            <textarea
+              id="config-batch-input"
+              maxlength="8000"
+              rows="4"
+              placeholder='[{"keyPath":"model","value":"gpt-5","mergeStrategy":"replace"}]'
+            ></textarea>
+            <div class="turn-actions">
+              <button id="config-batch-button" class="secondary-button" type="submit">
+                Batch Check
+              </button>
+              <button id="config-batch-run-button" class="secondary-button" type="button" disabled>
+                Write Batch
+              </button>
+              <span id="config-batch-status" class="empty-state">Blocked</span>
+            </div>
+          </form>
+          <dl class="agent-grid">
+            <div>
+              <dt>Edits</dt>
+              <dd id="config-batch-edit-count">0</dd>
+            </div>
+            <div>
+              <dt>Key chars</dt>
+              <dd id="config-batch-key-chars">0</dd>
+            </div>
+            <div>
+              <dt>Value chars</dt>
+              <dd id="config-batch-value-chars">0</dd>
+            </div>
+            <div>
+              <dt>Batch write</dt>
+              <dd id="config-batch-write-text">Blocked</dd>
+            </div>
+          </dl>
+          <form id="experimental-feature-form" class="turn-form">
+            <div class="thread-tools">
+              <label class="search-control" for="experimental-feature-input">
+                <span>Feature</span>
+                <input id="experimental-feature-input" type="text" autocomplete="off" maxlength="120" />
+              </label>
+              <label class="workspace-control" for="experimental-feature-enabled-select">
+                <span>State</span>
+                <select id="experimental-feature-enabled-select">
+                  <option value="true">enabled</option>
+                  <option value="false">disabled</option>
+                </select>
+              </label>
+            </div>
+            <div class="turn-actions">
+              <button id="experimental-feature-button" class="secondary-button" type="submit">
+                Feature Check
+              </button>
+              <button id="experimental-feature-run-button" class="secondary-button" type="button" disabled>
+                Set
+              </button>
+              <span id="experimental-feature-status" class="empty-state">Blocked</span>
+            </div>
+          </form>
+          <dl class="agent-grid">
+            <div>
+              <dt>Feature chars</dt>
+              <dd id="experimental-feature-chars">0</dd>
+            </div>
+            <div>
+              <dt>Value count</dt>
+              <dd id="experimental-feature-value-count">0</dd>
+            </div>
+            <div>
+              <dt>Feature set</dt>
+              <dd id="experimental-feature-set-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Updated</dt>
+              <dd id="experimental-feature-updated-text">0</dd>
+            </div>
+          </dl>
+          <div id="integrations-detail-list" class="boundary-list compact" role="list"></div>
+          <div id="account-login-history-list" class="boundary-list compact" role="list"></div>
+          <div id="account-logout-history-list" class="boundary-list compact" role="list"></div>
+          <form id="mcp-tool-form" class="turn-form">
+            <div class="thread-tools">
+              <label class="search-control" for="mcp-server-input">
+                <span>MCP server</span>
+                <input id="mcp-server-input" type="text" autocomplete="off" />
+              </label>
+              <label class="search-control" for="mcp-tool-input">
+                <span>Tool</span>
+                <input id="mcp-tool-input" type="text" autocomplete="off" />
+              </label>
+              <label class="search-control" for="mcp-tool-thread-input">
+                <span>Thread</span>
+                <input id="mcp-tool-thread-input" type="text" autocomplete="off" maxlength="8" />
+              </label>
+            </div>
+            <textarea
+              id="mcp-arguments-input"
+              maxlength="8000"
+              rows="4"
+              placeholder="Arguments JSON"
+            ></textarea>
+            <div class="turn-actions">
+              <button id="mcp-tool-button" class="secondary-button" type="submit">
+                Preflight
+              </button>
+              <button id="mcp-tool-run-button" class="secondary-button" type="button" disabled>
+                Call
+              </button>
+              <span id="mcp-tool-status" class="empty-state">Blocked</span>
+            </div>
+          </form>
+          <dl class="agent-grid">
+            <div>
+              <dt>Server chars</dt>
+              <dd id="mcp-server-chars">0</dd>
+            </div>
+            <div>
+              <dt>Tool chars</dt>
+              <dd id="mcp-tool-chars">0</dd>
+            </div>
+            <div>
+              <dt>Arg keys</dt>
+              <dd id="mcp-arg-keys">0</dd>
+            </div>
+            <div>
+              <dt>Invocation</dt>
+              <dd id="mcp-invocation-text">Blocked</dd>
+            </div>
+          </dl>
+          <form id="mcp-resource-form" class="turn-form">
+            <div class="thread-tools">
+              <label class="search-control" for="mcp-resource-server-input">
+                <span>MCP server</span>
+                <input id="mcp-resource-server-input" type="text" autocomplete="off" />
+              </label>
+              <label class="search-control" for="mcp-resource-input">
+                <span>Resource URI</span>
+                <input id="mcp-resource-input" type="text" autocomplete="off" maxlength="500" />
+              </label>
+            </div>
+            <div class="turn-actions">
+              <button id="mcp-resource-button" class="secondary-button" type="submit">
+                Resource Check
+              </button>
+              <button id="mcp-resource-run-button" class="secondary-button" type="button" disabled>
+                Read
+              </button>
+              <span id="mcp-resource-status" class="empty-state">Blocked</span>
+            </div>
+          </form>
+          <dl class="agent-grid">
+            <div>
+              <dt>Resource server chars</dt>
+              <dd id="mcp-resource-server-chars">0</dd>
+            </div>
+            <div>
+              <dt>Resource chars</dt>
+              <dd id="mcp-resource-chars">0</dd>
+            </div>
+            <div>
+              <dt>Resource read</dt>
+              <dd id="mcp-resource-read-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Content</dt>
+              <dd id="mcp-resource-content-text">Blocked</dd>
+            </div>
+          </dl>
+          <form id="plugin-read-form" class="turn-form">
+            <div class="thread-tools">
+              <label class="search-control" for="plugin-read-target-input">
+                <span>Plugin</span>
+                <input id="plugin-read-target-input" type="text" autocomplete="off" maxlength="500" />
+              </label>
+            </div>
+            <textarea
+              id="plugin-read-arguments-input"
+              maxlength="8000"
+              rows="3"
+              placeholder='{"remoteMarketplaceName":null}'
+            ></textarea>
+            <div class="turn-actions">
+              <button id="plugin-read-button" class="secondary-button" type="submit">
+                Plugin Read Check
+              </button>
+              <button id="plugin-read-run-button" class="secondary-button" type="button" disabled>
+                Read
+              </button>
+              <span id="plugin-read-status" class="empty-state">Blocked</span>
+            </div>
+          </form>
+          <dl class="agent-grid">
+            <div>
+              <dt>Plugin chars</dt>
+              <dd id="plugin-read-target-chars">0</dd>
+            </div>
+            <div>
+              <dt>Arg keys</dt>
+              <dd id="plugin-read-arg-keys">0</dd>
+            </div>
+            <div>
+              <dt>Plugin read</dt>
+              <dd id="plugin-read-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Details</dt>
+              <dd id="plugin-read-details-text">Blocked</dd>
+            </div>
+          </dl>
+          <form id="plugin-uninstall-form" class="turn-form">
+            <div class="thread-tools">
+              <label class="search-control" for="plugin-uninstall-target-input">
+                <span>Plugin id</span>
+                <input id="plugin-uninstall-target-input" type="text" autocomplete="off" maxlength="200" />
+              </label>
+            </div>
+            <div class="turn-actions">
+              <button id="plugin-uninstall-button" class="secondary-button" type="submit">
+                Uninstall Check
+              </button>
+              <button id="plugin-uninstall-run-button" class="secondary-button" type="button" disabled>
+                Uninstall
+              </button>
+              <span id="plugin-uninstall-status" class="empty-state">Blocked</span>
+            </div>
+          </form>
+          <dl class="agent-grid">
+            <div>
+              <dt>Plugin chars</dt>
+              <dd id="plugin-uninstall-target-chars">0</dd>
+            </div>
+            <div>
+              <dt>Uninstall</dt>
+              <dd id="plugin-uninstall-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Response keys</dt>
+              <dd id="plugin-uninstall-response-keys">0</dd>
+            </div>
+            <div>
+              <dt>Details</dt>
+              <dd id="plugin-uninstall-details-text">Omitted</dd>
+            </div>
+          </dl>
+          <form id="plugin-content-form" class="turn-form">
+            <div class="thread-tools">
+              <label class="workspace-control" for="plugin-content-method-select">
+                <span>Method</span>
+                <select id="plugin-content-method-select">
+                  <option value="plugin/skill/read">plugin/skill/read</option>
+                  <option value="plugin/share/list">plugin/share/list</option>
+                </select>
+              </label>
+              <label class="search-control" for="plugin-content-target-input">
+                <span>Target</span>
+                <input id="plugin-content-target-input" type="text" autocomplete="off" maxlength="500" />
+              </label>
+            </div>
+            <textarea
+              id="plugin-content-arguments-input"
+              maxlength="8000"
+              rows="3"
+              placeholder='{"skill":null}'
+            ></textarea>
+            <div class="turn-actions">
+              <button id="plugin-content-button" class="secondary-button" type="submit">
+                Plugin Content Check
+              </button>
+              <button id="plugin-content-run-button" class="secondary-button" type="button" disabled>
+                Read
+              </button>
+              <span id="plugin-content-status" class="empty-state">Blocked</span>
+            </div>
+          </form>
+          <dl class="agent-grid">
+            <div>
+              <dt>Target chars</dt>
+              <dd id="plugin-content-target-chars">0</dd>
+            </div>
+            <div>
+              <dt>Arg keys</dt>
+              <dd id="plugin-content-arg-keys">0</dd>
+            </div>
+            <div>
+              <dt>Content read</dt>
+              <dd id="plugin-content-read-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Details</dt>
+              <dd id="plugin-content-details-text">Blocked</dd>
+            </div>
+          </dl>
+          <form id="skills-config-form" class="turn-form">
+            <div class="thread-tools">
+              <label class="search-control" for="skills-config-target-input">
+                <span>Skill</span>
+                <input id="skills-config-target-input" type="text" autocomplete="off" maxlength="500" />
+              </label>
+            </div>
+            <textarea
+              id="skills-config-arguments-input"
+              maxlength="8000"
+              rows="3"
+              placeholder='{"enabled":true}'
+            ></textarea>
+            <div class="turn-actions">
+              <button id="skills-config-button" class="secondary-button" type="submit">
+                Skills Config Check
+              </button>
+              <button id="skills-config-run-button" class="secondary-button" type="button" disabled>
+                Write
+              </button>
+              <span id="skills-config-status" class="empty-state">Blocked</span>
+            </div>
+          </form>
+          <dl class="agent-grid">
+            <div>
+              <dt>Skill chars</dt>
+              <dd id="skills-config-target-chars">0</dd>
+            </div>
+            <div>
+              <dt>Arg keys</dt>
+              <dd id="skills-config-arg-keys">0</dd>
+            </div>
+            <div>
+              <dt>Config write</dt>
+              <dd id="skills-config-write-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Effective</dt>
+              <dd id="skills-config-effective-text">Unknown</dd>
+            </div>
+          </dl>
+          <form id="integration-action-form" class="turn-form">
+            <div class="thread-tools">
+              <label class="workspace-control" for="integration-method-select">
+                <span>Method</span>
+                <select id="integration-method-select">
+                  <option value="account/rateLimitResetCredit/consume">account/rateLimitResetCredit/consume</option>
+                  <option value="thread/delete">thread/delete</option>
+                  <option value="thread/settings/update">thread/settings/update</option>
+                  <option value="thread/realtime/appendSpeech">thread/realtime/appendSpeech</option>
+                  <option value="account/login/start">account/login/start</option>
+                  <option value="account/login/cancel">account/login/cancel</option>
+                  <option value="account/logout">account/logout</option>
+                  <option value="account/sendAddCreditsNudgeEmail">account/sendAddCreditsNudgeEmail</option>
+                  <option value="mcpServer/oauth/login">mcpServer/oauth/login</option>
+                  <option value="mcpServer/tool/call">mcpServer/tool/call</option>
+                  <option value="config/value/write">config/value/write</option>
+                  <option value="config/batchWrite">config/batchWrite</option>
+                  <option value="config/mcpServer/reload">config/mcpServer/reload</option>
+                  <option value="experimentalFeature/enablement/set">experimentalFeature/enablement/set</option>
+                  <option value="skills/config/write">skills/config/write</option>
+                  <option value="skills/extraRoots/set">skills/extraRoots/set</option>
+                  <option value="environment/add">environment/add</option>
+                  <option value="remoteControl/status/read">remoteControl/status/read</option>
+                  <option value="remoteControl/enable">remoteControl/enable</option>
+                  <option value="remoteControl/disable">remoteControl/disable</option>
+                  <option value="remoteControl/pairing/start">remoteControl/pairing/start</option>
+                  <option value="remoteControl/pairing/status">remoteControl/pairing/status</option>
+                  <option value="remoteControl/client/list">remoteControl/client/list</option>
+                  <option value="remoteControl/client/revoke">remoteControl/client/revoke</option>
+                  <option value="plugin/install">plugin/install</option>
+                  <option value="plugin/uninstall">plugin/uninstall</option>
+                  <option value="plugin/share/checkout">plugin/share/checkout</option>
+                  <option value="plugin/share/save">plugin/share/save</option>
+                  <option value="plugin/share/updateTargets">plugin/share/updateTargets</option>
+                  <option value="plugin/share/delete">plugin/share/delete</option>
+                  <option value="marketplace/add">marketplace/add</option>
+                  <option value="marketplace/remove">marketplace/remove</option>
+                  <option value="marketplace/upgrade">marketplace/upgrade</option>
+                  <option value="externalAgentConfig/import">externalAgentConfig/import</option>
+                </select>
+              </label>
+              <label class="search-control" for="integration-target-input">
+                <span>Target</span>
+                <input id="integration-target-input" type="text" autocomplete="off" maxlength="500" />
+              </label>
+            </div>
+            <textarea
+              id="integration-arguments-input"
+              maxlength="8000"
+              rows="4"
+              placeholder="Arguments JSON"
+            ></textarea>
+            <div class="turn-actions">
+              <button id="integration-action-button" class="secondary-button" type="submit">
+                Preflight
+              </button>
+              <span id="integration-action-status" class="empty-state">Blocked</span>
+            </div>
+          </form>
+          <dl class="agent-grid">
+            <div>
+              <dt>Method</dt>
+              <dd id="integration-method-text">-</dd>
+            </div>
+            <div>
+              <dt>Target chars</dt>
+              <dd id="integration-target-chars">0</dd>
+            </div>
+            <div>
+              <dt>Arg keys</dt>
+              <dd id="integration-arg-keys">0</dd>
+            </div>
+            <div>
+              <dt>Mutation</dt>
+              <dd id="integration-mutation-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Preflights</dt>
+              <dd id="integration-preflight-history-count">0</dd>
+            </div>
+            <div>
+              <dt>Confirmed</dt>
+              <dd id="integration-confirmation-history-count">0</dd>
+            </div>
+          </dl>
+          <div id="integration-preflight-history-list" class="boundary-list compact" role="list"></div>
+          <div id="integration-confirmation-history-list" class="boundary-list compact" role="list"></div>
+          <div id="integrations-method-list" class="boundary-list" role="list"></div>
+        </section>
+
+        <section class="panel full-width" aria-labelledby="threads-heading" id="threads">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Local metadata</p>
+              <h3 id="threads-heading">Threads</h3>
+            </div>
+            <div class="button-row">
+              <button id="thread-start-preflight-button" class="secondary-button" type="button">
+                Preflight
+              </button>
+              <button id="thread-start-button" class="secondary-button" type="button" disabled>
+                New
+              </button>
+              <span id="thread-count" class="count-pill">0</span>
+            </div>
+          </div>
+          <div class="thread-tools">
+            <label class="search-control" for="thread-search">
+              <span>Search</span>
+              <input id="thread-search" type="search" autocomplete="off" />
+            </label>
+            <label class="toggle-control" for="archived-toggle">
+              <input id="archived-toggle" type="checkbox" />
+              <span>Archived</span>
+            </label>
+            <button id="thread-server-search-button" class="secondary-button" type="button">
+              Server Search
+            </button>
+          </div>
+          <p id="thread-start-status" class="empty-state">Thread creation blocked by default.</p>
+          <p id="thread-server-search-status" class="empty-state">Server search disabled by default.</p>
+          <div id="thread-list" class="thread-list" role="list"></div>
+          <div id="thread-server-search-list" class="thread-list compact" role="list"></div>
+        </section>
+
+        <section class="panel full-width" aria-labelledby="thread-detail-heading">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Metadata timeline</p>
+              <h3 id="thread-detail-heading">Thread Detail</h3>
+            </div>
+            <div class="button-row">
+              <button id="thread-archive-preflight-button" class="secondary-button" type="button" disabled>
+                Preflight
+              </button>
+              <button id="thread-archive-button" class="secondary-button" type="button" disabled>
+                Archive
+              </button>
+              <button id="thread-delete-preflight-button" class="secondary-button" type="button" disabled>
+                Delete Check
+              </button>
+              <button id="thread-delete-button" class="secondary-button" type="button" disabled>
+                Delete
+              </button>
+              <button id="thread-compact-preflight-button" class="secondary-button" type="button" disabled>
+                Compact Check
+              </button>
+              <button id="thread-compact-button" class="secondary-button" type="button" disabled>
+                Compact
+              </button>
+              <span id="selected-thread-text" class="count-pill">None</span>
+            </div>
+          </div>
+          <p id="thread-archive-status" class="empty-state">Select a thread to manage archive state.</p>
+          <p id="thread-delete-status" class="empty-state">Select a thread to delete.</p>
+          <p id="thread-compact-status" class="empty-state">Select a loaded active thread to compact.</p>
+          <dl id="thread-detail-meta" class="agent-grid"></dl>
+          <div id="turn-timeline" class="turn-timeline" role="list">
+            <p class="empty-state">Select a thread to inspect sanitized turn metadata.</p>
+          </div>
+        </section>
+
+        <section class="panel full-width" aria-labelledby="transcript-heading" id="transcript">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Sanitized conversation</p>
+              <h3 id="transcript-heading">Transcript</h3>
+            </div>
+            <button id="transcript-button" class="secondary-button" type="button" disabled>
+              Load
+            </button>
+          </div>
+          <dl class="agent-grid">
+            <div>
+              <dt>Thread</dt>
+              <dd id="transcript-thread-text">No thread</dd>
+            </div>
+            <div>
+              <dt>Turns</dt>
+              <dd id="transcript-turns-text">0</dd>
+            </div>
+            <div>
+              <dt>Chars</dt>
+              <dd id="transcript-chars-text">0</dd>
+            </div>
+            <div>
+              <dt>State</dt>
+              <dd id="transcript-state-text">Idle</dd>
+            </div>
+          </dl>
+          <div id="transcript-list" class="transcript-list" role="list">
+            <p class="empty-state">Select a thread to load sanitized transcript text.</p>
+          </div>
+        </section>
+
+        <section class="panel full-width" aria-labelledby="changes-heading" id="changes">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Sanitized review</p>
+              <h3 id="changes-heading">File Changes</h3>
+            </div>
+            <button id="changes-button" class="secondary-button" type="button" disabled>
+              Load
+            </button>
+          </div>
+          <dl class="agent-grid">
+            <div>
+              <dt>Thread</dt>
+              <dd id="changes-thread-text">No thread</dd>
+            </div>
+            <div>
+              <dt>Items</dt>
+              <dd id="changes-items-text">0</dd>
+            </div>
+            <div>
+              <dt>Changes</dt>
+              <dd id="changes-count-text">0</dd>
+            </div>
+            <div>
+              <dt>State</dt>
+              <dd id="changes-state-text">Idle</dd>
+            </div>
+          </dl>
+          <div id="changes-list" class="change-list" role="list">
+            <p class="empty-state">Select a thread to load sanitized file changes.</p>
+          </div>
+        </section>
+
+        <section class="panel full-width" aria-labelledby="draft-heading" id="draft">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Preflight only</p>
+              <h3 id="draft-heading">Turn Draft</h3>
+            </div>
+            <span id="turn-target-text" class="count-pill">No thread</span>
+          </div>
+          <form id="turn-form" class="turn-form">
+            <textarea
+              id="turn-input"
+              maxlength="4000"
+              rows="5"
+              placeholder="Message"
+              disabled
+            ></textarea>
+            <div class="turn-actions">
+              <button id="turn-button" class="secondary-button" type="submit" disabled>
+                Preflight
+              </button>
+              <button id="turn-start-button" class="secondary-button" type="button" disabled>
+                Start
+              </button>
+              <span id="turn-preflight-status" class="empty-state">Select a thread first.</span>
+            </div>
+          </form>
+          <dl class="agent-grid">
+            <div>
+              <dt>Gate</dt>
+              <dd id="turn-preflight-gate">Blocked</dd>
+            </div>
+            <div>
+              <dt>Chars</dt>
+              <dd id="turn-preflight-chars">0</dd>
+            </div>
+            <div>
+              <dt>Lines</dt>
+              <dd id="turn-preflight-lines">0</dd>
+            </div>
+            <div>
+              <dt>Traffic</dt>
+              <dd id="turn-preflight-traffic">None</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="panel full-width" aria-labelledby="execution-gate-heading" id="approvals">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Approval boundary</p>
+              <h3 id="execution-gate-heading">Execution Gate</h3>
+            </div>
+            <div class="button-row">
+              <button id="approval-accept-all-button" class="secondary-button" type="button" disabled>
+                Accept visible
+              </button>
+              <button id="approval-deny-all-button" class="secondary-button" type="button" disabled>
+                Deny visible
+              </button>
+              <span id="execution-gate-state" class="count-pill">Blocked</span>
+            </div>
+          </div>
+          <dl class="agent-grid">
+            <div>
+              <dt>Execution</dt>
+              <dd id="execution-enabled-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Turn readiness</dt>
+              <dd id="turn-execution-readiness">Blocked</dd>
+            </div>
+            <div>
+              <dt>Turn authority</dt>
+              <dd id="turn-execution-authority">Blocked</dd>
+            </div>
+            <div>
+              <dt>Pending</dt>
+              <dd id="execution-pending-text">0</dd>
+            </div>
+            <div>
+              <dt>Queue</dt>
+              <dd id="approval-queue-count">0</dd>
+            </div>
+            <div>
+              <dt>Managed queue</dt>
+              <dd id="approval-managed-count">0</dd>
+            </div>
+            <div>
+              <dt>Safe denies</dt>
+              <dd id="approval-safe-deny-count">0</dd>
+            </div>
+            <div>
+              <dt>Safe accepts</dt>
+              <dd id="approval-safe-accept-count">0</dd>
+            </div>
+            <div>
+              <dt>Previews</dt>
+              <dd id="approval-preview-count">0</dd>
+            </div>
+            <div>
+              <dt>Approval policy</dt>
+              <dd id="approval-policy-text">Deny only</dd>
+            </div>
+            <div>
+              <dt>Approval scope</dt>
+              <dd id="approval-scope-text">Request only</dd>
+            </div>
+            <div>
+              <dt>Forward deny</dt>
+              <dd id="approval-forward-deny-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Accept once</dt>
+              <dd id="approval-accept-once-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Approval kinds</dt>
+              <dd id="approval-kind-count">0</dd>
+            </div>
+            <div>
+              <dt>Rejected scopes</dt>
+              <dd id="approval-rejected-scope-count">0</dd>
+            </div>
+            <div>
+              <dt>Decisions</dt>
+              <dd id="execution-decisions-text">Disabled</dd>
+            </div>
+            <div>
+              <dt>History</dt>
+              <dd id="approval-decision-history-count">0</dd>
+            </div>
+            <div>
+              <dt>Approval state</dt>
+              <dd id="approval-lifecycle-state">Idle</dd>
+            </div>
+            <div>
+              <dt>Decision result</dt>
+              <dd id="approval-lifecycle-results">0 local / 0 forwarded</dd>
+            </div>
+            <div>
+              <dt>Latest decision</dt>
+              <dd id="approval-lifecycle-latest">-</dd>
+            </div>
+            <div>
+              <dt>Queue actions</dt>
+              <dd id="approval-queue-actions">0 deny / 0 accept</dd>
+            </div>
+            <div>
+              <dt>Management</dt>
+              <dd id="approval-management">Idle</dd>
+            </div>
+            <div>
+              <dt>Readiness</dt>
+              <dd id="approval-execution-readiness">Idle</dd>
+            </div>
+            <div>
+              <dt>Decision contract</dt>
+              <dd id="approval-decision-contract">Request only</dd>
+            </div>
+            <div>
+              <dt>Routing</dt>
+              <dd id="approval-routing-contract">Local deny</dd>
+            </div>
+            <div>
+              <dt>Workflow</dt>
+              <dd id="approval-workflow-contract">Idle</dd>
+            </div>
+            <div>
+              <dt>Safety</dt>
+              <dd id="approval-safety-contract">Request only</dd>
+            </div>
+            <div>
+              <dt>Audit</dt>
+              <dd id="approval-audit-contract">Replay</dd>
+            </div>
+            <div>
+              <dt>Authority</dt>
+              <dd id="approval-authority-contract">Request only</dd>
+            </div>
+            <div>
+              <dt>Approval UX</dt>
+              <dd id="approval-interaction-contract">Idle</dd>
+            </div>
+            <div>
+              <dt>Batch window</dt>
+              <dd id="approval-batch-window">0 / 20</dd>
+            </div>
+            <div>
+              <dt>Thread actions</dt>
+              <dd id="thread-lifecycle-action-history-count">0</dd>
+            </div>
+            <div>
+              <dt>Traffic</dt>
+              <dd id="execution-traffic-text">None</dd>
+            </div>
+            <div>
+              <dt>Sessions</dt>
+              <dd id="turn-session-count">0</dd>
+            </div>
+            <div>
+              <dt>Session state</dt>
+              <dd id="turn-session-lifecycle-state">Blocked</dd>
+            </div>
+            <div>
+              <dt>Turn ops</dt>
+              <dd id="turn-session-operations">0 ops</dd>
+            </div>
+            <div>
+              <dt>Turn management</dt>
+              <dd id="turn-session-management">Blocked</dd>
+            </div>
+            <div>
+              <dt>Turn readiness</dt>
+              <dd id="turn-session-readiness">Blocked</dd>
+            </div>
+            <div>
+              <dt>Turn route</dt>
+              <dd id="turn-session-routing">Local</dd>
+            </div>
+            <div>
+              <dt>Turn workflow</dt>
+              <dd id="turn-session-workflow">Blocked</dd>
+            </div>
+            <div>
+              <dt>Turn safety</dt>
+              <dd id="turn-session-safety">Request only</dd>
+            </div>
+            <div>
+              <dt>Turn audit</dt>
+              <dd id="turn-session-audit">Ledger</dd>
+            </div>
+            <div>
+              <dt>Session pending</dt>
+              <dd id="turn-session-pending-count">0</dd>
+            </div>
+            <div>
+              <dt>Approval sessions</dt>
+              <dd id="turn-session-approval-sessions">0 / 0</dd>
+            </div>
+            <div>
+              <dt>Session events</dt>
+              <dd id="turn-session-event-count">0</dd>
+            </div>
+            <div>
+              <dt>Model sessions</dt>
+              <dd id="turn-session-model-sessions">0</dd>
+            </div>
+            <div>
+              <dt>Session decisions</dt>
+              <dd id="turn-session-decision-count">0</dd>
+            </div>
+            <div>
+              <dt>Session-wide</dt>
+              <dd id="turn-session-wide-approval">Blocked</dd>
+            </div>
+            <div>
+              <dt>Approval policy</dt>
+              <dd id="turn-session-approval-policy">Request-scoped</dd>
+            </div>
+            <div>
+              <dt>Rejected grants</dt>
+              <dd id="turn-session-rejected-grants">4 blocked</dd>
+            </div>
+            <div>
+              <dt>Manager</dt>
+              <dd id="turn-session-manager-state">Disabled</dd>
+            </div>
+            <div>
+              <dt>Manager pending</dt>
+              <dd id="turn-session-manager-pending">0</dd>
+            </div>
+            <div>
+              <dt>Latest turn</dt>
+              <dd id="turn-session-latest-turn">-</dd>
+            </div>
+            <div>
+              <dt>Latest event</dt>
+              <dd id="turn-session-latest-event">-</dd>
+            </div>
+          </dl>
+          <div
+            id="approval-filter-toolbar"
+            class="segmented-control approval-filter-toolbar"
+            role="group"
+            aria-label="Approval queue filter"
+          >
+            <button
+              id="approval-filter-all-button"
+              class="secondary-button compact-button approval-filter-button"
+              type="button"
+              data-approval-filter="all"
+              aria-pressed="true"
+            >
+              All
+            </button>
+            <button
+              id="approval-filter-pending-button"
+              class="secondary-button compact-button approval-filter-button"
+              type="button"
+              data-approval-filter="pending"
+              aria-pressed="false"
+            >
+              Pending
+            </button>
+            <button
+              id="approval-filter-managed-button"
+              class="secondary-button compact-button approval-filter-button"
+              type="button"
+              data-approval-filter="managed"
+              aria-pressed="false"
+            >
+              Managed
+            </button>
+            <button
+              id="approval-filter-local-button"
+              class="secondary-button compact-button approval-filter-button"
+              type="button"
+              data-approval-filter="local"
+              aria-pressed="false"
+            >
+              Local
+            </button>
+            <button
+              id="approval-filter-command-button"
+              class="secondary-button compact-button approval-filter-button"
+              type="button"
+              data-approval-filter="command"
+              aria-pressed="false"
+            >
+              Command
+            </button>
+            <button
+              id="approval-filter-file-change-button"
+              class="secondary-button compact-button approval-filter-button"
+              type="button"
+              data-approval-filter="file-change"
+              aria-pressed="false"
+            >
+              File
+            </button>
+            <button
+              id="approval-filter-permissions-button"
+              class="secondary-button compact-button approval-filter-button"
+              type="button"
+              data-approval-filter="permissions"
+              aria-pressed="false"
+            >
+              Permissions
+            </button>
+            <button
+              id="approval-filter-decided-button"
+              class="secondary-button compact-button approval-filter-button"
+              type="button"
+              data-approval-filter="decided"
+              aria-pressed="false"
+            >
+              Decided
+            </button>
+          </div>
+          <p id="approval-filter-summary" class="empty-state">Showing all approval decisions.</p>
+          <p id="approval-bulk-status" class="empty-state">No pending approval decisions.</p>
+          <div id="approval-queue-list" class="boundary-list" role="list"></div>
+          <div id="approval-decision-history-list" class="boundary-list compact" role="list"></div>
+          <div id="thread-lifecycle-action-history-list" class="boundary-list compact" role="list"></div>
+          <div id="turn-session-list" class="boundary-list" role="list"></div>
+        </section>
+
+        <section class="panel full-width" aria-labelledby="terminal-heading" id="terminal">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Action boundary</p>
+              <h3 id="terminal-heading">Terminal &amp; Actions</h3>
+            </div>
+            <span id="terminal-state-text" class="count-pill">Blocked</span>
+          </div>
+          <dl class="agent-grid">
+            <div>
+              <dt>Sessions</dt>
+              <dd id="terminal-sessions-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Lifecycle</dt>
+              <dd id="terminal-lifecycle-text">Snapshots</dd>
+            </div>
+            <div>
+              <dt>Write</dt>
+              <dd id="terminal-write-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Resize</dt>
+              <dd id="terminal-resize-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Terminate</dt>
+              <dd id="terminal-terminate-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Cleanup</dt>
+              <dd id="terminal-clean-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Background list</dt>
+              <dd id="terminal-background-list-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Background terminate</dt>
+              <dd id="terminal-background-terminate-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Commands</dt>
+              <dd id="action-command-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Action scope</dt>
+              <dd id="terminal-action-scope-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>High risk blocked</dt>
+              <dd id="terminal-high-risk-count">0</dd>
+            </div>
+            <div>
+              <dt>History</dt>
+              <dd id="terminal-command-history-count">0</dd>
+            </div>
+            <div>
+              <dt>Process history</dt>
+              <dd id="process-spawn-history-count">0</dd>
+            </div>
+            <div>
+              <dt>Shell history</dt>
+              <dd id="thread-shell-command-history-count">0</dd>
+            </div>
+            <div>
+              <dt>Control checks</dt>
+              <dd id="terminal-control-preflight-history-count">0</dd>
+            </div>
+            <div>
+              <dt>Control confirmed</dt>
+              <dd id="terminal-control-confirmation-history-count">0</dd>
+            </div>
+            <div>
+              <dt>File writes</dt>
+              <dd id="action-file-write-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>File history</dt>
+              <dd id="file-action-history-count">0</dd>
+            </div>
+            <div>
+              <dt>Decisions</dt>
+              <dd id="action-decisions-text">Disabled</dd>
+            </div>
+            <div>
+              <dt>Traffic</dt>
+              <dd id="terminal-traffic-text">None</dd>
+            </div>
+            <div>
+              <dt>Audited</dt>
+              <dd id="terminal-audited-text">0</dd>
+            </div>
+          </dl>
+          <form id="terminal-form" class="turn-form">
+            <textarea
+              id="terminal-input"
+              maxlength="2000"
+              rows="3"
+              placeholder="Command"
+            ></textarea>
+            <div class="turn-actions">
+              <button id="terminal-preflight-button" class="secondary-button" type="submit">
+                Preflight
+              </button>
+              <button id="terminal-command-button" class="secondary-button" type="button" disabled>
+                Run
+              </button>
+              <span id="terminal-preflight-status" class="empty-state">Blocked</span>
+            </div>
+          </form>
+          <dl class="agent-grid">
+            <div>
+              <dt>Command chars</dt>
+              <dd id="terminal-command-chars">0</dd>
+            </div>
+            <div>
+              <dt>Command lines</dt>
+              <dd id="terminal-command-lines">0</dd>
+            </div>
+            <div>
+              <dt>Execution</dt>
+              <dd id="terminal-command-execution">Blocked</dd>
+            </div>
+            <div>
+              <dt>Session</dt>
+              <dd id="terminal-command-session">None</dd>
+            </div>
+            <div>
+              <dt>Exit</dt>
+              <dd id="terminal-command-exit">-</dd>
+            </div>
+            <div>
+              <dt>Output chars</dt>
+              <dd id="terminal-command-output">0</dd>
+            </div>
+          </dl>
+          <form id="process-spawn-form" class="turn-form">
+            <textarea
+              id="process-spawn-input"
+              maxlength="2000"
+              rows="3"
+              placeholder="Process argv"
+            ></textarea>
+            <div class="turn-actions">
+              <button id="process-spawn-preflight-button" class="secondary-button" type="submit">
+                Process Check
+              </button>
+              <button id="process-spawn-button" class="secondary-button" type="button" disabled>
+                Spawn
+              </button>
+              <span id="process-spawn-status" class="empty-state">Blocked</span>
+            </div>
+          </form>
+          <dl class="agent-grid">
+            <div>
+              <dt>Process chars</dt>
+              <dd id="process-spawn-chars">0</dd>
+            </div>
+            <div>
+              <dt>Process args</dt>
+              <dd id="process-spawn-args">0</dd>
+            </div>
+            <div>
+              <dt>Execution</dt>
+              <dd id="process-spawn-execution">Blocked</dd>
+            </div>
+            <div>
+              <dt>Exit</dt>
+              <dd id="process-spawn-exit">-</dd>
+            </div>
+            <div>
+              <dt>Output chars</dt>
+              <dd id="process-spawn-output">0</dd>
+            </div>
+            <div>
+              <dt>Env</dt>
+              <dd id="process-spawn-env">Omitted</dd>
+            </div>
+          </dl>
+          <form id="thread-shell-command-form" class="turn-form">
+            <div class="thread-tools">
+              <label class="search-control" for="thread-shell-command-thread">
+                <span>Thread suffix</span>
+                <input id="thread-shell-command-thread" type="text" autocomplete="off" maxlength="16" />
+              </label>
+            </div>
+            <textarea
+              id="thread-shell-command-input"
+              maxlength="2000"
+              rows="3"
+              placeholder="Thread shell command"
+            ></textarea>
+            <div class="turn-actions">
+              <button id="thread-shell-command-preflight-button" class="secondary-button" type="submit">
+                Shell Check
+              </button>
+              <button id="thread-shell-command-button" class="secondary-button" type="button" disabled>
+                Run Shell
+              </button>
+              <span id="thread-shell-command-status" class="empty-state">Blocked</span>
+            </div>
+          </form>
+          <dl class="agent-grid">
+            <div>
+              <dt>Thread suffix</dt>
+              <dd id="thread-shell-command-thread-text">-</dd>
+            </div>
+            <div>
+              <dt>Command chars</dt>
+              <dd id="thread-shell-command-chars">0</dd>
+            </div>
+            <div>
+              <dt>Execution</dt>
+              <dd id="thread-shell-command-execution">Blocked</dd>
+            </div>
+            <div>
+              <dt>Output</dt>
+              <dd id="thread-shell-command-output">None</dd>
+            </div>
+          </dl>
+          <form id="terminal-control-form" class="turn-form">
+            <div class="thread-tools">
+              <label class="workspace-control" for="terminal-control-action">
+                <span>Control</span>
+                <select id="terminal-control-action">
+                  <option value="write">Write</option>
+                  <option value="resize">Resize</option>
+                  <option value="terminate">Terminate</option>
+                </select>
+              </label>
+              <label class="workspace-control" for="terminal-control-method">
+                <span>Method</span>
+                <select id="terminal-control-method">
+                  <option value="command/exec/write" data-action="write">command/exec/write</option>
+                  <option value="process/writeStdin" data-action="write">process/writeStdin</option>
+                  <option value="command/exec/resize" data-action="resize">command/exec/resize</option>
+                  <option value="process/resizePty" data-action="resize">process/resizePty</option>
+                  <option value="command/exec/terminate" data-action="terminate">command/exec/terminate</option>
+                  <option value="process/kill" data-action="terminate">process/kill</option>
+                </select>
+              </label>
+              <label class="search-control" for="terminal-control-session">
+                <span>Session</span>
+                <input id="terminal-control-session" type="text" autocomplete="off" />
+              </label>
+              <label class="search-control" for="terminal-control-rows">
+                <span>Rows</span>
+                <input id="terminal-control-rows" type="number" min="1" max="500" />
+              </label>
+              <label class="search-control" for="terminal-control-cols">
+                <span>Cols</span>
+                <input id="terminal-control-cols" type="number" min="1" max="500" />
+              </label>
+            </div>
+            <textarea
+              id="terminal-control-input"
+              maxlength="2000"
+              rows="3"
+              placeholder="Input"
+            ></textarea>
+            <div class="turn-actions">
+              <button id="terminal-control-button" class="secondary-button" type="submit">
+                Preflight
+              </button>
+              <button id="terminal-control-run-button" class="secondary-button" type="button" disabled>
+                Execute
+              </button>
+              <span id="terminal-control-status" class="empty-state">Blocked</span>
+            </div>
+          </form>
+          <dl class="agent-grid">
+            <div>
+              <dt>Session chars</dt>
+              <dd id="terminal-control-session-chars">0</dd>
+            </div>
+            <div>
+              <dt>Input chars</dt>
+              <dd id="terminal-control-input-chars">0</dd>
+            </div>
+            <div>
+              <dt>Dimensions</dt>
+              <dd id="terminal-control-dimensions">-</dd>
+            </div>
+            <div>
+              <dt>Control</dt>
+              <dd id="terminal-control-execution">Blocked</dd>
+            </div>
+          </dl>
+          <form id="terminal-clean-form" class="turn-form">
+            <div class="thread-tools">
+              <label class="search-control" for="terminal-clean-thread">
+                <span>Thread suffix</span>
+                <input id="terminal-clean-thread" type="text" autocomplete="off" maxlength="16" />
+              </label>
+            </div>
+            <div class="turn-actions">
+              <button id="terminal-clean-preflight-button" class="secondary-button" type="submit">
+                Preflight
+              </button>
+              <button id="terminal-clean-button" class="secondary-button" type="button" disabled>
+                Clean
+              </button>
+              <span id="terminal-clean-status" class="empty-state">Blocked</span>
+            </div>
+          </form>
+          <dl class="agent-grid">
+            <div>
+              <dt>Thread suffix</dt>
+              <dd id="terminal-clean-thread-text">-</dd>
+            </div>
+            <div>
+              <dt>Loaded</dt>
+              <dd id="terminal-clean-loaded-text">0</dd>
+            </div>
+            <div>
+              <dt>Result</dt>
+              <dd id="terminal-clean-result-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Output</dt>
+              <dd id="terminal-clean-output-text">None</dd>
+            </div>
+          </dl>
+          <form id="terminal-background-list-form" class="turn-form">
+            <div class="thread-tools">
+              <label class="search-control" for="terminal-background-list-thread">
+                <span>Thread suffix</span>
+                <input id="terminal-background-list-thread" type="text" autocomplete="off" maxlength="16" />
+              </label>
+            </div>
+            <div class="turn-actions">
+              <button id="terminal-background-list-button" class="secondary-button" type="submit">
+                List
+              </button>
+              <button id="terminal-background-terminate-preflight-button" class="secondary-button" type="button" disabled>
+                Terminate Check
+              </button>
+              <button id="terminal-background-terminate-button" class="secondary-button" type="button" disabled>
+                Terminate
+              </button>
+              <span id="terminal-background-list-status" class="empty-state">Blocked</span>
+            </div>
+          </form>
+          <dl class="agent-grid">
+            <div>
+              <dt>Thread suffix</dt>
+              <dd id="terminal-background-list-thread-text">-</dd>
+            </div>
+            <div>
+              <dt>Loaded</dt>
+              <dd id="terminal-background-loaded-text">0</dd>
+            </div>
+            <div>
+              <dt>Terminals</dt>
+              <dd id="terminal-background-count-text">0</dd>
+            </div>
+            <div>
+              <dt>Selection</dt>
+              <dd id="terminal-background-selection-text">None</dd>
+            </div>
+          </dl>
+          <div id="terminal-background-list" class="boundary-list compact" role="list"></div>
+          <form id="file-action-form" class="turn-form">
+            <div class="thread-tools">
+              <label class="workspace-control" for="file-action-select">
+                <span>File action</span>
+                <select id="file-action-select">
+                  <option value="writeFile">Write</option>
+                  <option value="remove">Remove</option>
+                  <option value="copy">Copy</option>
+                  <option value="createDirectory">Create dir</option>
+                </select>
+              </label>
+              <label class="search-control" for="file-action-path">
+                <span>Target</span>
+                <input id="file-action-path" type="text" autocomplete="off" />
+              </label>
+              <label class="search-control" for="file-action-source">
+                <span>Source</span>
+                <input id="file-action-source" type="text" autocomplete="off" />
+              </label>
+            </div>
+            <textarea
+              id="file-action-content"
+              maxlength="4000"
+              rows="3"
+              placeholder="Content"
+            ></textarea>
+            <div class="turn-actions">
+              <button id="file-action-preflight-button" class="secondary-button" type="submit">
+                Preflight
+              </button>
+              <button id="file-action-button" class="secondary-button" type="button" disabled>
+                Apply
+              </button>
+              <span id="file-action-status" class="empty-state">Blocked</span>
+            </div>
+          </form>
+          <dl class="agent-grid">
+            <div>
+              <dt>Target</dt>
+              <dd id="file-action-target">-</dd>
+            </div>
+            <div>
+              <dt>Content chars</dt>
+              <dd id="file-action-chars">0</dd>
+            </div>
+            <div>
+              <dt>Mutation</dt>
+              <dd id="file-action-mutation">Blocked</dd>
+            </div>
+            <div>
+              <dt>Traffic</dt>
+              <dd id="file-action-traffic">None</dd>
+            </div>
+          </dl>
+          <div id="terminal-control-preflight-history-list" class="boundary-list compact" role="list"></div>
+          <div id="terminal-control-confirmation-history-list" class="boundary-list compact" role="list"></div>
+          <div id="file-action-history-list" class="boundary-list compact" role="list"></div>
+          <div id="process-spawn-history-list" class="boundary-list compact" role="list"></div>
+          <div id="thread-shell-command-history-list" class="boundary-list compact" role="list"></div>
+          <div id="terminal-command-history-list" class="boundary-list compact" role="list"></div>
+          <div id="terminal-method-list" class="boundary-list" role="list"></div>
+        </section>
+
+        <section class="panel full-width" aria-labelledby="events-heading" id="events">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Read-only stream</p>
+              <h3 id="events-heading">Live Events</h3>
+            </div>
+            <button id="stream-button" class="secondary-button" type="button">Listen</button>
+          </div>
+          <dl class="agent-grid">
+            <div>
+              <dt>Status</dt>
+              <dd id="stream-status-text">Idle</dd>
+            </div>
+            <div>
+              <dt>Events</dt>
+              <dd id="stream-event-count">0</dd>
+            </div>
+            <div>
+              <dt>Loaded</dt>
+              <dd id="live-session-count">0</dd>
+            </div>
+            <div>
+              <dt>Controls</dt>
+              <dd id="live-session-control-history-count">0</dd>
+            </div>
+            <div>
+              <dt>Source</dt>
+              <dd id="live-session-source">Blocked</dd>
+            </div>
+            <div>
+              <dt>Lifecycle</dt>
+              <dd id="live-session-lifecycle-state">Blocked</dd>
+            </div>
+            <div>
+              <dt>Gates</dt>
+              <dd id="live-session-control-gates">0 / 3</dd>
+            </div>
+            <div>
+              <dt>Operations</dt>
+              <dd id="live-session-operations">0 / 5</dd>
+            </div>
+            <div>
+              <dt>Management</dt>
+              <dd id="live-session-management">Blocked</dd>
+            </div>
+            <div>
+              <dt>Readiness</dt>
+              <dd id="live-session-readiness">Blocked</dd>
+            </div>
+            <div>
+              <dt>Routing</dt>
+              <dd id="live-session-routing">Local</dd>
+            </div>
+            <div>
+              <dt>Workflow</dt>
+              <dd id="live-session-workflow">Blocked</dd>
+            </div>
+            <div>
+              <dt>Safety</dt>
+              <dd id="live-session-safety">Blocked</dd>
+            </div>
+            <div>
+              <dt>Audit</dt>
+              <dd id="live-session-audit">History</dd>
+            </div>
+            <div>
+              <dt>Control split</dt>
+              <dd id="live-session-control-breakdown">0 / 0 / 0 / 0</dd>
+            </div>
+            <div>
+              <dt>Control result</dt>
+              <dd id="live-session-control-result-counts">0 ok / 0 failed</dd>
+            </div>
+            <div>
+              <dt>Latest control</dt>
+              <dd id="live-session-latest-control">-</dd>
+            </div>
+            <div>
+              <dt>Window</dt>
+              <dd>15s</dd>
+            </div>
+            <div>
+              <dt>Mode</dt>
+              <dd id="live-session-traffic">Read-only</dd>
+            </div>
+          </dl>
+          <form id="live-session-control-form" class="turn-form">
+            <div class="thread-tools">
+              <label class="workspace-control" for="live-session-control-action">
+                <span>Control</span>
+                <select id="live-session-control-action">
+                  <option value="interrupt">Interrupt</option>
+                  <option value="unsubscribe">Unsubscribe</option>
+                  <option value="steer">Steer</option>
+                </select>
+              </label>
+              <label class="search-control" for="live-session-control-thread">
+                <span>Thread</span>
+                <input id="live-session-control-thread" type="text" maxlength="8" autocomplete="off" />
+              </label>
+              <label class="search-control" for="live-session-control-turn">
+                <span>Turn</span>
+                <input id="live-session-control-turn" type="text" maxlength="8" autocomplete="off" />
+              </label>
+            </div>
+            <textarea
+              id="live-session-control-prompt"
+              maxlength="4000"
+              rows="3"
+              placeholder="Steer message"
+            ></textarea>
+            <div class="turn-actions">
+              <button id="live-session-control-preflight-button" class="secondary-button" type="submit">
+                Preflight
+              </button>
+              <button id="live-session-control-button" class="secondary-button" type="button" disabled>
+                Apply
+              </button>
+              <span id="live-session-control-status" class="empty-state">Blocked</span>
+            </div>
+          </form>
+          <form id="live-session-bulk-form" class="turn-form">
+            <div class="turn-actions">
+              <button id="live-session-bulk-preflight-button" class="secondary-button" type="submit">
+                Bulk Check
+              </button>
+              <button id="live-session-bulk-button" class="secondary-button" type="button" disabled>
+                Unsubscribe Loaded
+              </button>
+              <span id="live-session-bulk-status" class="empty-state">Blocked</span>
+            </div>
+          </form>
+          <dl class="agent-grid">
+            <div>
+              <dt>Control</dt>
+              <dd id="live-session-control-action-text">-</dd>
+            </div>
+            <div>
+              <dt>Target</dt>
+              <dd id="live-session-control-target-text">-</dd>
+            </div>
+            <div>
+              <dt>Mutation</dt>
+              <dd id="live-session-control-mutation-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Methods</dt>
+              <dd id="live-session-control-methods-text">0</dd>
+            </div>
+            <div>
+              <dt>Prompt chars</dt>
+              <dd id="live-session-control-prompt-chars">0</dd>
+            </div>
+            <div>
+              <dt>Bulk target</dt>
+              <dd id="live-session-bulk-target-text">-</dd>
+            </div>
+            <div>
+              <dt>Bulk result</dt>
+              <dd id="live-session-bulk-result-text">-</dd>
+            </div>
+            <div>
+              <dt>Bulk methods</dt>
+              <dd id="live-session-bulk-methods-text">0</dd>
+            </div>
+          </dl>
+          <div id="live-session-list" class="boundary-list" role="list"></div>
+          <div class="event-log-wrap">
+            <div id="stream-event-log" class="event-log" role="list"></div>
+          </div>
+        </section>
+
+        <section class="panel full-width" aria-labelledby="agent-heading" id="agent">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Opt-in runtime</p>
+              <h3 id="agent-heading">Agent Turn Probe</h3>
+            </div>
+            <button id="agent-button" class="secondary-button" type="button" disabled>
+              Run probe
+            </button>
+          </div>
+          <dl class="agent-grid">
+            <div>
+              <dt>Gate</dt>
+              <dd id="agent-gate-text">Checking</dd>
+            </div>
+            <div>
+              <dt>Status</dt>
+              <dd id="agent-status-text">Not run</dd>
+            </div>
+            <div>
+              <dt>Thread</dt>
+              <dd id="agent-thread-text">-</dd>
+            </div>
+            <div>
+              <dt>Turn</dt>
+              <dd id="agent-turn-text">-</dd>
+            </div>
+          </dl>
+          <div class="event-log-wrap">
+            <div class="event-log-header">
+              <span class="label">Event log</span>
+              <span id="agent-event-count" class="count-pill">0</span>
+            </div>
+            <div id="agent-event-log" class="event-log" role="list"></div>
+          </div>
+        </section>
+
+        <section id="error-panel" class="error-panel" hidden>
+          <strong>Probe failed</strong>
+          <p id="error-text"></p>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="/assets/app.js"></script>
+  </body>
+</html>

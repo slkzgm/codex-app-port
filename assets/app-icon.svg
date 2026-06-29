@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Codex App Port">
+  <rect width="128" height="128" rx="18" fill="#18201c"/>
+  <path d="M38 38h52a10 10 0 0 1 10 10v32a10 10 0 0 1-10 10H38a10 10 0 0 1-10-10V48a10 10 0 0 1 10-10z" fill="#fbfcfb"/>
+  <path d="M48 58l-10 8 10 8" fill="none" stroke="#1f7a5a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M80 58l10 8-10 8" fill="none" stroke="#1f7a5a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M61 82l10-36" fill="none" stroke="#18201c" stroke-width="7" stroke-linecap="round"/>
+</svg>

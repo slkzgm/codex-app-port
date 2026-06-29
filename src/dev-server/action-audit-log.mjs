@@ -1,0 +1,1332 @@
+import {
+  constants,
+  closeSync,
+  lstatSync,
+  mkdirSync,
+  openSync,
+  writeSync,
+} from "node:fs";
+import { homedir } from "node:os";
+import { dirname, join } from "node:path";
+import process from "node:process";
+
+export const ACTION_AUDIT_LOG_VERSION = 1;
+export const MAX_ACTION_AUDIT_LINE_BYTES = 4096;
+
+const ACTION_AUDIT_EVENTS = new Set([
+  "account-login-cancel-recorded",
+  "account-login-recorded",
+  "account-logout-recorded",
+  "config-batch-write-recorded",
+  "config-value-write-recorded",
+  "experimental-feature-set-recorded",
+  "file-action-recorded",
+  "live-session-bulk-control-recorded",
+  "live-session-control-recorded",
+  "mcp-oauth-login-recorded",
+  "mcp-server-reload-recorded",
+  "mcp-tool-call-recorded",
+  "mcp-resource-read-recorded",
+  "plugin-content-read-recorded",
+  "plugin-read-recorded",
+  "plugin-uninstall-recorded",
+  "process-spawn-recorded",
+  "skills-config-write-recorded",
+  "terminal-background-clean-recorded",
+  "terminal-background-terminate-recorded",
+  "terminal-control-recorded",
+  "terminal-command-recorded",
+  "thread-shell-command-recorded",
+  "thread-archive-recorded",
+  "thread-compact-recorded",
+  "thread-delete-recorded",
+  "thread-start-recorded",
+]);
+
+export function defaultActionAuditLogPath(env = process.env) {
+  const stateHome = env.XDG_STATE_HOME || join(homedir(), ".local", "state");
+  return join(stateHome, "codex-app-port", "actions.jsonl");
+}
+
+export function createActionAuditLog({
+  path = defaultActionAuditLogPath(),
+  now = () => new Date().toISOString(),
+} = {}) {
+  if (typeof path !== "string" || path.length === 0) {
+    throw new Error("Action audit log path must be a non-empty string");
+  }
+
+  return {
+    persistent: true,
+    ensureWritable() {
+      ensureAppendableNoFollow(path);
+      return true;
+    },
+    append(record) {
+      const auditRecord = sanitizeActionAuditRecord(record, { generatedAt: now() });
+      const line = `${JSON.stringify(auditRecord)}\n`;
+      if (Buffer.byteLength(line, "utf8") > MAX_ACTION_AUDIT_LINE_BYTES) {
+        throw new Error("Action audit log record exceeded size limit");
+      }
+      appendLineNoFollow(path, line);
+      return auditRecord;
+    },
+  };
+}
+
+export function sanitizeActionAuditRecord(record, { generatedAt = null } = {}) {
+  const payload = record?.payload && typeof record.payload === "object" ? record.payload : record;
+  const action = payload?.action && typeof payload.action === "object" ? payload.action : {};
+  const actionType = sanitizeActionType(action.type);
+  const event = ACTION_AUDIT_EVENTS.has(record?.event)
+    ? record.event
+    : actionAuditEvent(actionType);
+  const appServer =
+    payload?.appServer && typeof payload.appServer === "object" ? payload.appServer : {};
+  const target = payload?.target && typeof payload.target === "object" ? payload.target : {};
+  const source = payload?.source && typeof payload.source === "object" ? payload.source : null;
+  const prompt = payload?.prompt && typeof payload.prompt === "object" ? payload.prompt : {};
+  const content = payload?.content && typeof payload.content === "object" ? payload.content : {};
+  const result = payload?.result && typeof payload.result === "object" ? payload.result : {};
+  const filesystem =
+    payload?.filesystem && typeof payload.filesystem === "object" ? payload.filesystem : {};
+  const preflight =
+    payload?.preflight && typeof payload.preflight === "object" ? payload.preflight : {};
+  const scope = preflight.scope && typeof preflight.scope === "object" ? preflight.scope : {};
+
+  return {
+    version: ACTION_AUDIT_LOG_VERSION,
+    event,
+    generatedAt: safeString(generatedAt, 40),
+    workspace: sanitizeWorkspace(payload?.workspace ?? record?.workspace),
+    action: sanitizeAction(action, actionType, { appServer }),
+    appServer: {
+      touched: Boolean(appServer.touched),
+      modelTraffic: Boolean(appServer.modelTraffic),
+      commandTraffic:
+        actionType === "terminal-command" ||
+        actionType === "process-spawn" ||
+        actionType === "thread-shell-command"
+          ? Boolean(appServer.commandTraffic)
+          : false,
+      settingsTraffic:
+        actionType === "mcp-server-reload" ||
+        actionType === "config-batch-write" ||
+        actionType === "config-value-write" ||
+        actionType === "experimental-feature-set"
+          ? Boolean(appServer.settingsTraffic)
+          : false,
+      toolTraffic:
+        actionType === "mcp-tool-call" ? Boolean(appServer.toolTraffic) : false,
+      resourceTraffic:
+        actionType === "mcp-resource-read" ? Boolean(appServer.resourceTraffic) : false,
+      authTraffic:
+        actionType === "mcp-oauth-login" ? Boolean(appServer.authTraffic) : false,
+      pluginReadTraffic:
+        actionType === "plugin-read" ? Boolean(appServer.pluginReadTraffic) : false,
+      pluginContentTraffic:
+        actionType === "plugin-content-read" ? Boolean(appServer.pluginContentTraffic) : false,
+      pluginMutationTraffic:
+        actionType === "plugin-uninstall" ? Boolean(appServer.pluginMutationTraffic) : false,
+      skillsConfigTraffic:
+        actionType === "skills-config-write" ? Boolean(appServer.skillsConfigTraffic) : false,
+      auditedMethods: sanitizeMethodList(appServer.auditedMethods),
+    },
+    target: sanitizeTarget(target, actionType),
+    source: sanitizeSource(source, actionType),
+    prompt: {
+      present: Boolean(prompt.present),
+      charCount: safeCount(prompt.charCount),
+      lineCount: safeCount(prompt.lineCount),
+      textReturned: false,
+    },
+    content: {
+      present: Boolean(content.present),
+      charCount: safeCount(content.charCount),
+      lineCount: safeCount(content.lineCount),
+      textReturned: false,
+    },
+    result: sanitizeResult(result, actionType),
+    filesystem: sanitizeFilesystem(filesystem, actionType),
+    preflight: {
+      tokenConsumed: Boolean(preflight.tokenConsumed),
+      tokenReturned: false,
+      scope: {
+        kind: safeString(scope.kind, 80),
+        workspaceId: safeString(scope.workspaceId, 80),
+      },
+      rawIntentStored: false,
+      rawIntentReturned: false,
+      intentHashReturned: false,
+      oneTimeUseEnforced: Boolean(preflight.oneTimeUseEnforced),
+    },
+    policy: {
+      auditLogPathReturned: false,
+      preflightTokensReturned: false,
+      promptTextReturned: false,
+      fileContentsReturned: false,
+      fullIdsReturned: false,
+      pathsReturned: false,
+      fileBasenamesReturned: false,
+      threadContentReturned: false,
+      terminalOutputReturned: false,
+      terminalSessionIdentifiersReturned: false,
+      rawRequestBodyReturned: false,
+      sensitivePayloadLogged: false,
+    },
+  };
+}
+
+function actionAuditEvent(actionType) {
+  switch (actionType) {
+    case "account-login-cancel":
+      return "account-login-cancel-recorded";
+    case "account-login":
+      return "account-login-recorded";
+    case "account-logout":
+      return "account-logout-recorded";
+    case "config-value-write":
+      return "config-value-write-recorded";
+    case "config-batch-write":
+      return "config-batch-write-recorded";
+    case "experimental-feature-set":
+      return "experimental-feature-set-recorded";
+    case "file-action":
+      return "file-action-recorded";
+    case "mcp-tool-call":
+      return "mcp-tool-call-recorded";
+    case "mcp-server-reload":
+      return "mcp-server-reload-recorded";
+    case "mcp-resource-read":
+      return "mcp-resource-read-recorded";
+    case "mcp-oauth-login":
+      return "mcp-oauth-login-recorded";
+    case "plugin-read":
+      return "plugin-read-recorded";
+    case "plugin-uninstall":
+      return "plugin-uninstall-recorded";
+    case "plugin-content-read":
+      return "plugin-content-read-recorded";
+    case "process-spawn":
+      return "process-spawn-recorded";
+    case "skills-config-write":
+      return "skills-config-write-recorded";
+    case "terminal-background-clean":
+      return "terminal-background-clean-recorded";
+    case "terminal-background-terminate":
+      return "terminal-background-terminate-recorded";
+    case "terminal-control":
+      return "terminal-control-recorded";
+    case "terminal-command":
+      return "terminal-command-recorded";
+    case "thread-shell-command":
+      return "thread-shell-command-recorded";
+    case "thread-archive":
+      return "thread-archive-recorded";
+    case "thread-compact":
+      return "thread-compact-recorded";
+    case "thread-delete":
+      return "thread-delete-recorded";
+    case "thread-start":
+      return "thread-start-recorded";
+    case "live-session-control":
+      return "live-session-control-recorded";
+    case "live-session-bulk-control":
+      return "live-session-bulk-control-recorded";
+    default:
+      return "live-session-control-recorded";
+  }
+}
+
+function sanitizeAction(action, actionType, { appServer }) {
+  if (actionType === "account-login-cancel") {
+    return {
+      type: "account-login-cancel",
+      method: "account/login/cancel",
+      execution: safeString(action.execution, 40) ?? "canceled",
+      authMutation: Boolean(action.authMutation),
+      authFlowStarted: false,
+      authFlowCanceled: Boolean(action.authFlowCanceled),
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: false,
+    };
+  }
+  if (actionType === "account-login") {
+    return {
+      type: "account-login",
+      method: "account/login/start",
+      execution: safeString(action.execution, 40) ?? "started-with-redactions",
+      authMutation: Boolean(action.authMutation),
+      authFlowStarted: Boolean(action.authFlowStarted),
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: false,
+    };
+  }
+  if (actionType === "account-logout") {
+    return {
+      type: "account-logout",
+      method: "account/logout",
+      execution: safeString(action.execution, 40) ?? "logged-out",
+      authMutation: Boolean(action.authMutation),
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: false,
+    };
+  }
+  if (actionType === "file-action") {
+    const fileAction = sanitizeFileAction(action.fileAction);
+    return {
+      type: "file-action",
+      fileAction,
+      method: safeString(action.method, 100) ?? fileActionMethod(fileAction),
+      execution: safeString(action.execution, 40) ?? "completed",
+      filesystemWrites: Boolean(action.filesystemWrites),
+      appServerTouched: false,
+      modelTraffic: false,
+    };
+  }
+  if (actionType === "terminal-background-clean") {
+    return {
+      type: "terminal-background-clean",
+      method: "thread/backgroundTerminals/clean",
+      execution: safeString(action.execution, 40) ?? "completed",
+      terminalCleanup: Boolean(action.terminalCleanup),
+      terminalSessionTouched: Boolean(action.terminalSessionTouched),
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: false,
+    };
+  }
+  if (actionType === "terminal-background-terminate") {
+    return {
+      type: "terminal-background-terminate",
+      method: "thread/backgroundTerminals/terminate",
+      execution: safeString(action.execution, 40) ?? "completed",
+      terminalTerminate: Boolean(action.terminalTerminate),
+      terminalSessionTouched: Boolean(action.terminalSessionTouched),
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: false,
+    };
+  }
+  if (actionType === "mcp-resource-read") {
+    return {
+      type: "mcp-resource-read",
+      method: "mcpServer/resource/read",
+      execution: safeString(action.execution, 40) ?? "completed",
+      resourceRead: Boolean(action.resourceRead),
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: false,
+    };
+  }
+  if (actionType === "mcp-tool-call") {
+    return {
+      type: "mcp-tool-call",
+      method: "mcpServer/tool/call",
+      execution: safeString(action.execution, 40) ?? "completed",
+      toolInvocation: Boolean(action.toolInvocation),
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: false,
+    };
+  }
+  if (actionType === "mcp-server-reload") {
+    return {
+      type: "mcp-server-reload",
+      method: "config/mcpServer/reload",
+      execution: safeString(action.execution, 40) ?? "completed",
+      mcpServersReloaded: Boolean(action.mcpServersReloaded),
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: false,
+    };
+  }
+  if (actionType === "mcp-oauth-login") {
+    return {
+      type: "mcp-oauth-login",
+      method: "mcpServer/oauth/login",
+      execution: safeString(action.execution, 40) ?? "completed",
+      authFlowStarted: Boolean(action.authFlowStarted),
+      mcpOauthLogin: Boolean(action.mcpOauthLogin),
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: false,
+    };
+  }
+  if (actionType === "config-value-write") {
+    return {
+      type: "config-value-write",
+      method: "config/value/write",
+      execution: safeString(action.execution, 40) ?? "completed",
+      settingsWrite: Boolean(action.settingsWrite),
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: false,
+    };
+  }
+  if (actionType === "config-batch-write") {
+    return {
+      type: "config-batch-write",
+      method: "config/batchWrite",
+      execution: safeString(action.execution, 40) ?? "completed",
+      settingsWrite: Boolean(action.settingsWrite),
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: false,
+    };
+  }
+  if (actionType === "experimental-feature-set") {
+    return {
+      type: "experimental-feature-set",
+      method: "experimentalFeature/enablement/set",
+      execution: safeString(action.execution, 40) ?? "completed",
+      settingsWrite: Boolean(action.settingsWrite),
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: false,
+    };
+  }
+  if (actionType === "plugin-read") {
+    return {
+      type: "plugin-read",
+      method: "plugin/read",
+      execution: safeString(action.execution, 40) ?? "completed",
+      pluginRead: Boolean(action.pluginRead),
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: false,
+    };
+  }
+  if (actionType === "plugin-uninstall") {
+    return {
+      type: "plugin-uninstall",
+      method: "plugin/uninstall",
+      execution: safeString(action.execution, 40) ?? "completed",
+      pluginMutation: Boolean(action.pluginMutation),
+      pluginUninstall: Boolean(action.pluginUninstall),
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: false,
+    };
+  }
+  if (actionType === "plugin-content-read") {
+    const method = safeString(action.method, 100) ?? "plugin/skill/read";
+    return {
+      type: "plugin-content-read",
+      method,
+      execution: safeString(action.execution, 40) ?? "completed",
+      pluginContentRead: method === "plugin/skill/read" && Boolean(action.pluginContentRead),
+      pluginShareList: method === "plugin/share/list" && Boolean(action.pluginShareList),
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: false,
+    };
+  }
+  if (actionType === "skills-config-write") {
+    return {
+      type: "skills-config-write",
+      method: "skills/config/write",
+      execution: safeString(action.execution, 40) ?? "completed",
+      skillsConfigWrite: Boolean(action.skillsConfigWrite),
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: false,
+    };
+  }
+  if (actionType === "terminal-command") {
+    return {
+      type: "terminal-command",
+      method: "command/exec",
+      execution: safeString(action.execution, 40) ?? "completed",
+      commandExecution: Boolean(action.commandExecution),
+      terminalSessionCreated: false,
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: false,
+    };
+  }
+  if (actionType === "thread-shell-command") {
+    return {
+      type: "thread-shell-command",
+      method: "thread/shellCommand",
+      execution: safeString(action.execution, 40) ?? "completed",
+      commandExecution: Boolean(action.commandExecution),
+      threadShellCommand: Boolean(action.threadShellCommand),
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: false,
+    };
+  }
+  if (actionType === "process-spawn") {
+    return {
+      type: "process-spawn",
+      method: "process/spawn",
+      execution: safeString(action.execution, 40) ?? "completed",
+      commandExecution: Boolean(action.commandExecution),
+      hostProcessExecution: Boolean(action.hostProcessExecution),
+      terminalSessionCreated: false,
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: false,
+    };
+  }
+  if (actionType === "terminal-control") {
+    const terminalAction = sanitizeTerminalControlAction(action.terminalAction);
+    const method = safeString(action.method, 100) ?? terminalControlMethod(terminalAction);
+    return {
+      type: "terminal-control",
+      terminalAction,
+      method,
+      execution: safeString(action.execution, 40) ?? "completed",
+      terminalWrite: terminalAction === "write" && Boolean(action.terminalWrite),
+      terminalResize: terminalAction === "resize" && Boolean(action.terminalResize),
+      terminalTerminate: terminalAction === "terminate" && Boolean(action.terminalTerminate),
+      commandExecTerminalControl: method.startsWith("command/exec/"),
+      processTerminalControl: method.startsWith("process/"),
+      terminalSessionTouched: Boolean(action.terminalSessionTouched),
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: false,
+    };
+  }
+  if (actionType === "thread-start") {
+    return {
+      type: "thread-start",
+      method: "thread/start",
+      execution: safeString(action.execution, 40) ?? "created",
+      threadCreated: Boolean(action.threadCreated),
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: false,
+    };
+  }
+  if (actionType === "thread-archive") {
+    const archiveAction = sanitizeThreadArchiveAction(action.threadArchiveAction);
+    return {
+      type: "thread-archive",
+      method: archiveAction === "unarchive" ? "thread/unarchive" : "thread/archive",
+      execution: safeString(action.execution, 40) ?? "completed",
+      threadArchiveAction: archiveAction,
+      threadStateMutated: Boolean(action.threadStateMutated),
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: false,
+    };
+  }
+  if (actionType === "thread-delete") {
+    return {
+      type: "thread-delete",
+      method: "thread/delete",
+      execution: safeString(action.execution, 40) ?? "deleted",
+      threadDeleted: Boolean(action.threadDeleted),
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: false,
+    };
+  }
+  if (actionType === "thread-compact") {
+    return {
+      type: "thread-compact",
+      method: "thread/compact/start",
+      execution: safeString(action.execution, 40) ?? "started",
+      threadCompactionStarted: Boolean(action.threadCompactionStarted ?? action.threadCompacted),
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: true,
+      sendsPromptToAppServer: false,
+    };
+  }
+  if (actionType === "live-session-bulk-control") {
+    return {
+      type: "live-session-bulk-control",
+      liveSessionAction: "unsubscribe",
+      method: "thread/unsubscribe",
+      execution: safeString(action.execution, 40) ?? "completed",
+      liveSessionMutation: Boolean(action.liveSessionMutation),
+      bulkLiveSessionMutation: Boolean(action.bulkLiveSessionMutation),
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: false,
+      sendsPromptToAppServer: false,
+    };
+  }
+  const liveSessionAction = sanitizeLiveSessionControlAction(action.liveSessionAction);
+  return {
+    type: "live-session-control",
+    liveSessionAction,
+    method: safeString(action.method, 100) ?? liveSessionControlMethod(liveSessionAction),
+    execution: safeString(action.execution, 40) ?? "completed",
+    appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+    modelTraffic: Boolean(action.modelTraffic ?? appServer.modelTraffic),
+    sendsPromptToAppServer: Boolean(action.sendsPromptToAppServer),
+  };
+}
+
+function sanitizeTarget(target, actionType) {
+  if (actionType === "account-login-cancel") {
+    return {
+      loginRefReturned: false,
+      loginIdReturned: false,
+      accountIdentifiersReturned: false,
+      tokensReturned: false,
+      authUrlReturned: false,
+      urlsReturned: false,
+    };
+  }
+  if (actionType === "account-login") {
+    return {
+      loginType: safeString(target.loginType, 40) ?? "chatgptDeviceCode",
+      accountIdentifiersReturned: false,
+      tokensReturned: false,
+      loginIdReturned: false,
+      authUrlReturned: false,
+      verificationUrlReturned: false,
+      userCodeReturned: false,
+      urlsReturned: false,
+    };
+  }
+  if (actionType === "account-logout") {
+    return {
+      accountIdentifiersReturned: false,
+      tokensReturned: false,
+      urlsReturned: false,
+    };
+  }
+  if (actionType === "file-action") {
+    return {
+      depth: safeCount(target.depth),
+      basenameReturned: false,
+      pathReturned: false,
+    };
+  }
+  if (actionType === "terminal-background-clean") {
+    return {
+      threadIdSuffix: safeString(target.threadIdSuffix, 16),
+      fullIdsReturned: false,
+      pathsReturned: false,
+    };
+  }
+  if (actionType === "terminal-background-terminate") {
+    return {
+      threadIdSuffix: safeString(target.threadIdSuffix, 16),
+      terminalRefReturned: false,
+      processIdReturned: false,
+      fullIdsReturned: false,
+      pathsReturned: false,
+    };
+  }
+  if (actionType === "mcp-resource-read") {
+    return {
+      serverCharCount: safeCount(target.serverCharCount),
+      resourceCharCount: safeCount(target.resourceCharCount),
+      namesReturned: false,
+      resourceUriReturned: false,
+      pathsReturned: false,
+    };
+  }
+  if (actionType === "mcp-tool-call") {
+    return {
+      serverCharCount: safeCount(target.serverCharCount),
+      toolCharCount: safeCount(target.toolCharCount),
+      argumentCharCount: safeCount(target.argumentCharCount),
+      argumentTopLevelKeyCount: safeCount(target.argumentTopLevelKeyCount),
+      namesReturned: false,
+      argumentTextReturned: false,
+      threadIdSuffixReturned: false,
+      fullIdsReturned: false,
+      pathsReturned: false,
+    };
+  }
+  if (actionType === "mcp-server-reload") {
+    return {
+      argumentCount: safeCount(target.argumentCount),
+      namesReturned: false,
+      pathsReturned: false,
+      rawPayloadReturned: false,
+    };
+  }
+  if (actionType === "mcp-oauth-login") {
+    return {
+      serverCharCount: safeCount(target.serverCharCount),
+      namesReturned: false,
+      pathsReturned: false,
+      rawPayloadReturned: false,
+    };
+  }
+  if (actionType === "config-value-write") {
+    return {
+      keyPathCharCount: safeCount(target.keyPathCharCount),
+      valueCharCount: safeCount(target.valueCharCount),
+      valueLineCount: safeCount(target.valueLineCount),
+      valueTopLevelKeyCount: safeCount(target.valueTopLevelKeyCount),
+      valueArrayItemCount: safeCount(target.valueArrayItemCount),
+      mergeStrategy: safeString(target.mergeStrategy, 20),
+      keyPathReturned: false,
+      valueReturned: false,
+      pathsReturned: false,
+      rawPayloadReturned: false,
+    };
+  }
+  if (actionType === "config-batch-write") {
+    return {
+      editCount: safeCount(target.editCount),
+      editsJsonCharCount: safeCount(target.editsJsonCharCount),
+      keyPathCharCount: safeCount(target.keyPathCharCount),
+      valueCharCount: safeCount(target.valueCharCount),
+      valueLineCount: safeCount(target.valueLineCount),
+      valueTopLevelKeyCount: safeCount(target.valueTopLevelKeyCount),
+      valueArrayItemCount: safeCount(target.valueArrayItemCount),
+      keyPathsReturned: false,
+      valuesReturned: false,
+      pathsReturned: false,
+      rawPayloadReturned: false,
+    };
+  }
+  if (actionType === "experimental-feature-set") {
+    return {
+      featureCharCount: safeCount(target.featureCharCount),
+      enabledValueCount: safeCount(target.enabledValueCount),
+      featureNameReturned: false,
+      enablementValuesReturned: false,
+      pathsReturned: false,
+      rawPayloadReturned: false,
+    };
+  }
+  if (actionType === "plugin-read") {
+    return {
+      targetCharCount: safeCount(target.targetCharCount),
+      argumentCharCount: safeCount(target.argumentCharCount),
+      argumentTopLevelKeyCount: safeCount(target.argumentTopLevelKeyCount),
+      targetReturned: false,
+      argumentTextReturned: false,
+      namesReturned: false,
+      pathsReturned: false,
+      urlsReturned: false,
+    };
+  }
+  if (actionType === "plugin-uninstall") {
+    return {
+      targetCharCount: safeCount(target.targetCharCount),
+      pluginIdReturned: false,
+      namesReturned: false,
+      pathsReturned: false,
+      urlsReturned: false,
+      rawPayloadReturned: false,
+    };
+  }
+  if (actionType === "plugin-content-read") {
+    return {
+      targetCharCount: safeCount(target.targetCharCount),
+      argumentCharCount: safeCount(target.argumentCharCount),
+      argumentTopLevelKeyCount: safeCount(target.argumentTopLevelKeyCount),
+      targetReturned: false,
+      argumentTextReturned: false,
+      namesReturned: false,
+      pathsReturned: false,
+      urlsReturned: false,
+    };
+  }
+  if (actionType === "skills-config-write") {
+    return {
+      targetCharCount: safeCount(target.targetCharCount),
+      argumentCharCount: safeCount(target.argumentCharCount),
+      argumentTopLevelKeyCount: safeCount(target.argumentTopLevelKeyCount),
+      targetReturned: false,
+      argumentTextReturned: false,
+      namesReturned: false,
+      pathsReturned: false,
+    };
+  }
+  if (actionType === "terminal-command") {
+    return {
+      commandTextReturned: false,
+      argvReturned: false,
+      executableReturned: false,
+      cwdReturned: false,
+      pathsReturned: false,
+    };
+  }
+  if (actionType === "thread-shell-command") {
+    return {
+      threadIdSuffix: safeString(target.threadIdSuffix, 16),
+      commandTextReturned: false,
+      outputTextReturned: false,
+      terminalSessionIdentifiersReturned: false,
+      fullIdsReturned: false,
+      pathsReturned: false,
+    };
+  }
+  if (actionType === "terminal-control") {
+    return {
+      sessionSelectorCharCount: safeCount(target.sessionSelectorCharCount),
+      sessionIdentifierReturned: false,
+      pathsReturned: false,
+    };
+  }
+  if (actionType === "thread-start") {
+    return {
+      threadIdSuffix: safeString(target.threadIdSuffix, 16),
+      fullIdsReturned: false,
+      pathsReturned: false,
+    };
+  }
+  if (actionType === "thread-archive") {
+    return {
+      threadIdSuffix: safeString(target.threadIdSuffix, 16),
+      archived: Boolean(target.archived),
+      fullIdsReturned: false,
+      pathsReturned: false,
+    };
+  }
+  if (actionType === "thread-delete") {
+    return {
+      threadIdSuffix: safeString(target.threadIdSuffix, 16),
+      deleted: Boolean(target.deleted),
+      sourceArchived: Boolean(target.sourceArchived),
+      fullIdsReturned: false,
+      pathsReturned: false,
+    };
+  }
+  if (actionType === "thread-compact") {
+    return {
+      threadIdSuffix: safeString(target.threadIdSuffix, 16),
+      fullIdsReturned: false,
+      pathsReturned: false,
+    };
+  }
+  if (actionType === "live-session-bulk-control") {
+    return {
+      targetScope: safeString(target.targetScope, 40) ?? "all-loaded",
+      threadIdSuffixesReturned: false,
+      fullIdsReturned: false,
+      pathsReturned: false,
+    };
+  }
+  return {
+    threadIdSuffix: safeString(target.threadIdSuffix, 16),
+    turnIdSuffix: safeString(target.turnIdSuffix, 16),
+    responseTurnIdSuffix: safeString(target.responseTurnIdSuffix, 16),
+    fullIdsReturned: false,
+  };
+}
+
+function sanitizeSource(source, actionType) {
+  if (actionType !== "file-action" || !source) {
+    return null;
+  }
+  return {
+    depth: safeCount(source.depth),
+    basenameReturned: false,
+    pathReturned: false,
+  };
+}
+
+function sanitizeResult(result, actionType) {
+  if (actionType === "account-login-cancel") {
+    return {
+      status: safeString(result.status, 80) ?? "canceled",
+      canceled: Boolean(result.canceled),
+      notFound: Boolean(result.notFound),
+      responseReturned: false,
+      loginRefReturned: false,
+      loginIdReturned: false,
+      authUrlReturned: false,
+      tokensReturned: false,
+      accountIdentifiersReturned: false,
+      urlsReturned: false,
+      rawPayloadReturned: false,
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
+  if (actionType === "account-login") {
+    return {
+      status: safeString(result.status, 80) ?? "started-with-redactions",
+      resultType: safeString(result.resultType, 40),
+      deviceCodeFlow: Boolean(result.deviceCodeFlow),
+      userCodeReturned: false,
+      verificationUrlReturned: false,
+      loginIdReturned: false,
+      authUrlReturned: false,
+      tokensReturned: false,
+      accountIdentifiersReturned: false,
+      urlsReturned: false,
+      rawPayloadReturned: false,
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
+  if (actionType === "account-logout") {
+    return {
+      status: safeString(result.status, 80) ?? "logged-out",
+      tokensReturned: false,
+      accountIdentifiersReturned: false,
+      urlsReturned: false,
+      rawPayloadReturned: false,
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
+  if (actionType === "terminal-background-clean") {
+    return {
+      status: safeString(result.status, 80),
+      loadedSessionCount: safeCount(result.loadedSessionCount),
+      outputTextReturned: false,
+      terminalSessionIdentifiersReturned: false,
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
+  if (actionType === "terminal-background-terminate") {
+    return {
+      status: safeString(result.status, 80),
+      loadedSessionCount: safeCount(result.loadedSessionCount),
+      terminated: Boolean(result.terminated),
+      outputTextReturned: false,
+      terminalSessionIdentifiersReturned: false,
+      processIdsReturned: false,
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
+  if (actionType === "mcp-resource-read") {
+    return {
+      status: safeString(result.status, 80) ?? "completed",
+      contentCount: safeCount(result.contentCount),
+      textContentCount: safeCount(result.textContentCount),
+      blobContentCount: safeCount(result.blobContentCount),
+      textCharCount: safeCount(result.textCharCount),
+      blobCharCount: safeCount(result.blobCharCount),
+      contentReturned: false,
+      resourceUriReturned: false,
+      mimeTypesReturned: false,
+      rawPayloadReturned: false,
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
+  if (actionType === "mcp-tool-call") {
+    return {
+      status: safeString(result.status, 80) ?? "completed",
+      contentCount: safeCount(result.contentCount),
+      textContentCount: safeCount(result.textContentCount),
+      resourceContentCount: safeCount(result.resourceContentCount),
+      imageContentCount: safeCount(result.imageContentCount),
+      otherContentCount: safeCount(result.otherContentCount),
+      textCharCount: safeCount(result.textCharCount),
+      maxContentCharCount: safeCount(result.maxContentCharCount),
+      structuredContentPresent: Boolean(result.structuredContentPresent),
+      structuredContentTopLevelKeyCount: safeCount(result.structuredContentTopLevelKeyCount),
+      isError: Boolean(result.isError),
+      contentReturned: false,
+      structuredContentReturned: false,
+      namesReturned: false,
+      idsReturned: false,
+      rawPayloadReturned: false,
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
+  if (actionType === "mcp-server-reload") {
+    return {
+      status: safeString(result.status, 80) ?? "completed",
+      responseObject: Boolean(result.responseObject),
+      responseTopLevelKeyCount: safeCount(result.responseTopLevelKeyCount),
+      responseReturned: false,
+      namesReturned: false,
+      pathsReturned: false,
+      rawPayloadReturned: false,
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
+  if (actionType === "mcp-oauth-login") {
+    return {
+      status: safeString(result.status, 80) ?? "completed",
+      responseObject: Boolean(result.responseObject),
+      responseTopLevelKeyCount: safeCount(result.responseTopLevelKeyCount),
+      authorizationUrlReturned: false,
+      authorizationUrlCharCount: safeCount(result.authorizationUrlCharCount),
+      namesReturned: false,
+      tokensReturned: false,
+      rawPayloadReturned: false,
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
+  if (actionType === "config-value-write") {
+    return {
+      status: safeString(result.status, 80) ?? "completed",
+      responseObject: Boolean(result.responseObject),
+      responseTopLevelKeyCount: safeCount(result.responseTopLevelKeyCount),
+      responseReturned: false,
+      keyPathReturned: false,
+      valueReturned: false,
+      pathsReturned: false,
+      rawPayloadReturned: false,
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
+  if (actionType === "config-batch-write") {
+    return {
+      status: safeString(result.status, 80) ?? "completed",
+      editCount: safeCount(result.editCount),
+      responseObject: Boolean(result.responseObject),
+      responseTopLevelKeyCount: safeCount(result.responseTopLevelKeyCount),
+      responseReturned: false,
+      keyPathsReturned: false,
+      valuesReturned: false,
+      pathsReturned: false,
+      rawPayloadReturned: false,
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
+  if (actionType === "experimental-feature-set") {
+    return {
+      status: safeString(result.status, 80) ?? "completed",
+      responseObject: Boolean(result.responseObject),
+      responseTopLevelKeyCount: safeCount(result.responseTopLevelKeyCount),
+      updatedFeatureCount: safeCount(result.updatedFeatureCount),
+      enabledCount: safeCount(result.enabledCount),
+      disabledCount: safeCount(result.disabledCount),
+      responseReturned: false,
+      featureNamesReturned: false,
+      enablementValuesReturned: false,
+      pathsReturned: false,
+      rawPayloadReturned: false,
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
+  if (actionType === "plugin-read") {
+    return {
+      status: safeString(result.status, 80) ?? "completed",
+      pluginPresent: Boolean(result.pluginPresent),
+      appCount: safeCount(result.appCount),
+      hookCount: safeCount(result.hookCount),
+      mcpServerCount: safeCount(result.mcpServerCount),
+      skillCount: safeCount(result.skillCount),
+      keywordCount: safeCount(result.keywordCount),
+      descriptionCharCount: safeCount(result.descriptionCharCount),
+      pluginReturned: false,
+      namesReturned: false,
+      idsReturned: false,
+      pathsReturned: false,
+      urlsReturned: false,
+      descriptionsReturned: false,
+      rawPayloadReturned: false,
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
+  if (actionType === "plugin-uninstall") {
+    return {
+      status: safeString(result.status, 80) ?? "completed",
+      responseObject: Boolean(result.responseObject),
+      responseTopLevelKeyCount: safeCount(result.responseTopLevelKeyCount),
+      responseReturned: false,
+      pluginIdReturned: false,
+      namesReturned: false,
+      pathsReturned: false,
+      urlsReturned: false,
+      rawPayloadReturned: false,
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
+  if (actionType === "plugin-content-read") {
+    return {
+      status: safeString(result.status, 80) ?? "completed",
+      method: safeString(result.method, 100),
+      skillContentPresent: Boolean(result.skillContentPresent),
+      contentCharCount: safeCount(result.contentCharCount),
+      contentLineCount: safeCount(result.contentLineCount),
+      itemCount: safeCount(result.itemCount),
+      shareUrlCount: safeCount(result.shareUrlCount),
+      localPathCount: safeCount(result.localPathCount),
+      installedCount: safeCount(result.installedCount),
+      enabledCount: safeCount(result.enabledCount),
+      contentReturned: false,
+      namesReturned: false,
+      idsReturned: false,
+      pathsReturned: false,
+      urlsReturned: false,
+      descriptionsReturned: false,
+      principalsReturned: false,
+      rawPayloadReturned: false,
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
+  if (actionType === "skills-config-write") {
+    return {
+      status: safeString(result.status, 80) ?? "completed",
+      effectiveEnabled: Boolean(result.effectiveEnabled),
+      responseReturned: false,
+      namesReturned: false,
+      pathsReturned: false,
+      rawPayloadReturned: false,
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
+  if (actionType === "terminal-command") {
+    return {
+      status: safeString(result.status, 80) ?? "completed",
+      exitCode: Number.isSafeInteger(result.exitCode) ? result.exitCode : null,
+      stdoutCharCount: safeCount(result.stdoutCharCount),
+      stderrCharCount: safeCount(result.stderrCharCount),
+      stdoutReturned: false,
+      stderrReturned: false,
+      outputTextReturned: false,
+      processIdReturned: false,
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
+  if (actionType === "thread-shell-command") {
+    return {
+      status: safeString(result.status, 80) ?? "submitted",
+      loadedSessionCount: safeCount(result.loadedSessionCount),
+      outputTextReturned: false,
+      terminalSessionIdentifiersReturned: false,
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
+  if (actionType === "process-spawn") {
+    return {
+      status: safeString(result.status, 80) ?? "completed",
+      exitCode: Number.isSafeInteger(result.exitCode) ? result.exitCode : null,
+      stdoutCharCount: safeCount(result.stdoutCharCount),
+      stderrCharCount: safeCount(result.stderrCharCount),
+      stdoutReturned: false,
+      stderrReturned: false,
+      outputTextReturned: false,
+      processHandleReturned: false,
+      processIdReturned: false,
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
+  if (actionType === "terminal-control") {
+    return {
+      status: safeString(result.status, 80) ?? "completed",
+      outputTextReturned: false,
+      terminalSessionIdentifiersReturned: false,
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
+  if (actionType === "thread-start") {
+    return {
+      status: safeString(result.status, 80) ?? "created",
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
+  if (actionType === "thread-archive") {
+    return {
+      status: safeString(result.status, 80) ?? "completed",
+      archived: Boolean(result.archived),
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
+  if (actionType === "thread-delete") {
+    return {
+      status: safeString(result.status, 80) ?? "deleted",
+      deleted: Boolean(result.deleted),
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
+  if (actionType === "thread-compact") {
+    return {
+      status: safeString(result.status, 80) ?? "compact-started",
+      loadedSessionCount: safeCount(result.loadedSessionCount),
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
+  if (actionType === "live-session-bulk-control") {
+    return {
+      status: safeString(result.status, 80) ?? "completed",
+      loadedSessionCount: safeCount(result.loadedSessionCount),
+      attemptedSessionCount: safeCount(result.attemptedSessionCount),
+      succeededSessionCount: safeCount(result.succeededSessionCount),
+      failedSessionCount: safeCount(result.failedSessionCount),
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
+  if (actionType === "file-action") {
+    return {
+      status: safeString(result.status, 80) ?? "completed",
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
+  return {
+    status: safeString(result.status, 80),
+    loadedSessionCount: safeCount(result.loadedSessionCount),
+    fullIdsReturned: false,
+    threadContentReturned: false,
+  };
+}
+
+function sanitizeFilesystem(filesystem, actionType) {
+  if (actionType !== "file-action") {
+    return null;
+  }
+  return {
+    wroteFile: Boolean(filesystem.wroteFile),
+    removed: Boolean(filesystem.removed),
+    copied: Boolean(filesystem.copied),
+    createdDirectory: Boolean(filesystem.createdDirectory),
+    pathsReturned: false,
+    fileContentsReturned: false,
+  };
+}
+
+function ensureAppendableNoFollow(path) {
+  const directory = dirname(path);
+  mkdirSync(directory, { recursive: true, mode: 0o700 });
+  const directoryStat = lstatSync(directory);
+  if (!directoryStat.isDirectory() || directoryStat.isSymbolicLink()) {
+    throw new Error("Action audit log directory is unsafe");
+  }
+  const fd = openSync(
+    path,
+    constants.O_APPEND | constants.O_CREAT | constants.O_WRONLY | noFollowFlag(),
+    0o600,
+  );
+  closeSync(fd);
+}
+
+function appendLineNoFollow(path, line) {
+  const directory = dirname(path);
+  mkdirSync(directory, { recursive: true, mode: 0o700 });
+  const directoryStat = lstatSync(directory);
+  if (!directoryStat.isDirectory() || directoryStat.isSymbolicLink()) {
+    throw new Error("Action audit log directory is unsafe");
+  }
+  const fd = openSync(
+    path,
+    constants.O_APPEND | constants.O_CREAT | constants.O_WRONLY | noFollowFlag(),
+    0o600,
+  );
+  try {
+    writeSync(fd, line, null, "utf8");
+  } finally {
+    closeSync(fd);
+  }
+}
+
+function noFollowFlag() {
+  return Number.isSafeInteger(constants.O_NOFOLLOW) ? constants.O_NOFOLLOW : 0;
+}
+
+function sanitizeWorkspace(workspace) {
+  if (!workspace || typeof workspace !== "object") {
+    return null;
+  }
+  return {
+    id: safeString(workspace.id, 80),
+    label: safeString(workspace.label, 120),
+    isDefault: Boolean(workspace.isDefault),
+  };
+}
+
+function sanitizeMethodList(methods) {
+  if (!Array.isArray(methods)) {
+    return [];
+  }
+  return methods
+    .map((method) => safeString(method, 100))
+    .filter(Boolean)
+    .slice(0, 12);
+}
+
+function sanitizeActionType(value) {
+  return [
+    "account-login-cancel",
+    "account-login",
+    "account-logout",
+    "config-batch-write",
+    "config-value-write",
+    "experimental-feature-set",
+    "file-action",
+    "live-session-bulk-control",
+    "live-session-control",
+    "mcp-server-reload",
+    "mcp-tool-call",
+    "mcp-resource-read",
+    "mcp-oauth-login",
+    "plugin-content-read",
+    "plugin-read",
+    "plugin-uninstall",
+    "process-spawn",
+    "skills-config-write",
+    "terminal-control",
+    "terminal-background-clean",
+    "terminal-background-terminate",
+    "terminal-command",
+    "thread-shell-command",
+    "thread-archive",
+    "thread-compact",
+    "thread-delete",
+    "thread-start",
+  ].includes(value)
+    ? value
+    : "live-session-control";
+}
+
+function sanitizeFileAction(value) {
+  return ["copy", "createDirectory", "remove", "writeFile"].includes(value) ? value : "writeFile";
+}
+
+function fileActionMethod(action) {
+  switch (action) {
+    case "copy":
+      return "fs/copy";
+    case "createDirectory":
+      return "fs/mkdir";
+    case "remove":
+      return "fs/remove";
+    default:
+      return "fs/writeFile";
+  }
+}
+
+function sanitizeLiveSessionControlAction(value) {
+  return ["interrupt", "unsubscribe", "steer"].includes(value) ? value : "interrupt";
+}
+
+function sanitizeTerminalControlAction(value) {
+  return ["write", "resize", "terminate"].includes(value) ? value : "terminate";
+}
+
+function sanitizeThreadArchiveAction(value) {
+  return value === "unarchive" ? "unarchive" : "archive";
+}
+
+function liveSessionControlMethod(action) {
+  switch (action) {
+    case "unsubscribe":
+      return "thread/unsubscribe";
+    case "steer":
+      return "turn/steer";
+    default:
+      return "turn/interrupt";
+  }
+}
+
+function terminalControlMethod(action) {
+  switch (action) {
+    case "write":
+      return "command/exec/write";
+    case "resize":
+      return "command/exec/resize";
+    default:
+      return "command/exec/terminate";
+  }
+}
+
+function safeString(value, maxLength) {
+  if (typeof value !== "string") {
+    return null;
+  }
+  const clean = value.replace(/[^\x20-\x7E]/g, " ").replace(/\s+/g, " ").trim();
+  if (!clean) {
+    return null;
+  }
+  if (clean.length <= maxLength) {
+    return clean;
+  }
+  return `${clean.slice(0, Math.max(0, maxLength - 3))}...`;
+}
+
+function safeCount(value) {
+  return Number.isSafeInteger(value) && value >= 0 ? value : 0;
+}
