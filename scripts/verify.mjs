@@ -946,6 +946,15 @@ async function checkStrictBrowserPostBodies() {
           preflightToken: "preflight-1234567890abcdef",
         },
       ],
+      ["/api/thread-memory-mode-set-preflight", { thread: "12345678", mode: "disabled" }],
+      [
+        "/api/thread-memory-mode-set-action",
+        {
+          thread: "12345678",
+          mode: "disabled",
+          preflightToken: "preflight-1234567890abcdef",
+        },
+      ],
       ["/api/thread-rollback-preflight", { thread: "12345678", numTurns: 1 }],
       [
         "/api/thread-rollback-action",
@@ -2192,6 +2201,34 @@ function assertBrowserPostBodyContracts(cases) {
     threadGoalClearActionContract.nestedKeySchemas.policy?.includes("unexpected")
   ) {
     throw new Error("thread-goal-clear-action response contract is missing nested schemas");
+  }
+  const threadMemoryModePreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-memory-mode-set-preflight"];
+  if (
+    threadMemoryModePreflightContract.usesRouteSpecificNestedKeySchemas !== true ||
+    !Object.isFrozen(threadMemoryModePreflightContract.nestedKeySchemas.policy) ||
+    !threadMemoryModePreflightContract.nestedKeySchemas.memory?.includes("mode") ||
+    !threadMemoryModePreflightContract.nestedKeySchemas.policy?.includes("memoryModeSet") ||
+    threadMemoryModePreflightContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("thread-memory-mode-set-preflight response contract is missing nested schemas");
+  }
+  const threadMemoryModeActionContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-memory-mode-set-action"];
+  if (
+    threadMemoryModeActionContract.usesRouteSpecificNestedKeySchemas !== true ||
+    !Object.isFrozen(threadMemoryModeActionContract.nestedKeySchemas.policy) ||
+    !threadMemoryModeActionContract.nestedKeySchemas["probes.threadMemoryModeSet"]?.includes(
+      "methodsUsed",
+    ) ||
+    !threadMemoryModeActionContract.nestedKeySchemas.target?.includes("memoryModeSet") ||
+    !threadMemoryModeActionContract.nestedKeySchemas.result?.includes("memoryModeSet") ||
+    !threadMemoryModeActionContract.nestedKeySchemas.policy?.includes(
+      "requiresExplicitExecutionGate",
+    ) ||
+    threadMemoryModeActionContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("thread-memory-mode-set-action response contract is missing nested schemas");
   }
   const threadRollbackPreflightContract =
     BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-rollback-preflight"];
@@ -5829,6 +5866,135 @@ function assertBrowserPostBodyContracts(cases) {
           appServerTraffic: true,
           threadStateMutated: true,
           goalMutated: true,
+          rawPayloadReturned: false,
+          preflightTokenConsumed: true,
+          requiresExplicitExecutionGate: true,
+          implemented: true,
+        },
+      },
+    ],
+    [
+      "/api/thread-memory-mode-set-preflight",
+      {
+        ok: true,
+        appServer: {
+          touched: false,
+          modelTraffic: false,
+          commandTraffic: false,
+        },
+        action: {
+          type: "thread-memory-mode-set-preflight",
+          method: "thread/memoryMode/set",
+          execution: "blocked",
+          wouldSetMemoryMode: false,
+          memoryModeSet: false,
+          threadSettingsMutated: false,
+          threadStateMutated: false,
+          appServerTouched: false,
+        },
+        thread: {
+          threadIdSuffix: "thread1234",
+          fullIdsReturned: false,
+          contentReturned: false,
+          pathsReturned: false,
+        },
+        memory: {
+          mode: "disabled",
+          modeReturned: true,
+          rawPayloadReturned: false,
+        },
+        preflight: {
+          token: "preflight-1234567890abcdef",
+          tokenIssued: true,
+          scope: {
+            kind: "thread-memory-mode-set-preflight",
+            workspaceId: "default",
+          },
+        },
+        policy: {
+          readOnly: true,
+          appServerTraffic: false,
+          threadStateMutated: false,
+          threadSettingsMutated: false,
+          memoryModeSet: false,
+          executionGateEnabled: true,
+          implemented: false,
+        },
+      },
+    ],
+    [
+      "/api/thread-memory-mode-set-action",
+      {
+        ok: true,
+        appServer: {
+          touched: true,
+          modelTraffic: false,
+          commandTraffic: false,
+          auditedMethods: ["thread/list", "thread/memoryMode/set"],
+        },
+        action: {
+          type: "thread-memory-mode-set",
+          method: "thread/memoryMode/set",
+          execution: "set",
+          wouldSetMemoryMode: true,
+          memoryModeSet: true,
+          threadSettingsMutated: true,
+          threadStateMutated: true,
+          appServerTouched: true,
+        },
+        thread: {
+          threadIdSuffix: "thread1234",
+          fullIdsReturned: false,
+          contentReturned: false,
+          pathsReturned: false,
+        },
+        memory: {
+          mode: "disabled",
+          modeReturned: true,
+          rawPayloadReturned: false,
+        },
+        target: {
+          threadIdSuffix: "thread1234",
+          mode: "disabled",
+          memoryModeSet: true,
+          fullIdsReturned: false,
+          pathsReturned: false,
+        },
+        probes: {
+          threadMemoryModeSet: {
+            method: "thread/memoryMode/set",
+            threadIdSuffix: "thread1234",
+            status: "set",
+            mode: "disabled",
+            methodsUsed: ["thread/list", "thread/memoryMode/set"],
+            threadContentReturned: false,
+            fullIdsReturned: false,
+            cwdReturned: false,
+            pathsReturned: false,
+            rawPayloadReturned: false,
+          },
+        },
+        result: {
+          status: "set",
+          mode: "disabled",
+          memoryModeSet: true,
+          fullIdsReturned: false,
+          threadContentReturned: false,
+        },
+        preflight: {
+          tokenConsumed: true,
+          tokenReturned: false,
+          scope: {
+            kind: "thread-memory-mode-set-preflight",
+            workspaceId: "default",
+          },
+        },
+        policy: {
+          readOnly: false,
+          appServerTraffic: true,
+          threadStateMutated: true,
+          threadSettingsMutated: true,
+          memoryModeSet: true,
           rawPayloadReturned: false,
           preflightTokenConsumed: true,
           requiresExplicitExecutionGate: true,

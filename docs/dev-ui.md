@@ -375,6 +375,13 @@ through `thread/list`, and return only suffix/status/count metadata. Objective
 text is accepted only as bounded input for set; it is not returned to the
 browser or written to sanitized action-audit records.
 
+The thread panel also exposes `Memory Check` and `Set Memory` controls for
+`thread/memoryMode/set`. The action route is disabled unless
+`CODEX_APP_PORT_ALLOW_THREAD_MEMORY_MODE_SET=1` is set before server startup.
+It requires a one-time preflight token, accepts only `enabled` or `disabled`,
+resolves the selected thread by suffix through `thread/list`, and displays only
+mode/status metadata.
+
 `/api/thread-turns` is the separate paged-turn metadata surface for selected
 threads. It is disabled unless `CODEX_APP_PORT_ALLOW_THREAD_TURNS=1` is set
 before server startup. When enabled, it resolves the selected thread by suffix

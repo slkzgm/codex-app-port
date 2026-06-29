@@ -26,6 +26,7 @@ export const APP_SERVER_METHODS = Object.freeze({
   threadGoalGet: "thread/goal/get",
   threadGoalSet: "thread/goal/set",
   threadGoalClear: "thread/goal/clear",
+  threadMemoryModeSet: "thread/memoryMode/set",
   threadTurnsList: "thread/turns/list",
   threadStart: "thread/start",
   threadCompactStart: "thread/compact/start",

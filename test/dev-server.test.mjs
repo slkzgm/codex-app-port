@@ -299,6 +299,12 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(appScript, /runThreadGoalSetAction/);
     assert.match(appScript, /runThreadGoalClearPreflight/);
     assert.match(appScript, /runThreadGoalClearAction/);
+    assert.match(html, /thread-memory-mode-select/);
+    assert.match(html, /thread-memory-mode-preflight-button/);
+    assert.match(html, /thread-memory-mode-button/);
+    assert.match(html, /thread-memory-mode-status/);
+    assert.match(appScript, /runThreadMemoryModePreflight/);
+    assert.match(appScript, /runThreadMemoryModeAction/);
     assert.match(html, /thread-safety-lock-preflight-button/);
     assert.match(html, /thread-safety-lock-button/);
     assert.match(html, /thread-safety-lock-status/);
@@ -354,6 +360,8 @@ test("browser POST body contracts are centralized and immutable", () => {
     "/api/thread-goal-set-action",
     "/api/thread-goal-clear-preflight",
     "/api/thread-goal-clear-action",
+    "/api/thread-memory-mode-set-preflight",
+    "/api/thread-memory-mode-set-action",
     "/api/thread-rollback-preflight",
     "/api/thread-rollback-action",
     "/api/thread-safety-lock-preflight",
@@ -497,6 +505,17 @@ test("browser POST body contracts are centralized and immutable", () => {
   assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/thread-goal-clear-action"].allowedFields], [
     "workspace",
     "thread",
+    "preflightToken",
+  ]);
+  assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/thread-memory-mode-set-preflight"].allowedFields], [
+    "workspace",
+    "thread",
+    "mode",
+  ]);
+  assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/thread-memory-mode-set-action"].allowedFields], [
+    "workspace",
+    "thread",
+    "mode",
     "preflightToken",
   ]);
   assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/thread-rollback-preflight"].allowedFields], [
@@ -801,6 +820,8 @@ test("browser POST body contracts are centralized and immutable", () => {
   assert.equal(BROWSER_POST_FIELD_POLICIES.command.maxChars, 2_000);
   assert.equal(BROWSER_POST_FIELD_POLICIES.numTurns.sensitivity, "thread-history-count");
   assert.equal(BROWSER_POST_FIELD_POLICIES.numTurns.returnedRawValue, false);
+  assert.equal(BROWSER_POST_FIELD_POLICIES.mode.sensitivity, "thread-memory-mode");
+  assert.equal(BROWSER_POST_FIELD_POLICIES.mode.returnedRawValue, false);
   assert.equal(BROWSER_POST_FIELD_POLICIES.prompt.sensitivity, "user-authored-text");
   assert.equal(BROWSER_POST_FIELD_POLICIES.loginRef.sensitivity, "auth-flow-selector");
   assert.equal(BROWSER_POST_FIELD_POLICIES.loginRef.returnedRawValue, false);
@@ -1415,6 +1436,20 @@ test("browser POST response contracts block unsafe response values", () => {
   assert.equal(threadGoalClearActionContract.nestedKeySchemas.result.includes("goalCleared"), true);
   assert.equal(threadGoalClearActionContract.nestedKeySchemas.policy.includes("requiresExplicitExecutionGate"), true);
   assert.equal(threadGoalClearActionContract.nestedKeySchemas.policy.includes("unexpected"), false);
+  const threadMemoryModePreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-memory-mode-set-preflight"];
+  assert.equal(threadMemoryModePreflightContract.usesRouteSpecificNestedKeySchemas, true);
+  assert.equal(threadMemoryModePreflightContract.nestedKeySchemas.memory.includes("mode"), true);
+  assert.equal(threadMemoryModePreflightContract.nestedKeySchemas.policy.includes("memoryModeSet"), true);
+  assert.equal(threadMemoryModePreflightContract.nestedKeySchemas.policy.includes("unexpected"), false);
+  const threadMemoryModeActionContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-memory-mode-set-action"];
+  assert.equal(threadMemoryModeActionContract.usesRouteSpecificNestedKeySchemas, true);
+  assert.equal(threadMemoryModeActionContract.nestedKeySchemas["probes.threadMemoryModeSet"].includes("methodsUsed"), true);
+  assert.equal(threadMemoryModeActionContract.nestedKeySchemas.target.includes("memoryModeSet"), true);
+  assert.equal(threadMemoryModeActionContract.nestedKeySchemas.result.includes("memoryModeSet"), true);
+  assert.equal(threadMemoryModeActionContract.nestedKeySchemas.policy.includes("requiresExplicitExecutionGate"), true);
+  assert.equal(threadMemoryModeActionContract.nestedKeySchemas.policy.includes("unexpected"), false);
   const threadRollbackPreflightContract =
     BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-rollback-preflight"];
   assert.equal(threadRollbackPreflightContract.usesRouteSpecificNestedKeySchemas, true);
@@ -10549,6 +10584,164 @@ test("dev server sets and clears thread goals only behind explicit opt-in and pr
       privateObjective,
       "goal-secret.txt",
       "\"objectiveReturned\":true",
+      "\"threadContentReturned\":true",
+      "\"fullIdsReturned\":true",
+      "\"pathsReturned\":true",
+    ]) {
+      assert.equal(auditSerialized.includes(marker), false, `audit leaked ${marker}`);
+    }
+  } finally {
+    await closeServer(server);
+    await rm(actionAuditDir, { recursive: true, force: true });
+  }
+});
+
+test("dev server sets thread memory mode only behind explicit opt-in and preflight token", async () => {
+  const calls = [];
+  const actionAuditDir = await mkdtemp(join(tmpdir(), "codex-thread-memory-action-audit-"));
+  const actionAuditLogPath = join(actionAuditDir, "actions.jsonl");
+  const { server, url } = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    threadMemoryModeSetEnabled: true,
+    threadMemoryModeSetFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-06-29T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/private-home",
+          userAgent: "mock/0.0.0",
+        },
+        probes: {
+          threadMemoryModeSet: {
+            method: "thread/memoryMode/set",
+            threadIdSuffix: "abcd1234",
+            status: "set",
+            mode: options.mode,
+            methodsUsed: ["thread/list", "thread/memoryMode/set"],
+            threadContentReturned: true,
+            fullIdsReturned: true,
+            cwdReturned: true,
+            pathsReturned: true,
+            rawPayloadReturned: true,
+            privatePath: "/tmp/default-workspace/memory-secret.txt",
+          },
+        },
+        notifications: {
+          "thread/memoryMode/set": 1,
+        },
+      };
+    },
+    actionAuditLog: createActionAuditLog({
+      path: actionAuditLogPath,
+      now: () => "2026-06-29T00:00:00.000Z",
+    }),
+  });
+
+  try {
+    const preflightResponse = await fetch(`${url}/api/thread-memory-mode-set-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        thread: "abcd1234",
+        mode: "disabled",
+      }),
+    });
+    assert.equal(preflightResponse.status, 200);
+    const preflightPayload = await preflightResponse.json();
+    assert.equal(preflightPayload.action.type, "thread-memory-mode-set-preflight");
+    assert.equal(preflightPayload.action.method, "thread/memoryMode/set");
+    assert.equal(preflightPayload.memory.mode, "disabled");
+    assert.equal(preflightPayload.policy.executionGateEnabled, true);
+    assertActionPreflight(preflightPayload, "thread-memory-mode-set-preflight", "default");
+    assert.equal(calls.length, 0);
+
+    const response = await fetch(`${url}/api/thread-memory-mode-set-action`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        thread: "abcd1234",
+        mode: "disabled",
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, true);
+    assert.equal(payload.appServer.modelTraffic, false);
+    assert.deepEqual(payload.appServer.auditedMethods, ["thread/list", "thread/memoryMode/set"]);
+    assert.equal(payload.action.type, "thread-memory-mode-set");
+    assert.equal(payload.action.memoryModeSet, true);
+    assert.equal(payload.action.threadSettingsMutated, true);
+    assert.equal(payload.preflight.tokenConsumed, true);
+    assert.equal(payload.memory.mode, "disabled");
+    assert.equal(payload.target.memoryModeSet, true);
+    assert.equal(payload.result.memoryModeSet, true);
+    assert.equal(payload.probes.threadMemoryModeSet.threadContentReturned, false);
+    assert.equal(payload.probes.threadMemoryModeSet.fullIdsReturned, false);
+    assert.equal(payload.probes.threadMemoryModeSet.cwdReturned, false);
+    assert.equal(payload.probes.threadMemoryModeSet.pathsReturned, false);
+    assert.equal(payload.probes.threadMemoryModeSet.rawPayloadReturned, false);
+    assert.equal(payload.policy.threadSettingsMutated, true);
+    assert.equal(payload.policy.auditLogWritten, true);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].cwd, "/tmp/default-workspace");
+    assert.equal(calls[0].threadIdSuffix, "abcd1234");
+    assert.equal(calls[0].mode, "disabled");
+    for (const marker of [
+      "/tmp/default-workspace",
+      "/tmp/private-home",
+      "codexHome",
+      "userAgent",
+      "memory-secret.txt",
+      preflightPayload.preflight.token,
+      "\"threadContentReturned\":true",
+      "\"fullIdsReturned\":true",
+      "\"pathsReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+
+    const replay = await fetch(`${url}/api/thread-memory-mode-set-action`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        thread: "abcd1234",
+        mode: "disabled",
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    assert.equal(replay.status, 409);
+
+    const auditRecords = (await readFile(actionAuditLogPath, "utf8"))
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    assert.equal(auditRecords.length, 1);
+    assert.equal(auditRecords[0].event, "thread-memory-mode-set-recorded");
+    assert.equal(auditRecords[0].action.type, "thread-memory-mode-set");
+    assert.equal(auditRecords[0].action.threadSettingsMutated, true);
+    assert.equal(auditRecords[0].target.mode, "disabled");
+    assert.equal(auditRecords[0].target.memoryModeSet, true);
+    assert.equal(auditRecords[0].result.memoryModeSet, true);
+    const auditSerialized = JSON.stringify(auditRecords);
+    for (const marker of [
+      preflightPayload.preflight.token,
+      "/tmp/default-workspace",
+      "/tmp/private-home",
+      "codexHome",
+      "userAgent",
+      "memory-secret.txt",
       "\"threadContentReturned\":true",
       "\"fullIdsReturned\":true",
       "\"pathsReturned\":true",

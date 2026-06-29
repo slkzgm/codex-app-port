@@ -309,6 +309,10 @@ const elements = {
   threadGoalClearPreflightButton: document.querySelector("#thread-goal-clear-preflight-button"),
   threadGoalClearButton: document.querySelector("#thread-goal-clear-button"),
   threadGoalMutationStatus: document.querySelector("#thread-goal-mutation-status"),
+  threadMemoryModeSelect: document.querySelector("#thread-memory-mode-select"),
+  threadMemoryModePreflightButton: document.querySelector("#thread-memory-mode-preflight-button"),
+  threadMemoryModeButton: document.querySelector("#thread-memory-mode-button"),
+  threadMemoryModeStatus: document.querySelector("#thread-memory-mode-status"),
   threadRollbackTurnsInput: document.querySelector("#thread-rollback-turns-input"),
   threadRollbackPreflightButton: document.querySelector("#thread-rollback-preflight-button"),
   threadRollbackButton: document.querySelector("#thread-rollback-button"),
@@ -655,6 +659,7 @@ let lastThreadForkPreflight = null;
 let lastThreadRenamePreflight = null;
 let lastThreadGoalSetPreflight = null;
 let lastThreadGoalClearPreflight = null;
+let lastThreadMemoryModePreflight = null;
 let lastThreadRollbackPreflight = null;
 let lastThreadSafetyLockPreflight = null;
 let lastThreadDeletePreflight = null;
@@ -722,6 +727,7 @@ elements.workspaceSelect.addEventListener("change", () => {
   lastThreadRenamePreflight = null;
   lastThreadGoalSetPreflight = null;
   lastThreadGoalClearPreflight = null;
+  lastThreadMemoryModePreflight = null;
   lastThreadRollbackPreflight = null;
   lastThreadSafetyLockPreflight = null;
   lastThreadDeletePreflight = null;
@@ -958,6 +964,19 @@ elements.threadGoalClearPreflightButton.addEventListener("click", () => {
 
 elements.threadGoalClearButton.addEventListener("click", () => {
   runThreadGoalClearAction();
+});
+
+elements.threadMemoryModeSelect.addEventListener("change", () => {
+  lastThreadMemoryModePreflight = null;
+  updateThreadMemoryModeState();
+});
+
+elements.threadMemoryModePreflightButton.addEventListener("click", () => {
+  runThreadMemoryModePreflight();
+});
+
+elements.threadMemoryModeButton.addEventListener("click", () => {
+  runThreadMemoryModeAction();
 });
 
 elements.threadRollbackTurnsInput.addEventListener("input", () => {
@@ -1591,6 +1610,14 @@ function threadGoalClearPreflightEndpoint() {
 
 function threadGoalClearEndpoint() {
   return "/api/thread-goal-clear-action";
+}
+
+function threadMemoryModePreflightEndpoint() {
+  return "/api/thread-memory-mode-set-preflight";
+}
+
+function threadMemoryModeEndpoint() {
+  return "/api/thread-memory-mode-set-action";
 }
 
 function threadRollbackPreflightEndpoint() {
@@ -5083,6 +5110,7 @@ async function loadThreadDetail(threadIdSuffix, { archived = false } = {}) {
   lastThreadRenamePreflight = null;
   lastThreadGoalSetPreflight = null;
   lastThreadGoalClearPreflight = null;
+  lastThreadMemoryModePreflight = null;
   lastThreadRollbackPreflight = null;
   lastThreadSafetyLockPreflight = null;
   lastThreadDeletePreflight = null;
@@ -5096,12 +5124,14 @@ async function loadThreadDetail(threadIdSuffix, { archived = false } = {}) {
   elements.threadGoalButton.disabled = false;
   elements.threadGoalStatus.textContent = "Goal not loaded.";
   elements.threadGoalMutationStatus.textContent = "Goal actions require preflight.";
+  elements.threadMemoryModeStatus.textContent = "Memory mode requires preflight.";
   elements.threadTurnsButton.disabled = false;
   elements.threadTurnsStatus.textContent = "Turns page not loaded.";
   updateThreadArchiveState();
   updateThreadForkState();
   updateThreadRenameState();
   updateThreadGoalMutationState();
+  updateThreadMemoryModeState();
   updateThreadRollbackState();
   updateThreadSafetyLockState();
   updateThreadDeleteState();
@@ -5780,6 +5810,83 @@ async function runThreadGoalClearAction() {
     renderError(error);
   } finally {
     updateThreadGoalMutationState();
+  }
+}
+
+async function runThreadMemoryModePreflight() {
+  if (!selectedThreadIdSuffix) {
+    elements.threadMemoryModeStatus.textContent = "Select a thread first";
+    return;
+  }
+
+  setThreadMemoryModeLoading(true);
+  lastThreadMemoryModePreflight = null;
+  elements.threadMemoryModeButton.disabled = true;
+  hideError();
+
+  const body = {
+    workspace: selectedWorkspaceId,
+    thread: selectedThreadIdSuffix,
+    mode: elements.threadMemoryModeSelect.value || "enabled",
+  };
+
+  try {
+    const response = await fetch(threadMemoryModePreflightEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify(body),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    lastThreadMemoryModePreflight = {
+      body,
+      token: payload.preflight?.token ?? null,
+      enabled: payload.policy?.executionGateEnabled === true,
+    };
+    renderThreadMemoryModePreflight(payload);
+  } catch (error) {
+    elements.threadMemoryModeStatus.textContent = "Memory check failed";
+    renderError(error);
+  } finally {
+    setThreadMemoryModeLoading(false);
+  }
+}
+
+async function runThreadMemoryModeAction() {
+  if (!lastThreadMemoryModePreflight?.token || !lastThreadMemoryModePreflight?.body) {
+    elements.threadMemoryModeStatus.textContent = "Run memory check first";
+    return;
+  }
+
+  elements.threadMemoryModeButton.disabled = true;
+  elements.threadMemoryModeStatus.textContent = "Setting memory";
+  hideError();
+
+  try {
+    const response = await fetch(threadMemoryModeEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify({
+        ...lastThreadMemoryModePreflight.body,
+        preflightToken: lastThreadMemoryModePreflight.token,
+      }),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderThreadMemoryModeAction(payload);
+    lastThreadMemoryModePreflight = null;
+    await refreshStatus({ manageLoading: false }).catch(() => {});
+  } catch (error) {
+    elements.threadMemoryModeStatus.textContent = "Memory set failed";
+    renderError(error);
+  } finally {
+    updateThreadMemoryModeState();
   }
 }
 
@@ -6754,6 +6861,21 @@ function renderThreadGoalClearAction(payload) {
     payload.result?.goalCleared === true ? "Goal cleared" : "Goal clear done";
 }
 
+function renderThreadMemoryModePreflight(payload) {
+  const mode = payload.memory?.mode === "disabled" ? "disabled" : "enabled";
+  elements.threadMemoryModeStatus.textContent = payload.policy?.executionGateEnabled
+    ? `Memory ${mode} ready`
+    : "Memory set blocked";
+  elements.threadMemoryModeButton.disabled =
+    !lastThreadMemoryModePreflight?.token || lastThreadMemoryModePreflight.enabled !== true;
+}
+
+function renderThreadMemoryModeAction(payload) {
+  const mode = payload.result?.mode === "disabled" ? "disabled" : "enabled";
+  elements.threadMemoryModeStatus.textContent =
+    payload.result?.memoryModeSet === true ? `Memory ${mode}` : "Memory set done";
+}
+
 function renderThreadRollbackPreflight(payload) {
   const count = Number.isSafeInteger(payload.thread?.numTurns) ? payload.thread.numTurns : 0;
   elements.threadRollbackStatus.textContent = payload.policy?.executionGateEnabled
@@ -7279,6 +7401,7 @@ function clearThreadDetail() {
   lastThreadRenamePreflight = null;
   lastThreadGoalSetPreflight = null;
   lastThreadGoalClearPreflight = null;
+  lastThreadMemoryModePreflight = null;
   lastThreadRollbackPreflight = null;
   lastThreadSafetyLockPreflight = null;
   lastThreadDeletePreflight = null;
@@ -7293,6 +7416,8 @@ function clearThreadDetail() {
   elements.threadGoalStatusSelect.disabled = true;
   elements.threadGoalBudgetInput.value = "";
   elements.threadGoalBudgetInput.disabled = true;
+  elements.threadMemoryModeSelect.value = "enabled";
+  elements.threadMemoryModeSelect.disabled = true;
   elements.threadRollbackTurnsInput.value = "1";
   elements.threadRollbackTurnsInput.disabled = true;
   elements.selectedThreadText.textContent = "None";
@@ -7306,6 +7431,7 @@ function clearThreadDetail() {
   elements.threadGoalStatus.textContent = "Select a thread to inspect goal state.";
   elements.threadGoalButton.disabled = true;
   elements.threadGoalMutationStatus.textContent = "Select a thread to update goal state.";
+  elements.threadMemoryModeStatus.textContent = "Select a thread to update memory mode.";
   elements.threadTurnsStatus.textContent = "Select a thread to inspect paged turn metadata.";
   elements.threadTurnsButton.disabled = true;
   elements.threadDetailMeta.replaceChildren();
@@ -7317,6 +7443,7 @@ function clearThreadDetail() {
   updateThreadForkState();
   updateThreadRenameState();
   updateThreadGoalMutationState();
+  updateThreadMemoryModeState();
   updateThreadRollbackState();
   updateThreadSafetyLockState();
   updateThreadDeleteState();
@@ -7434,6 +7561,17 @@ function updateThreadGoalMutationState() {
     elements.threadGoalMutationStatus.textContent = "Select a thread to update goal state.";
   } else if (!hasObjective && elements.threadGoalMutationStatus.textContent.startsWith("Goal set")) {
     elements.threadGoalMutationStatus.textContent = "Goal objective required for set.";
+  }
+}
+
+function updateThreadMemoryModeState() {
+  const hasThread = Boolean(selectedThreadIdSuffix);
+  elements.threadMemoryModeSelect.disabled = !hasThread;
+  elements.threadMemoryModePreflightButton.disabled = !hasThread;
+  elements.threadMemoryModeButton.disabled =
+    !lastThreadMemoryModePreflight?.token || lastThreadMemoryModePreflight.enabled !== true;
+  if (!hasThread) {
+    elements.threadMemoryModeStatus.textContent = "Select a thread to update memory mode.";
   }
 }
 
@@ -11587,6 +11725,20 @@ function setThreadGoalClearLoading(isLoading) {
     : "Goal Clear Check";
   if (isLoading) {
     elements.threadGoalMutationStatus.textContent = "Checking goal clear";
+  }
+}
+
+function setThreadMemoryModeLoading(isLoading) {
+  const hasThread = Boolean(selectedThreadIdSuffix);
+  elements.threadMemoryModeSelect.disabled = isLoading || !hasThread;
+  elements.threadMemoryModePreflightButton.disabled = isLoading || !hasThread;
+  elements.threadMemoryModeButton.disabled =
+    isLoading ||
+    !lastThreadMemoryModePreflight?.token ||
+    lastThreadMemoryModePreflight.enabled !== true;
+  elements.threadMemoryModePreflightButton.textContent = isLoading ? "Checking" : "Memory Check";
+  if (isLoading) {
+    elements.threadMemoryModeStatus.textContent = "Checking memory mode";
   }
 }
 

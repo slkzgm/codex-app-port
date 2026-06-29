@@ -50,6 +50,7 @@ const ACTION_AUDIT_EVENTS = new Set([
   "thread-fork-recorded",
   "thread-goal-clear-recorded",
   "thread-goal-set-recorded",
+  "thread-memory-mode-set-recorded",
   "thread-rename-recorded",
   "thread-rollback-recorded",
   "thread-safety-lock-recorded",
@@ -277,6 +278,8 @@ function actionAuditEvent(actionType) {
       return "thread-goal-set-recorded";
     case "thread-goal-clear":
       return "thread-goal-clear-recorded";
+    case "thread-memory-mode-set":
+      return "thread-memory-mode-set-recorded";
     case "thread-rename":
       return "thread-rename-recorded";
     case "thread-rollback":
@@ -691,6 +694,18 @@ function sanitizeAction(action, actionType, { appServer }) {
       modelTraffic: false,
     };
   }
+  if (actionType === "thread-memory-mode-set") {
+    return {
+      type: "thread-memory-mode-set",
+      method: "thread/memoryMode/set",
+      execution: safeString(action.execution, 40) ?? "set",
+      memoryModeSet: Boolean(action.memoryModeSet),
+      threadSettingsMutated: Boolean(action.threadSettingsMutated),
+      threadStateMutated: Boolean(action.threadStateMutated),
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: false,
+    };
+  }
   if (actionType === "thread-rollback") {
     return {
       type: "thread-rollback",
@@ -1089,6 +1104,15 @@ function sanitizeTarget(target, actionType) {
     return {
       threadIdSuffix: safeString(target.threadIdSuffix, 16),
       goalCleared: Boolean(target.goalCleared),
+      fullIdsReturned: false,
+      pathsReturned: false,
+    };
+  }
+  if (actionType === "thread-memory-mode-set") {
+    return {
+      threadIdSuffix: safeString(target.threadIdSuffix, 16),
+      mode: safeString(target.mode, 16) === "disabled" ? "disabled" : "enabled",
+      memoryModeSet: Boolean(target.memoryModeSet),
       fullIdsReturned: false,
       pathsReturned: false,
     };
@@ -1621,6 +1645,15 @@ function sanitizeResult(result, actionType) {
       threadContentReturned: false,
     };
   }
+  if (actionType === "thread-memory-mode-set") {
+    return {
+      status: safeString(result.status, 80) ?? "set",
+      mode: safeString(result.mode, 16) === "disabled" ? "disabled" : "enabled",
+      memoryModeSet: Boolean(result.memoryModeSet),
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
   if (actionType === "thread-rollback") {
     return {
       status: safeString(result.status, 80) ?? "rolled-back",
@@ -1803,6 +1836,7 @@ function sanitizeActionType(value) {
     "thread-fork",
     "thread-goal-set",
     "thread-goal-clear",
+    "thread-memory-mode-set",
     "thread-rename",
     "thread-rollback",
     "thread-safety-lock",

@@ -215,6 +215,12 @@
   target resolution, sanitized action-audit records, and responses that never
   return objective text, full ids, cwd, paths, thread content, raw payloads, or
   preflight tokens.
+- Browser-facing thread memory mode mutations must be blocked by default and
+  opt-in only. `thread/memoryMode/set` must accept only `enabled` or
+  `disabled`, use `CODEX_APP_PORT_ALLOW_THREAD_MEMORY_MODE_SET=1`, consume a
+  matching one-time preflight token before app-server traffic, resolve targets
+  by suffix only, write sanitized action-audit records, and never return full
+  ids, cwd, paths, thread content, raw payloads, or preflight tokens.
 - Browser-facing paged turn reads must be blocked by default and opt-in only.
   When `CODEX_APP_PORT_ALLOW_THREAD_TURNS=1` is enabled, `/api/thread-turns`
   may call only `thread/list` for suffix resolution and `thread/turns/list`

@@ -1275,6 +1275,19 @@
             <button id="thread-goal-clear-button" class="secondary-button" type="button" disabled>
               Clear Goal
             </button>
+            <label class="workspace-control" for="thread-memory-mode-select">
+              <span>Memory</span>
+              <select id="thread-memory-mode-select" disabled>
+                <option value="enabled">Enabled</option>
+                <option value="disabled">Disabled</option>
+              </select>
+            </label>
+            <button id="thread-memory-mode-preflight-button" class="secondary-button" type="button" disabled>
+              Memory Check
+            </button>
+            <button id="thread-memory-mode-button" class="secondary-button" type="button" disabled>
+              Set Memory
+            </button>
             <label class="search-control" for="thread-rename-input">
               <span>Name</span>
               <input id="thread-rename-input" type="text" autocomplete="off" maxlength="120" disabled />
@@ -1311,6 +1324,7 @@
           <p id="thread-compact-status" class="empty-state">Select a loaded active thread to compact.</p>
           <p id="thread-goal-status" class="empty-state">Select a thread to inspect goal state.</p>
           <p id="thread-goal-mutation-status" class="empty-state">Select a thread to update goal state.</p>
+          <p id="thread-memory-mode-status" class="empty-state">Select a thread to update memory mode.</p>
           <p id="thread-turns-status" class="empty-state">Select a thread to inspect paged turn metadata.</p>
           <dl id="thread-detail-meta" class="agent-grid"></dl>
           <div id="turn-timeline" class="turn-timeline" role="list">

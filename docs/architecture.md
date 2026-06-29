@@ -65,6 +65,12 @@ preflight token, resolves the target by suffix through `thread/list`, writes
 sanitized action-audit records, and returns only suffix/status/count metadata,
 never objective text, full ids, cwd, paths, thread content, preflight tokens,
 or raw payloads.
+`thread/memoryMode/set` is promoted separately through a disabled-by-default
+POST route behind `CODEX_APP_PORT_ALLOW_THREAD_MEMORY_MODE_SET=1`; it accepts
+only `enabled` or `disabled`, requires a matching one-time preflight token,
+resolves the target by suffix through `thread/list`, writes sanitized
+action-audit records, and returns only suffix/mode/status metadata, never full
+ids, cwd, paths, thread content, preflight tokens, or raw payloads.
 `thread/turns/list` is promoted separately through a disabled-by-default GET
 route behind `CODEX_APP_PORT_ALLOW_THREAD_TURNS=1`; it resolves the target by
 suffix through `thread/list`, requests `itemsView:notLoaded`, and returns only

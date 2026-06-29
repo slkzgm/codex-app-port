@@ -45,6 +45,7 @@ import {
   runThreadGoalClearProbe,
   runThreadGoalProbe,
   runThreadGoalSetProbe,
+  runThreadMemoryModeSetProbe,
   runThreadRenameProbe,
   runThreadRollbackProbe,
   runThreadSafetyLockProbe,
@@ -120,6 +121,7 @@ const THREAD_GOAL_STATUSES = new Set([
   "budgetLimited",
   "complete",
 ]);
+const THREAD_MEMORY_MODES = new Set(["enabled", "disabled"]);
 const SAFE_WORKSPACE_MESSAGE_TYPES = ["headline", "announcement", "unknown"];
 const SAFE_REMOTE_CONTROL_STATUSES = ["disabled", "connecting", "connected", "errored", "unknown"];
 export const MAX_GIT_COMMIT_MESSAGE_CHARS = 2_000;
@@ -213,6 +215,11 @@ export const BROWSER_POST_FIELD_POLICIES = Object.freeze({
     maxChars: 16,
     returnedRawValue: false,
     sensitivity: "thread-goal-budget",
+  }),
+  mode: bodyFieldPolicy(["string"], {
+    maxChars: 16,
+    returnedRawValue: false,
+    sensitivity: "thread-memory-mode",
   }),
   numTurns: bodyFieldPolicy(["string", "number"], {
     maxChars: 8,
@@ -449,6 +456,13 @@ export const ACTION_PREFLIGHT_CONFIRMATION_FIELD_CONTRACTS = Object.freeze({
     "actionType",
     "preflightToken",
     "thread",
+  ),
+  "thread-memory-mode-set-preflight": bodyFields(
+    "workspace",
+    "actionType",
+    "preflightToken",
+    "thread",
+    "mode",
   ),
   "thread-rollback-preflight": bodyFields(
     "workspace",
@@ -821,6 +835,17 @@ export const BROWSER_POST_BODY_CONTRACTS = Object.freeze({
     kind: "mutation",
     requiresPreflightToken: true,
   }),
+  "/api/thread-memory-mode-set-preflight": bodyContract(["workspace", "thread", "mode"], {
+    kind: "preflight",
+    appServerTraffic: false,
+  }),
+  "/api/thread-memory-mode-set-action": bodyContract(
+    ["workspace", "thread", "mode", "preflightToken"],
+    {
+      kind: "mutation",
+      requiresPreflightToken: true,
+    },
+  ),
   "/api/thread-rollback-preflight": bodyContract(["workspace", "thread", "numTurns"], {
     kind: "preflight",
     appServerTraffic: false,
@@ -3636,6 +3661,130 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
       "goalMutated",
       "turnStarted",
       "objectiveReturned",
+      "threadContentReturned",
+      "fullIdsReturned",
+      "pathsReturned",
+      "rawPayloadReturned",
+      "requiresExplicitEnablement",
+      "executionRouteImplemented",
+      "executionGateEnabled",
+      "preflightTokenConsumed",
+      "auditLogPersistent",
+      "auditLogWritableChecked",
+      "auditLogWritten",
+      "auditLogPathReturned",
+      "browserMethodCallsAccepted",
+      "implemented",
+      "requiresExplicitExecutionGate",
+    ],
+  }),
+  "/api/thread-memory-mode-set-preflight": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    appServer: ["touched", "modelTraffic", "commandTraffic"],
+    action: [
+      "type",
+      "method",
+      "execution",
+      "wouldSetMemoryMode",
+      "memoryModeSet",
+      "threadSettingsMutated",
+      "threadStateMutated",
+      "appServerTouched",
+      "reason",
+    ],
+    thread: ["threadIdSuffix", "fullIdsReturned", "contentReturned", "pathsReturned"],
+    memory: ["mode", "modeReturned", "rawPayloadReturned"],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "modelTraffic",
+      "commandTraffic",
+      "threadStateMutated",
+      "threadSettingsMutated",
+      "memoryModeSet",
+      "turnStarted",
+      "threadContentReturned",
+      "fullIdsReturned",
+      "pathsReturned",
+      "rawPayloadReturned",
+      "requiresExplicitEnablement",
+      "executionRouteImplemented",
+      "executionGateEnabled",
+      "preflightTokenConsumed",
+      "auditLogPersistent",
+      "auditLogWritableChecked",
+      "auditLogWritten",
+      "auditLogPathReturned",
+      "browserMethodCallsAccepted",
+      "implemented",
+      "requiresExplicitExecutionGate",
+    ],
+    preflight: [
+      "token",
+      "tokenIssued",
+      "issuedAt",
+      "expiresAt",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseRequiredForMutation",
+      "consumed",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+  }),
+  "/api/thread-memory-mode-set-action": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    initialize: ["platformFamily", "platformOs"],
+    appServer: ["touched", "modelTraffic", "commandTraffic", "auditedMethods"],
+    action: [
+      "type",
+      "method",
+      "execution",
+      "wouldSetMemoryMode",
+      "memoryModeSet",
+      "threadSettingsMutated",
+      "threadStateMutated",
+      "appServerTouched",
+      "modelTraffic",
+      "reason",
+    ],
+    thread: ["threadIdSuffix", "fullIdsReturned", "contentReturned", "pathsReturned"],
+    memory: ["mode", "modeReturned", "rawPayloadReturned"],
+    target: ["threadIdSuffix", "mode", "memoryModeSet", "fullIdsReturned", "pathsReturned"],
+    probes: ["threadMemoryModeSet"],
+    "probes.threadMemoryModeSet": [
+      "method",
+      "threadIdSuffix",
+      "status",
+      "mode",
+      "methodsUsed",
+      "threadContentReturned",
+      "fullIdsReturned",
+      "cwdReturned",
+      "pathsReturned",
+      "rawPayloadReturned",
+    ],
+    result: ["status", "mode", "memoryModeSet", "fullIdsReturned", "threadContentReturned"],
+    preflight: [
+      "tokenConsumed",
+      "tokenReturned",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseEnforced",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "modelTraffic",
+      "commandTraffic",
+      "threadStateMutated",
+      "threadSettingsMutated",
+      "memoryModeSet",
+      "turnStarted",
       "threadContentReturned",
       "fullIdsReturned",
       "pathsReturned",
@@ -9533,6 +9682,18 @@ const BROWSER_POST_RESPONSE_ROUTE_TOP_LEVEL_KEYS = Object.freeze({
     "thread",
     "result",
   ),
+  "/api/thread-memory-mode-set-preflight": routeResponseTopLevelKeys(
+    ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
+    "thread",
+    "memory",
+  ),
+  "/api/thread-memory-mode-set-action": routeResponseTopLevelKeys(
+    ...RESPONSE_APP_SERVER_MUTATION_TOP_LEVEL_KEYS,
+    "target",
+    "thread",
+    "memory",
+    "result",
+  ),
   "/api/thread-rollback-preflight": routeResponseTopLevelKeys(
     ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
     "thread",
@@ -10153,6 +10314,7 @@ export function createDevServer({
   threadGoalClearFn = runThreadGoalClearProbe,
   threadGoalProbeFn = runThreadGoalProbe,
   threadGoalSetFn = runThreadGoalSetProbe,
+  threadMemoryModeSetFn = runThreadMemoryModeSetProbe,
   threadRenameFn = runThreadRenameProbe,
   threadRollbackFn = runThreadRollbackProbe,
   threadSafetyLockFn = runThreadSafetyLockProbe,
@@ -10207,6 +10369,8 @@ export function createDevServer({
   threadGoalEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_GOAL === "1",
   threadGoalClearEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_GOAL_CLEAR === "1",
   threadGoalSetEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_GOAL_SET === "1",
+  threadMemoryModeSetEnabled =
+    process.env.CODEX_APP_PORT_ALLOW_THREAD_MEMORY_MODE_SET === "1",
   threadTurnsEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_TURNS === "1",
   threadRenameEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_RENAME === "1",
   threadRollbackEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_ROLLBACK === "1",
@@ -10344,6 +10508,7 @@ export function createDevServer({
       threadGoalClearFn,
       threadGoalProbeFn,
       threadGoalSetFn,
+      threadMemoryModeSetFn,
       threadRenameFn,
       threadRollbackFn,
       threadSafetyLockFn,
@@ -10397,6 +10562,7 @@ export function createDevServer({
       threadGoalEnabled,
       threadGoalClearEnabled,
       threadGoalSetEnabled,
+      threadMemoryModeSetEnabled,
       threadTurnsEnabled,
       threadRenameEnabled,
       threadRollbackEnabled,
@@ -11212,6 +11378,101 @@ export async function handleRequest(request, response, options) {
       sendJson(response, error.statusCode ?? 400, {
         ok: false,
         error: cleanDisplayText(error.message, 200) ?? "Invalid thread goal clear request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/thread-memory-mode-set-preflight") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, ["workspace", "thread", "mode"]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const payload = buildThreadMemoryModeSetPreflight(body, {
+        workspace,
+        threadMemoryModeSetEnabled: options.threadMemoryModeSetEnabled,
+      });
+      sendJson(response, 200, attachActionPreflight(payload, { body, workspace, options }));
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid thread memory mode preflight request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/thread-memory-mode-set-action") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, [
+        "workspace",
+        "thread",
+        "mode",
+        "preflightToken",
+      ]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const preflightBody = stripActionPreflightControlFields(body);
+      const preflightPayload = buildThreadMemoryModeSetPreflight(preflightBody, {
+        workspace,
+        threadMemoryModeSetEnabled: options.threadMemoryModeSetEnabled,
+      });
+      if (!preflightPayload.policy.executionGateEnabled) {
+        sendJson(response, 403, buildThreadMemoryModeSetBlocked(preflightPayload));
+        return;
+      }
+      const consumedPreflight = options.preflightRegistry.consume({
+        token: validateActionPreflightToken(body.preflightToken),
+        kind: preflightPayload.action.type,
+        workspace,
+        intent: actionPreflightIntent(preflightBody, preflightPayload),
+      });
+      const auditLogWritableChecked = ensureActionAuditLogWritable(options.actionAuditLog);
+      const payload = await options.threadMemoryModeSetFn({
+        codexBin: options.codexBin,
+        cwd: workspace.cwd,
+        timeoutMs: options.timeoutMs,
+        threadIdSuffix: preflightPayload.thread.threadIdSuffix,
+        mode: validateThreadMemoryMode(preflightBody.mode),
+      });
+      const sanitized = sanitizeThreadMemoryModeSetPayload(payload, {
+        workspace,
+        consumedPreflight,
+        preflightPayload,
+        actionAuditLog: options.actionAuditLog,
+        auditLogWritableChecked,
+      });
+      sanitized.policy.auditLogWritten = writeActionAuditLog(options.actionAuditLog, sanitized);
+      options.threadLifecycleActionLedger?.record(sanitized);
+      sendJson(response, 200, sanitized);
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid thread memory mode request",
       });
     }
     return;
@@ -16103,6 +16364,7 @@ function actionPreflightIntent(body, payload) {
     liveSessionControl: payload?.liveSessionControl,
     liveSessionBulkControl: payload?.liveSessionBulkControl,
     goal: payload?.goal,
+    memory: payload?.memory,
   };
   return result;
 }
@@ -16161,6 +16423,11 @@ async function buildConfirmableActionPreflightPayload(actionType, body, { worksp
       return buildThreadGoalClearPreflight(body, {
         workspace,
         threadGoalClearEnabled: options.threadGoalClearEnabled,
+      });
+    case "thread-memory-mode-set-preflight":
+      return buildThreadMemoryModeSetPreflight(body, {
+        workspace,
+        threadMemoryModeSetEnabled: options.threadMemoryModeSetEnabled,
       });
     case "thread-rollback-preflight":
       return buildThreadRollbackPreflight(body, {
@@ -16560,6 +16827,8 @@ function actionAuditEvent(record) {
       return "thread-goal-set-recorded";
     case "thread-goal-clear":
       return "thread-goal-clear-recorded";
+    case "thread-memory-mode-set":
+      return "thread-memory-mode-set-recorded";
     case "thread-rollback":
       return "thread-rollback-recorded";
     case "thread-safety-lock":
@@ -28793,6 +29062,149 @@ export function buildThreadGoalClearBlocked(preflightPayload) {
   };
 }
 
+export function sanitizeThreadMemoryModeSetPayload(
+  payload,
+  {
+    workspace = null,
+    consumedPreflight,
+    preflightPayload = null,
+    actionAuditLog = null,
+    auditLogWritableChecked = false,
+  } = {},
+) {
+  const threadMemoryModeSet = sanitizeThreadMemoryModeSetProbe(
+    payload?.probes?.threadMemoryModeSet,
+  );
+  const mode = validateThreadMemoryMode(preflightPayload?.memory?.mode ?? threadMemoryModeSet.mode);
+  return {
+    ok: Boolean(payload?.ok),
+    generatedAt: payload?.generatedAt ?? new Date().toISOString(),
+    transport: cleanDisplayText(payload?.transport, 80),
+    protocol: cleanDisplayText(payload?.protocol, 80),
+    initialize: sanitizeInitialize(payload?.initialize),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: true,
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: threadMemoryModeSet.methodsUsed,
+    },
+    action: {
+      type: "thread-memory-mode-set",
+      method: "thread/memoryMode/set",
+      execution: "set",
+      wouldSetMemoryMode: true,
+      memoryModeSet: true,
+      threadSettingsMutated: true,
+      threadStateMutated: true,
+      appServerTouched: true,
+      modelTraffic: false,
+    },
+    preflight: buildConsumedPreflightSummary(consumedPreflight),
+    thread: {
+      threadIdSuffix: threadMemoryModeSet.threadIdSuffix,
+      fullIdsReturned: false,
+      contentReturned: false,
+      pathsReturned: false,
+    },
+    memory: {
+      mode,
+      modeReturned: true,
+      rawPayloadReturned: false,
+    },
+    target: {
+      threadIdSuffix: threadMemoryModeSet.threadIdSuffix,
+      mode,
+      memoryModeSet: true,
+      fullIdsReturned: false,
+      pathsReturned: false,
+    },
+    probes: {
+      threadMemoryModeSet,
+    },
+    result: {
+      status: threadMemoryModeSet.status,
+      mode,
+      memoryModeSet: true,
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    },
+    policy: threadMemoryModePolicy({
+      enabled: true,
+      appServerTraffic: true,
+      memoryModeSet: true,
+      preflightTokenConsumed: true,
+      actionAuditLog,
+      auditLogWritableChecked,
+    }),
+    notifications: sanitizeNotificationCounts(payload?.notifications),
+  };
+}
+
+export function buildThreadMemoryModeSetPreflight(
+  body,
+  { workspace, threadMemoryModeSetEnabled = false } = {},
+) {
+  const threadIdSuffix = validateThreadSuffix(body?.thread);
+  const mode = validateThreadMemoryMode(body?.mode);
+  const enabled = Boolean(threadMemoryModeSetEnabled);
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: publicWorkspaces([workspace])[0],
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+    },
+    action: {
+      type: "thread-memory-mode-set-preflight",
+      method: "thread/memoryMode/set",
+      execution: "blocked",
+      wouldSetMemoryMode: false,
+      memoryModeSet: false,
+      threadSettingsMutated: false,
+      threadStateMutated: false,
+      appServerTouched: false,
+      reason: enabled
+        ? "thread-memory-mode-set-requires-confirmation"
+        : "thread-memory-mode-set-requires-opt-in",
+    },
+    thread: {
+      threadIdSuffix,
+      fullIdsReturned: false,
+      contentReturned: false,
+      pathsReturned: false,
+    },
+    memory: {
+      mode,
+      modeReturned: true,
+      rawPayloadReturned: false,
+    },
+    policy: threadMemoryModePolicy({ enabled, appServerTraffic: false }),
+  };
+}
+
+export function buildThreadMemoryModeSetBlocked(preflightPayload) {
+  return {
+    ...preflightPayload,
+    ok: false,
+    error:
+      "Thread memory mode set is disabled. Set CODEX_APP_PORT_ALLOW_THREAD_MEMORY_MODE_SET=1 before starting the dev server.",
+    action: {
+      ...preflightPayload.action,
+      execution: "blocked",
+      wouldSetMemoryMode: false,
+      memoryModeSet: false,
+      threadSettingsMutated: false,
+      threadStateMutated: false,
+      appServerTouched: false,
+      reason: "thread-memory-mode-set-disabled",
+    },
+    policy: threadMemoryModePolicy({ enabled: false, appServerTraffic: false }),
+  };
+}
+
 export function sanitizeThreadRollbackPayload(
   payload,
   { workspace = null, consumedPreflight, actionAuditLog = null, auditLogWritableChecked = false } = {},
@@ -35911,6 +36323,41 @@ function threadGoalMutationPolicy({
   };
 }
 
+function threadMemoryModePolicy({
+  enabled = false,
+  appServerTraffic = false,
+  memoryModeSet = false,
+  preflightTokenConsumed = false,
+  actionAuditLog = null,
+  auditLogWritableChecked = false,
+} = {}) {
+  return {
+    readOnly: !memoryModeSet,
+    appServerTraffic: Boolean(appServerTraffic),
+    modelTraffic: false,
+    commandTraffic: false,
+    threadStateMutated: Boolean(memoryModeSet),
+    threadSettingsMutated: Boolean(memoryModeSet),
+    memoryModeSet: Boolean(memoryModeSet),
+    turnStarted: false,
+    threadContentReturned: false,
+    fullIdsReturned: false,
+    pathsReturned: false,
+    rawPayloadReturned: false,
+    requiresExplicitEnablement: true,
+    executionRouteImplemented: true,
+    executionGateEnabled: Boolean(enabled),
+    preflightTokenConsumed: Boolean(preflightTokenConsumed),
+    auditLogPersistent: Boolean(actionAuditLog?.persistent),
+    auditLogWritableChecked: Boolean(auditLogWritableChecked),
+    auditLogWritten: false,
+    auditLogPathReturned: false,
+    browserMethodCallsAccepted: Boolean(enabled && memoryModeSet),
+    implemented: Boolean(enabled),
+    requiresExplicitExecutionGate: true,
+  };
+}
+
 function sanitizeStreamEvent(event) {
   const output = {
     method: cleanDisplayText(event?.method, 100) ?? "unknown",
@@ -36995,6 +37442,25 @@ function sanitizeThreadGoalClearProbe(threadGoalClear) {
     cleared: Boolean(threadGoalClear?.cleared),
     methodsUsed: methodsUsed.length > 0 ? methodsUsed : ["thread/list", "thread/goal/clear"],
     objectiveReturned: false,
+    threadContentReturned: false,
+    fullIdsReturned: false,
+    cwdReturned: false,
+    pathsReturned: false,
+    rawPayloadReturned: false,
+  };
+}
+
+function sanitizeThreadMemoryModeSetProbe(threadMemoryModeSet) {
+  const methodsUsed = sanitizeMethodList(threadMemoryModeSet?.methodsUsed).filter((method) =>
+    ["thread/list", "thread/memoryMode/set"].includes(method),
+  );
+  return {
+    method: "thread/memoryMode/set",
+    threadIdSuffix: cleanDisplayText(threadMemoryModeSet?.threadIdSuffix, 16),
+    status: cleanDisplayText(threadMemoryModeSet?.status, 80) ?? "set",
+    mode: validateThreadMemoryMode(threadMemoryModeSet?.mode),
+    methodsUsed:
+      methodsUsed.length > 0 ? methodsUsed : ["thread/list", "thread/memoryMode/set"],
     threadContentReturned: false,
     fullIdsReturned: false,
     cwdReturned: false,
@@ -38726,6 +39192,14 @@ function validateThreadGoalTokenBudget(value) {
     );
   }
   return number;
+}
+
+function validateThreadMemoryMode(value) {
+  const mode = String(value ?? "").trim();
+  if (!THREAD_MEMORY_MODES.has(mode)) {
+    throwRequestError("Thread memory mode must be enabled or disabled", 400);
+  }
+  return mode;
 }
 
 function validateThreadRollbackTurns(value) {

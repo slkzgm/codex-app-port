@@ -318,6 +318,15 @@ input, but responses and audit records return only objective counts plus
 status/budget metadata, not objective text, full ids, cwd, paths, thread
 content, raw app-server payloads, or preflight tokens.
 
+When the server is started with
+`CODEX_APP_PORT_ALLOW_THREAD_MEMORY_MODE_SET=1`,
+`/api/thread-memory-mode-set-action` may call `thread/memoryMode/set` only
+after consuming a matching one-time preflight token. It resolves the selected
+suffix through `thread/list`, accepts only `enabled` or `disabled`, writes a
+sanitized action-audit record, and returns only suffix/mode/status metadata.
+It does not return full ids, cwd, paths, thread content, raw app-server
+payloads, or preflight tokens.
+
 When the server is started with `CODEX_APP_PORT_ALLOW_THREAD_TURNS=1`,
 `/api/thread-turns` may call `thread/list` to resolve the selected suffix and
 then `thread/turns/list` with `itemsView:notLoaded` for that thread. Browser

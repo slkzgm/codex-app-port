@@ -63,6 +63,7 @@ const THREAD_GOAL_STATUSES = new Set([
   "budgetLimited",
   "complete",
 ]);
+const THREAD_MEMORY_MODES = new Set(["enabled", "disabled"]);
 const CHANGE_PATH_FIELDS = [
   "path",
   "file",
@@ -1422,6 +1423,99 @@ export async function runThreadGoalClearProbe({
           cleared: Boolean(clear?.cleared),
           methodsUsed: [APP_SERVER_METHODS.threadList, APP_SERVER_METHODS.threadGoalClear],
           objectiveReturned: false,
+          threadContentReturned: false,
+          fullIdsReturned: false,
+          cwdReturned: false,
+          pathsReturned: false,
+          rawPayloadReturned: false,
+        },
+      },
+      notifications: notificationCounts(notifications),
+    };
+  } finally {
+    await client.close();
+  }
+}
+
+export async function runThreadMemoryModeSetProbe({
+  codexBin = process.env.CODEX_BIN || "codex",
+  codexArgs = ["app-server", "--listen", "stdio://"],
+  cwd = process.cwd(),
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+  threadIdSuffix,
+  mode,
+  threadScanLimit = DEFAULT_THREAD_DETAIL_SCAN_LIMIT,
+  onNotification = null,
+} = {}) {
+  if (process.env.CODEX_APP_PORT_ALLOW_THREAD_MEMORY_MODE_SET !== "1") {
+    throw new Error(
+      "thread/memoryMode/set requires CODEX_APP_PORT_ALLOW_THREAD_MEMORY_MODE_SET=1 because it mutates future thread memory behavior",
+    );
+  }
+  if (!isValidSuffix(threadIdSuffix)) {
+    throwRequestError("Thread selector must be an 8-character id suffix", 400);
+  }
+  const safeMode = validateThreadMemoryMode(mode);
+
+  const notifications = [];
+  const client = new JsonlRpcClient({
+    command: codexBin,
+    args: codexArgs,
+    cwd,
+    timeoutMs,
+    onNotification(notification) {
+      notifications.push({
+        method: notification.method,
+      });
+      onNotification?.(notification);
+    },
+  });
+
+  await client.start();
+
+  try {
+    const initialize = normalizeInitializeResponse(
+      await client.request(APP_SERVER_METHODS.initialize, {
+        clientInfo: {
+          name: "codex_app_port",
+          title: "Codex App Port",
+          version: "0.1.0",
+        },
+        capabilities: {
+          experimentalApi: false,
+          requestAttestation: false,
+        },
+      }),
+    );
+
+    client.notify(APP_SERVER_METHODS.initialized);
+
+    const thread = await selectThreadBySuffixFromLists(client, {
+      threadIdSuffix,
+      threadScanLimit,
+    });
+    await client.request(
+      APP_SERVER_METHODS.threadMemoryModeSet,
+      {
+        threadId: thread.id,
+        mode: safeMode,
+      },
+      { timeoutMs },
+    );
+
+    return {
+      ok: true,
+      generatedAt: new Date().toISOString(),
+      transport: "stdio-jsonl",
+      protocol: "json-rpc-2.0-without-jsonrpc-field",
+      initialize: summarizeInitialize(initialize),
+      probes: {
+        threadMemoryModeSet: {
+          method: APP_SERVER_METHODS.threadMemoryModeSet,
+          threadIdSuffix: suffix(thread.id),
+          status: "set",
+          mode: safeMode,
+          methodsUsed: [APP_SERVER_METHODS.threadList, APP_SERVER_METHODS.threadMemoryModeSet],
           threadContentReturned: false,
           fullIdsReturned: false,
           cwdReturned: false,
@@ -6389,6 +6483,14 @@ function validateThreadGoalTokenBudget(value) {
     );
   }
   return number;
+}
+
+function validateThreadMemoryMode(value) {
+  const mode = String(value ?? "").trim();
+  if (!THREAD_MEMORY_MODES.has(mode)) {
+    throwRequestError("Thread memory mode must be enabled or disabled", 400);
+  }
+  return mode;
 }
 
 function validateThreadRollbackTurns(value) {

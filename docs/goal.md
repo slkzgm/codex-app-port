@@ -114,6 +114,13 @@ Target parity with the Codex desktop workflow:
   controls by omission from the route contract, and returns only suffix/status
   metadata, not full ids, paths, settings payloads, preflight tokens, or raw
   payloads.
+- `thread/memoryMode/set` has a separate disabled-by-default
+  `POST /api/thread-memory-mode-set-action` path behind
+  `CODEX_APP_PORT_ALLOW_THREAD_MEMORY_MODE_SET=1`; it consumes a matching
+  one-time preflight token, resolves the target by suffix through `thread/list`,
+  accepts only `enabled` or `disabled`, and returns only suffix/mode/status
+  metadata, not full ids, paths, thread content, preflight tokens, or raw
+  payloads.
 - `skills/extraRoots/set` has a separate disabled-by-default clear-only path
   behind `CODEX_APP_PORT_ALLOW_SKILLS_EXTRA_ROOTS_CLEAR=1`; it consumes a
   matching one-time preflight token, accepts no browser roots/paths/arguments,
