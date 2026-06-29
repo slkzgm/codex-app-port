@@ -42,7 +42,9 @@ import {
   runThreadDeleteProbe,
   runThreadDetailProbe,
   runThreadForkProbe,
+  runThreadGoalClearProbe,
   runThreadGoalProbe,
+  runThreadGoalSetProbe,
   runThreadRenameProbe,
   runThreadRollbackProbe,
   runThreadSafetyLockProbe,
@@ -91,6 +93,8 @@ export const MAX_JSON_BODY_BYTES = 16 * 1024;
 export const MAX_TURN_PROMPT_CHARS = 4_000;
 export const MAX_THREAD_SEARCH_TERM_CHARS = 200;
 export const MAX_THREAD_RENAME_CHARS = 120;
+export const MAX_THREAD_GOAL_OBJECTIVE_CHARS = 4_000;
+export const MAX_THREAD_GOAL_TOKEN_BUDGET = 10_000_000;
 export const MAX_THREAD_ROLLBACK_TURNS = 50;
 export const MAX_TERMINAL_COMMAND_CHARS = 2_000;
 export const MAX_TERMINAL_COMMAND_ARGS = 24;
@@ -108,6 +112,14 @@ export const MAX_INTEGRATION_DISPLAY_ITEMS = 20;
 export const MAX_INTEGRATION_DISPLAY_NAME_CHARS = 80;
 const SAFE_REASONING_EFFORTS = ["none", "minimal", "low", "medium", "high", "xhigh", "unknown"];
 const SAFE_COLLABORATION_MODE_KINDS = ["default", "plan", "unknown"];
+const THREAD_GOAL_STATUSES = new Set([
+  "active",
+  "paused",
+  "blocked",
+  "usageLimited",
+  "budgetLimited",
+  "complete",
+]);
 const SAFE_WORKSPACE_MESSAGE_TYPES = ["headline", "announcement", "unknown"];
 const SAFE_REMOTE_CONTROL_STATUSES = ["disabled", "connecting", "connected", "errored", "unknown"];
 export const MAX_GIT_COMMIT_MESSAGE_CHARS = 2_000;
@@ -186,6 +198,21 @@ export const BROWSER_POST_FIELD_POLICIES = Object.freeze({
     maxChars: MAX_THREAD_RENAME_CHARS,
     returnedRawValue: false,
     sensitivity: "user-authored-text",
+  }),
+  objective: bodyFieldPolicy(["string"], {
+    maxChars: MAX_THREAD_GOAL_OBJECTIVE_CHARS,
+    returnedRawValue: false,
+    sensitivity: "user-authored-text",
+  }),
+  status: bodyFieldPolicy(["string", "null"], {
+    maxChars: 40,
+    returnedRawValue: false,
+    sensitivity: "thread-goal-status",
+  }),
+  tokenBudget: bodyFieldPolicy(["string", "number", "null"], {
+    maxChars: 16,
+    returnedRawValue: false,
+    sensitivity: "thread-goal-budget",
   }),
   numTurns: bodyFieldPolicy(["string", "number"], {
     maxChars: 8,
@@ -407,6 +434,21 @@ export const ACTION_PREFLIGHT_CONFIRMATION_FIELD_CONTRACTS = Object.freeze({
     "preflightToken",
     "thread",
     "name",
+  ),
+  "thread-goal-set-preflight": bodyFields(
+    "workspace",
+    "actionType",
+    "preflightToken",
+    "thread",
+    "objective",
+    "status",
+    "tokenBudget",
+  ),
+  "thread-goal-clear-preflight": bodyFields(
+    "workspace",
+    "actionType",
+    "preflightToken",
+    "thread",
   ),
   "thread-rollback-preflight": bodyFields(
     "workspace",
@@ -754,6 +796,28 @@ export const BROWSER_POST_BODY_CONTRACTS = Object.freeze({
     appServerTraffic: false,
   }),
   "/api/thread-rename-action": bodyContract(["workspace", "thread", "name", "preflightToken"], {
+    kind: "mutation",
+    requiresPreflightToken: true,
+  }),
+  "/api/thread-goal-set-preflight": bodyContract(
+    ["workspace", "thread", "objective", "status", "tokenBudget"],
+    {
+      kind: "preflight",
+      appServerTraffic: false,
+    },
+  ),
+  "/api/thread-goal-set-action": bodyContract(
+    ["workspace", "thread", "objective", "status", "tokenBudget", "preflightToken"],
+    {
+      kind: "mutation",
+      requiresPreflightToken: true,
+    },
+  ),
+  "/api/thread-goal-clear-preflight": bodyContract(["workspace", "thread"], {
+    kind: "preflight",
+    appServerTraffic: false,
+  }),
+  "/api/thread-goal-clear-action": bodyContract(["workspace", "thread", "preflightToken"], {
     kind: "mutation",
     requiresPreflightToken: true,
   }),
@@ -2611,8 +2675,14 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
       "requiresExplicitEnablement",
       "executionRouteImplemented",
       "executionGateEnabled",
+      "preflightTokenConsumed",
+      "auditLogPersistent",
+      "auditLogWritableChecked",
+      "auditLogWritten",
+      "auditLogPathReturned",
       "browserMethodCallsAccepted",
       "implemented",
+      "requiresExplicitExecutionGate",
     ],
     preflight: [
       "token",
@@ -2746,8 +2816,14 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
       "requiresExplicitEnablement",
       "executionRouteImplemented",
       "executionGateEnabled",
+      "preflightTokenConsumed",
+      "auditLogPersistent",
+      "auditLogWritableChecked",
+      "auditLogWritten",
+      "auditLogPathReturned",
       "browserMethodCallsAccepted",
       "implemented",
+      "requiresExplicitExecutionGate",
     ],
     preflight: [
       "token",
@@ -2881,8 +2957,14 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
       "requiresExplicitEnablement",
       "executionRouteImplemented",
       "executionGateEnabled",
+      "preflightTokenConsumed",
+      "auditLogPersistent",
+      "auditLogWritableChecked",
+      "auditLogWritten",
+      "auditLogPathReturned",
       "browserMethodCallsAccepted",
       "implemented",
+      "requiresExplicitExecutionGate",
     ],
     preflight: [
       "token",
@@ -3014,8 +3096,14 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
       "requiresExplicitEnablement",
       "executionRouteImplemented",
       "executionGateEnabled",
+      "preflightTokenConsumed",
+      "auditLogPersistent",
+      "auditLogWritableChecked",
+      "auditLogWritten",
+      "auditLogPathReturned",
       "browserMethodCallsAccepted",
       "implemented",
+      "requiresExplicitExecutionGate",
     ],
     preflight: [
       "token",
@@ -3165,8 +3253,14 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
       "requiresExplicitEnablement",
       "executionRouteImplemented",
       "executionGateEnabled",
+      "preflightTokenConsumed",
+      "auditLogPersistent",
+      "auditLogWritableChecked",
+      "auditLogWritten",
+      "auditLogPathReturned",
       "browserMethodCallsAccepted",
       "implemented",
+      "requiresExplicitExecutionGate",
     ],
     preflight: [
       "token",
@@ -3262,6 +3356,289 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
       "pathsReturned",
       "namesReturned",
       "previewsReturned",
+      "rawPayloadReturned",
+      "requiresExplicitEnablement",
+      "executionRouteImplemented",
+      "executionGateEnabled",
+      "preflightTokenConsumed",
+      "auditLogPersistent",
+      "auditLogWritableChecked",
+      "auditLogWritten",
+      "auditLogPathReturned",
+      "browserMethodCallsAccepted",
+      "implemented",
+      "requiresExplicitExecutionGate",
+    ],
+  }),
+  "/api/thread-goal-set-preflight": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    appServer: ["touched", "modelTraffic", "commandTraffic"],
+    action: [
+      "type",
+      "method",
+      "execution",
+      "wouldSetGoal",
+      "goalSet",
+      "threadStateMutated",
+      "appServerTouched",
+      "reason",
+    ],
+    thread: ["threadIdSuffix", "fullIdsReturned", "contentReturned", "pathsReturned"],
+    goal: [
+      "objectivePresent",
+      "objectiveCharCount",
+      "objectiveLineCount",
+      "objectiveReturned",
+      "status",
+      "tokenBudgetPresent",
+      "tokenBudget",
+      "rawTextReturned",
+    ],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "modelTraffic",
+      "commandTraffic",
+      "threadStateMutated",
+      "goalMutated",
+      "turnStarted",
+      "objectiveReturned",
+      "threadContentReturned",
+      "fullIdsReturned",
+      "pathsReturned",
+      "rawPayloadReturned",
+      "requiresExplicitEnablement",
+      "executionRouteImplemented",
+      "executionGateEnabled",
+      "preflightTokenConsumed",
+      "auditLogPersistent",
+      "auditLogWritableChecked",
+      "auditLogWritten",
+      "auditLogPathReturned",
+      "browserMethodCallsAccepted",
+      "implemented",
+      "requiresExplicitExecutionGate",
+    ],
+    preflight: [
+      "token",
+      "tokenIssued",
+      "issuedAt",
+      "expiresAt",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseRequiredForMutation",
+      "consumed",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+  }),
+  "/api/thread-goal-set-action": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    initialize: ["platformFamily", "platformOs"],
+    appServer: ["touched", "modelTraffic", "commandTraffic", "auditedMethods"],
+    action: [
+      "type",
+      "method",
+      "execution",
+      "wouldSetGoal",
+      "goalSet",
+      "threadStateMutated",
+      "appServerTouched",
+      "modelTraffic",
+      "reason",
+    ],
+    thread: ["threadIdSuffix", "fullIdsReturned", "contentReturned", "pathsReturned"],
+    goal: [
+      "objectivePresent",
+      "objectiveCharCount",
+      "objectiveLineCount",
+      "objectiveReturned",
+      "status",
+      "tokenBudgetPresent",
+      "tokenBudget",
+      "rawTextReturned",
+    ],
+    target: [
+      "threadIdSuffix",
+      "goalSet",
+      "objectiveCharCount",
+      "objectiveLineCount",
+      "fullIdsReturned",
+      "pathsReturned",
+    ],
+    probes: ["threadGoalSet"],
+    "probes.threadGoalSet": [
+      "method",
+      "threadIdSuffix",
+      "status",
+      "methodsUsed",
+      "goalPresent",
+      "requestedStatus",
+      "tokenBudgetPresent",
+      "tokenBudget",
+      "tokensUsed",
+      "timeUsedSeconds",
+      "objectiveCharCount",
+      "objectiveLineCount",
+      "objectiveReturned",
+      "threadContentReturned",
+      "fullIdsReturned",
+      "cwdReturned",
+      "pathsReturned",
+      "rawPayloadReturned",
+    ],
+    result: [
+      "status",
+      "goalSet",
+      "objectiveCharCount",
+      "objectiveLineCount",
+      "fullIdsReturned",
+      "threadContentReturned",
+    ],
+    preflight: [
+      "tokenConsumed",
+      "tokenReturned",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseEnforced",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "modelTraffic",
+      "commandTraffic",
+      "threadStateMutated",
+      "goalMutated",
+      "turnStarted",
+      "objectiveReturned",
+      "threadContentReturned",
+      "fullIdsReturned",
+      "pathsReturned",
+      "rawPayloadReturned",
+      "requiresExplicitEnablement",
+      "executionRouteImplemented",
+      "executionGateEnabled",
+      "preflightTokenConsumed",
+      "auditLogPersistent",
+      "auditLogWritableChecked",
+      "auditLogWritten",
+      "auditLogPathReturned",
+      "browserMethodCallsAccepted",
+      "implemented",
+      "requiresExplicitExecutionGate",
+    ],
+  }),
+  "/api/thread-goal-clear-preflight": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    appServer: ["touched", "modelTraffic", "commandTraffic"],
+    action: [
+      "type",
+      "method",
+      "execution",
+      "wouldClearGoal",
+      "goalCleared",
+      "threadStateMutated",
+      "appServerTouched",
+      "reason",
+    ],
+    thread: ["threadIdSuffix", "fullIdsReturned", "contentReturned", "pathsReturned"],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "modelTraffic",
+      "commandTraffic",
+      "threadStateMutated",
+      "goalMutated",
+      "turnStarted",
+      "objectiveReturned",
+      "threadContentReturned",
+      "fullIdsReturned",
+      "pathsReturned",
+      "rawPayloadReturned",
+      "requiresExplicitEnablement",
+      "executionRouteImplemented",
+      "executionGateEnabled",
+      "preflightTokenConsumed",
+      "auditLogPersistent",
+      "auditLogWritableChecked",
+      "auditLogWritten",
+      "auditLogPathReturned",
+      "browserMethodCallsAccepted",
+      "implemented",
+      "requiresExplicitExecutionGate",
+    ],
+    preflight: [
+      "token",
+      "tokenIssued",
+      "issuedAt",
+      "expiresAt",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseRequiredForMutation",
+      "consumed",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+  }),
+  "/api/thread-goal-clear-action": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    initialize: ["platformFamily", "platformOs"],
+    appServer: ["touched", "modelTraffic", "commandTraffic", "auditedMethods"],
+    action: [
+      "type",
+      "method",
+      "execution",
+      "wouldClearGoal",
+      "goalCleared",
+      "threadStateMutated",
+      "appServerTouched",
+      "modelTraffic",
+      "reason",
+    ],
+    thread: ["threadIdSuffix", "fullIdsReturned", "contentReturned", "pathsReturned"],
+    target: ["threadIdSuffix", "goalCleared", "fullIdsReturned", "pathsReturned"],
+    probes: ["threadGoalClear"],
+    "probes.threadGoalClear": [
+      "method",
+      "threadIdSuffix",
+      "status",
+      "cleared",
+      "methodsUsed",
+      "objectiveReturned",
+      "threadContentReturned",
+      "fullIdsReturned",
+      "cwdReturned",
+      "pathsReturned",
+      "rawPayloadReturned",
+    ],
+    result: ["status", "goalCleared", "fullIdsReturned", "threadContentReturned"],
+    preflight: [
+      "tokenConsumed",
+      "tokenReturned",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseEnforced",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "modelTraffic",
+      "commandTraffic",
+      "threadStateMutated",
+      "goalMutated",
+      "turnStarted",
+      "objectiveReturned",
+      "threadContentReturned",
+      "fullIdsReturned",
+      "pathsReturned",
       "rawPayloadReturned",
       "requiresExplicitEnablement",
       "executionRouteImplemented",
@@ -9134,6 +9511,28 @@ const BROWSER_POST_RESPONSE_ROUTE_TOP_LEVEL_KEYS = Object.freeze({
     "name",
     "result",
   ),
+  "/api/thread-goal-set-preflight": routeResponseTopLevelKeys(
+    ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
+    "thread",
+    "goal",
+  ),
+  "/api/thread-goal-set-action": routeResponseTopLevelKeys(
+    ...RESPONSE_APP_SERVER_MUTATION_TOP_LEVEL_KEYS,
+    "target",
+    "thread",
+    "goal",
+    "result",
+  ),
+  "/api/thread-goal-clear-preflight": routeResponseTopLevelKeys(
+    ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
+    "thread",
+  ),
+  "/api/thread-goal-clear-action": routeResponseTopLevelKeys(
+    ...RESPONSE_APP_SERVER_MUTATION_TOP_LEVEL_KEYS,
+    "target",
+    "thread",
+    "result",
+  ),
   "/api/thread-rollback-preflight": routeResponseTopLevelKeys(
     ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
     "thread",
@@ -9751,7 +10150,9 @@ export function createDevServer({
   threadArchiveFn = runThreadArchiveProbe,
   threadDeleteFn = runThreadDeleteProbe,
   threadForkFn = runThreadForkProbe,
+  threadGoalClearFn = runThreadGoalClearProbe,
   threadGoalProbeFn = runThreadGoalProbe,
+  threadGoalSetFn = runThreadGoalSetProbe,
   threadRenameFn = runThreadRenameProbe,
   threadRollbackFn = runThreadRollbackProbe,
   threadSafetyLockFn = runThreadSafetyLockProbe,
@@ -9804,6 +10205,8 @@ export function createDevServer({
   threadDeleteEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_DELETE === "1",
   threadForkEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_FORK === "1",
   threadGoalEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_GOAL === "1",
+  threadGoalClearEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_GOAL_CLEAR === "1",
+  threadGoalSetEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_GOAL_SET === "1",
   threadTurnsEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_TURNS === "1",
   threadRenameEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_RENAME === "1",
   threadRollbackEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_ROLLBACK === "1",
@@ -9938,7 +10341,9 @@ export function createDevServer({
       threadArchiveFn,
       threadDeleteFn,
       threadForkFn,
+      threadGoalClearFn,
       threadGoalProbeFn,
+      threadGoalSetFn,
       threadRenameFn,
       threadRollbackFn,
       threadSafetyLockFn,
@@ -9990,6 +10395,8 @@ export function createDevServer({
       threadDeleteEnabled,
       threadForkEnabled,
       threadGoalEnabled,
+      threadGoalClearEnabled,
+      threadGoalSetEnabled,
       threadTurnsEnabled,
       threadRenameEnabled,
       threadRollbackEnabled,
@@ -10608,6 +11015,203 @@ export async function handleRequest(request, response, options) {
       sendJson(response, error.statusCode ?? 400, {
         ok: false,
         error: cleanDisplayText(error.message, 200) ?? "Invalid thread rename request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/thread-goal-set-preflight") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, [
+        "workspace",
+        "thread",
+        "objective",
+        "status",
+        "tokenBudget",
+      ]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const payload = buildThreadGoalSetPreflight(body, {
+        workspace,
+        threadGoalSetEnabled: options.threadGoalSetEnabled,
+      });
+      sendJson(response, 200, attachActionPreflight(payload, { body, workspace, options }));
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid thread goal set preflight request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/thread-goal-set-action") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, [
+        "workspace",
+        "thread",
+        "objective",
+        "status",
+        "tokenBudget",
+        "preflightToken",
+      ]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const preflightBody = stripActionPreflightControlFields(body);
+      const preflightPayload = buildThreadGoalSetPreflight(preflightBody, {
+        workspace,
+        threadGoalSetEnabled: options.threadGoalSetEnabled,
+      });
+      if (!preflightPayload.policy.executionGateEnabled) {
+        sendJson(response, 403, buildThreadGoalSetBlocked(preflightPayload));
+        return;
+      }
+      const consumedPreflight = options.preflightRegistry.consume({
+        token: validateActionPreflightToken(body.preflightToken),
+        kind: preflightPayload.action.type,
+        workspace,
+        intent: actionPreflightIntent(preflightBody, preflightPayload),
+      });
+      const auditLogWritableChecked = ensureActionAuditLogWritable(options.actionAuditLog);
+      const payload = await options.threadGoalSetFn({
+        codexBin: options.codexBin,
+        cwd: workspace.cwd,
+        timeoutMs: options.timeoutMs,
+        threadIdSuffix: preflightPayload.thread.threadIdSuffix,
+        objective: validateThreadGoalObjective(preflightBody.objective),
+        status: validateThreadGoalStatus(preflightBody.status),
+        tokenBudget: validateThreadGoalTokenBudget(preflightBody.tokenBudget),
+      });
+      const sanitized = sanitizeThreadGoalSetPayload(payload, {
+        workspace,
+        consumedPreflight,
+        preflightPayload,
+        actionAuditLog: options.actionAuditLog,
+        auditLogWritableChecked,
+      });
+      sanitized.policy.auditLogWritten = writeActionAuditLog(options.actionAuditLog, sanitized);
+      options.threadLifecycleActionLedger?.record(sanitized);
+      sendJson(response, 200, sanitized);
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid thread goal set request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/thread-goal-clear-preflight") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, ["workspace", "thread"]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const payload = buildThreadGoalClearPreflight(body, {
+        workspace,
+        threadGoalClearEnabled: options.threadGoalClearEnabled,
+      });
+      sendJson(response, 200, attachActionPreflight(payload, { body, workspace, options }));
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid thread goal clear preflight request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/thread-goal-clear-action") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, [
+        "workspace",
+        "thread",
+        "preflightToken",
+      ]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const preflightBody = stripActionPreflightControlFields(body);
+      const preflightPayload = buildThreadGoalClearPreflight(preflightBody, {
+        workspace,
+        threadGoalClearEnabled: options.threadGoalClearEnabled,
+      });
+      if (!preflightPayload.policy.executionGateEnabled) {
+        sendJson(response, 403, buildThreadGoalClearBlocked(preflightPayload));
+        return;
+      }
+      const consumedPreflight = options.preflightRegistry.consume({
+        token: validateActionPreflightToken(body.preflightToken),
+        kind: preflightPayload.action.type,
+        workspace,
+        intent: actionPreflightIntent(preflightBody, preflightPayload),
+      });
+      const auditLogWritableChecked = ensureActionAuditLogWritable(options.actionAuditLog);
+      const payload = await options.threadGoalClearFn({
+        codexBin: options.codexBin,
+        cwd: workspace.cwd,
+        timeoutMs: options.timeoutMs,
+        threadIdSuffix: preflightPayload.thread.threadIdSuffix,
+      });
+      const sanitized = sanitizeThreadGoalClearPayload(payload, {
+        workspace,
+        consumedPreflight,
+        actionAuditLog: options.actionAuditLog,
+        auditLogWritableChecked,
+      });
+      sanitized.policy.auditLogWritten = writeActionAuditLog(options.actionAuditLog, sanitized);
+      options.threadLifecycleActionLedger?.record(sanitized);
+      sendJson(response, 200, sanitized);
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid thread goal clear request",
       });
     }
     return;
@@ -15498,6 +16102,7 @@ function actionPreflightIntent(body, payload) {
     integrationAction: payload?.integrationAction,
     liveSessionControl: payload?.liveSessionControl,
     liveSessionBulkControl: payload?.liveSessionBulkControl,
+    goal: payload?.goal,
   };
   return result;
 }
@@ -15546,6 +16151,16 @@ async function buildConfirmableActionPreflightPayload(actionType, body, { worksp
       return buildThreadRenamePreflight(body, {
         workspace,
         threadRenameEnabled: options.threadRenameEnabled,
+      });
+    case "thread-goal-set-preflight":
+      return buildThreadGoalSetPreflight(body, {
+        workspace,
+        threadGoalSetEnabled: options.threadGoalSetEnabled,
+      });
+    case "thread-goal-clear-preflight":
+      return buildThreadGoalClearPreflight(body, {
+        workspace,
+        threadGoalClearEnabled: options.threadGoalClearEnabled,
       });
     case "thread-rollback-preflight":
       return buildThreadRollbackPreflight(body, {
@@ -15941,6 +16556,10 @@ function actionAuditEvent(record) {
       return "thread-fork-recorded";
     case "thread-rename":
       return "thread-rename-recorded";
+    case "thread-goal-set":
+      return "thread-goal-set-recorded";
+    case "thread-goal-clear":
+      return "thread-goal-clear-recorded";
     case "thread-rollback":
       return "thread-rollback-recorded";
     case "thread-safety-lock":
@@ -27911,6 +28530,269 @@ export function buildThreadRenameBlocked(preflightPayload) {
   };
 }
 
+export function sanitizeThreadGoalSetPayload(
+  payload,
+  {
+    workspace = null,
+    consumedPreflight,
+    preflightPayload = null,
+    actionAuditLog = null,
+    auditLogWritableChecked = false,
+  } = {},
+) {
+  const threadGoalSet = sanitizeThreadGoalSetProbe(payload?.probes?.threadGoalSet);
+  const goal = sanitizeThreadGoalMutationSummary(preflightPayload?.goal ?? {
+    objectiveCharCount: threadGoalSet.objectiveCharCount,
+    objectiveLineCount: threadGoalSet.objectiveLineCount,
+    status: threadGoalSet.requestedStatus,
+    tokenBudgetPresent: threadGoalSet.tokenBudgetPresent,
+    tokenBudget: threadGoalSet.tokenBudget,
+  });
+  return {
+    ok: Boolean(payload?.ok),
+    generatedAt: payload?.generatedAt ?? new Date().toISOString(),
+    transport: cleanDisplayText(payload?.transport, 80),
+    protocol: cleanDisplayText(payload?.protocol, 80),
+    initialize: sanitizeInitialize(payload?.initialize),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: true,
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: threadGoalSet.methodsUsed,
+    },
+    action: {
+      type: "thread-goal-set",
+      method: "thread/goal/set",
+      execution: "set",
+      wouldSetGoal: true,
+      goalSet: true,
+      threadStateMutated: true,
+      appServerTouched: true,
+      modelTraffic: false,
+    },
+    preflight: buildConsumedPreflightSummary(consumedPreflight),
+    thread: {
+      threadIdSuffix: threadGoalSet.threadIdSuffix,
+      fullIdsReturned: false,
+      contentReturned: false,
+      pathsReturned: false,
+    },
+    goal,
+    target: {
+      threadIdSuffix: threadGoalSet.threadIdSuffix,
+      goalSet: true,
+      objectiveCharCount: goal.objectiveCharCount,
+      objectiveLineCount: goal.objectiveLineCount,
+      fullIdsReturned: false,
+      pathsReturned: false,
+    },
+    probes: {
+      threadGoalSet,
+    },
+    result: {
+      status: threadGoalSet.status,
+      goalSet: true,
+      objectiveCharCount: goal.objectiveCharCount,
+      objectiveLineCount: goal.objectiveLineCount,
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    },
+    policy: threadGoalMutationPolicy({
+      enabled: true,
+      appServerTraffic: true,
+      goalMutated: true,
+      preflightTokenConsumed: true,
+      actionAuditLog,
+      auditLogWritableChecked,
+    }),
+    notifications: sanitizeNotificationCounts(payload?.notifications),
+  };
+}
+
+export function sanitizeThreadGoalClearPayload(
+  payload,
+  {
+    workspace = null,
+    consumedPreflight,
+    actionAuditLog = null,
+    auditLogWritableChecked = false,
+  } = {},
+) {
+  const threadGoalClear = sanitizeThreadGoalClearProbe(payload?.probes?.threadGoalClear);
+  return {
+    ok: Boolean(payload?.ok),
+    generatedAt: payload?.generatedAt ?? new Date().toISOString(),
+    transport: cleanDisplayText(payload?.transport, 80),
+    protocol: cleanDisplayText(payload?.protocol, 80),
+    initialize: sanitizeInitialize(payload?.initialize),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: true,
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: threadGoalClear.methodsUsed,
+    },
+    action: {
+      type: "thread-goal-clear",
+      method: "thread/goal/clear",
+      execution: "cleared",
+      wouldClearGoal: true,
+      goalCleared: threadGoalClear.cleared,
+      threadStateMutated: true,
+      appServerTouched: true,
+      modelTraffic: false,
+    },
+    preflight: buildConsumedPreflightSummary(consumedPreflight),
+    thread: {
+      threadIdSuffix: threadGoalClear.threadIdSuffix,
+      fullIdsReturned: false,
+      contentReturned: false,
+      pathsReturned: false,
+    },
+    target: {
+      threadIdSuffix: threadGoalClear.threadIdSuffix,
+      goalCleared: threadGoalClear.cleared,
+      fullIdsReturned: false,
+      pathsReturned: false,
+    },
+    probes: {
+      threadGoalClear,
+    },
+    result: {
+      status: threadGoalClear.status,
+      goalCleared: threadGoalClear.cleared,
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    },
+    policy: threadGoalMutationPolicy({
+      enabled: true,
+      appServerTraffic: true,
+      goalMutated: true,
+      preflightTokenConsumed: true,
+      actionAuditLog,
+      auditLogWritableChecked,
+    }),
+    notifications: sanitizeNotificationCounts(payload?.notifications),
+  };
+}
+
+export function buildThreadGoalSetPreflight(
+  body,
+  { workspace, threadGoalSetEnabled = false } = {},
+) {
+  const threadIdSuffix = validateThreadSuffix(body?.thread);
+  const goal = summarizeThreadGoalMutationInput({
+    objective: validateThreadGoalObjective(body?.objective),
+    status: validateThreadGoalStatus(body?.status),
+    tokenBudget: validateThreadGoalTokenBudget(body?.tokenBudget),
+  });
+  const enabled = Boolean(threadGoalSetEnabled);
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: publicWorkspaces([workspace])[0],
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+    },
+    action: {
+      type: "thread-goal-set-preflight",
+      method: "thread/goal/set",
+      execution: "blocked",
+      wouldSetGoal: false,
+      goalSet: false,
+      threadStateMutated: false,
+      appServerTouched: false,
+      reason: enabled ? "thread-goal-set-requires-confirmation" : "thread-goal-set-requires-opt-in",
+    },
+    thread: {
+      threadIdSuffix,
+      fullIdsReturned: false,
+      contentReturned: false,
+      pathsReturned: false,
+    },
+    goal,
+    policy: threadGoalMutationPolicy({ enabled, appServerTraffic: false }),
+  };
+}
+
+export function buildThreadGoalClearPreflight(
+  body,
+  { workspace, threadGoalClearEnabled = false } = {},
+) {
+  const threadIdSuffix = validateThreadSuffix(body?.thread);
+  const enabled = Boolean(threadGoalClearEnabled);
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: publicWorkspaces([workspace])[0],
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+    },
+    action: {
+      type: "thread-goal-clear-preflight",
+      method: "thread/goal/clear",
+      execution: "blocked",
+      wouldClearGoal: false,
+      goalCleared: false,
+      threadStateMutated: false,
+      appServerTouched: false,
+      reason: enabled
+        ? "thread-goal-clear-requires-confirmation"
+        : "thread-goal-clear-requires-opt-in",
+    },
+    thread: {
+      threadIdSuffix,
+      fullIdsReturned: false,
+      contentReturned: false,
+      pathsReturned: false,
+    },
+    policy: threadGoalMutationPolicy({ enabled, appServerTraffic: false }),
+  };
+}
+
+export function buildThreadGoalSetBlocked(preflightPayload) {
+  return {
+    ...preflightPayload,
+    ok: false,
+    error:
+      "Thread goal set is disabled. Set CODEX_APP_PORT_ALLOW_THREAD_GOAL_SET=1 before starting the dev server.",
+    action: {
+      ...preflightPayload.action,
+      execution: "blocked",
+      wouldSetGoal: false,
+      goalSet: false,
+      threadStateMutated: false,
+      appServerTouched: false,
+      reason: "thread-goal-set-disabled",
+    },
+    policy: threadGoalMutationPolicy({ enabled: false, appServerTraffic: false }),
+  };
+}
+
+export function buildThreadGoalClearBlocked(preflightPayload) {
+  return {
+    ...preflightPayload,
+    ok: false,
+    error:
+      "Thread goal clear is disabled. Set CODEX_APP_PORT_ALLOW_THREAD_GOAL_CLEAR=1 before starting the dev server.",
+    action: {
+      ...preflightPayload.action,
+      execution: "blocked",
+      wouldClearGoal: false,
+      goalCleared: false,
+      threadStateMutated: false,
+      appServerTouched: false,
+      reason: "thread-goal-clear-disabled",
+    },
+    policy: threadGoalMutationPolicy({ enabled: false, appServerTraffic: false }),
+  };
+}
+
 export function sanitizeThreadRollbackPayload(
   payload,
   { workspace = null, consumedPreflight, actionAuditLog = null, auditLogWritableChecked = false } = {},
@@ -34968,6 +35850,67 @@ function sanitizeThreadRenameNameSummary(value) {
   };
 }
 
+function summarizeThreadGoalMutationInput({ objective, status, tokenBudget }) {
+  return {
+    objectivePresent: true,
+    objectiveCharCount: objective.length,
+    objectiveLineCount: countTextLines(objective),
+    objectiveReturned: false,
+    status,
+    tokenBudgetPresent: tokenBudget !== null,
+    tokenBudget,
+    rawTextReturned: false,
+  };
+}
+
+function sanitizeThreadGoalMutationSummary(value) {
+  return {
+    objectivePresent: Boolean(value?.objectivePresent ?? true),
+    objectiveCharCount: safeCount(value?.objectiveCharCount),
+    objectiveLineCount: safeCount(value?.objectiveLineCount),
+    objectiveReturned: false,
+    status: statusLabel(value?.status),
+    tokenBudgetPresent: Boolean(value?.tokenBudgetPresent),
+    tokenBudget: value?.tokenBudgetPresent ? safeCount(value?.tokenBudget) : null,
+    rawTextReturned: false,
+  };
+}
+
+function threadGoalMutationPolicy({
+  enabled = false,
+  appServerTraffic = false,
+  goalMutated = false,
+  preflightTokenConsumed = false,
+  actionAuditLog = null,
+  auditLogWritableChecked = false,
+} = {}) {
+  return {
+    readOnly: !goalMutated,
+    appServerTraffic: Boolean(appServerTraffic),
+    modelTraffic: false,
+    commandTraffic: false,
+    threadStateMutated: Boolean(goalMutated),
+    goalMutated: Boolean(goalMutated),
+    turnStarted: false,
+    objectiveReturned: false,
+    threadContentReturned: false,
+    fullIdsReturned: false,
+    pathsReturned: false,
+    rawPayloadReturned: false,
+    requiresExplicitEnablement: true,
+    executionRouteImplemented: true,
+    executionGateEnabled: Boolean(enabled),
+    preflightTokenConsumed: Boolean(preflightTokenConsumed),
+    auditLogPersistent: Boolean(actionAuditLog?.persistent),
+    auditLogWritableChecked: Boolean(auditLogWritableChecked),
+    auditLogWritten: false,
+    auditLogPathReturned: false,
+    browserMethodCallsAccepted: Boolean(enabled && goalMutated),
+    implemented: Boolean(enabled),
+    requiresExplicitExecutionGate: true,
+  };
+}
+
 function sanitizeStreamEvent(event) {
   const output = {
     method: cleanDisplayText(event?.method, 100) ?? "unknown",
@@ -36011,6 +36954,51 @@ function sanitizeThreadRenameProbe(threadRename) {
     cwdReturned: false,
     pathsReturned: false,
     previewsReturned: false,
+    rawPayloadReturned: false,
+  };
+}
+
+function sanitizeThreadGoalSetProbe(threadGoalSet) {
+  const methodsUsed = sanitizeMethodList(threadGoalSet?.methodsUsed).filter((method) =>
+    ["thread/list", "thread/goal/set"].includes(method),
+  );
+  return {
+    method: "thread/goal/set",
+    threadIdSuffix: cleanDisplayText(threadGoalSet?.threadIdSuffix, 16),
+    status: cleanDisplayText(threadGoalSet?.status, 80) ?? "set",
+    methodsUsed: methodsUsed.length > 0 ? methodsUsed : ["thread/list", "thread/goal/set"],
+    goalPresent: Boolean(threadGoalSet?.goalPresent ?? true),
+    requestedStatus: statusLabel(threadGoalSet?.requestedStatus),
+    tokenBudgetPresent: Boolean(threadGoalSet?.tokenBudgetPresent),
+    tokenBudget: threadGoalSet?.tokenBudgetPresent ? safeCount(threadGoalSet?.tokenBudget) : null,
+    tokensUsed: safeCount(threadGoalSet?.tokensUsed),
+    timeUsedSeconds: safeCount(threadGoalSet?.timeUsedSeconds),
+    objectiveCharCount: safeCount(threadGoalSet?.objectiveCharCount),
+    objectiveLineCount: safeCount(threadGoalSet?.objectiveLineCount),
+    objectiveReturned: false,
+    threadContentReturned: false,
+    fullIdsReturned: false,
+    cwdReturned: false,
+    pathsReturned: false,
+    rawPayloadReturned: false,
+  };
+}
+
+function sanitizeThreadGoalClearProbe(threadGoalClear) {
+  const methodsUsed = sanitizeMethodList(threadGoalClear?.methodsUsed).filter((method) =>
+    ["thread/list", "thread/goal/clear"].includes(method),
+  );
+  return {
+    method: "thread/goal/clear",
+    threadIdSuffix: cleanDisplayText(threadGoalClear?.threadIdSuffix, 16),
+    status: cleanDisplayText(threadGoalClear?.status, 80) ?? "cleared",
+    cleared: Boolean(threadGoalClear?.cleared),
+    methodsUsed: methodsUsed.length > 0 ? methodsUsed : ["thread/list", "thread/goal/clear"],
+    objectiveReturned: false,
+    threadContentReturned: false,
+    fullIdsReturned: false,
+    cwdReturned: false,
+    pathsReturned: false,
     rawPayloadReturned: false,
   };
 }
@@ -37696,6 +38684,48 @@ function validateThreadRenameName(value) {
     );
   }
   return trimmed;
+}
+
+function validateThreadGoalObjective(value) {
+  if (typeof value !== "string") {
+    throwRequestError("Thread goal objective must be a string", 400);
+  }
+  const trimmed = value.trim();
+  if (trimmed.length === 0) {
+    throwRequestError("Thread goal objective is required", 400);
+  }
+  if (value.includes("\0")) {
+    throwRequestError("Thread goal objective contains unsupported text", 400);
+  }
+  if (value.length > MAX_THREAD_GOAL_OBJECTIVE_CHARS) {
+    throwRequestError(
+      `Thread goal objective must be ${MAX_THREAD_GOAL_OBJECTIVE_CHARS} characters or fewer`,
+      400,
+    );
+  }
+  return trimmed;
+}
+
+function validateThreadGoalStatus(value) {
+  const status = value === null || value === undefined || value === "" ? "active" : String(value);
+  if (!THREAD_GOAL_STATUSES.has(status)) {
+    throwRequestError("Thread goal status is unsupported", 400);
+  }
+  return status;
+}
+
+function validateThreadGoalTokenBudget(value) {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+  const number = Number(value);
+  if (!Number.isSafeInteger(number) || number < 0 || number > MAX_THREAD_GOAL_TOKEN_BUDGET) {
+    throwRequestError(
+      `Thread goal token budget must be an integer between 0 and ${MAX_THREAD_GOAL_TOKEN_BUDGET}`,
+      400,
+    );
+  }
+  return number;
 }
 
 function validateThreadRollbackTurns(value) {

@@ -48,6 +48,8 @@ const ACTION_AUDIT_EVENTS = new Set([
   "thread-compact-recorded",
   "thread-delete-recorded",
   "thread-fork-recorded",
+  "thread-goal-clear-recorded",
+  "thread-goal-set-recorded",
   "thread-rename-recorded",
   "thread-rollback-recorded",
   "thread-safety-lock-recorded",
@@ -271,6 +273,10 @@ function actionAuditEvent(actionType) {
       return "thread-delete-recorded";
     case "thread-fork":
       return "thread-fork-recorded";
+    case "thread-goal-set":
+      return "thread-goal-set-recorded";
+    case "thread-goal-clear":
+      return "thread-goal-clear-recorded";
     case "thread-rename":
       return "thread-rename-recorded";
     case "thread-rollback":
@@ -663,6 +669,28 @@ function sanitizeAction(action, actionType, { appServer }) {
       modelTraffic: false,
     };
   }
+  if (actionType === "thread-goal-set") {
+    return {
+      type: "thread-goal-set",
+      method: "thread/goal/set",
+      execution: safeString(action.execution, 40) ?? "set",
+      goalSet: Boolean(action.goalSet),
+      threadStateMutated: Boolean(action.threadStateMutated),
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: false,
+    };
+  }
+  if (actionType === "thread-goal-clear") {
+    return {
+      type: "thread-goal-clear",
+      method: "thread/goal/clear",
+      execution: safeString(action.execution, 40) ?? "cleared",
+      goalCleared: Boolean(action.goalCleared),
+      threadStateMutated: Boolean(action.threadStateMutated),
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: false,
+    };
+  }
   if (actionType === "thread-rollback") {
     return {
       type: "thread-rollback",
@@ -1043,6 +1071,24 @@ function sanitizeTarget(target, actionType) {
       renamed: Boolean(target.renamed),
       nameCharCount: safeCount(target.nameCharCount),
       nameLineCount: safeCount(target.nameLineCount),
+      fullIdsReturned: false,
+      pathsReturned: false,
+    };
+  }
+  if (actionType === "thread-goal-set") {
+    return {
+      threadIdSuffix: safeString(target.threadIdSuffix, 16),
+      goalSet: Boolean(target.goalSet),
+      objectiveCharCount: safeCount(target.objectiveCharCount),
+      objectiveLineCount: safeCount(target.objectiveLineCount),
+      fullIdsReturned: false,
+      pathsReturned: false,
+    };
+  }
+  if (actionType === "thread-goal-clear") {
+    return {
+      threadIdSuffix: safeString(target.threadIdSuffix, 16),
+      goalCleared: Boolean(target.goalCleared),
       fullIdsReturned: false,
       pathsReturned: false,
     };
@@ -1557,6 +1603,24 @@ function sanitizeResult(result, actionType) {
       threadContentReturned: false,
     };
   }
+  if (actionType === "thread-goal-set") {
+    return {
+      status: safeString(result.status, 80) ?? "set",
+      goalSet: Boolean(result.goalSet),
+      objectiveCharCount: safeCount(result.objectiveCharCount),
+      objectiveLineCount: safeCount(result.objectiveLineCount),
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
+  if (actionType === "thread-goal-clear") {
+    return {
+      status: safeString(result.status, 80) ?? "cleared",
+      goalCleared: Boolean(result.goalCleared),
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
   if (actionType === "thread-rollback") {
     return {
       status: safeString(result.status, 80) ?? "rolled-back",
@@ -1737,6 +1801,8 @@ function sanitizeActionType(value) {
     "thread-compact",
     "thread-delete",
     "thread-fork",
+    "thread-goal-set",
+    "thread-goal-clear",
     "thread-rename",
     "thread-rollback",
     "thread-safety-lock",

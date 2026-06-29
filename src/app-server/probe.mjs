@@ -44,6 +44,8 @@ export const DEFAULT_LOADED_SESSION_LIMIT = 50;
 export const DEFAULT_THREAD_SEARCH_LIMIT = 20;
 export const DEFAULT_THREAD_SEARCH_TERM_LIMIT = 200;
 export const DEFAULT_THREAD_RENAME_LIMIT = 120;
+export const DEFAULT_THREAD_GOAL_OBJECTIVE_LIMIT = 4_000;
+export const DEFAULT_THREAD_GOAL_TOKEN_BUDGET_LIMIT = 10_000_000;
 export const DEFAULT_THREAD_ROLLBACK_MAX_TURNS = 50;
 export const DEFAULT_STEER_PROMPT_LIMIT = 4_000;
 export const DEFAULT_TURN_EVENT_LOG_LIMIT = 100;
@@ -53,6 +55,14 @@ export const DEFAULT_TERMINAL_COMMAND_TIMEOUT_MS = 5_000;
 export const DEFAULT_PROCESS_SPAWN_TIMEOUT_MS = 5_000;
 
 const TRANSCRIPT_ITEM_TYPES = new Set(["agentMessage", "userMessage"]);
+const THREAD_GOAL_STATUSES = new Set([
+  "active",
+  "paused",
+  "blocked",
+  "usageLimited",
+  "budgetLimited",
+  "complete",
+]);
 const CHANGE_PATH_FIELDS = [
   "path",
   "file",
@@ -1223,6 +1233,201 @@ export async function runThreadGoalProbe({
       initialize: summarizeInitialize(initialize),
       probes: {
         threadGoal: summarizeThreadGoal(goal, { threadIdSuffix }),
+      },
+      notifications: notificationCounts(notifications),
+    };
+  } finally {
+    await client.close();
+  }
+}
+
+export async function runThreadGoalSetProbe({
+  codexBin = process.env.CODEX_BIN || "codex",
+  codexArgs = ["app-server", "--listen", "stdio://"],
+  cwd = process.cwd(),
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+  threadIdSuffix,
+  objective,
+  status = "active",
+  tokenBudget = null,
+  threadScanLimit = DEFAULT_THREAD_DETAIL_SCAN_LIMIT,
+  onNotification = null,
+} = {}) {
+  if (process.env.CODEX_APP_PORT_ALLOW_THREAD_GOAL_SET !== "1") {
+    throw new Error(
+      "thread/goal/set requires CODEX_APP_PORT_ALLOW_THREAD_GOAL_SET=1 because it mutates persisted goal metadata",
+    );
+  }
+  if (!isValidSuffix(threadIdSuffix)) {
+    throwRequestError("Thread selector must be an 8-character id suffix", 400);
+  }
+  const safeObjective = validateThreadGoalObjective(objective);
+  const safeStatus = validateThreadGoalStatus(status);
+  const safeTokenBudget = validateThreadGoalTokenBudget(tokenBudget);
+
+  const notifications = [];
+  const client = new JsonlRpcClient({
+    command: codexBin,
+    args: codexArgs,
+    cwd,
+    timeoutMs,
+    onNotification(notification) {
+      notifications.push({
+        method: notification.method,
+      });
+      onNotification?.(notification);
+    },
+  });
+
+  await client.start();
+
+  try {
+    const initialize = normalizeInitializeResponse(
+      await client.request(APP_SERVER_METHODS.initialize, {
+        clientInfo: {
+          name: "codex_app_port",
+          title: "Codex App Port",
+          version: "0.1.0",
+        },
+        capabilities: {
+          experimentalApi: false,
+          requestAttestation: false,
+        },
+      }),
+    );
+
+    client.notify(APP_SERVER_METHODS.initialized);
+
+    const thread = await selectThreadBySuffixFromLists(client, {
+      threadIdSuffix,
+      threadScanLimit,
+    });
+    const goal = await client.request(
+      APP_SERVER_METHODS.threadGoalSet,
+      {
+        threadId: thread.id,
+        objective: safeObjective,
+        status: safeStatus,
+        tokenBudget: safeTokenBudget,
+      },
+      { timeoutMs },
+    );
+
+    return {
+      ok: true,
+      generatedAt: new Date().toISOString(),
+      transport: "stdio-jsonl",
+      protocol: "json-rpc-2.0-without-jsonrpc-field",
+      initialize: summarizeInitialize(initialize),
+      probes: {
+        threadGoalSet: {
+          ...summarizeThreadGoal(goal, { threadIdSuffix }),
+          method: APP_SERVER_METHODS.threadGoalSet,
+          status: "set",
+          methodsUsed: [APP_SERVER_METHODS.threadList, APP_SERVER_METHODS.threadGoalSet],
+          objectiveCharCount: safeObjective.length,
+          objectiveLineCount: countLines(safeObjective),
+          requestedStatus: safeStatus,
+          tokenBudgetPresent: safeTokenBudget !== null,
+          tokenBudget: safeTokenBudget,
+          objectiveReturned: false,
+          threadContentReturned: false,
+          fullIdsReturned: false,
+          cwdReturned: false,
+          pathsReturned: false,
+          rawPayloadReturned: false,
+        },
+      },
+      notifications: notificationCounts(notifications),
+    };
+  } finally {
+    await client.close();
+  }
+}
+
+export async function runThreadGoalClearProbe({
+  codexBin = process.env.CODEX_BIN || "codex",
+  codexArgs = ["app-server", "--listen", "stdio://"],
+  cwd = process.cwd(),
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+  threadIdSuffix,
+  threadScanLimit = DEFAULT_THREAD_DETAIL_SCAN_LIMIT,
+  onNotification = null,
+} = {}) {
+  if (process.env.CODEX_APP_PORT_ALLOW_THREAD_GOAL_CLEAR !== "1") {
+    throw new Error(
+      "thread/goal/clear requires CODEX_APP_PORT_ALLOW_THREAD_GOAL_CLEAR=1 because it mutates persisted goal metadata",
+    );
+  }
+  if (!isValidSuffix(threadIdSuffix)) {
+    throwRequestError("Thread selector must be an 8-character id suffix", 400);
+  }
+
+  const notifications = [];
+  const client = new JsonlRpcClient({
+    command: codexBin,
+    args: codexArgs,
+    cwd,
+    timeoutMs,
+    onNotification(notification) {
+      notifications.push({
+        method: notification.method,
+      });
+      onNotification?.(notification);
+    },
+  });
+
+  await client.start();
+
+  try {
+    const initialize = normalizeInitializeResponse(
+      await client.request(APP_SERVER_METHODS.initialize, {
+        clientInfo: {
+          name: "codex_app_port",
+          title: "Codex App Port",
+          version: "0.1.0",
+        },
+        capabilities: {
+          experimentalApi: false,
+          requestAttestation: false,
+        },
+      }),
+    );
+
+    client.notify(APP_SERVER_METHODS.initialized);
+
+    const thread = await selectThreadBySuffixFromLists(client, {
+      threadIdSuffix,
+      threadScanLimit,
+    });
+    const clear = await client.request(
+      APP_SERVER_METHODS.threadGoalClear,
+      {
+        threadId: thread.id,
+      },
+      { timeoutMs },
+    );
+
+    return {
+      ok: true,
+      generatedAt: new Date().toISOString(),
+      transport: "stdio-jsonl",
+      protocol: "json-rpc-2.0-without-jsonrpc-field",
+      initialize: summarizeInitialize(initialize),
+      probes: {
+        threadGoalClear: {
+          method: APP_SERVER_METHODS.threadGoalClear,
+          threadIdSuffix: suffix(thread.id),
+          status: "cleared",
+          cleared: Boolean(clear?.cleared),
+          methodsUsed: [APP_SERVER_METHODS.threadList, APP_SERVER_METHODS.threadGoalClear],
+          objectiveReturned: false,
+          threadContentReturned: false,
+          fullIdsReturned: false,
+          cwdReturned: false,
+          pathsReturned: false,
+          rawPayloadReturned: false,
+        },
       },
       notifications: notificationCounts(notifications),
     };
@@ -6138,6 +6343,52 @@ function validateThreadRenameName(value) {
     throwRequestError(`Thread name must be ${DEFAULT_THREAD_RENAME_LIMIT} characters or fewer`, 400);
   }
   return trimmed;
+}
+
+function validateThreadGoalObjective(value) {
+  if (typeof value !== "string") {
+    throwRequestError("Thread goal objective must be a string", 400);
+  }
+  const trimmed = value.trim();
+  if (trimmed.length === 0) {
+    throwRequestError("Thread goal objective is required", 400);
+  }
+  if (value.includes("\0")) {
+    throwRequestError("Thread goal objective contains unsupported text", 400);
+  }
+  if (value.length > DEFAULT_THREAD_GOAL_OBJECTIVE_LIMIT) {
+    throwRequestError(
+      `Thread goal objective must be ${DEFAULT_THREAD_GOAL_OBJECTIVE_LIMIT} characters or fewer`,
+      400,
+    );
+  }
+  return trimmed;
+}
+
+function validateThreadGoalStatus(value) {
+  const status = value === null || value === undefined || value === "" ? "active" : String(value);
+  if (!THREAD_GOAL_STATUSES.has(status)) {
+    throwRequestError("Thread goal status is unsupported", 400);
+  }
+  return status;
+}
+
+function validateThreadGoalTokenBudget(value) {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+  const number = Number(value);
+  if (
+    !Number.isSafeInteger(number) ||
+    number < 0 ||
+    number > DEFAULT_THREAD_GOAL_TOKEN_BUDGET_LIMIT
+  ) {
+    throwRequestError(
+      `Thread goal token budget must be an integer between 0 and ${DEFAULT_THREAD_GOAL_TOKEN_BUDGET_LIMIT}`,
+      400,
+    );
+  }
+  return number;
 }
 
 function validateThreadRollbackTurns(value) {

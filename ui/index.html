@@ -1246,6 +1246,35 @@
             </div>
           </div>
           <div class="thread-tools">
+            <label class="search-control" for="thread-goal-objective-input">
+              <span>Goal</span>
+              <input id="thread-goal-objective-input" type="text" autocomplete="off" maxlength="4000" disabled />
+            </label>
+            <label class="workspace-control" for="thread-goal-status-select">
+              <span>Status</span>
+              <select id="thread-goal-status-select" disabled>
+                <option value="active">Active</option>
+                <option value="paused">Paused</option>
+                <option value="blocked">Blocked</option>
+                <option value="complete">Complete</option>
+              </select>
+            </label>
+            <label class="search-control" for="thread-goal-budget-input">
+              <span>Budget</span>
+              <input id="thread-goal-budget-input" type="number" min="0" max="10000000" step="1" disabled />
+            </label>
+            <button id="thread-goal-set-preflight-button" class="secondary-button" type="button" disabled>
+              Goal Set Check
+            </button>
+            <button id="thread-goal-set-button" class="secondary-button" type="button" disabled>
+              Set Goal
+            </button>
+            <button id="thread-goal-clear-preflight-button" class="secondary-button" type="button" disabled>
+              Goal Clear Check
+            </button>
+            <button id="thread-goal-clear-button" class="secondary-button" type="button" disabled>
+              Clear Goal
+            </button>
             <label class="search-control" for="thread-rename-input">
               <span>Name</span>
               <input id="thread-rename-input" type="text" autocomplete="off" maxlength="120" disabled />
@@ -1281,6 +1310,7 @@
           <p id="thread-delete-status" class="empty-state">Select a thread to delete.</p>
           <p id="thread-compact-status" class="empty-state">Select a loaded active thread to compact.</p>
           <p id="thread-goal-status" class="empty-state">Select a thread to inspect goal state.</p>
+          <p id="thread-goal-mutation-status" class="empty-state">Select a thread to update goal state.</p>
           <p id="thread-turns-status" class="empty-state">Select a thread to inspect paged turn metadata.</p>
           <dl id="thread-detail-meta" class="agent-grid"></dl>
           <div id="turn-timeline" class="turn-timeline" role="list">

@@ -289,6 +289,16 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /thread-rollback-status/);
     assert.match(appScript, /runThreadRollbackPreflight/);
     assert.match(appScript, /runThreadRollbackAction/);
+    assert.match(html, /thread-goal-objective-input/);
+    assert.match(html, /thread-goal-set-preflight-button/);
+    assert.match(html, /thread-goal-set-button/);
+    assert.match(html, /thread-goal-clear-preflight-button/);
+    assert.match(html, /thread-goal-clear-button/);
+    assert.match(html, /thread-goal-mutation-status/);
+    assert.match(appScript, /runThreadGoalSetPreflight/);
+    assert.match(appScript, /runThreadGoalSetAction/);
+    assert.match(appScript, /runThreadGoalClearPreflight/);
+    assert.match(appScript, /runThreadGoalClearAction/);
     assert.match(html, /thread-safety-lock-preflight-button/);
     assert.match(html, /thread-safety-lock-button/);
     assert.match(html, /thread-safety-lock-status/);
@@ -340,6 +350,10 @@ test("browser POST body contracts are centralized and immutable", () => {
     "/api/thread-fork-action",
     "/api/thread-rename-preflight",
     "/api/thread-rename-action",
+    "/api/thread-goal-set-preflight",
+    "/api/thread-goal-set-action",
+    "/api/thread-goal-clear-preflight",
+    "/api/thread-goal-clear-action",
     "/api/thread-rollback-preflight",
     "/api/thread-rollback-action",
     "/api/thread-safety-lock-preflight",
@@ -459,6 +473,30 @@ test("browser POST body contracts are centralized and immutable", () => {
     "workspace",
     "thread",
     "name",
+    "preflightToken",
+  ]);
+  assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/thread-goal-set-preflight"].allowedFields], [
+    "workspace",
+    "thread",
+    "objective",
+    "status",
+    "tokenBudget",
+  ]);
+  assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/thread-goal-set-action"].allowedFields], [
+    "workspace",
+    "thread",
+    "objective",
+    "status",
+    "tokenBudget",
+    "preflightToken",
+  ]);
+  assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/thread-goal-clear-preflight"].allowedFields], [
+    "workspace",
+    "thread",
+  ]);
+  assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/thread-goal-clear-action"].allowedFields], [
+    "workspace",
+    "thread",
     "preflightToken",
   ]);
   assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/thread-rollback-preflight"].allowedFields], [
@@ -1348,6 +1386,35 @@ test("browser POST response contracts block unsafe response values", () => {
   assert.equal(threadRenameActionContract.nestedKeySchemas.result.includes("renamed"), true);
   assert.equal(threadRenameActionContract.nestedKeySchemas.policy.includes("requiresExplicitExecutionGate"), true);
   assert.equal(threadRenameActionContract.nestedKeySchemas.policy.includes("unexpected"), false);
+  const threadGoalSetPreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-goal-set-preflight"];
+  assert.equal(threadGoalSetPreflightContract.usesRouteSpecificNestedKeySchemas, true);
+  assert.equal(threadGoalSetPreflightContract.nestedKeySchemas.goal.includes("objectiveCharCount"), true);
+  assert.equal(threadGoalSetPreflightContract.nestedKeySchemas.goal.includes("objectiveReturned"), true);
+  assert.equal(threadGoalSetPreflightContract.nestedKeySchemas.policy.includes("goalMutated"), true);
+  assert.equal(threadGoalSetPreflightContract.nestedKeySchemas.policy.includes("unexpected"), false);
+  const threadGoalSetActionContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-goal-set-action"];
+  assert.equal(threadGoalSetActionContract.usesRouteSpecificNestedKeySchemas, true);
+  assert.equal(threadGoalSetActionContract.nestedKeySchemas["probes.threadGoalSet"].includes("methodsUsed"), true);
+  assert.equal(threadGoalSetActionContract.nestedKeySchemas.target.includes("goalSet"), true);
+  assert.equal(threadGoalSetActionContract.nestedKeySchemas.result.includes("goalSet"), true);
+  assert.equal(threadGoalSetActionContract.nestedKeySchemas.policy.includes("requiresExplicitExecutionGate"), true);
+  assert.equal(threadGoalSetActionContract.nestedKeySchemas.policy.includes("unexpected"), false);
+  const threadGoalClearPreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-goal-clear-preflight"];
+  assert.equal(threadGoalClearPreflightContract.usesRouteSpecificNestedKeySchemas, true);
+  assert.equal(threadGoalClearPreflightContract.nestedKeySchemas.thread.includes("threadIdSuffix"), true);
+  assert.equal(threadGoalClearPreflightContract.nestedKeySchemas.policy.includes("goalMutated"), true);
+  assert.equal(threadGoalClearPreflightContract.nestedKeySchemas.policy.includes("unexpected"), false);
+  const threadGoalClearActionContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-goal-clear-action"];
+  assert.equal(threadGoalClearActionContract.usesRouteSpecificNestedKeySchemas, true);
+  assert.equal(threadGoalClearActionContract.nestedKeySchemas["probes.threadGoalClear"].includes("methodsUsed"), true);
+  assert.equal(threadGoalClearActionContract.nestedKeySchemas.target.includes("goalCleared"), true);
+  assert.equal(threadGoalClearActionContract.nestedKeySchemas.result.includes("goalCleared"), true);
+  assert.equal(threadGoalClearActionContract.nestedKeySchemas.policy.includes("requiresExplicitExecutionGate"), true);
+  assert.equal(threadGoalClearActionContract.nestedKeySchemas.policy.includes("unexpected"), false);
   const threadRollbackPreflightContract =
     BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-rollback-preflight"];
   assert.equal(threadRollbackPreflightContract.usesRouteSpecificNestedKeySchemas, true);
@@ -10205,6 +10272,283 @@ test("dev server renames threads only behind explicit opt-in and preflight token
       "Sensitive private thread name",
       "rename-secret.txt",
       "\"nameReturned\":true",
+      "\"threadContentReturned\":true",
+      "\"fullIdsReturned\":true",
+      "\"pathsReturned\":true",
+    ]) {
+      assert.equal(auditSerialized.includes(marker), false, `audit leaked ${marker}`);
+    }
+  } finally {
+    await closeServer(server);
+    await rm(actionAuditDir, { recursive: true, force: true });
+  }
+});
+
+test("dev server sets and clears thread goals only behind explicit opt-in and preflight token", async () => {
+  const setCalls = [];
+  const clearCalls = [];
+  const actionAuditDir = await mkdtemp(join(tmpdir(), "codex-thread-goal-action-audit-"));
+  const actionAuditLogPath = join(actionAuditDir, "actions.jsonl");
+  const privateObjective = "Sensitive goal objective /tmp/default-workspace/goal-secret.txt";
+  const { server, url } = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    threadGoalSetEnabled: true,
+    threadGoalClearEnabled: true,
+    threadGoalSetFn: async (options) => {
+      setCalls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-06-29T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/private-home",
+          userAgent: "mock/0.0.0",
+        },
+        probes: {
+          threadGoalSet: {
+            method: "thread/goal/set",
+            threadIdSuffix: "abcd1234",
+            status: "set",
+            methodsUsed: ["thread/list", "thread/goal/set"],
+            objectiveCharCount: options.objective.length,
+            objectiveLineCount: 1,
+            requestedStatus: options.status,
+            tokenBudgetPresent: options.tokenBudget !== null,
+            tokenBudget: options.tokenBudget,
+            objectiveReturned: true,
+            objective: privateObjective,
+            threadContentReturned: true,
+            fullIdsReturned: true,
+            cwdReturned: true,
+            pathsReturned: true,
+            rawPayloadReturned: true,
+            privatePath: "/tmp/default-workspace/goal-secret.txt",
+          },
+        },
+        notifications: {
+          "thread/goal/set": 1,
+        },
+      };
+    },
+    threadGoalClearFn: async (options) => {
+      clearCalls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-06-29T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/private-home",
+          userAgent: "mock/0.0.0",
+        },
+        probes: {
+          threadGoalClear: {
+            method: "thread/goal/clear",
+            threadIdSuffix: "abcd1234",
+            status: "cleared",
+            cleared: true,
+            methodsUsed: ["thread/list", "thread/goal/clear"],
+            objectiveReturned: true,
+            objective: privateObjective,
+            threadContentReturned: true,
+            fullIdsReturned: true,
+            cwdReturned: true,
+            pathsReturned: true,
+            rawPayloadReturned: true,
+            privatePath: "/tmp/default-workspace/goal-secret.txt",
+          },
+        },
+        notifications: {
+          "thread/goal/cleared": 1,
+        },
+      };
+    },
+    actionAuditLog: createActionAuditLog({
+      path: actionAuditLogPath,
+      now: () => "2026-06-29T00:00:00.000Z",
+    }),
+  });
+
+  try {
+    const preflightResponse = await fetch(`${url}/api/thread-goal-set-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        thread: "abcd1234",
+        objective: privateObjective,
+        status: "active",
+        tokenBudget: 1000,
+      }),
+    });
+    assert.equal(preflightResponse.status, 200);
+    const preflightPayload = await preflightResponse.json();
+    assert.equal(preflightPayload.action.type, "thread-goal-set-preflight");
+    assert.equal(preflightPayload.action.method, "thread/goal/set");
+    assert.equal(preflightPayload.goal.objectiveCharCount, privateObjective.length);
+    assert.equal(preflightPayload.goal.objectiveReturned, false);
+    assert.equal(preflightPayload.goal.tokenBudget, 1000);
+    assert.equal(preflightPayload.policy.executionGateEnabled, true);
+    assertActionPreflight(preflightPayload, "thread-goal-set-preflight", "default");
+    assert.equal(JSON.stringify(preflightPayload).includes(privateObjective), false);
+    assert.equal(JSON.stringify(preflightPayload).includes("goal-secret.txt"), false);
+    assert.equal(setCalls.length, 0);
+
+    const response = await fetch(`${url}/api/thread-goal-set-action`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        thread: "abcd1234",
+        objective: privateObjective,
+        status: "active",
+        tokenBudget: 1000,
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, true);
+    assert.equal(payload.appServer.modelTraffic, false);
+    assert.deepEqual(payload.appServer.auditedMethods, ["thread/list", "thread/goal/set"]);
+    assert.equal(payload.action.type, "thread-goal-set");
+    assert.equal(payload.action.goalSet, true);
+    assert.equal(payload.preflight.tokenConsumed, true);
+    assert.equal(payload.goal.objectiveReturned, false);
+    assert.equal(payload.target.goalSet, true);
+    assert.equal(payload.target.objectiveCharCount, privateObjective.length);
+    assert.equal(payload.probes.threadGoalSet.objectiveReturned, false);
+    assert.equal(payload.probes.threadGoalSet.threadContentReturned, false);
+    assert.equal(payload.probes.threadGoalSet.fullIdsReturned, false);
+    assert.equal(payload.probes.threadGoalSet.cwdReturned, false);
+    assert.equal(payload.probes.threadGoalSet.pathsReturned, false);
+    assert.equal(payload.probes.threadGoalSet.rawPayloadReturned, false);
+    assert.equal(payload.policy.goalMutated, true);
+    assert.equal(payload.policy.auditLogWritten, true);
+    assert.equal(setCalls.length, 1);
+    assert.equal(setCalls[0].cwd, "/tmp/default-workspace");
+    assert.equal(setCalls[0].threadIdSuffix, "abcd1234");
+    assert.equal(setCalls[0].objective, privateObjective);
+    assert.equal(setCalls[0].status, "active");
+    assert.equal(setCalls[0].tokenBudget, 1000);
+    for (const marker of [
+      "/tmp/default-workspace",
+      "/tmp/private-home",
+      "codexHome",
+      "userAgent",
+      privateObjective,
+      "goal-secret.txt",
+      preflightPayload.preflight.token,
+      "\"objectiveReturned\":true",
+      "\"threadContentReturned\":true",
+      "\"fullIdsReturned\":true",
+      "\"pathsReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+
+    const replay = await fetch(`${url}/api/thread-goal-set-action`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        thread: "abcd1234",
+        objective: privateObjective,
+        status: "active",
+        tokenBudget: 1000,
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    assert.equal(replay.status, 409);
+
+    const clearPreflightResponse = await fetch(`${url}/api/thread-goal-clear-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        thread: "abcd1234",
+      }),
+    });
+    assert.equal(clearPreflightResponse.status, 200);
+    const clearPreflightPayload = await clearPreflightResponse.json();
+    assert.equal(clearPreflightPayload.action.type, "thread-goal-clear-preflight");
+    assert.equal(clearPreflightPayload.action.method, "thread/goal/clear");
+    assert.equal(clearPreflightPayload.policy.executionGateEnabled, true);
+    assertActionPreflight(clearPreflightPayload, "thread-goal-clear-preflight", "default");
+
+    const clearResponse = await fetch(`${url}/api/thread-goal-clear-action`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        thread: "abcd1234",
+        preflightToken: clearPreflightPayload.preflight.token,
+      }),
+    });
+    assert.equal(clearResponse.status, 200);
+    const clearPayload = await clearResponse.json();
+    const clearSerialized = JSON.stringify(clearPayload);
+    assert.equal(clearPayload.action.type, "thread-goal-clear");
+    assert.equal(clearPayload.action.goalCleared, true);
+    assert.equal(clearPayload.target.goalCleared, true);
+    assert.equal(clearPayload.probes.threadGoalClear.objectiveReturned, false);
+    assert.equal(clearPayload.probes.threadGoalClear.threadContentReturned, false);
+    assert.equal(clearPayload.probes.threadGoalClear.fullIdsReturned, false);
+    assert.equal(clearPayload.probes.threadGoalClear.pathsReturned, false);
+    assert.equal(clearPayload.policy.goalMutated, true);
+    assert.equal(clearPayload.policy.auditLogWritten, true);
+    assert.equal(clearCalls.length, 1);
+    assert.equal(clearCalls[0].threadIdSuffix, "abcd1234");
+    for (const marker of [
+      "/tmp/default-workspace",
+      "/tmp/private-home",
+      "codexHome",
+      "userAgent",
+      privateObjective,
+      "goal-secret.txt",
+      clearPreflightPayload.preflight.token,
+      "\"objectiveReturned\":true",
+      "\"threadContentReturned\":true",
+      "\"fullIdsReturned\":true",
+      "\"pathsReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]) {
+      assert.equal(clearSerialized.includes(marker), false, `clear leaked ${marker}`);
+    }
+
+    const auditRecords = (await readFile(actionAuditLogPath, "utf8"))
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    assert.equal(auditRecords.length, 2);
+    assert.equal(auditRecords[0].event, "thread-goal-set-recorded");
+    assert.equal(auditRecords[0].action.type, "thread-goal-set");
+    assert.equal(auditRecords[0].target.goalSet, true);
+    assert.equal(auditRecords[0].target.objectiveCharCount, privateObjective.length);
+    assert.equal(auditRecords[0].result.goalSet, true);
+    assert.equal(auditRecords[1].event, "thread-goal-clear-recorded");
+    assert.equal(auditRecords[1].action.type, "thread-goal-clear");
+    assert.equal(auditRecords[1].target.goalCleared, true);
+    assert.equal(auditRecords[1].result.goalCleared, true);
+    const auditSerialized = JSON.stringify(auditRecords);
+    for (const marker of [
+      preflightPayload.preflight.token,
+      clearPreflightPayload.preflight.token,
+      "/tmp/default-workspace",
+      "/tmp/private-home",
+      "codexHome",
+      "userAgent",
+      privateObjective,
+      "goal-secret.txt",
+      "\"objectiveReturned\":true",
       "\"threadContentReturned\":true",
       "\"fullIdsReturned\":true",
       "\"pathsReturned\":true",

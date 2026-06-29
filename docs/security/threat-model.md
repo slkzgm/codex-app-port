@@ -207,6 +207,14 @@
   bounded usage values, and objective length/line counts. They must not return
   objective text, full ids, exact goal timestamps, cwd, paths, thread content,
   or raw app-server payloads.
+- Browser-facing thread goal mutations must be blocked by default and opt-in
+  only. `thread/goal/set` and `thread/goal/clear` must use separate
+  `CODEX_APP_PORT_ALLOW_THREAD_GOAL_SET=1` and
+  `CODEX_APP_PORT_ALLOW_THREAD_GOAL_CLEAR=1` gates, dedicated preflight
+  routes, one-time token consumption before app-server traffic, suffix-only
+  target resolution, sanitized action-audit records, and responses that never
+  return objective text, full ids, cwd, paths, thread content, raw payloads, or
+  preflight tokens.
 - Browser-facing paged turn reads must be blocked by default and opt-in only.
   When `CODEX_APP_PORT_ALLOW_THREAD_TURNS=1` is enabled, `/api/thread-turns`
   may call only `thread/list` for suffix resolution and `thread/turns/list`

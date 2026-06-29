@@ -307,6 +307,17 @@ objective length/line counts. They do not return objective text, full ids,
 exact goal timestamps, cwd, paths, thread content, raw app-server payloads, or
 preflight tokens.
 
+When the server is started with `CODEX_APP_PORT_ALLOW_THREAD_GOAL_SET=1` or
+`CODEX_APP_PORT_ALLOW_THREAD_GOAL_CLEAR=1`,
+`/api/thread-goal-set-action` and `/api/thread-goal-clear-action` may mutate
+goal state only after a matching one-time preflight token is consumed. Both
+routes resolve the selected suffix through `thread/list`, call only
+`thread/goal/set` or `thread/goal/clear`, and write sanitized action-audit
+records. Goal set accepts bounded objective text, status, and token budget as
+input, but responses and audit records return only objective counts plus
+status/budget metadata, not objective text, full ids, cwd, paths, thread
+content, raw app-server payloads, or preflight tokens.
+
 When the server is started with `CODEX_APP_PORT_ALLOW_THREAD_TURNS=1`,
 `/api/thread-turns` may call `thread/list` to resolve the selected suffix and
 then `thread/turns/list` with `itemsView:notLoaded` for that thread. Browser

@@ -301,6 +301,14 @@ const elements = {
   threadRenamePreflightButton: document.querySelector("#thread-rename-preflight-button"),
   threadRenameButton: document.querySelector("#thread-rename-button"),
   threadRenameStatus: document.querySelector("#thread-rename-status"),
+  threadGoalObjectiveInput: document.querySelector("#thread-goal-objective-input"),
+  threadGoalStatusSelect: document.querySelector("#thread-goal-status-select"),
+  threadGoalBudgetInput: document.querySelector("#thread-goal-budget-input"),
+  threadGoalSetPreflightButton: document.querySelector("#thread-goal-set-preflight-button"),
+  threadGoalSetButton: document.querySelector("#thread-goal-set-button"),
+  threadGoalClearPreflightButton: document.querySelector("#thread-goal-clear-preflight-button"),
+  threadGoalClearButton: document.querySelector("#thread-goal-clear-button"),
+  threadGoalMutationStatus: document.querySelector("#thread-goal-mutation-status"),
   threadRollbackTurnsInput: document.querySelector("#thread-rollback-turns-input"),
   threadRollbackPreflightButton: document.querySelector("#thread-rollback-preflight-button"),
   threadRollbackButton: document.querySelector("#thread-rollback-button"),
@@ -645,6 +653,8 @@ let lastThreadStartPreflight = null;
 let lastThreadArchivePreflight = null;
 let lastThreadForkPreflight = null;
 let lastThreadRenamePreflight = null;
+let lastThreadGoalSetPreflight = null;
+let lastThreadGoalClearPreflight = null;
 let lastThreadRollbackPreflight = null;
 let lastThreadSafetyLockPreflight = null;
 let lastThreadDeletePreflight = null;
@@ -710,6 +720,8 @@ elements.workspaceSelect.addEventListener("change", () => {
   lastThreadArchivePreflight = null;
   lastThreadForkPreflight = null;
   lastThreadRenamePreflight = null;
+  lastThreadGoalSetPreflight = null;
+  lastThreadGoalClearPreflight = null;
   lastThreadRollbackPreflight = null;
   lastThreadSafetyLockPreflight = null;
   lastThreadDeletePreflight = null;
@@ -915,6 +927,37 @@ elements.threadRenamePreflightButton.addEventListener("click", () => {
 
 elements.threadRenameButton.addEventListener("click", () => {
   runThreadRenameAction();
+});
+
+elements.threadGoalObjectiveInput.addEventListener("input", () => {
+  lastThreadGoalSetPreflight = null;
+  updateThreadGoalMutationState();
+});
+
+elements.threadGoalStatusSelect.addEventListener("change", () => {
+  lastThreadGoalSetPreflight = null;
+  updateThreadGoalMutationState();
+});
+
+elements.threadGoalBudgetInput.addEventListener("input", () => {
+  lastThreadGoalSetPreflight = null;
+  updateThreadGoalMutationState();
+});
+
+elements.threadGoalSetPreflightButton.addEventListener("click", () => {
+  runThreadGoalSetPreflight();
+});
+
+elements.threadGoalSetButton.addEventListener("click", () => {
+  runThreadGoalSetAction();
+});
+
+elements.threadGoalClearPreflightButton.addEventListener("click", () => {
+  runThreadGoalClearPreflight();
+});
+
+elements.threadGoalClearButton.addEventListener("click", () => {
+  runThreadGoalClearAction();
 });
 
 elements.threadRollbackTurnsInput.addEventListener("input", () => {
@@ -1532,6 +1575,22 @@ function threadRenamePreflightEndpoint() {
 
 function threadRenameEndpoint() {
   return "/api/thread-rename-action";
+}
+
+function threadGoalSetPreflightEndpoint() {
+  return "/api/thread-goal-set-preflight";
+}
+
+function threadGoalSetEndpoint() {
+  return "/api/thread-goal-set-action";
+}
+
+function threadGoalClearPreflightEndpoint() {
+  return "/api/thread-goal-clear-preflight";
+}
+
+function threadGoalClearEndpoint() {
+  return "/api/thread-goal-clear-action";
 }
 
 function threadRollbackPreflightEndpoint() {
@@ -5022,6 +5081,8 @@ async function loadThreadDetail(threadIdSuffix, { archived = false } = {}) {
   lastThreadArchivePreflight = null;
   lastThreadForkPreflight = null;
   lastThreadRenamePreflight = null;
+  lastThreadGoalSetPreflight = null;
+  lastThreadGoalClearPreflight = null;
   lastThreadRollbackPreflight = null;
   lastThreadSafetyLockPreflight = null;
   lastThreadDeletePreflight = null;
@@ -5034,11 +5095,13 @@ async function loadThreadDetail(threadIdSuffix, { archived = false } = {}) {
   elements.threadShellCommandButton.disabled = true;
   elements.threadGoalButton.disabled = false;
   elements.threadGoalStatus.textContent = "Goal not loaded.";
+  elements.threadGoalMutationStatus.textContent = "Goal actions require preflight.";
   elements.threadTurnsButton.disabled = false;
   elements.threadTurnsStatus.textContent = "Turns page not loaded.";
   updateThreadArchiveState();
   updateThreadForkState();
   updateThreadRenameState();
+  updateThreadGoalMutationState();
   updateThreadRollbackState();
   updateThreadSafetyLockState();
   updateThreadDeleteState();
@@ -5554,6 +5617,169 @@ async function runThreadRenameAction() {
     updateThreadRollbackState();
     updateThreadSafetyLockState();
     updateThreadForkState();
+  }
+}
+
+function threadGoalSetBody() {
+  const tokenBudgetRaw = elements.threadGoalBudgetInput.value.trim();
+  return {
+    workspace: selectedWorkspaceId,
+    thread: selectedThreadIdSuffix,
+    objective: elements.threadGoalObjectiveInput.value.trim(),
+    status: elements.threadGoalStatusSelect.value || "active",
+    tokenBudget: tokenBudgetRaw ? Number(tokenBudgetRaw) : null,
+  };
+}
+
+async function runThreadGoalSetPreflight() {
+  if (!selectedThreadIdSuffix) {
+    elements.threadGoalMutationStatus.textContent = "Select a thread first";
+    return;
+  }
+  const body = threadGoalSetBody();
+  if (!body.objective) {
+    elements.threadGoalMutationStatus.textContent = "Goal objective required";
+    return;
+  }
+
+  setThreadGoalSetLoading(true);
+  lastThreadGoalSetPreflight = null;
+  elements.threadGoalSetButton.disabled = true;
+  hideError();
+
+  try {
+    const response = await fetch(threadGoalSetPreflightEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify(body),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    lastThreadGoalSetPreflight = {
+      body,
+      token: payload.preflight?.token ?? null,
+      enabled: payload.policy?.executionGateEnabled === true,
+    };
+    renderThreadGoalSetPreflight(payload);
+  } catch (error) {
+    elements.threadGoalMutationStatus.textContent = "Goal set check failed";
+    renderError(error);
+  } finally {
+    setThreadGoalSetLoading(false);
+  }
+}
+
+async function runThreadGoalSetAction() {
+  if (!lastThreadGoalSetPreflight?.token || !lastThreadGoalSetPreflight?.body) {
+    elements.threadGoalMutationStatus.textContent = "Run goal set check first";
+    return;
+  }
+
+  elements.threadGoalSetButton.disabled = true;
+  elements.threadGoalMutationStatus.textContent = "Setting goal";
+  hideError();
+
+  try {
+    const response = await fetch(threadGoalSetEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify({
+        ...lastThreadGoalSetPreflight.body,
+        preflightToken: lastThreadGoalSetPreflight.token,
+      }),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderThreadGoalSetAction(payload);
+    lastThreadGoalSetPreflight = null;
+    await loadThreadGoal().catch(() => {});
+  } catch (error) {
+    elements.threadGoalMutationStatus.textContent = "Goal set failed";
+    renderError(error);
+  } finally {
+    updateThreadGoalMutationState();
+  }
+}
+
+async function runThreadGoalClearPreflight() {
+  if (!selectedThreadIdSuffix) {
+    elements.threadGoalMutationStatus.textContent = "Select a thread first";
+    return;
+  }
+
+  setThreadGoalClearLoading(true);
+  lastThreadGoalClearPreflight = null;
+  elements.threadGoalClearButton.disabled = true;
+  hideError();
+
+  const body = {
+    workspace: selectedWorkspaceId,
+    thread: selectedThreadIdSuffix,
+  };
+
+  try {
+    const response = await fetch(threadGoalClearPreflightEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify(body),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    lastThreadGoalClearPreflight = {
+      body,
+      token: payload.preflight?.token ?? null,
+      enabled: payload.policy?.executionGateEnabled === true,
+    };
+    renderThreadGoalClearPreflight(payload);
+  } catch (error) {
+    elements.threadGoalMutationStatus.textContent = "Goal clear check failed";
+    renderError(error);
+  } finally {
+    setThreadGoalClearLoading(false);
+  }
+}
+
+async function runThreadGoalClearAction() {
+  if (!lastThreadGoalClearPreflight?.token || !lastThreadGoalClearPreflight?.body) {
+    elements.threadGoalMutationStatus.textContent = "Run goal clear check first";
+    return;
+  }
+
+  elements.threadGoalClearButton.disabled = true;
+  elements.threadGoalMutationStatus.textContent = "Clearing goal";
+  hideError();
+
+  try {
+    const response = await fetch(threadGoalClearEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify({
+        ...lastThreadGoalClearPreflight.body,
+        preflightToken: lastThreadGoalClearPreflight.token,
+      }),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderThreadGoalClearAction(payload);
+    lastThreadGoalClearPreflight = null;
+    await loadThreadGoal().catch(() => {});
+  } catch (error) {
+    elements.threadGoalMutationStatus.textContent = "Goal clear failed";
+    renderError(error);
+  } finally {
+    updateThreadGoalMutationState();
   }
 }
 
@@ -6496,6 +6722,38 @@ function renderThreadRenameAction(payload) {
     payload.target?.renamed === true ? `Renamed (${count})` : "Rename done";
 }
 
+function renderThreadGoalSetPreflight(payload) {
+  const count = Number.isSafeInteger(payload.goal?.objectiveCharCount)
+    ? payload.goal.objectiveCharCount
+    : 0;
+  elements.threadGoalMutationStatus.textContent = payload.policy?.executionGateEnabled
+    ? `Goal set ready (${count})`
+    : "Goal set blocked";
+  elements.threadGoalSetButton.disabled =
+    !lastThreadGoalSetPreflight?.token || lastThreadGoalSetPreflight.enabled !== true;
+}
+
+function renderThreadGoalSetAction(payload) {
+  const count = Number.isSafeInteger(payload.result?.objectiveCharCount)
+    ? payload.result.objectiveCharCount
+    : 0;
+  elements.threadGoalMutationStatus.textContent =
+    payload.result?.goalSet === true ? `Goal set (${count})` : "Goal set done";
+}
+
+function renderThreadGoalClearPreflight(payload) {
+  elements.threadGoalMutationStatus.textContent = payload.policy?.executionGateEnabled
+    ? "Goal clear ready"
+    : "Goal clear blocked";
+  elements.threadGoalClearButton.disabled =
+    !lastThreadGoalClearPreflight?.token || lastThreadGoalClearPreflight.enabled !== true;
+}
+
+function renderThreadGoalClearAction(payload) {
+  elements.threadGoalMutationStatus.textContent =
+    payload.result?.goalCleared === true ? "Goal cleared" : "Goal clear done";
+}
+
 function renderThreadRollbackPreflight(payload) {
   const count = Number.isSafeInteger(payload.thread?.numTurns) ? payload.thread.numTurns : 0;
   elements.threadRollbackStatus.textContent = payload.policy?.executionGateEnabled
@@ -7019,6 +7277,8 @@ function clearThreadDetail() {
   lastThreadArchivePreflight = null;
   lastThreadForkPreflight = null;
   lastThreadRenamePreflight = null;
+  lastThreadGoalSetPreflight = null;
+  lastThreadGoalClearPreflight = null;
   lastThreadRollbackPreflight = null;
   lastThreadSafetyLockPreflight = null;
   lastThreadDeletePreflight = null;
@@ -7027,6 +7287,12 @@ function clearThreadDetail() {
   elements.liveSessionControlButton.disabled = true;
   elements.threadRenameInput.value = "";
   elements.threadRenameInput.disabled = true;
+  elements.threadGoalObjectiveInput.value = "";
+  elements.threadGoalObjectiveInput.disabled = true;
+  elements.threadGoalStatusSelect.value = "active";
+  elements.threadGoalStatusSelect.disabled = true;
+  elements.threadGoalBudgetInput.value = "";
+  elements.threadGoalBudgetInput.disabled = true;
   elements.threadRollbackTurnsInput.value = "1";
   elements.threadRollbackTurnsInput.disabled = true;
   elements.selectedThreadText.textContent = "None";
@@ -7039,6 +7305,7 @@ function clearThreadDetail() {
   elements.threadCompactStatus.textContent = "Select a loaded active thread to compact.";
   elements.threadGoalStatus.textContent = "Select a thread to inspect goal state.";
   elements.threadGoalButton.disabled = true;
+  elements.threadGoalMutationStatus.textContent = "Select a thread to update goal state.";
   elements.threadTurnsStatus.textContent = "Select a thread to inspect paged turn metadata.";
   elements.threadTurnsButton.disabled = true;
   elements.threadDetailMeta.replaceChildren();
@@ -7049,6 +7316,7 @@ function clearThreadDetail() {
   updateThreadArchiveState();
   updateThreadForkState();
   updateThreadRenameState();
+  updateThreadGoalMutationState();
   updateThreadRollbackState();
   updateThreadSafetyLockState();
   updateThreadDeleteState();
@@ -7147,6 +7415,25 @@ function updateThreadRenameState() {
     elements.threadRenameStatus.textContent = "Select a thread to rename.";
   } else if (!hasName && elements.threadRenameStatus.textContent !== "Renamed") {
     elements.threadRenameStatus.textContent = "Name required.";
+  }
+}
+
+function updateThreadGoalMutationState() {
+  const hasThread = Boolean(selectedThreadIdSuffix);
+  const hasObjective = elements.threadGoalObjectiveInput.value.trim().length > 0;
+  elements.threadGoalObjectiveInput.disabled = !hasThread;
+  elements.threadGoalStatusSelect.disabled = !hasThread;
+  elements.threadGoalBudgetInput.disabled = !hasThread;
+  elements.threadGoalSetPreflightButton.disabled = !hasThread || !hasObjective;
+  elements.threadGoalSetButton.disabled =
+    !lastThreadGoalSetPreflight?.token || lastThreadGoalSetPreflight.enabled !== true;
+  elements.threadGoalClearPreflightButton.disabled = !hasThread;
+  elements.threadGoalClearButton.disabled =
+    !lastThreadGoalClearPreflight?.token || lastThreadGoalClearPreflight.enabled !== true;
+  if (!hasThread) {
+    elements.threadGoalMutationStatus.textContent = "Select a thread to update goal state.";
+  } else if (!hasObjective && elements.threadGoalMutationStatus.textContent.startsWith("Goal set")) {
+    elements.threadGoalMutationStatus.textContent = "Goal objective required for set.";
   }
 }
 
@@ -11270,6 +11557,36 @@ function setThreadRenameLoading(isLoading) {
   elements.threadRenamePreflightButton.textContent = isLoading ? "Checking" : "Rename Check";
   if (isLoading) {
     elements.threadRenameStatus.textContent = "Checking";
+  }
+}
+
+function setThreadGoalSetLoading(isLoading) {
+  const hasThread = Boolean(selectedThreadIdSuffix);
+  const hasObjective = elements.threadGoalObjectiveInput.value.trim().length > 0;
+  elements.threadGoalObjectiveInput.disabled = isLoading || !hasThread;
+  elements.threadGoalStatusSelect.disabled = isLoading || !hasThread;
+  elements.threadGoalBudgetInput.disabled = isLoading || !hasThread;
+  elements.threadGoalSetPreflightButton.disabled = isLoading || !hasThread || !hasObjective;
+  elements.threadGoalSetButton.disabled =
+    isLoading || !lastThreadGoalSetPreflight?.token || lastThreadGoalSetPreflight.enabled !== true;
+  elements.threadGoalSetPreflightButton.textContent = isLoading ? "Checking" : "Goal Set Check";
+  if (isLoading) {
+    elements.threadGoalMutationStatus.textContent = "Checking goal set";
+  }
+}
+
+function setThreadGoalClearLoading(isLoading) {
+  const hasThread = Boolean(selectedThreadIdSuffix);
+  elements.threadGoalClearPreflightButton.disabled = isLoading || !hasThread;
+  elements.threadGoalClearButton.disabled =
+    isLoading ||
+    !lastThreadGoalClearPreflight?.token ||
+    lastThreadGoalClearPreflight.enabled !== true;
+  elements.threadGoalClearPreflightButton.textContent = isLoading
+    ? "Checking"
+    : "Goal Clear Check";
+  if (isLoading) {
+    elements.threadGoalMutationStatus.textContent = "Checking goal clear";
   }
 }
 

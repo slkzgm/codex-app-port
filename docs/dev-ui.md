@@ -364,6 +364,17 @@ objective length/line counts. It does not receive objective text, full ids,
 exact goal timestamps, cwd/path values, raw thread payloads, or raw app-server
 payloads.
 
+The same thread panel also exposes explicit goal mutation controls:
+`Goal Set Check`, `Set Goal`, `Goal Clear Check`, and `Clear Goal`.
+`/api/thread-goal-set-action` is disabled unless
+`CODEX_APP_PORT_ALLOW_THREAD_GOAL_SET=1` is set before server startup, and
+`/api/thread-goal-clear-action` is disabled unless
+`CODEX_APP_PORT_ALLOW_THREAD_GOAL_CLEAR=1` is set. Both routes require a
+matching one-time preflight token, resolve the selected thread by suffix
+through `thread/list`, and return only suffix/status/count metadata. Objective
+text is accepted only as bounded input for set; it is not returned to the
+browser or written to sanitized action-audit records.
+
 `/api/thread-turns` is the separate paged-turn metadata surface for selected
 threads. It is disabled unless `CODEX_APP_PORT_ALLOW_THREAD_TURNS=1` is set
 before server startup. When enabled, it resolves the selected thread by suffix

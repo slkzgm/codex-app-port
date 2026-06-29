@@ -919,6 +919,33 @@ async function checkStrictBrowserPostBodies() {
           preflightToken: "preflight-1234567890abcdef",
         },
       ],
+      [
+        "/api/thread-goal-set-preflight",
+        {
+          thread: "12345678",
+          objective: "private objective",
+          status: "active",
+          tokenBudget: 1000,
+        },
+      ],
+      [
+        "/api/thread-goal-set-action",
+        {
+          thread: "12345678",
+          objective: "private objective",
+          status: "active",
+          tokenBudget: 1000,
+          preflightToken: "preflight-1234567890abcdef",
+        },
+      ],
+      ["/api/thread-goal-clear-preflight", { thread: "12345678" }],
+      [
+        "/api/thread-goal-clear-action",
+        {
+          thread: "12345678",
+          preflightToken: "preflight-1234567890abcdef",
+        },
+      ],
       ["/api/thread-rollback-preflight", { thread: "12345678", numTurns: 1 }],
       [
         "/api/thread-rollback-action",
@@ -2102,6 +2129,69 @@ function assertBrowserPostBodyContracts(cases) {
     threadRenameActionContract.nestedKeySchemas.policy?.includes("unexpected")
   ) {
     throw new Error("thread-rename-action response contract is missing nested schemas");
+  }
+  const threadGoalSetPreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-goal-set-preflight"];
+  if (
+    threadGoalSetPreflightContract.usesRouteSpecificNestedKeySchemas !== true ||
+    !Object.isFrozen(threadGoalSetPreflightContract.nestedKeySchemas.policy) ||
+    !threadGoalSetPreflightContract.nestedKeySchemas.goal?.includes(
+      "objectiveCharCount",
+    ) ||
+    !threadGoalSetPreflightContract.nestedKeySchemas.goal?.includes(
+      "objectiveReturned",
+    ) ||
+    !threadGoalSetPreflightContract.nestedKeySchemas.policy?.includes("goalMutated") ||
+    threadGoalSetPreflightContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("thread-goal-set-preflight response contract is missing nested schemas");
+  }
+  const threadGoalSetActionContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-goal-set-action"];
+  if (
+    threadGoalSetActionContract.usesRouteSpecificNestedKeySchemas !== true ||
+    !Object.isFrozen(threadGoalSetActionContract.nestedKeySchemas.policy) ||
+    !threadGoalSetActionContract.nestedKeySchemas["probes.threadGoalSet"]?.includes(
+      "methodsUsed",
+    ) ||
+    !threadGoalSetActionContract.nestedKeySchemas.target?.includes("goalSet") ||
+    !threadGoalSetActionContract.nestedKeySchemas.result?.includes("goalSet") ||
+    !threadGoalSetActionContract.nestedKeySchemas.policy?.includes(
+      "requiresExplicitExecutionGate",
+    ) ||
+    threadGoalSetActionContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("thread-goal-set-action response contract is missing nested schemas");
+  }
+  const threadGoalClearPreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-goal-clear-preflight"];
+  if (
+    threadGoalClearPreflightContract.usesRouteSpecificNestedKeySchemas !== true ||
+    !Object.isFrozen(threadGoalClearPreflightContract.nestedKeySchemas.policy) ||
+    !threadGoalClearPreflightContract.nestedKeySchemas.thread?.includes(
+      "threadIdSuffix",
+    ) ||
+    !threadGoalClearPreflightContract.nestedKeySchemas.policy?.includes("goalMutated") ||
+    threadGoalClearPreflightContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("thread-goal-clear-preflight response contract is missing nested schemas");
+  }
+  const threadGoalClearActionContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-goal-clear-action"];
+  if (
+    threadGoalClearActionContract.usesRouteSpecificNestedKeySchemas !== true ||
+    !Object.isFrozen(threadGoalClearActionContract.nestedKeySchemas.policy) ||
+    !threadGoalClearActionContract.nestedKeySchemas["probes.threadGoalClear"]?.includes(
+      "methodsUsed",
+    ) ||
+    !threadGoalClearActionContract.nestedKeySchemas.target?.includes("goalCleared") ||
+    !threadGoalClearActionContract.nestedKeySchemas.result?.includes("goalCleared") ||
+    !threadGoalClearActionContract.nestedKeySchemas.policy?.includes(
+      "requiresExplicitExecutionGate",
+    ) ||
+    threadGoalClearActionContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("thread-goal-clear-action response contract is missing nested schemas");
   }
   const threadRollbackPreflightContract =
     BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-rollback-preflight"];
@@ -5485,6 +5575,260 @@ function assertBrowserPostBodyContracts(cases) {
           appServerTraffic: true,
           threadStateMutated: true,
           threadRenamed: true,
+          rawPayloadReturned: false,
+          preflightTokenConsumed: true,
+          requiresExplicitExecutionGate: true,
+          implemented: true,
+        },
+      },
+    ],
+    [
+      "/api/thread-goal-set-preflight",
+      {
+        ok: true,
+        appServer: {
+          touched: false,
+          modelTraffic: false,
+          commandTraffic: false,
+        },
+        action: {
+          type: "thread-goal-set-preflight",
+          method: "thread/goal/set",
+          execution: "blocked",
+          wouldSetGoal: false,
+          goalSet: false,
+          threadStateMutated: false,
+          appServerTouched: false,
+        },
+        thread: {
+          threadIdSuffix: "thread1234",
+          fullIdsReturned: false,
+          contentReturned: false,
+          pathsReturned: false,
+        },
+        goal: {
+          objectivePresent: true,
+          objectiveCharCount: 17,
+          objectiveLineCount: 1,
+          status: "active",
+          tokenBudgetPresent: true,
+          tokenBudget: 1000,
+          objectiveReturned: false,
+          rawTextReturned: false,
+        },
+        preflight: {
+          token: "preflight-1234567890abcdef",
+          tokenIssued: true,
+          scope: {
+            kind: "thread-goal-set-preflight",
+            workspaceId: "default",
+          },
+        },
+        policy: {
+          readOnly: true,
+          appServerTraffic: false,
+          threadStateMutated: false,
+          goalMutated: false,
+          executionGateEnabled: true,
+          implemented: false,
+        },
+      },
+    ],
+    [
+      "/api/thread-goal-set-action",
+      {
+        ok: true,
+        appServer: {
+          touched: true,
+          modelTraffic: false,
+          commandTraffic: false,
+          auditedMethods: ["thread/list", "thread/goal/set"],
+        },
+        action: {
+          type: "thread-goal-set",
+          method: "thread/goal/set",
+          execution: "set",
+          goalSet: true,
+          threadStateMutated: true,
+          appServerTouched: true,
+        },
+        thread: {
+          threadIdSuffix: "thread1234",
+          fullIdsReturned: false,
+          contentReturned: false,
+          pathsReturned: false,
+        },
+        goal: {
+          objectivePresent: true,
+          objectiveCharCount: 17,
+          objectiveLineCount: 1,
+          status: "active",
+          tokenBudgetPresent: true,
+          tokenBudget: 1000,
+          objectiveReturned: false,
+          rawTextReturned: false,
+        },
+        target: {
+          threadIdSuffix: "thread1234",
+          goalSet: true,
+          objectiveCharCount: 17,
+          objectiveLineCount: 1,
+          fullIdsReturned: false,
+          pathsReturned: false,
+        },
+        probes: {
+          threadGoalSet: {
+            method: "thread/goal/set",
+            threadIdSuffix: "thread1234",
+            status: "set",
+            methodsUsed: ["thread/list", "thread/goal/set"],
+            objectiveCharCount: 17,
+            objectiveLineCount: 1,
+            requestedStatus: "active",
+            tokenBudgetPresent: true,
+            tokenBudget: 1000,
+            objectiveReturned: false,
+            threadContentReturned: false,
+            fullIdsReturned: false,
+            cwdReturned: false,
+            pathsReturned: false,
+            rawPayloadReturned: false,
+          },
+        },
+        result: {
+          status: "set",
+          goalSet: true,
+          objectiveCharCount: 17,
+          objectiveLineCount: 1,
+          fullIdsReturned: false,
+          threadContentReturned: false,
+        },
+        preflight: {
+          tokenConsumed: true,
+          tokenReturned: false,
+          scope: {
+            kind: "thread-goal-set-preflight",
+            workspaceId: "default",
+          },
+        },
+        policy: {
+          readOnly: false,
+          appServerTraffic: true,
+          threadStateMutated: true,
+          goalMutated: true,
+          rawPayloadReturned: false,
+          preflightTokenConsumed: true,
+          requiresExplicitExecutionGate: true,
+          implemented: true,
+        },
+      },
+    ],
+    [
+      "/api/thread-goal-clear-preflight",
+      {
+        ok: true,
+        appServer: {
+          touched: false,
+          modelTraffic: false,
+          commandTraffic: false,
+        },
+        action: {
+          type: "thread-goal-clear-preflight",
+          method: "thread/goal/clear",
+          execution: "blocked",
+          wouldClearGoal: false,
+          goalCleared: false,
+          threadStateMutated: false,
+          appServerTouched: false,
+        },
+        thread: {
+          threadIdSuffix: "thread1234",
+          fullIdsReturned: false,
+          contentReturned: false,
+          pathsReturned: false,
+        },
+        preflight: {
+          token: "preflight-1234567890abcdef",
+          tokenIssued: true,
+          scope: {
+            kind: "thread-goal-clear-preflight",
+            workspaceId: "default",
+          },
+        },
+        policy: {
+          readOnly: true,
+          appServerTraffic: false,
+          threadStateMutated: false,
+          goalMutated: false,
+          executionGateEnabled: true,
+          implemented: false,
+        },
+      },
+    ],
+    [
+      "/api/thread-goal-clear-action",
+      {
+        ok: true,
+        appServer: {
+          touched: true,
+          modelTraffic: false,
+          commandTraffic: false,
+          auditedMethods: ["thread/list", "thread/goal/clear"],
+        },
+        action: {
+          type: "thread-goal-clear",
+          method: "thread/goal/clear",
+          execution: "cleared",
+          goalCleared: true,
+          threadStateMutated: true,
+          appServerTouched: true,
+        },
+        thread: {
+          threadIdSuffix: "thread1234",
+          fullIdsReturned: false,
+          contentReturned: false,
+          pathsReturned: false,
+        },
+        target: {
+          threadIdSuffix: "thread1234",
+          goalCleared: true,
+          fullIdsReturned: false,
+          pathsReturned: false,
+        },
+        probes: {
+          threadGoalClear: {
+            method: "thread/goal/clear",
+            threadIdSuffix: "thread1234",
+            status: "cleared",
+            methodsUsed: ["thread/list", "thread/goal/clear"],
+            cleared: true,
+            objectiveReturned: false,
+            threadContentReturned: false,
+            fullIdsReturned: false,
+            cwdReturned: false,
+            pathsReturned: false,
+            rawPayloadReturned: false,
+          },
+        },
+        result: {
+          status: "cleared",
+          goalCleared: true,
+          fullIdsReturned: false,
+          threadContentReturned: false,
+        },
+        preflight: {
+          tokenConsumed: true,
+          tokenReturned: false,
+          scope: {
+            kind: "thread-goal-clear-preflight",
+            workspaceId: "default",
+          },
+        },
+        policy: {
+          readOnly: false,
+          appServerTraffic: true,
+          threadStateMutated: true,
+          goalMutated: true,
           rawPayloadReturned: false,
           preflightTokenConsumed: true,
           requiresExplicitExecutionGate: true,

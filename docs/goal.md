@@ -74,6 +74,12 @@ Target parity with the Codex desktop workflow:
   suffix through `thread/list` and returns only goal presence/status plus
   bounded usage/count metadata, not the objective text, full ids, timestamps,
   paths, or raw payloads.
+- `thread/goal/set` and `thread/goal/clear` have separate disabled-by-default
+  POST paths behind `CODEX_APP_PORT_ALLOW_THREAD_GOAL_SET=1` and
+  `CODEX_APP_PORT_ALLOW_THREAD_GOAL_CLEAR=1`; each requires a matching
+  one-time preflight token, resolves the target by suffix through
+  `thread/list`, and returns only suffix/status/count metadata, not objective
+  text, thread content, full ids, cwd, paths, preflight tokens, or raw payloads.
 - `thread/turns/list` has a separate disabled-by-default
   `GET /api/thread-turns` path behind `CODEX_APP_PORT_ALLOW_THREAD_TURNS=1`;
   it resolves the target by suffix through `thread/list`, calls

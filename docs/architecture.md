@@ -57,6 +57,14 @@ route behind `CODEX_APP_PORT_ALLOW_THREAD_GOAL=1`; it resolves the target by
 suffix through `thread/list` and returns only goal presence/status plus
 usage/count metadata, never the objective text, full ids, timestamps, paths, or
 raw payloads.
+`thread/goal/set` and `thread/goal/clear` are promoted separately through
+disabled-by-default POST routes behind
+`CODEX_APP_PORT_ALLOW_THREAD_GOAL_SET=1` and
+`CODEX_APP_PORT_ALLOW_THREAD_GOAL_CLEAR=1`; each requires a matching one-time
+preflight token, resolves the target by suffix through `thread/list`, writes
+sanitized action-audit records, and returns only suffix/status/count metadata,
+never objective text, full ids, cwd, paths, thread content, preflight tokens,
+or raw payloads.
 `thread/turns/list` is promoted separately through a disabled-by-default GET
 route behind `CODEX_APP_PORT_ALLOW_THREAD_TURNS=1`; it resolves the target by
 suffix through `thread/list`, requests `itemsView:notLoaded`, and returns only
