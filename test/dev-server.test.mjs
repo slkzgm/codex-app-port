@@ -14798,6 +14798,77 @@ test("dev server records safe accept approval decisions in a bounded batch only 
   }
   assert.equal(disabledCalls.some((call) => call.method === "closeAll"), true);
 
+  const unavailableAuditCalls = [];
+  const unavailableAuditPendingApprovals = makePendingApprovals();
+  const unavailableApprovalAuditLog = {
+    persistent: true,
+    ensureWritable() {
+      unavailableAuditCalls.push({ method: "ensureWritable" });
+      throw new Error("audit unavailable");
+    },
+    hasRecordedDecision() {
+      unavailableAuditCalls.push({ method: "hasRecordedDecision" });
+      return false;
+    },
+    append() {
+      unavailableAuditCalls.push({ method: "append" });
+    },
+  };
+  const unavailableCalls = [];
+  const { server: unavailableServer, url: unavailableUrl } = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    sessionManagerEnabled: true,
+    approvalForwardingEnabled: true,
+    approvalDetailsEnabled: true,
+    approvalAcceptEnabled: true,
+    approvalAuditLog: unavailableApprovalAuditLog,
+    sessionManager: createBatchSessionManager({
+      pendingApprovals: unavailableAuditPendingApprovals,
+      calls: unavailableCalls,
+      approvalAuditLog: unavailableApprovalAuditLog,
+    }),
+  });
+
+  try {
+    const unavailableDecisions = unavailableAuditPendingApprovals.map((approval) => ({
+      session: approval.sessionId,
+      request: approval.request.requestKey,
+      decisionToken: approval.request.decisionToken,
+      decision: "accept",
+    }));
+    const unavailableResponse = await fetch(`${unavailableUrl}/api/approval-decisions`, {
+      method: "POST",
+      headers: jsonHeaders(unavailableServer),
+      body: JSON.stringify({
+        workspace: "default",
+        decisions: unavailableDecisions,
+      }),
+    });
+    assert.equal(unavailableResponse.status, 500);
+    const unavailableText = await unavailableResponse.text();
+    assert.equal(unavailableText.includes("approvaltokenaccept"), false);
+    assert.equal(unavailableText.includes("/tmp/default-workspace"), false);
+    assert.deepEqual(
+      unavailableCalls.filter((call) => call.method === "recordApprovalDecision"),
+      [],
+    );
+    assert.equal(
+      unavailableAuditCalls.some((call) => call.method === "ensureWritable"),
+      true,
+    );
+    assert.equal(
+      unavailableAuditCalls.some((call) => call.method === "append"),
+      false,
+    );
+    assert.equal(
+      unavailableAuditPendingApprovals.some((approval) => approval.browserDecision),
+      false,
+    );
+  } finally {
+    await closeServer(unavailableServer);
+  }
+  assert.equal(unavailableCalls.some((call) => call.method === "closeAll"), true);
+
   const auditDir = await mkdtemp(join(tmpdir(), "codex-approval-accept-batch-audit-"));
   const auditLogPath = join(auditDir, "approval-decisions.jsonl");
   const approvalAuditLog = createApprovalAuditLog({ path: auditLogPath });

@@ -35,6 +35,10 @@ export function createApprovalAuditLog({
 
   return {
     persistent: true,
+    ensureWritable() {
+      closeSync(ensureAppendableNoFollow(path));
+      return true;
+    },
     append(record) {
       const auditRecord = sanitizeApprovalAuditRecord(record, { generatedAt: now() });
       const line = `${JSON.stringify(auditRecord)}\n`;
@@ -224,6 +228,15 @@ function readFileNoFollow(path) {
 }
 
 function appendLineNoFollow(path, line) {
+  const fd = ensureAppendableNoFollow(path);
+  try {
+    writeSync(fd, line, null, "utf8");
+  } finally {
+    closeSync(fd);
+  }
+}
+
+function ensureAppendableNoFollow(path) {
   const directory = dirname(path);
   mkdirSync(directory, { recursive: true, mode: 0o700 });
   const directoryStat = lstatSync(directory);
@@ -231,12 +244,7 @@ function appendLineNoFollow(path, line) {
     throw new Error("Approval audit log directory is unsafe");
   }
   const flags = constants.O_APPEND | constants.O_CREAT | constants.O_WRONLY | noFollowFlag();
-  const fd = openSync(path, flags, 0o600);
-  try {
-    writeSync(fd, line, null, "utf8");
-  } finally {
-    closeSync(fd);
-  }
+  return openSync(path, flags, 0o600);
 }
 
 function noFollowFlag() {

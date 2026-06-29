@@ -10928,6 +10928,7 @@ export async function handleRequest(request, response, options) {
       if (Object.hasOwn(body, "decisions")) {
         const batch = validateApprovalDecisionBatch(body);
         validateApprovalDecisionBatchAgainstPending(batch, decisionOptions);
+        ensureApprovalAuditLogWritable(options.approvalAuditLog);
         const decisions = [];
         for (const decisionBody of batch) {
           const decision = recordApprovalDecisionFromBody(decisionBody, decisionOptions);
@@ -15131,6 +15132,17 @@ function ensureActionAuditLogWritable(actionAuditLog) {
     return Boolean(actionAuditLog.ensureWritable());
   } catch {
     throwRequestError("Action audit log is unavailable", 500);
+  }
+}
+
+function ensureApprovalAuditLogWritable(approvalAuditLog) {
+  if (!approvalAuditLog || typeof approvalAuditLog.ensureWritable !== "function") {
+    return false;
+  }
+  try {
+    return Boolean(approvalAuditLog.ensureWritable());
+  } catch {
+    throwRequestError("Approval decision audit log unavailable", 500);
   }
 }
 
