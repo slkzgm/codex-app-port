@@ -1269,9 +1269,10 @@ command, file-change patch, file content, path, prompt, or token is returned
 after a decision is recorded. The same GET response includes a capped
 process-local decision history for decisions recorded through this server, with
 only sanitized kind, method, suffix, command/file-change counts, decision,
-forwarding, and audit-log metadata. It omits decision tokens, request keys,
-raw approval details, command text, file-change patches, file contents, paths,
-prompts, session ids, and full ids. The same response includes an
+forwarding, audit-log metadata, and per-decision replay-protection mode/scope
+flags. It omits decision tokens, request keys, raw approval details, command
+text, file-change patches, file contents, paths, prompts, session ids, and full
+ids. The same response includes an
 `approvalLifecycle` summary for the UI: queue state, queue/history counts,
 local versus forwarded result counts, and latest-decision metadata, without
 decision tokens, request keys, session identifiers, raw approval details, raw

@@ -1743,12 +1743,22 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
       "limit",
       "decisionTokensReturned",
       "requestKeysReturned",
+      "replayProtection",
       "rawCommandTextReturned",
       "rawFileChangeTextReturned",
       "fileChangePatchTextReturned",
       "fileContentsReturned",
       "pathsReturned",
       "fullIdsReturned",
+    ],
+    "decisionHistory.replayProtection": [
+      "mode",
+      "scope",
+      "processLocal",
+      "persistentAudit",
+      "singleDecisionPerRequest",
+      "decisionTokensReturned",
+      "requestKeysReturned",
     ],
     approvalLifecycle: [
       "state",
@@ -2426,6 +2436,15 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
       "appServerTouched",
       "auditLogged",
       "reason",
+    ],
+    "decisionHistory.items.*.replayProtection": [
+      "mode",
+      "scope",
+      "processLocal",
+      "persistentAudit",
+      "singleDecisionPerRequest",
+      "decisionTokensReturned",
+      "requestKeysReturned",
     ],
     "decisionHistory.items.*.policy": [
       "decisionTokenReturned",
@@ -35972,6 +35991,15 @@ function sanitizeApprovalDecisionHistory(records) {
     limit: MAX_APPROVAL_DECISION_HISTORY_RECORDS,
     decisionTokensReturned: false,
     requestKeysReturned: false,
+    replayProtection: {
+      mode: "process-local-history",
+      scope: "single-decision-per-request",
+      processLocal: true,
+      persistentAudit: items.some((item) => item.replayProtection?.persistentAudit),
+      singleDecisionPerRequest: true,
+      decisionTokensReturned: false,
+      requestKeysReturned: false,
+    },
     rawCommandTextReturned: false,
     rawFileChangeTextReturned: false,
     fileChangePatchTextReturned: false,
@@ -35988,6 +36016,13 @@ function sanitizeApprovalDecisionHistoryRecord(record, { recordedAt = null } = {
     approvalAcceptEnabled: true,
   });
   const request = decision.request ?? {};
+  const existingReplayProtection =
+    record?.replayProtection && typeof record.replayProtection === "object"
+      ? record.replayProtection
+      : null;
+  const persistentReplayProtection = Boolean(
+    record?.policy?.auditLogPersistent ?? existingReplayProtection?.persistentAudit,
+  );
   return {
     recordedAt: cleanDisplayText(recordedAt ?? record?.recordedAt, 40),
     workspace:
@@ -36060,6 +36095,19 @@ function sanitizeApprovalDecisionHistoryRecord(record, { recordedAt = null } = {
           reason: cleanDisplayText(decision.browserDecision.reason, 100),
         }
       : null,
+    replayProtection: {
+      mode: persistentReplayProtection
+        ? "persistent-audit-and-process-local"
+        : "process-local-history",
+      scope: persistentReplayProtection
+        ? "process-local-and-audit-log-single-decision-per-request"
+        : "process-local-single-decision-per-request",
+      processLocal: true,
+      persistentAudit: persistentReplayProtection,
+      singleDecisionPerRequest: true,
+      decisionTokensReturned: false,
+      requestKeysReturned: false,
+    },
     policy: {
       decisionTokenReturned: false,
       requestKeyReturned: false,

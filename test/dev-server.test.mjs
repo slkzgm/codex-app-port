@@ -13409,11 +13409,30 @@ test("dev server can start a turn only when explicitly enabled", async () => {
     assert.equal(historyPayload.decisionHistory.count, 1);
     assert.equal(historyPayload.decisionHistory.decisionTokensReturned, false);
     assert.equal(historyPayload.decisionHistory.requestKeysReturned, false);
+    assert.equal(historyPayload.decisionHistory.replayProtection.processLocal, true);
+    assert.equal(historyPayload.decisionHistory.replayProtection.persistentAudit, true);
+    assert.equal(historyPayload.decisionHistory.replayProtection.singleDecisionPerRequest, true);
+    assert.equal(historyPayload.decisionHistory.replayProtection.decisionTokensReturned, false);
+    assert.equal(historyPayload.decisionHistory.replayProtection.requestKeysReturned, false);
     assert.equal(historyPayload.decisionHistory.rawCommandTextReturned, false);
     assert.equal(historyPayload.decisionHistory.rawFileChangeTextReturned, false);
     assert.equal(historyPayload.decisionHistory.fileChangePatchTextReturned, false);
     assert.equal(historyPayload.decisionHistory.fileContentsReturned, false);
     assert.equal(historyPayload.decisionHistory.pathsReturned, false);
+    assert.equal(historyPayload.decisionHistory.items[0].replayProtection.processLocal, true);
+    assert.equal(historyPayload.decisionHistory.items[0].replayProtection.persistentAudit, true);
+    assert.equal(
+      historyPayload.decisionHistory.items[0].replayProtection.singleDecisionPerRequest,
+      true,
+    );
+    assert.equal(
+      historyPayload.decisionHistory.items[0].replayProtection.decisionTokensReturned,
+      false,
+    );
+    assert.equal(
+      historyPayload.decisionHistory.items[0].replayProtection.requestKeysReturned,
+      false,
+    );
     assert.equal(historyPayload.approvalLifecycle.state, "pending");
     assert.equal(historyPayload.approvalLifecycle.queueCount, 2);
     assert.equal(historyPayload.approvalLifecycle.pendingCount, 1);

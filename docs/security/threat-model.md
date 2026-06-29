@@ -296,6 +296,11 @@
   still submit the bounded tokenized decision batch through the normal approval
   route. They must not create session-wide decisions or bypass decision-token
   checks.
+- Browser-facing approval-decision history may expose only sanitized replay
+  protection mode/scope and audit-persistence flags per recorded decision. It
+  must not expose decision tokens, request keys, session identifiers, raw
+  approval details, command text, file-change patches, file contents, paths,
+  prompts, app-server payloads, or any full approval selector.
 - Browser-facing approval queue action summaries may expose only aggregate
   pending, denyable, approvable, token-required, safe-decision, gate, and batch
   limit metadata derived from the sanitized approval queue and request-scoped

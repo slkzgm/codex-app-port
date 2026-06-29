@@ -7848,10 +7848,13 @@ function renderApprovalDecisionHistory(history) {
 
     const chips = document.createElement("div");
     chips.className = "boundary-chip-list";
+    const replay = item.replayProtection ?? {};
     for (const value of [
       decision.forwarded ? "forwarded" : "local",
       decision.appServerTouched ? "app-server" : "no app-server",
       decision.auditLogged ? "audit log" : null,
+      replay.singleDecisionPerRequest ? "replay protected" : null,
+      replay.persistentAudit ? "persistent replay" : replay.processLocal ? "process replay" : null,
       request.safeApproveDecisionCount ? `${request.safeApproveDecisionCount} safe accepts` : null,
       request.safeDenyDecisionCount ? `${request.safeDenyDecisionCount} safe denies` : null,
       "token omitted",

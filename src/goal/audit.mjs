@@ -684,6 +684,7 @@ const CHECKS = [
       "/api/approval-decisions now also includes sanitized approvalInteractionContract metadata derived only from sanitized queue/action/workflow/authority/policy counters; the UI renders row and visible-subset batch interaction mode, client-side filtering, row busy/disabled sibling-button behavior, refresh-after-decision requirement, published batch-limit enforcement, and request-scoped route/token/audit gates without tokens, request keys, selectors, raw approval details, preview text, raw commands, patches, file contents, paths, prompts, ids, or app-server payloads.",
       "The approval queue UI also renders per-request deny and gated accept-once row controls that reuse the sanitized request's process-local decision token, mark the row action area busy, disable sibling row buttons while the POST is in flight, cap visible-subset batch submissions to the server-advertised limit, and refresh the sanitized approval/session/gate state after completion without adding new API fields or widening session-wide approvals.",
       "The approval queue UI now keeps a client-side selected approval row and renders a sanitized detail pane derived only from the already sanitized queue item, with kind/route/state/scope labels, command/file counts, permissions presence, safe decision counts, and audit-policy flags while omitting decision tokens, request keys, session ids, raw commands, raw approval details, patch text, file contents, full ids, paths, prompts, and raw app-server payloads.",
+      "Approval decision history rows now include sanitized per-decision replay-protection mode/scope and audit-persistence flags while still omitting decision tokens, request keys, selectors, raw approval details, commands, patches, file contents, paths, prompts, ids, and app-server payloads.",
     ],
     verify: allOf(
       allFiles([
@@ -812,6 +813,7 @@ const CHECKS = [
         "approvalAuthorityContractText",
         "approvalInteractionContractText",
         "latestApprovalDecisionText",
+        "replayProtection",
         "approval-preview",
       ]),
       fileIncludes("ui/assets/styles.css", [
@@ -871,6 +873,7 @@ const CHECKS = [
         "permissionsRequestCount",
         "createApprovalDecisionLedger",
         "sanitizeApprovalDecisionHistory",
+        "singleDecisionPerRequest",
         "batchDecisionsAccepted",
         "decisionBatchLimit",
         "decisionHistoryReturned",

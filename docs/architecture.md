@@ -360,6 +360,10 @@ Current M1 status:
   and hard non-logging flags without decision tokens, request keys, session
   identifiers, approval details, command text, patches, file contents,
   previews, paths, prompts, ids, or app-server payloads
+- done: approval decision history rows include sanitized per-decision
+  replay-protection mode/scope and audit-persistence flags while still omitting
+  decision tokens, request keys, selectors, raw approval details, commands,
+  patches, file contents, paths, prompts, ids, and app-server payloads
 - done: sanitized approval authority contract in `/api/approval-decisions` and
   the UI for request-scoped local deny, managed deny, or accept-once authority,
   command/file-change accept-once limits, permission-approval rejection, and

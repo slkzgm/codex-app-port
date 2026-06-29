@@ -25726,6 +25726,13 @@ function assertSanitizedApprovalDecisionHistory(payload, { token, requestKey }) 
     payload.decisionHistory?.count !== 1 ||
     payload.decisionHistory?.decisionTokensReturned !== false ||
     payload.decisionHistory?.requestKeysReturned !== false ||
+    payload.decisionHistory?.replayProtection?.mode !== "process-local-history" ||
+    payload.decisionHistory?.replayProtection?.scope !== "single-decision-per-request" ||
+    payload.decisionHistory?.replayProtection?.processLocal !== true ||
+    payload.decisionHistory?.replayProtection?.persistentAudit !== true ||
+    payload.decisionHistory?.replayProtection?.singleDecisionPerRequest !== true ||
+    payload.decisionHistory?.replayProtection?.decisionTokensReturned !== false ||
+    payload.decisionHistory?.replayProtection?.requestKeysReturned !== false ||
     payload.decisionHistory?.rawCommandTextReturned !== false ||
     payload.decisionHistory?.rawFileChangeTextReturned !== false ||
     payload.decisionHistory?.fileChangePatchTextReturned !== false ||
@@ -25747,6 +25754,12 @@ function assertSanitizedApprovalDecisionHistory(payload, { token, requestKey }) 
     item?.request?.decisionTokenReturned !== false ||
     item?.request?.command?.charCount !== 32 ||
     item?.request?.command?.approvalPreview?.textReturned !== false ||
+    item?.replayProtection?.mode !== "persistent-audit-and-process-local" ||
+    item?.replayProtection?.processLocal !== true ||
+    item?.replayProtection?.persistentAudit !== true ||
+    item?.replayProtection?.singleDecisionPerRequest !== true ||
+    item?.replayProtection?.decisionTokensReturned !== false ||
+    item?.replayProtection?.requestKeysReturned !== false ||
     item?.policy?.decisionTokenReturned !== false ||
     item?.policy?.requestKeyReturned !== false ||
     item?.policy?.approvalDetailsReturned !== false ||
@@ -26086,6 +26099,11 @@ function assertSanitizedApprovalAcceptBatchHistory(payload, decisions) {
     payload.decisionHistory?.count !== 2 ||
     payload.decisionHistory?.decisionTokensReturned !== false ||
     payload.decisionHistory?.requestKeysReturned !== false ||
+    payload.decisionHistory?.replayProtection?.processLocal !== true ||
+    payload.decisionHistory?.replayProtection?.persistentAudit !== true ||
+    payload.decisionHistory?.replayProtection?.singleDecisionPerRequest !== true ||
+    payload.decisionHistory?.replayProtection?.decisionTokensReturned !== false ||
+    payload.decisionHistory?.replayProtection?.requestKeysReturned !== false ||
     payload.decisionHistory?.rawCommandTextReturned !== false ||
     payload.decisionHistory?.rawFileChangeTextReturned !== false ||
     payload.decisionHistory?.fileChangePatchTextReturned !== false ||
@@ -26102,6 +26120,11 @@ function assertSanitizedApprovalAcceptBatchHistory(payload, decisions) {
         item?.browserDecision?.appServerTouched === true &&
         item?.request?.requestKeyReturned === false &&
         item?.request?.decisionTokenReturned === false &&
+        item?.replayProtection?.processLocal === true &&
+        item?.replayProtection?.persistentAudit === true &&
+        item?.replayProtection?.singleDecisionPerRequest === true &&
+        item?.replayProtection?.decisionTokensReturned === false &&
+        item?.replayProtection?.requestKeysReturned === false &&
         item?.policy?.approvalDetailsReturned === false,
     )
   ) {
@@ -26304,6 +26327,11 @@ function assertSanitizedApprovalFileChangeAcceptHistory(
     payload.decisionHistory?.count !== 1 ||
     payload.decisionHistory?.decisionTokensReturned !== false ||
     payload.decisionHistory?.requestKeysReturned !== false ||
+    payload.decisionHistory?.replayProtection?.processLocal !== true ||
+    payload.decisionHistory?.replayProtection?.persistentAudit !== true ||
+    payload.decisionHistory?.replayProtection?.singleDecisionPerRequest !== true ||
+    payload.decisionHistory?.replayProtection?.decisionTokensReturned !== false ||
+    payload.decisionHistory?.replayProtection?.requestKeysReturned !== false ||
     payload.decisionHistory?.rawFileChangeTextReturned !== false ||
     payload.decisionHistory?.fileChangePatchTextReturned !== false ||
     payload.decisionHistory?.fileContentsReturned !== false ||
@@ -26322,6 +26350,11 @@ function assertSanitizedApprovalFileChangeAcceptHistory(
     item?.browserDecision?.decision !== "accept" ||
     item?.browserDecision?.forwarded !== true ||
     item?.browserDecision?.appServerTouched !== true ||
+    item?.replayProtection?.processLocal !== true ||
+    item?.replayProtection?.persistentAudit !== true ||
+    item?.replayProtection?.singleDecisionPerRequest !== true ||
+    item?.replayProtection?.decisionTokensReturned !== false ||
+    item?.replayProtection?.requestKeysReturned !== false ||
     item?.policy?.rawFileChangeTextReturned !== false ||
     item?.policy?.fileChangePatchTextReturned !== false ||
     item?.policy?.fileContentsReturned !== false ||
