@@ -1487,6 +1487,9 @@ test("browser POST response contracts block unsafe response values", () => {
     ),
     true,
   );
+  assert.equal(turnStartContract.nestedKeySchemas.appServer.includes("auditedMethods"), true);
+  assert.equal(turnStartContract.nestedKeySchemas.policy.includes("auditLogWritten"), true);
+  assert.equal(turnStartContract.nestedKeySchemas.policy.includes("rawRequestBodyReturned"), true);
   assert.equal(turnStartContract.nestedKeySchemas["policy.approvalRequestHandling"].includes("unexpected"), false);
   assert.equal(
     BROWSER_POST_RESPONSE_CONTRACTS["/api/turn-preflight"].allowedTopLevelKeys.includes(
@@ -11655,9 +11658,15 @@ test("dev server can start a turn only when explicitly enabled", async () => {
   const calls = [];
   const auditDir = await mkdtemp(join(tmpdir(), "codex-app-port-approval-audit-"));
   const auditLogPath = join(auditDir, "approval-decisions.jsonl");
+  const actionAuditDir = await mkdtemp(join(tmpdir(), "codex-turn-start-action-audit-"));
+  const actionAuditLogPath = join(actionAuditDir, "actions.jsonl");
   const { server, url } = await startTestServer({
     cwd: "/tmp/default-workspace",
     approvalAuditLog: createApprovalAuditLog({ path: auditLogPath }),
+    actionAuditLog: createActionAuditLog({
+      path: actionAuditLogPath,
+      now: () => "2026-05-16T00:00:00.000Z",
+    }),
     turnStartEnabled: true,
     turnStartFn: async (options) => {
       calls.push(options);
@@ -11821,10 +11830,15 @@ test("dev server can start a turn only when explicitly enabled", async () => {
     const serialized = JSON.stringify(payload);
     assert.equal(payload.ok, true);
     assert.equal(payload.action.execution, "started");
+    assert.equal(payload.action.method, "turn/start");
     assert.equal(payload.action.modelTraffic, true);
     assert.equal(payload.action.sendsPromptToAppServer, true);
     assert.equal(payload.action.appServerTouched, true);
     assert.equal(payload.action.approvalMode, "deny-only");
+    assert.equal(payload.appServer.touched, true);
+    assert.equal(payload.appServer.modelTraffic, true);
+    assert.equal(payload.appServer.commandTraffic, false);
+    assert.deepEqual(payload.appServer.auditedMethods, ["turn/start"]);
     assert.equal(payload.preflight.tokenConsumed, true);
     assert.equal(payload.preflight.tokenReturned, false);
     assert.equal(payload.preflight.scope.kind, "turn-preflight");
@@ -11852,6 +11866,12 @@ test("dev server can start a turn only when explicitly enabled", async () => {
     assert.equal(payload.probes.turnStart.events[2].terminalLifecycle.kind, "process-exited");
     assert.equal(payload.probes.turnStart.events[2].terminalLifecycle.stdout.textReturned, false);
     assert.equal(payload.probes.turnStart.events[2].terminalLifecycle.process.valueReturned, false);
+    assert.equal(payload.policy.auditLogPersistent, true);
+    assert.equal(payload.policy.auditLogWritableChecked, true);
+    assert.equal(payload.policy.auditLogWritten, true);
+    assert.equal(payload.policy.auditLogPathReturned, false);
+    assert.equal(payload.policy.rawRequestBodyReturned, false);
+    assert.equal(payload.policy.promptTextReturned, false);
     assert.equal(calls[0].cwd, "/tmp/default-workspace");
     assert.equal(calls[0].threadIdSuffix, "abcd1234");
     assert.equal(calls[0].prompt, "Sensitive user prompt that must not be echoed");
@@ -11866,6 +11886,38 @@ test("dev server can start a turn only when explicitly enabled", async () => {
     assert.equal(serialized.includes("codexHome"), false);
     assert.equal(serialized.includes("userAgent"), false);
     assert.equal(serialized.includes(preflightPayload.preflight.token), false);
+
+    const actionAuditRecords = (await readFile(actionAuditLogPath, "utf8"))
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    assert.equal(actionAuditRecords.length, 1);
+    assert.equal(actionAuditRecords[0].event, "turn-start-recorded");
+    assert.equal(actionAuditRecords[0].action.type, "turn-start");
+    assert.equal(actionAuditRecords[0].action.method, "turn/start");
+    assert.equal(actionAuditRecords[0].action.modelTraffic, true);
+    assert.equal(actionAuditRecords[0].action.sendsPromptToAppServer, true);
+    assert.equal(actionAuditRecords[0].target.threadIdSuffix, "abcd1234");
+    assert.equal(actionAuditRecords[0].target.turnIdSuffix, "turn5678");
+    assert.equal(actionAuditRecords[0].prompt.charCount, 45);
+    assert.equal(actionAuditRecords[0].prompt.textReturned, false);
+    assert.equal(actionAuditRecords[0].preflight.tokenConsumed, true);
+    assert.equal(actionAuditRecords[0].preflight.tokenReturned, false);
+    assert.equal(actionAuditRecords[0].policy.rawRequestBodyReturned, false);
+    const actionAuditSerialized = JSON.stringify(actionAuditRecords);
+    for (const marker of [
+      "Sensitive user prompt",
+      "/tmp/default-workspace",
+      "secret.txt",
+      "private-token-value",
+      "sk-proj-privatevalue",
+      preflightPayload.preflight.token,
+      "Sensitive stdout leaked",
+      "Sensitive stderr leaked",
+      "process-sensitive-value",
+    ]) {
+      assert.equal(actionAuditSerialized.includes(marker), false, `action audit leaked ${marker}`);
+    }
 
     const sessionsResponse = await fetch(`${url}/api/turn-sessions`, {
       headers: apiHeaders(server),
@@ -13035,6 +13087,77 @@ test("dev server can start a turn only when explicitly enabled", async () => {
   } finally {
     await closeServer(server);
     await rm(auditDir, { recursive: true, force: true });
+    await rm(actionAuditDir, { recursive: true, force: true });
+  }
+});
+
+test("dev server refuses turn-start before model traffic when action audit log is unavailable", async () => {
+  const calls = [];
+  const { server, url } = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    turnStartEnabled: true,
+    actionAuditLog: {
+      persistent: true,
+      ensureWritable() {
+        throw new Error("audit unavailable");
+      },
+      append() {
+        calls.push({ method: "append" });
+      },
+    },
+    turnStartFn: async (options) => {
+      calls.push({ method: "turnStartFn", options });
+      return {
+        ok: true,
+        probes: {
+          turnStart: {
+            threadIdSuffix: "abcd1234",
+            turnIdSuffix: "turn5678",
+            completedStatus: "completed",
+            approvalRequestCount: 0,
+            deniedApprovalCount: 0,
+            unsupportedApprovalCount: 0,
+            approvalRequests: [],
+            eventCount: 0,
+            returnedEventCount: 0,
+            events: [],
+          },
+        },
+        notifications: {},
+      };
+    },
+  });
+
+  try {
+    const preflightResponse = await fetch(`${url}/api/turn-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        thread: "abcd1234",
+        prompt: "Sensitive turn prompt must not leave the browser",
+      }),
+    });
+    assert.equal(preflightResponse.status, 200);
+    const preflightPayload = await preflightResponse.json();
+
+    const response = await fetch(`${url}/api/turn-start`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        thread: "abcd1234",
+        prompt: "Sensitive turn prompt must not leave the browser",
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    assert.equal(response.status, 500);
+    const text = await response.text();
+    assert.equal(text.includes("Sensitive turn prompt"), false);
+    assert.equal(text.includes(preflightPayload.preflight.token), false);
+    assert.deepEqual(calls, []);
+  } finally {
+    await closeServer(server);
   }
 });
 

@@ -5116,8 +5116,10 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
   "/api/turn-start": responseNestedKeySchemas({
     workspace: ["id", "label", "isDefault"],
     initialize: ["platformFamily", "platformOs"],
+    appServer: ["touched", "modelTraffic", "commandTraffic", "auditedMethods"],
     action: [
       "type",
+      "method",
       "execution",
       "modelTraffic",
       "sendsPromptToAppServer",
@@ -5325,6 +5327,16 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
       "turnExecutionAuthorityPromptsReturned",
       "turnExecutionAuthorityRawPayloadsReturned",
       "approvalRequestHandling",
+      "appServerTraffic",
+      "modelTraffic",
+      "commandTraffic",
+      "promptTextReturned",
+      "auditLogPersistent",
+      "auditLogWritableChecked",
+      "auditLogWritten",
+      "auditLogPathReturned",
+      "browserMethodCallsAccepted",
+      "rawRequestBodyReturned",
     ],
     "policy.approvalRequestHandling": [
       "browserDecisionsAccepted",
@@ -10778,6 +10790,7 @@ export async function handleRequest(request, response, options) {
           workspace,
           intent: actionPreflightIntent(preflightBody, preflightPayload),
         });
+        const auditLogWritableChecked = ensureActionAuditLogWritable(options.actionAuditLog);
         const payload = options.sessionManagerEnabled
           ? await options.sessionManager.startTurn({
               workspace,
@@ -10793,9 +10806,15 @@ export async function handleRequest(request, response, options) {
               prompt: body.prompt,
             });
         const sanitized = {
-          ...sanitizeTurnStartPayload(payload, { workspace, draft }),
-          preflight: buildConsumedPreflightSummary(consumedPreflight),
+          ...sanitizeTurnStartPayload(payload, {
+            workspace,
+            draft,
+            consumedPreflight,
+            actionAuditLog: options.actionAuditLog,
+            auditLogWritableChecked,
+          }),
         };
+        sanitized.policy.auditLogWritten = writeActionAuditLog(options.actionAuditLog, sanitized);
         options.turnSessionRegistry?.record(sanitized);
         sendJson(response, 200, sanitized);
         return;
@@ -15200,6 +15219,8 @@ function actionAuditEvent(record) {
       return "thread-safety-lock-recorded";
     case "thread-start":
       return "thread-start-recorded";
+    case "turn-start":
+      return "turn-start-recorded";
     case "live-session-bulk-control":
       return "live-session-bulk-control-recorded";
     case "live-session-control":
@@ -16708,7 +16729,16 @@ export function sanitizeThreadStartPayload(
   };
 }
 
-export function sanitizeTurnStartPayload(payload, { workspace = null, draft = null } = {}) {
+export function sanitizeTurnStartPayload(
+  payload,
+  {
+    workspace = null,
+    draft = null,
+    consumedPreflight = null,
+    actionAuditLog = null,
+    auditLogWritableChecked = false,
+  } = {},
+) {
   const turnStart = sanitizeTurnStartProbe(payload?.probes?.turnStart);
   return {
     ok: Boolean(payload?.ok),
@@ -16717,14 +16747,22 @@ export function sanitizeTurnStartPayload(payload, { workspace = null, draft = nu
     protocol: cleanDisplayText(payload?.protocol, 80),
     initialize: sanitizeInitialize(payload?.initialize),
     workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: true,
+      modelTraffic: true,
+      commandTraffic: false,
+      auditedMethods: ["turn/start"],
+    },
     action: {
       type: "turn-start",
+      method: "turn/start",
       execution: "started",
       modelTraffic: true,
       sendsPromptToAppServer: true,
       appServerTouched: true,
       approvalMode: "deny-only",
     },
+    preflight: buildConsumedPreflightSummary(consumedPreflight),
     target: {
       threadIdSuffix: turnStart.threadIdSuffix ?? draft?.target?.threadIdSuffix ?? null,
       turnIdSuffix: turnStart.turnIdSuffix,
@@ -16733,7 +16771,47 @@ export function sanitizeTurnStartPayload(payload, { workspace = null, draft = nu
     probes: {
       turnStart,
     },
+    policy: {
+      approvalPolicy: "on-request",
+      sandbox: "read-only",
+      requiresExplicitExecutionGate: true,
+      requiresApprovalPipeline: true,
+      implemented: true,
+      appServerTraffic: true,
+      modelTraffic: true,
+      commandTraffic: false,
+      promptTextReturned: false,
+      preflightTokensReturned: false,
+      promptsReturned: false,
+      fullIdsReturned: false,
+      pathsReturned: false,
+      rawPayloadsReturned: false,
+      auditLogPersistent: Boolean(actionAuditLog?.persistent),
+      auditLogWritableChecked: Boolean(auditLogWritableChecked),
+      auditLogWritten: false,
+      auditLogPathReturned: false,
+      browserMethodCallsAccepted: true,
+      rawRequestBodyReturned: false,
+      approvalRequestHandling: buildTurnStartApprovalRequestHandlingPolicy(),
+    },
     notifications: sanitizeNotificationCounts(payload?.notifications),
+  };
+}
+
+function buildTurnStartApprovalRequestHandlingPolicy() {
+  return {
+    browserDecisionsAccepted: true,
+    browserDenyOnlyDecisionsRecorded: true,
+    forwardedToAppServer: false,
+    acceptOnceForwardedToAppServer: false,
+    sessionWideApprovalsAccepted: false,
+    automaticDenyOnlyResponses: true,
+    handledMethods: [
+      "item/commandExecution/requestApproval",
+      "item/fileChange/requestApproval",
+      "item/permissions/request",
+    ],
+    unsupportedMethodsBlockTurnStart: true,
   };
 }
 

@@ -98,6 +98,97 @@ test("action audit log writes sanitized live-session bulk control JSONL", async 
   }
 });
 
+test("action audit log writes sanitized turn-start JSONL", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "codex-action-audit-turn-start-"));
+  const path = join(dir, "actions.jsonl");
+  try {
+    const log = createActionAuditLog({
+      path,
+      now: () => "2026-05-16T00:00:00.000Z",
+    });
+    log.append({
+      event: "turn-start-recorded",
+      payload: {
+        workspace: {
+          id: "default",
+          label: "workspace",
+          isDefault: true,
+          cwd: "/tmp/private-workspace",
+        },
+        appServer: {
+          touched: true,
+          modelTraffic: true,
+          commandTraffic: false,
+          auditedMethods: ["turn/start"],
+        },
+        action: {
+          type: "turn-start",
+          method: "turn/start",
+          execution: "started",
+          appServerTouched: true,
+          modelTraffic: true,
+          sendsPromptToAppServer: true,
+          approvalMode: "deny-only",
+        },
+        target: {
+          threadIdSuffix: "abcd1234",
+          turnIdSuffix: "turn5678",
+          fullThreadId: "thread-private-full-id",
+          fullTurnId: "turn-private-full-id",
+        },
+        prompt: {
+          present: true,
+          charCount: 31,
+          lineCount: 1,
+          text: "Sensitive turn prompt",
+          textReturned: true,
+        },
+        preflight: {
+          tokenConsumed: true,
+          token: "preflight-private-token",
+          scope: {
+            kind: "turn-preflight",
+            workspaceId: "default",
+          },
+          oneTimeUseEnforced: true,
+        },
+      },
+    });
+
+    const records = (await readFile(path, "utf8"))
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    assert.equal(records.length, 1);
+    assert.equal(records[0].event, "turn-start-recorded");
+    assert.equal(records[0].action.type, "turn-start");
+    assert.equal(records[0].action.method, "turn/start");
+    assert.equal(records[0].action.modelTraffic, true);
+    assert.equal(records[0].action.sendsPromptToAppServer, true);
+    assert.equal(records[0].appServer.auditedMethods[0], "turn/start");
+    assert.equal(records[0].target.threadIdSuffix, "abcd1234");
+    assert.equal(records[0].target.turnIdSuffix, "turn5678");
+    assert.equal(records[0].prompt.charCount, 31);
+    assert.equal(records[0].prompt.textReturned, false);
+    assert.equal(records[0].preflight.tokenConsumed, true);
+    assert.equal(records[0].preflight.tokenReturned, false);
+    assert.equal(records[0].policy.sensitivePayloadLogged, false);
+
+    const serialized = JSON.stringify(records);
+    for (const marker of [
+      "preflight-private-token",
+      "Sensitive turn prompt",
+      "thread-private-full-id",
+      "turn-private-full-id",
+      "/tmp/private-workspace",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("action audit log writes sanitized local mutation JSONL", async () => {
   const dir = await mkdtemp(join(tmpdir(), "codex-local-action-audit-"));
   const path = join(dir, "actions.jsonl");

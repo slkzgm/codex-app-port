@@ -50,6 +50,7 @@ const ACTION_AUDIT_EVENTS = new Set([
   "thread-rollback-recorded",
   "thread-safety-lock-recorded",
   "thread-start-recorded",
+  "turn-start-recorded",
 ]);
 
 export function defaultActionAuditLogPath(env = process.env) {
@@ -272,6 +273,8 @@ function actionAuditEvent(actionType) {
       return "thread-safety-lock-recorded";
     case "thread-start":
       return "thread-start-recorded";
+    case "turn-start":
+      return "turn-start-recorded";
     case "live-session-control":
       return "live-session-control-recorded";
     case "live-session-bulk-control":
@@ -575,6 +578,17 @@ function sanitizeAction(action, actionType, { appServer }) {
       threadCreated: Boolean(action.threadCreated),
       appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
       modelTraffic: false,
+    };
+  }
+  if (actionType === "turn-start") {
+    return {
+      type: "turn-start",
+      method: "turn/start",
+      execution: safeString(action.execution, 40) ?? "started",
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: Boolean(action.modelTraffic ?? appServer.modelTraffic),
+      sendsPromptToAppServer: Boolean(action.sendsPromptToAppServer),
+      approvalMode: safeString(action.approvalMode, 40) ?? "deny-only",
     };
   }
   if (actionType === "thread-archive") {
@@ -937,6 +951,14 @@ function sanitizeTarget(target, actionType) {
   if (actionType === "thread-start") {
     return {
       threadIdSuffix: safeString(target.threadIdSuffix, 16),
+      fullIdsReturned: false,
+      pathsReturned: false,
+    };
+  }
+  if (actionType === "turn-start") {
+    return {
+      threadIdSuffix: safeString(target.threadIdSuffix, 16),
+      turnIdSuffix: safeString(target.turnIdSuffix, 16),
       fullIdsReturned: false,
       pathsReturned: false,
     };
@@ -1418,6 +1440,14 @@ function sanitizeResult(result, actionType) {
       threadContentReturned: false,
     };
   }
+  if (actionType === "turn-start") {
+    return {
+      status: safeString(result.status, 80) ?? "started",
+      fullIdsReturned: false,
+      threadContentReturned: false,
+      promptTextReturned: false,
+    };
+  }
   if (actionType === "thread-archive") {
     return {
       status: safeString(result.status, 80) ?? "completed",
@@ -1618,6 +1648,7 @@ function sanitizeActionType(value) {
     "thread-rollback",
     "thread-safety-lock",
     "thread-start",
+    "turn-start",
   ].includes(value)
     ? value
     : "live-session-control";
