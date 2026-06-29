@@ -22080,6 +22080,87 @@ async function checkApprovalAcceptBatchApi() {
     await closeServer(disabledServer);
   }
 
+  const unavailableAuditCalls = [];
+  const unavailableAuditLog = {
+    persistent: true,
+    ensureWritable() {
+      unavailableAuditCalls.push({ method: "ensureWritable" });
+      throw new Error("audit unavailable");
+    },
+    hasRecordedDecision() {
+      unavailableAuditCalls.push({ method: "hasRecordedDecision" });
+      return false;
+    },
+    append() {
+      unavailableAuditCalls.push({ method: "append" });
+    },
+  };
+  const unavailableCalls = [];
+  const unavailablePendingApprovals = makePendingApprovals();
+  const unavailableServer = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    sessionManagerEnabled: true,
+    approvalForwardingEnabled: true,
+    approvalDetailsEnabled: true,
+    approvalAcceptEnabled: true,
+    approvalAuditLog: unavailableAuditLog,
+    sessionManager: createBatchSessionManager({
+      pendingApprovals: unavailablePendingApprovals,
+      calls: unavailableCalls,
+      approvalAuditLog: unavailableAuditLog,
+    }),
+  });
+  const unavailablePort = await listenWithFallback(unavailableServer, {
+    host: "127.0.0.1",
+    port: 0,
+  });
+  const unavailableBaseUrl = `http://127.0.0.1:${unavailablePort}`;
+
+  try {
+    const token = await readUiSessionToken(unavailableBaseUrl);
+    const unavailableDecisions = unavailablePendingApprovals.map((approval) => ({
+      session: approval.sessionId,
+      request: approval.request.requestKey,
+      decisionToken: approval.request.decisionToken,
+      decision: "accept",
+    }));
+    const unavailableResponse = await fetch(`${unavailableBaseUrl}/api/approval-decisions`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        decisions: unavailableDecisions,
+      }),
+    });
+    if (unavailableResponse.status !== 500) {
+      throw new Error(
+        `approval accept batch with unavailable audit returned HTTP ${unavailableResponse.status}`,
+      );
+    }
+    const unavailableText = await unavailableResponse.text();
+    if (
+      unavailableText.includes("approvaltokenaccept") ||
+      unavailableText.includes("/tmp/codex-app-port-verify") ||
+      unavailableText.includes("verify-secret-token")
+    ) {
+      throw new Error("unavailable approval audit batch response leaked sensitive data");
+    }
+    if (unavailableCalls.some((call) => call.method === "recordApprovalDecision")) {
+      throw new Error("unavailable approval audit batch forwarded a partial decision");
+    }
+    if (!unavailableAuditCalls.some((call) => call.method === "ensureWritable")) {
+      throw new Error("approval accept batch did not pre-check audit log writability");
+    }
+    if (unavailableAuditCalls.some((call) => call.method === "append")) {
+      throw new Error("unavailable approval audit batch appended a partial audit record");
+    }
+    if (unavailablePendingApprovals.some((approval) => approval.browserDecision)) {
+      throw new Error("unavailable approval audit batch mutated pending approvals");
+    }
+  } finally {
+    await closeServer(unavailableServer);
+  }
+
   const auditDir = await mkdtemp(join(tmpdir(), "codex-app-port-verify-approval-accept-batch-audit-"));
   const auditLogPath = join(auditDir, "approval-decisions.jsonl");
   const approvalAuditLog = createApprovalAuditLog({ path: auditLogPath });
