@@ -3,7 +3,11 @@ import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
 
-import { integrationMethodNames } from "../src/app-server/integration-policy.mjs";
+import {
+  integrationMethodNames,
+  serverNotificationMethodNames,
+  serverRequestMethodNames,
+} from "../src/app-server/integration-policy.mjs";
 import { terminalActionMethodNames } from "../src/app-server/terminal-policy.mjs";
 
 const SCHEMA_ROOT = new URL("../src/app-server/generated-schemas/", import.meta.url).pathname;
@@ -28,7 +32,38 @@ const CODEX_0142_ADDED_CLIENT_METHODS = Object.freeze([
   "thread/backgroundTerminals/list",
   "thread/backgroundTerminals/terminate",
   "thread/delete",
+  "thread/turns/list",
+  "thread/turns/items/list",
+  "thread/inject_items",
+  "thread/resume",
+  "thread/metadata/update",
+  "thread/memoryMode/set",
+  "thread/goal/get",
+  "thread/goal/set",
+  "thread/goal/clear",
+  "thread/increment_elicitation",
+  "thread/decrement_elicitation",
+  "thread/approveGuardianDeniedAction",
+  "thread/realtime/start",
+  "thread/realtime/appendAudio",
+  "thread/realtime/appendText",
   "thread/realtime/appendSpeech",
+  "thread/realtime/stop",
+  "thread/realtime/listVoices",
+  "review/start",
+  "feedback/upload",
+  "memory/reset",
+  "mock/experimentalMethod",
+  "fs/getMetadata",
+  "fs/readDirectory",
+  "fs/readFile",
+  "fs/watch",
+  "fs/unwatch",
+  "fuzzyFileSearch/sessionStart",
+  "fuzzyFileSearch/sessionUpdate",
+  "fuzzyFileSearch/sessionStop",
+  "windowsSandbox/readiness",
+  "windowsSandbox/setupStart",
   "thread/search",
   "thread/settings/update",
 ]);
@@ -76,10 +111,14 @@ test("generated app-server schema snapshot covers critical client and server met
     "item/permissions/requestApproval",
     "item/tool/requestUserInput",
     "mcpServer/elicitation/request",
-    "attestation/generate",
-    "currentTime/read",
+    ...serverRequestMethodNames(),
   ]) {
     assert.equal(serverMethods.has(method), true, `missing server request ${method}`);
+  }
+
+  const serverNotifications = enumValues(await readJson(join(JSON_ROOT, "ServerNotification.json")));
+  for (const method of serverNotificationMethodNames()) {
+    assert.equal(serverNotifications.has(method), true, `missing server notification ${method}`);
   }
 });
 
@@ -94,6 +133,22 @@ test("integration policy names only generated client methods", async () => {
   const clientMethods = enumValues(await readJson(join(JSON_ROOT, "ClientRequest.json")));
   for (const method of integrationMethodNames()) {
     assert.equal(clientMethods.has(method), true, `integration policy method not in schema ${method}`);
+  }
+});
+
+test("server request and notification policy names only generated server methods", async () => {
+  const serverRequests = enumValues(await readJson(join(JSON_ROOT, "ServerRequest.json")));
+  for (const method of serverRequestMethodNames()) {
+    assert.equal(serverRequests.has(method), true, `server request policy method not in schema ${method}`);
+  }
+
+  const serverNotifications = enumValues(await readJson(join(JSON_ROOT, "ServerNotification.json")));
+  for (const method of serverNotificationMethodNames()) {
+    assert.equal(
+      serverNotifications.has(method),
+      true,
+      `server notification policy method not in schema ${method}`,
+    );
   }
 });
 

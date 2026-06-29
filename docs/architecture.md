@@ -28,9 +28,10 @@ after checking the official app docs, changelog, and `openai/codex` at
 `ccdfb4f342a2e659be7ab878309cc5d81683d737`. The protocol now exposes 335 JSON
 Schema files and adds remote-control, permission-profile, account-usage,
 environment, plugin checkout/install, skill extra-root, thread
-delete/search/settings/background-terminal, realtime speech, attestation,
-external-time, import-progress, model-safety-buffering, and turn-moderation
-surfaces.
+delete/search/settings/background-terminal, thread goal/memory/metadata,
+realtime audio/text/speech, review/feedback, filesystem read/watch, fuzzy file
+search, Windows sandbox, attestation, external-time, import-progress,
+model-safety-buffering, and turn-moderation surfaces.
 
 Plan adjustment: before implementing new parity work, classify each new method
 as read-only, local mutation, model-traffic, external-control,
@@ -58,9 +59,12 @@ matching one-time preflight token, resolves targets by suffix through
 metadata without full ids, names, previews, thread content, paths, tokens, or
 raw payloads.
 Remote-control mutations and pairing/client lists, environment add, plugin checkout/install, skills extra roots,
-thread settings, realtime speech, background terminal termination,
-attestation, and current-time requests are high-risk and must not be implicitly
-inherited from the updated schema.
+thread settings, thread goal/memory/metadata, realtime audio/text/speech,
+review/feedback, filesystem read/watch, fuzzy file search, Windows sandbox,
+background terminal termination, attestation, current-time requests, import
+progress, model safety, and moderation notifications are classified in local
+fail-closed policies and must not be implicitly inherited from the updated
+schema.
 
 ## Compatibility Fallback
 

@@ -56,6 +56,8 @@ import {
   blockedIntegrationMutationMethods,
   integrationMethodAudit,
   optInIntegrationReadMethods,
+  serverNotificationMethodNames,
+  serverRequestMethodNames,
 } from "../app-server/integration-policy.mjs";
 import {
   terminalActionMethodAudit,
@@ -26744,6 +26746,10 @@ export function sanitizeSettingsIntegrationsPayload(
       auditedMutationMethods: [],
       blockedMutationMethods: blockedIntegrationMutationMethods(),
       blockedMethodCount: methodAudit.filter((method) => method.status === "blocked").length,
+      auditedServerRequestMethods: serverRequestMethodNames(),
+      auditedServerNotificationMethods: serverNotificationMethodNames(),
+      blockedServerRequestMethodCount: serverRequestMethodNames().length,
+      blockedServerNotificationMethodCount: serverNotificationMethodNames().length,
     },
     surfaces: {
       settings: {
@@ -32850,6 +32856,10 @@ export function buildSettingsIntegrations({
       auditedMutationMethods: [],
       blockedMutationMethods: blockedIntegrationMutationMethods(),
       blockedMethodCount: methodAudit.filter((method) => method.status === "blocked").length,
+      auditedServerRequestMethods: serverRequestMethodNames(),
+      auditedServerNotificationMethods: serverNotificationMethodNames(),
+      blockedServerRequestMethodCount: serverRequestMethodNames().length,
+      blockedServerNotificationMethodCount: serverNotificationMethodNames().length,
     },
     surfaces: {
       settings: {

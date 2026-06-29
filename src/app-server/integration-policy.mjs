@@ -162,9 +162,135 @@ export const INTEGRATION_METHOD_AUDIT = Object.freeze([
     "blocked",
   ),
   integrationMethod(
-    "thread/realtime/appendSpeech",
+    "thread/turns/list",
+    "thread-read",
+    "Lists persisted turns for a thread and can expose content-derived metadata.",
+    "blocked",
+  ),
+  integrationMethod(
+    "thread/turns/items/list",
+    "thread-read",
+    "Lists persisted turn items and can expose content-derived metadata.",
+    "blocked",
+  ),
+  integrationMethod(
+    "thread/inject_items",
     "thread-lifecycle",
+    "Injects caller-provided items directly into a thread.",
+    "blocked",
+  ),
+  integrationMethod(
+    "thread/resume",
+    "thread-lifecycle",
+    "Resumes a thread turn and can trigger model traffic or session state changes.",
+    "blocked",
+  ),
+  integrationMethod(
+    "thread/metadata/update",
+    "thread-lifecycle",
+    "Mutates thread metadata and can persist caller-provided labels or values.",
+    "blocked",
+  ),
+  integrationMethod(
+    "thread/memoryMode/set",
+    "thread-lifecycle",
+    "Changes memory behavior for future thread turns.",
+    "blocked",
+  ),
+  integrationMethod(
+    "thread/goal/get",
+    "thread-goal",
+    "Reads active goal state that can contain user intent and workflow context.",
+    "blocked",
+  ),
+  integrationMethod(
+    "thread/goal/set",
+    "thread-goal",
+    "Writes active goal state for a thread.",
+    "blocked",
+  ),
+  integrationMethod(
+    "thread/goal/clear",
+    "thread-goal",
+    "Clears active goal state for a thread.",
+    "blocked",
+  ),
+  integrationMethod(
+    "thread/increment_elicitation",
+    "thread-elicitation",
+    "Mutates elicitation counters for a thread.",
+    "blocked",
+  ),
+  integrationMethod(
+    "thread/decrement_elicitation",
+    "thread-elicitation",
+    "Mutates elicitation counters for a thread.",
+    "blocked",
+  ),
+  integrationMethod(
+    "thread/approveGuardianDeniedAction",
+    "thread-lifecycle",
+    "Approves a previously denied guarded action and can alter safety state.",
+    "blocked",
+  ),
+  integrationMethod(
+    "thread/realtime/start",
+    "thread-realtime",
+    "Starts an experimental realtime session with transport, model, voice, and SDP inputs.",
+    "blocked",
+  ),
+  integrationMethod(
+    "thread/realtime/appendAudio",
+    "thread-realtime",
+    "Appends audio bytes to an experimental realtime thread session.",
+    "blocked",
+  ),
+  integrationMethod(
+    "thread/realtime/appendText",
+    "thread-realtime",
+    "Appends text to an experimental realtime thread session.",
+    "blocked",
+  ),
+  integrationMethod(
+    "thread/realtime/appendSpeech",
+    "thread-realtime",
     "Injects speech text into a realtime thread session.",
+    "blocked",
+  ),
+  integrationMethod(
+    "thread/realtime/stop",
+    "thread-realtime",
+    "Stops an experimental realtime thread session.",
+    "blocked",
+  ),
+  integrationMethod(
+    "thread/realtime/listVoices",
+    "thread-realtime",
+    "Reads experimental realtime voice metadata that must not be exposed until display-name rules exist.",
+    "blocked",
+  ),
+  integrationMethod(
+    "review/start",
+    "review",
+    "Starts a review workflow and can trigger model or repository analysis.",
+    "blocked",
+  ),
+  integrationMethod(
+    "feedback/upload",
+    "feedback",
+    "Uploads feedback and can include session, thread, or diagnostic context.",
+    "blocked",
+  ),
+  integrationMethod(
+    "memory/reset",
+    "memory-mutation",
+    "Resets persisted memory state.",
+    "blocked",
+  ),
+  integrationMethod(
+    "mock/experimentalMethod",
+    "experimental",
+    "Generated experimental placeholder method with no audited browser contract.",
     "blocked",
   ),
   integrationMethod(
@@ -330,12 +456,112 @@ export const INTEGRATION_METHOD_AUDIT = Object.freeze([
   ),
 ]);
 
+export const SERVER_REQUEST_METHOD_AUDIT = Object.freeze([
+  integrationMethod(
+    "attestation/generate",
+    "server-request",
+    "Generates an opaque upstream attestation token; the browser port must not service it.",
+    "blocked",
+  ),
+  integrationMethod(
+    "currentTime/read",
+    "server-request",
+    "Asks the client for external current-time data; browser handling would create a trust boundary.",
+    "blocked",
+  ),
+]);
+
+export const SERVER_NOTIFICATION_METHOD_AUDIT = Object.freeze([
+  integrationMethod(
+    "externalAgentConfig/import/progress",
+    "server-notification",
+    "Streams external-agent import progress that can include migration state or error context.",
+    "blocked",
+  ),
+  integrationMethod(
+    "model/safetyBuffering/updated",
+    "server-notification",
+    "Streams model safety buffering state that must remain internal until separately audited.",
+    "blocked",
+  ),
+  integrationMethod(
+    "turn/moderationMetadata",
+    "server-notification",
+    "Streams moderation metadata for a turn and must not reach the browser unsanitized.",
+    "blocked",
+  ),
+  integrationMethod(
+    "thread/realtime/started",
+    "server-notification",
+    "Realtime startup notification with session metadata.",
+    "blocked",
+  ),
+  integrationMethod(
+    "thread/realtime/itemAdded",
+    "server-notification",
+    "Realtime item notification that can carry raw backend item content.",
+    "blocked",
+  ),
+  integrationMethod(
+    "thread/realtime/transcript/delta",
+    "server-notification",
+    "Realtime transcript delta that can contain live speech text.",
+    "blocked",
+  ),
+  integrationMethod(
+    "thread/realtime/transcript/done",
+    "server-notification",
+    "Realtime transcript completion that can contain final speech text.",
+    "blocked",
+  ),
+  integrationMethod(
+    "thread/realtime/outputAudio/delta",
+    "server-notification",
+    "Realtime output audio bytes must not be browser-exposed without a media contract.",
+    "blocked",
+  ),
+  integrationMethod(
+    "thread/realtime/sdp",
+    "server-notification",
+    "Realtime SDP transport metadata must not cross the browser boundary unsanitized.",
+    "blocked",
+  ),
+  integrationMethod(
+    "thread/realtime/error",
+    "server-notification",
+    "Realtime error details can include transport or backend diagnostic context.",
+    "blocked",
+  ),
+  integrationMethod(
+    "thread/realtime/closed",
+    "server-notification",
+    "Realtime close details can include transport or backend diagnostic context.",
+    "blocked",
+  ),
+]);
+
 export function integrationMethodAudit() {
   return INTEGRATION_METHOD_AUDIT.map((entry) => ({ ...entry }));
 }
 
 export function integrationMethodNames() {
   return INTEGRATION_METHOD_AUDIT.map((entry) => entry.method);
+}
+
+export function serverRequestMethodAudit() {
+  return SERVER_REQUEST_METHOD_AUDIT.map((entry) => ({ ...entry }));
+}
+
+export function serverRequestMethodNames() {
+  return SERVER_REQUEST_METHOD_AUDIT.map((entry) => entry.method);
+}
+
+export function serverNotificationMethodAudit() {
+  return SERVER_NOTIFICATION_METHOD_AUDIT.map((entry) => ({ ...entry }));
+}
+
+export function serverNotificationMethodNames() {
+  return SERVER_NOTIFICATION_METHOD_AUDIT.map((entry) => entry.method);
 }
 
 export function optInIntegrationReadMethods() {
@@ -361,6 +587,13 @@ export function blockedIntegrationMutationMethods() {
       "remote-control",
       "remote-environment",
       "thread-lifecycle",
+      "thread-goal",
+      "thread-elicitation",
+      "thread-realtime",
+      "review",
+      "feedback",
+      "memory-mutation",
+      "experimental",
     ].includes(entry.category),
   ).map((entry) => entry.method);
 }

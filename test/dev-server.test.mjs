@@ -22,6 +22,8 @@ import {
   blockedIntegrationMutationMethods,
   integrationMethodNames,
   optInIntegrationReadMethods,
+  serverNotificationMethodNames,
+  serverRequestMethodNames,
 } from "../src/app-server/integration-policy.mjs";
 import { terminalActionMethodNames } from "../src/app-server/terminal-policy.mjs";
 import { createAppServerSessionManager } from "../src/app-server/session-manager.mjs";
@@ -17643,6 +17645,19 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.deepEqual(payload.appServer.auditedMutationMethods, []);
     assert.deepEqual(payload.appServer.blockedMutationMethods, blockedIntegrationMutationMethods());
     assert.equal(payload.appServer.blockedMethodCount > 0, true);
+    assert.deepEqual(payload.appServer.auditedServerRequestMethods, serverRequestMethodNames());
+    assert.deepEqual(
+      payload.appServer.auditedServerNotificationMethods,
+      serverNotificationMethodNames(),
+    );
+    assert.equal(
+      payload.appServer.blockedServerRequestMethodCount,
+      serverRequestMethodNames().length,
+    );
+    assert.equal(
+      payload.appServer.blockedServerNotificationMethodCount,
+      serverNotificationMethodNames().length,
+    );
     assert.equal(payload.surfaces.settings.state, "partial");
     assert.equal(payload.surfaces.settings.readOnlySummaryAvailable, true);
     assert.equal(payload.surfaces.settings.secretsReturned, false);
@@ -18170,6 +18185,9 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.policy.browserMethodCallsAccepted, false);
     assert.equal(payload.methodAudit.length, integrationMethodNames().length);
     assert.equal(payload.methodAudit.every((method) => method.browserEnabled === false || method.method === "config/read"), true);
+    assert.equal(payload.methodAudit.some((method) => method.method === "thread/realtime/start" && method.status === "blocked"), true);
+    assert.equal(payload.methodAudit.some((method) => method.method === "thread/turns/items/list" && method.status === "blocked"), true);
+    assert.equal(payload.methodAudit.some((method) => method.method === "feedback/upload" && method.status === "blocked"), true);
     assert.equal(serialized.includes("/tmp/default-workspace"), false);
     assert.equal(serialized.includes("/tmp/second-workspace"), false);
     assert.equal(serialized.includes("codexHome"), false);
@@ -19029,6 +19047,19 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
     assert.equal(payload.policy.integrationScopeReturned, true);
     assert.equal(payload.policy.browserMethodCallsAccepted, false);
     assert.equal(payload.methodAudit.length, integrationMethodNames().length);
+    assert.deepEqual(payload.appServer.auditedServerRequestMethods, serverRequestMethodNames());
+    assert.deepEqual(
+      payload.appServer.auditedServerNotificationMethods,
+      serverNotificationMethodNames(),
+    );
+    assert.equal(
+      payload.appServer.blockedServerRequestMethodCount,
+      serverRequestMethodNames().length,
+    );
+    assert.equal(
+      payload.appServer.blockedServerNotificationMethodCount,
+      serverNotificationMethodNames().length,
+    );
     assert.equal(payload.appServer.auditedReadMethods.includes("configRequirements/read"), true);
     assert.equal(payload.appServer.auditedReadMethods.includes("model/list"), true);
     assert.equal(
@@ -19059,6 +19090,9 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
     assert.equal(payload.methodAudit.some((method) => method.method === "externalAgentConfig/import/readHistories" && method.status === "opt-in-read"), true);
     assert.equal(payload.methodAudit.some((method) => method.method === "plugin/installed" && method.status === "opt-in-read"), true);
     assert.equal(payload.methodAudit.some((method) => method.method === "remoteControl/status/read" && method.status === "opt-in-read"), true);
+    assert.equal(payload.methodAudit.some((method) => method.method === "thread/realtime/start" && method.status === "blocked"), true);
+    assert.equal(payload.methodAudit.some((method) => method.method === "thread/goal/set" && method.status === "blocked"), true);
+    assert.equal(payload.methodAudit.some((method) => method.method === "review/start" && method.status === "blocked"), true);
     assert.equal(calls[0].cwd, "/tmp/default-workspace");
     assert.equal(calls[0].includeNames, false);
     for (const marker of [

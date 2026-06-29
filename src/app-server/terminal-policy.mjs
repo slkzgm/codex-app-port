@@ -64,6 +64,11 @@ export const TERMINAL_ACTION_METHOD_AUDIT = Object.freeze([
     "turn-control",
     "Interrupts a running turn and changes live session state.",
   ),
+  terminalMethod("fs/getMetadata", "filesystem-read", "Reads filesystem metadata through app-server."),
+  terminalMethod("fs/readDirectory", "filesystem-read", "Reads directory entries through app-server."),
+  terminalMethod("fs/readFile", "filesystem-read", "Reads file contents through app-server."),
+  terminalMethod("fs/watch", "filesystem-watch", "Starts a filesystem watcher through app-server."),
+  terminalMethod("fs/unwatch", "filesystem-watch", "Stops a filesystem watcher through app-server."),
   terminalMethod("fs/writeFile", "filesystem-write", "Writes file contents through app-server."),
   terminalMethod("fs/remove", "filesystem-write", "Removes filesystem entries through app-server."),
   terminalMethod("fs/copy", "filesystem-write", "Copies filesystem entries through app-server."),
@@ -71,6 +76,31 @@ export const TERMINAL_ACTION_METHOD_AUDIT = Object.freeze([
     "fs/createDirectory",
     "filesystem-write",
     "Creates filesystem directories through app-server.",
+  ),
+  terminalMethod(
+    "fuzzyFileSearch/sessionStart",
+    "filesystem-search",
+    "Starts a fuzzy file search session that can reveal workspace paths and filenames.",
+  ),
+  terminalMethod(
+    "fuzzyFileSearch/sessionUpdate",
+    "filesystem-search",
+    "Updates a fuzzy file search query that can reveal workspace paths and filenames.",
+  ),
+  terminalMethod(
+    "fuzzyFileSearch/sessionStop",
+    "filesystem-search",
+    "Stops a fuzzy file search session.",
+  ),
+  terminalMethod(
+    "windowsSandbox/readiness",
+    "windows-sandbox",
+    "Reads Windows sandbox readiness state outside the Linux port boundary.",
+  ),
+  terminalMethod(
+    "windowsSandbox/setupStart",
+    "windows-sandbox",
+    "Starts Windows sandbox setup outside the Linux port boundary.",
   ),
 ]);
 

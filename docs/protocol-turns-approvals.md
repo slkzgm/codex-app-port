@@ -50,7 +50,37 @@ New client request methods:
 - `thread/backgroundTerminals/list`
 - `thread/backgroundTerminals/terminate`
 - `thread/delete`
+- `thread/turns/list`
+- `thread/turns/items/list`
+- `thread/inject_items`
+- `thread/resume`
+- `thread/metadata/update`
+- `thread/memoryMode/set`
+- `thread/goal/get`
+- `thread/goal/set`
+- `thread/goal/clear`
+- `thread/increment_elicitation`
+- `thread/decrement_elicitation`
+- `thread/approveGuardianDeniedAction`
+- `thread/realtime/start`
+- `thread/realtime/appendAudio`
+- `thread/realtime/appendText`
 - `thread/realtime/appendSpeech`
+- `thread/realtime/stop`
+- `thread/realtime/listVoices`
+- `review/start`
+- `feedback/upload`
+- `memory/reset`
+- `fs/getMetadata`
+- `fs/readDirectory`
+- `fs/readFile`
+- `fs/watch`
+- `fs/unwatch`
+- `fuzzyFileSearch/sessionStart`
+- `fuzzyFileSearch/sessionUpdate`
+- `fuzzyFileSearch/sessionStop`
+- `windowsSandbox/readiness`
+- `windowsSandbox/setupStart`
 - `thread/search`
 - `thread/settings/update`
 
@@ -96,7 +126,9 @@ calling `environment/add`. Browser-supplied timeout or extra app-server
 parameters are rejected; the server fixes `connectTimeoutMs` to `null`.
 Responses and action audit records expose only status/count/shape metadata,
 with no environment ids, exec-server URLs, paths, tokens, or raw payloads. The
-other refreshed 0.142 methods remain blocked until separately audited.
+other refreshed 0.142 client methods are now classified in local policy as
+blocked; `/api/settings-integrations` exposes only method names/counts and no
+browser route executes them until separately audited.
 
 New server request methods and request-shape changes:
 
@@ -105,6 +137,9 @@ New server request methods and request-shape changes:
 - `mcpServer/elicitation/request` can now carry the `openai/form` mode when
   clients opt into OpenAI form elicitation.
 
+Local status: `attestation/generate` and `currentTime/read` are explicitly
+listed in the server-request audit and the browser port does not service them.
+
 New server notifications:
 
 - `externalAgentConfig/import/progress`
@@ -112,6 +147,19 @@ New server notifications:
 - `thread/deleted`
 - `thread/settings/updated`
 - `turn/moderationMetadata`
+- `thread/realtime/started`
+- `thread/realtime/itemAdded`
+- `thread/realtime/transcript/delta`
+- `thread/realtime/transcript/done`
+- `thread/realtime/outputAudio/delta`
+- `thread/realtime/sdp`
+- `thread/realtime/error`
+- `thread/realtime/closed`
+
+Local status: import-progress, model-safety, turn-moderation, and realtime
+notifications are explicitly listed in the server-notification audit. Existing
+browser streams keep their separate sanitizers and do not expose raw realtime
+transport, audio, moderation, or import payloads.
 
 Implication for this port: keep all new mutation/control-plane methods blocked
 until each has a dedicated route, preflight, allowlist, audit record, and

@@ -21,6 +21,8 @@ import {
   blockedIntegrationMutationMethods,
   integrationMethodNames,
   optInIntegrationReadMethods,
+  serverNotificationMethodNames,
+  serverRequestMethodNames,
 } from "../src/app-server/integration-policy.mjs";
 import { terminalActionMethodNames } from "../src/app-server/terminal-policy.mjs";
 import { createAppServerSessionManager } from "../src/app-server/session-manager.mjs";
@@ -441,9 +443,19 @@ async function checkProtocolContracts() {
     "item/commandExecution/requestApproval",
     "item/fileChange/requestApproval",
     "item/permissions/requestApproval",
+    ...serverRequestMethodNames(),
   ]) {
     if (!serverRequest.includes(marker)) {
       throw new Error(`generated server protocol schema missing ${marker}`);
+    }
+  }
+  const serverNotification = await readFile(
+    join(ROOT, "src", "app-server", "generated-schemas", "json", "ServerNotification.json"),
+    "utf8",
+  );
+  for (const marker of serverNotificationMethodNames()) {
+    if (!serverNotification.includes(marker)) {
+      throw new Error(`generated server notification schema missing ${marker}`);
     }
   }
   pass("app-server protocol contracts include generated schema snapshot");
@@ -28221,6 +28233,16 @@ function assertSanitizedSettingsIntegrations(payload) {
     throw new Error("settings integrations unexpectedly enabled app-server behavior");
   }
   if (
+    JSON.stringify(payload.appServer?.auditedServerRequestMethods ?? []) !==
+      JSON.stringify(serverRequestMethodNames()) ||
+    JSON.stringify(payload.appServer?.auditedServerNotificationMethods ?? []) !==
+      JSON.stringify(serverNotificationMethodNames()) ||
+    payload.appServer?.blockedServerRequestMethodCount !== serverRequestMethodNames().length ||
+    payload.appServer?.blockedServerNotificationMethodCount !== serverNotificationMethodNames().length
+  ) {
+    throw new Error("settings integrations did not expose sanitized server-side method audit metadata");
+  }
+  if (
     payload.surfaces?.settings?.state !== "partial" ||
     payload.surfaces?.settings?.readOnlySummaryAvailable !== true ||
     payload.surfaces?.settings?.mutationEnabled !== false ||
@@ -28457,7 +28479,16 @@ function assertSanitizedSettingsIntegrations(payload) {
   }
   if (
     payload.methodAudit?.length !== integrationMethodNames().length ||
-    payload.methodAudit.some((method) => method.method !== "config/read" && method.browserEnabled !== false)
+    payload.methodAudit.some((method) => method.method !== "config/read" && method.browserEnabled !== false) ||
+    !payload.methodAudit.some(
+      (method) => method.method === "thread/realtime/start" && method.status === "blocked",
+    ) ||
+    !payload.methodAudit.some(
+      (method) => method.method === "thread/turns/items/list" && method.status === "blocked",
+    ) ||
+    !payload.methodAudit.some(
+      (method) => method.method === "feedback/upload" && method.status === "blocked",
+    )
   ) {
     throw new Error("settings integrations method audit did not stay fail-closed");
   }
@@ -29728,6 +29759,16 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
     throw new Error("settings integrations inventory did not expose audited read methods");
   }
   if (
+    JSON.stringify(payload.appServer?.auditedServerRequestMethods ?? []) !==
+      JSON.stringify(serverRequestMethodNames()) ||
+    JSON.stringify(payload.appServer?.auditedServerNotificationMethods ?? []) !==
+      JSON.stringify(serverNotificationMethodNames()) ||
+    payload.appServer?.blockedServerRequestMethodCount !== serverRequestMethodNames().length ||
+    payload.appServer?.blockedServerNotificationMethodCount !== serverNotificationMethodNames().length
+  ) {
+    throw new Error("settings integrations inventory did not expose server-side method audit metadata");
+  }
+  if (
     payload.integrationScope?.returned !== true ||
     payload.integrationScope?.state !== "partial" ||
     payload.integrationScope?.enabledReadMethodCount !==
@@ -29896,6 +29937,15 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
     ) ||
     !payload.methodAudit.some(
       (method) => method.method === "hooks/list" && method.status === "opt-in-read",
+    ) ||
+    !payload.methodAudit.some(
+      (method) => method.method === "thread/realtime/start" && method.status === "blocked",
+    ) ||
+    !payload.methodAudit.some(
+      (method) => method.method === "thread/goal/set" && method.status === "blocked",
+    ) ||
+    !payload.methodAudit.some(
+      (method) => method.method === "review/start" && method.status === "blocked",
     )
   ) {
     throw new Error("settings integrations inventory method audit did not preserve blocked methods");
