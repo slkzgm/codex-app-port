@@ -75,5 +75,12 @@ Target parity with the Codex desktop workflow:
   `thread/fork` only with `excludeTurns: true`, and returns only source suffix,
   forked suffix, status/method metadata, and exclude-turns state, not full ids,
   names, previews, paths, thread content, preflight tokens, or raw payloads.
+- `thread/rollback` has a separate disabled-by-default destructive
+  `POST /api/thread-rollback-action` path behind
+  `CODEX_APP_PORT_ALLOW_THREAD_ROLLBACK=1`; it consumes a matching one-time
+  preflight token, resolves the target by suffix through `thread/list`, calls
+  `thread/rollback` only with a bounded `numTurns` count, and returns only
+  suffix/status/method/count metadata, not full ids, names, previews, paths,
+  thread content, preflight tokens, or raw payloads.
 - The referenced unofficial Linux port converts the macOS DMG into a Linux
   Electron bundle and patches/stubs platform-specific pieces.

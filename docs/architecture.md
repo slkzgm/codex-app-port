@@ -179,7 +179,7 @@ Current M1 status:
   one-time preflight requirements without prompts, full ids, paths, tokens,
   thread content, or raw app-server payloads
 - done: sanitized append-only action audit log for successful thread creation,
-  thread archive/unarchive actions, thread deletion, thread forking, thread renaming, thread compaction starts, individual and
+  thread archive/unarchive actions, thread deletion, thread forking, thread renaming, thread rollback actions, thread compaction starts, individual and
   bulk live-session controls, allowlisted terminal command executions,
   background terminal cleanup requests, and local file actions launched through
   `scripts/dev-server.mjs`, with appendability checked before app-server or
@@ -202,6 +202,14 @@ Current M1 status:
   `thread/unarchive` only, no model traffic, sanitized suffix/state/method
   response metadata, and sanitized action audit records without names,
   previews, transcript content, full ids, cwd, paths, or raw app-server payloads
+- done: opt-in `/api/thread-rollback-action` path behind
+  `CODEX_APP_PORT_ALLOW_THREAD_ROLLBACK=1`, with matching one-time
+  thread-rollback-preflight token consumption, route-specific nested response
+  schemas, suffix resolution through `thread/list`, `thread/rollback` only with
+  bounded `numTurns`, no model traffic, sanitized suffix/count/status/method
+  response metadata, and sanitized action audit records without names,
+  previews, transcript content, full ids, cwd, paths, returned turn content, or
+  raw app-server payloads
 - done: opt-in `/api/thread-compact-start` path behind both
   `CODEX_APP_PORT_ALLOW_THREAD_COMPACT=1` and
   `CODEX_APP_PORT_ALLOW_SESSION_MANAGER=1`, with matching one-time
@@ -211,7 +219,7 @@ Current M1 status:
   sanitized action audit records without prompt text, transcript content, full
   ids, cwd, paths, or raw app-server payloads
 - done: capped process-local thread lifecycle action history exposed through
-  `/api/execution-gate` and the UI for start/archive/delete/fork/rename/compact actions, with only
+  `/api/execution-gate` and the UI for start/archive/delete/fork/rename/rollback/compact actions, with only
   suffix/count/status/token-consumed/audit metadata and no prompts, tokens, full
   ids, cwd, paths, names, previews, transcript content, or raw app-server
   payloads

@@ -886,6 +886,7 @@
                 <select id="integration-method-select">
                   <option value="account/rateLimitResetCredit/consume">account/rateLimitResetCredit/consume</option>
                   <option value="thread/delete">thread/delete</option>
+                  <option value="thread/rollback">thread/rollback</option>
                   <option value="thread/settings/update">thread/settings/update</option>
                   <option value="thread/realtime/appendSpeech">thread/realtime/appendSpeech</option>
                   <option value="account/login/start">account/login/start</option>
@@ -1049,10 +1050,21 @@
             <button id="thread-rename-button" class="secondary-button" type="button" disabled>
               Rename
             </button>
+            <label class="search-control" for="thread-rollback-turns-input">
+              <span>Turns</span>
+              <input id="thread-rollback-turns-input" type="number" min="1" max="50" step="1" value="1" disabled />
+            </label>
+            <button id="thread-rollback-preflight-button" class="secondary-button" type="button" disabled>
+              Rollback Check
+            </button>
+            <button id="thread-rollback-button" class="secondary-button" type="button" disabled>
+              Rollback
+            </button>
           </div>
           <p id="thread-archive-status" class="empty-state">Select a thread to manage archive state.</p>
           <p id="thread-fork-status" class="empty-state">Select a thread to fork.</p>
           <p id="thread-rename-status" class="empty-state">Select a thread to rename.</p>
+          <p id="thread-rollback-status" class="empty-state">Select a thread to roll back.</p>
           <p id="thread-delete-status" class="empty-state">Select a thread to delete.</p>
           <p id="thread-compact-status" class="empty-state">Select a loaded active thread to compact.</p>
           <dl id="thread-detail-meta" class="agent-grid"></dl>

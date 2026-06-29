@@ -217,6 +217,12 @@ The server binds to `127.0.0.1` by default and serves:
   `CODEX_APP_PORT_ALLOW_THREAD_RENAME=1` and a matching one-time preflight
   token; responses omit the name text, full ids, previews, cwd, paths,
   conversation content, raw app-server payloads, and preflight tokens
+- `/api/thread-rollback-preflight` and `/api/thread-rollback-action`: local
+  rollback validation plus opt-in app-server `thread/rollback` behind
+  `CODEX_APP_PORT_ALLOW_THREAD_ROLLBACK=1` and a matching one-time preflight
+  token; execution resolves the suffix through `thread/list`, sends only
+  `threadId` plus bounded `numTurns`, and omits full ids, names, previews, cwd,
+  paths, conversation content, raw app-server payloads, and preflight tokens
 - `/api/thread-compact-preflight` and `/api/thread-compact-start`: local
   compaction validation plus opt-in persistent app-server
   `thread/compact/start` behind `CODEX_APP_PORT_ALLOW_THREAD_COMPACT=1`,
@@ -990,6 +996,18 @@ suffix, name character/line counts, method, status, and policy metadata only.
 They do not return the name text, full ids, previews, transcript content, cwd,
 paths, raw app-server payloads, or preflight tokens.
 
+The thread rollback preflight endpoint validates only a selected thread suffix
+and a turn count from 1 to 50, then returns a local token without touching
+app-server. The matching `/api/thread-rollback-action` route is disabled unless
+`CODEX_APP_PORT_ALLOW_THREAD_ROLLBACK=1` is set; when enabled, it consumes the
+one-time token, resolves the suffix through `thread/list`, and calls only
+`thread/rollback` with `numTurns`. Browser responses and sanitized action audit
+records return suffix, turn count, returned-turn count, method, status, and
+policy metadata only. They do not return full ids, names, previews, transcript
+content, cwd, paths, raw app-server payloads, raw returned turns, or preflight
+tokens. This rolls back conversation history only and does not revert workspace
+files.
+
 The thread compact preflight endpoint validates only a selected thread suffix
 and returns a local token without touching app-server. The matching
 `/api/thread-compact-start` route is disabled unless both
@@ -1002,9 +1020,9 @@ suffix, loaded-session count, method, status, and policy metadata. They do not
 return prompt text, full ids, transcript content, cwd, paths, raw app-server
 payloads, or preflight tokens.
 
-Successful thread start/archive/delete/fork/rename/compact actions are also visible in the
+Successful thread start/archive/delete/fork/rename/rollback/compact actions are also visible in the
 Execution Gate panel through a capped process-local lifecycle history. The
-history keeps only action type/method, thread suffix, archive/delete/fork/rename/model-traffic
+history keeps only action type/method, thread suffix, archive/delete/fork/rename/rollback/model-traffic
 status, safe counts, token-consumed state, and audit flags. It omits preflight
 tokens, prompts, full ids, cwd, paths, names, previews, transcript content, and
 raw app-server payloads.
@@ -1458,7 +1476,7 @@ Current UI scope:
 - active-session operations UI summary for inventory/control/bulk/routing state
   without prompts, tokens, full ids, paths, thread content, or raw payloads
 - blocked execution-gate status for future approvals
-- process-local thread lifecycle action history for start/archive/delete/fork/rename/compact with
+- process-local thread lifecycle action history for start/archive/delete/fork/rename/rollback/compact with
   suffix/status/count/token-consumed/audit metadata only
 - deny-only browser approval decision intake without app-server forwarding
 - request-scoped approval policy UI showing local deny, forwarded deny,

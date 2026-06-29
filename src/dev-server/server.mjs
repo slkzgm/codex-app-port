@@ -35,6 +35,7 @@ import {
   runThreadDetailProbe,
   runThreadForkProbe,
   runThreadRenameProbe,
+  runThreadRollbackProbe,
   runThreadSearchProbe,
   runThreadStartProbe,
   runThreadTranscriptProbe,
@@ -77,6 +78,7 @@ export const MAX_JSON_BODY_BYTES = 16 * 1024;
 export const MAX_TURN_PROMPT_CHARS = 4_000;
 export const MAX_THREAD_SEARCH_TERM_CHARS = 200;
 export const MAX_THREAD_RENAME_CHARS = 120;
+export const MAX_THREAD_ROLLBACK_TURNS = 50;
 export const MAX_TERMINAL_COMMAND_CHARS = 2_000;
 export const MAX_TERMINAL_COMMAND_ARGS = 24;
 export const MAX_TERMINAL_COMMAND_ARG_CHARS = 240;
@@ -168,6 +170,11 @@ export const BROWSER_POST_FIELD_POLICIES = Object.freeze({
     maxChars: MAX_THREAD_RENAME_CHARS,
     returnedRawValue: false,
     sensitivity: "user-authored-text",
+  }),
+  numTurns: bodyFieldPolicy(["string", "number"], {
+    maxChars: 8,
+    returnedRawValue: false,
+    sensitivity: "thread-history-count",
   }),
   archived: bodyFieldPolicy(["boolean", "null"], {
     returnedRawValue: false,
@@ -364,6 +371,13 @@ export const ACTION_PREFLIGHT_CONFIRMATION_FIELD_CONTRACTS = Object.freeze({
     "preflightToken",
     "thread",
     "name",
+  ),
+  "thread-rollback-preflight": bodyFields(
+    "workspace",
+    "actionType",
+    "preflightToken",
+    "thread",
+    "numTurns",
   ),
   "thread-compact-preflight": bodyFields("workspace", "actionType", "preflightToken", "thread"),
   "account-login-preflight": bodyFields("workspace", "actionType", "preflightToken"),
@@ -637,6 +651,17 @@ export const BROWSER_POST_BODY_CONTRACTS = Object.freeze({
     kind: "mutation",
     requiresPreflightToken: true,
   }),
+  "/api/thread-rollback-preflight": bodyContract(["workspace", "thread", "numTurns"], {
+    kind: "preflight",
+    appServerTraffic: false,
+  }),
+  "/api/thread-rollback-action": bodyContract(
+    ["workspace", "thread", "numTurns", "preflightToken"],
+    {
+      kind: "mutation",
+      requiresPreflightToken: true,
+    },
+  ),
   "/api/thread-compact-preflight": bodyContract(["workspace", "thread"], {
     kind: "preflight",
     appServerTraffic: false,
@@ -3007,6 +3032,158 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
       "commandTraffic",
       "threadStateMutated",
       "threadRenamed",
+      "turnStarted",
+      "promptTextReturned",
+      "threadContentReturned",
+      "fullIdsReturned",
+      "pathsReturned",
+      "namesReturned",
+      "previewsReturned",
+      "rawPayloadReturned",
+      "requiresExplicitEnablement",
+      "executionRouteImplemented",
+      "executionGateEnabled",
+      "preflightTokenConsumed",
+      "auditLogPersistent",
+      "auditLogWritableChecked",
+      "auditLogWritten",
+      "auditLogPathReturned",
+      "browserMethodCallsAccepted",
+      "implemented",
+      "requiresExplicitExecutionGate",
+    ],
+  }),
+  "/api/thread-rollback-preflight": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    appServer: ["touched", "modelTraffic", "commandTraffic"],
+    action: [
+      "type",
+      "method",
+      "execution",
+      "wouldRollbackThread",
+      "threadRolledBack",
+      "threadStateMutated",
+      "appServerTouched",
+      "reason",
+    ],
+    thread: [
+      "threadIdSuffix",
+      "numTurns",
+      "fullIdsReturned",
+      "contentReturned",
+      "namesReturned",
+      "previewsReturned",
+      "pathsReturned",
+    ],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "modelTraffic",
+      "commandTraffic",
+      "threadStateMutated",
+      "threadRolledBack",
+      "turnStarted",
+      "promptTextReturned",
+      "threadContentReturned",
+      "fullIdsReturned",
+      "pathsReturned",
+      "namesReturned",
+      "previewsReturned",
+      "rawPayloadReturned",
+      "requiresExplicitEnablement",
+      "executionRouteImplemented",
+      "executionGateEnabled",
+      "browserMethodCallsAccepted",
+      "implemented",
+    ],
+    preflight: [
+      "token",
+      "tokenIssued",
+      "issuedAt",
+      "expiresAt",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseRequiredForMutation",
+      "consumed",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+  }),
+  "/api/thread-rollback-action": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    initialize: ["platformFamily", "platformOs"],
+    appServer: ["touched", "modelTraffic", "commandTraffic", "auditedMethods"],
+    action: [
+      "type",
+      "method",
+      "execution",
+      "wouldRollbackThread",
+      "threadRolledBack",
+      "threadStateMutated",
+      "appServerTouched",
+      "modelTraffic",
+      "reason",
+    ],
+    thread: [
+      "threadIdSuffix",
+      "numTurns",
+      "returnedTurnCount",
+      "fullIdsReturned",
+      "contentReturned",
+      "namesReturned",
+      "previewsReturned",
+      "pathsReturned",
+    ],
+    target: [
+      "threadIdSuffix",
+      "numTurns",
+      "rolledBack",
+      "returnedTurnCount",
+      "fullIdsReturned",
+      "pathsReturned",
+    ],
+    probes: ["threadRollback"],
+    "probes.threadRollback": [
+      "method",
+      "threadIdSuffix",
+      "numTurns",
+      "status",
+      "returnedTurnCount",
+      "methodsUsed",
+      "threadContentReturned",
+      "fullIdsReturned",
+      "cwdReturned",
+      "pathsReturned",
+      "namesReturned",
+      "previewsReturned",
+      "rawPayloadReturned",
+    ],
+    result: [
+      "status",
+      "rolledBack",
+      "numTurns",
+      "returnedTurnCount",
+      "fullIdsReturned",
+      "threadContentReturned",
+    ],
+    preflight: [
+      "tokenConsumed",
+      "tokenReturned",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseEnforced",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "modelTraffic",
+      "commandTraffic",
+      "threadStateMutated",
+      "threadRolledBack",
       "turnStarted",
       "promptTextReturned",
       "threadContentReturned",
@@ -7361,6 +7538,16 @@ const BROWSER_POST_RESPONSE_ROUTE_TOP_LEVEL_KEYS = Object.freeze({
     "name",
     "result",
   ),
+  "/api/thread-rollback-preflight": routeResponseTopLevelKeys(
+    ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
+    "thread",
+  ),
+  "/api/thread-rollback-action": routeResponseTopLevelKeys(
+    ...RESPONSE_APP_SERVER_MUTATION_TOP_LEVEL_KEYS,
+    "target",
+    "thread",
+    "result",
+  ),
   "/api/thread-compact-preflight": routeResponseTopLevelKeys(
     ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
     "thread",
@@ -7866,6 +8053,7 @@ export function createDevServer({
   threadDeleteFn = runThreadDeleteProbe,
   threadForkFn = runThreadForkProbe,
   threadRenameFn = runThreadRenameProbe,
+  threadRollbackFn = runThreadRollbackProbe,
   accountLoginCancelFn = runAccountLoginCancelProbe,
   accountLoginStartFn = runAccountLoginStartProbe,
   accountLogoutFn = runAccountLogoutProbe,
@@ -7906,6 +8094,7 @@ export function createDevServer({
   threadDeleteEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_DELETE === "1",
   threadForkEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_FORK === "1",
   threadRenameEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_RENAME === "1",
+  threadRollbackEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_ROLLBACK === "1",
   threadCompactEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_COMPACT === "1",
   accountLoginCancelEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN_CANCEL === "1",
   accountLoginEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN === "1",
@@ -8014,6 +8203,7 @@ export function createDevServer({
       threadDeleteFn,
       threadForkFn,
       threadRenameFn,
+      threadRollbackFn,
       accountLoginCancelFn,
       accountLoginStartFn,
       accountLogoutFn,
@@ -8053,6 +8243,7 @@ export function createDevServer({
       threadDeleteEnabled,
       threadForkEnabled,
       threadRenameEnabled,
+      threadRollbackEnabled,
       threadCompactEnabled,
       accountLoginCancelEnabled,
       accountLoginEnabled,
@@ -8654,6 +8845,100 @@ export async function handleRequest(request, response, options) {
       sendJson(response, error.statusCode ?? 400, {
         ok: false,
         error: cleanDisplayText(error.message, 200) ?? "Invalid thread rename request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/thread-rollback-preflight") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, ["workspace", "thread", "numTurns"]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const payload = buildThreadRollbackPreflight(body, {
+        workspace,
+        threadRollbackEnabled: options.threadRollbackEnabled,
+      });
+      sendJson(response, 200, attachActionPreflight(payload, { body, workspace, options }));
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid thread rollback preflight request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/thread-rollback-action") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, [
+        "workspace",
+        "thread",
+        "numTurns",
+        "preflightToken",
+      ]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const preflightBody = stripActionPreflightControlFields(body);
+      const preflightPayload = buildThreadRollbackPreflight(preflightBody, {
+        workspace,
+        threadRollbackEnabled: options.threadRollbackEnabled,
+      });
+      if (!preflightPayload.policy.executionGateEnabled) {
+        sendJson(response, 403, buildThreadRollbackBlocked(preflightPayload));
+        return;
+      }
+      const consumedPreflight = options.preflightRegistry.consume({
+        token: validateActionPreflightToken(body.preflightToken),
+        kind: preflightPayload.action.type,
+        workspace,
+        intent: actionPreflightIntent(preflightBody, preflightPayload),
+      });
+      const auditLogWritableChecked = ensureActionAuditLogWritable(options.actionAuditLog);
+      const payload = await options.threadRollbackFn({
+        codexBin: options.codexBin,
+        cwd: workspace.cwd,
+        timeoutMs: options.timeoutMs,
+        threadIdSuffix: preflightPayload.thread.threadIdSuffix,
+        numTurns: preflightPayload.thread.numTurns,
+      });
+      const sanitized = sanitizeThreadRollbackPayload(payload, {
+        workspace,
+        consumedPreflight,
+        actionAuditLog: options.actionAuditLog,
+        auditLogWritableChecked,
+      });
+      sanitized.policy.auditLogWritten = writeActionAuditLog(options.actionAuditLog, sanitized);
+      options.threadLifecycleActionLedger?.record(sanitized);
+      sendJson(response, 200, sanitized);
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid thread rollback request",
       });
     }
     return;
@@ -12563,6 +12848,11 @@ async function buildConfirmableActionPreflightPayload(actionType, body, { worksp
         workspace,
         threadRenameEnabled: options.threadRenameEnabled,
       });
+    case "thread-rollback-preflight":
+      return buildThreadRollbackPreflight(body, {
+        workspace,
+        threadRollbackEnabled: options.threadRollbackEnabled,
+      });
     case "thread-compact-preflight":
       return buildThreadCompactPreflight(body, {
         workspace,
@@ -12889,6 +13179,8 @@ function actionAuditEvent(record) {
       return "thread-fork-recorded";
     case "thread-rename":
       return "thread-rename-recorded";
+    case "thread-rollback":
+      return "thread-rollback-recorded";
     case "thread-start":
       return "thread-start-recorded";
     case "live-session-bulk-control":
@@ -22921,6 +23213,183 @@ export function buildThreadRenameBlocked(preflightPayload) {
   };
 }
 
+export function sanitizeThreadRollbackPayload(
+  payload,
+  { workspace = null, consumedPreflight, actionAuditLog = null, auditLogWritableChecked = false } = {},
+) {
+  const threadRollback = sanitizeThreadRollbackProbe(payload?.probes?.threadRollback);
+  return {
+    ok: Boolean(payload?.ok),
+    generatedAt: payload?.generatedAt ?? new Date().toISOString(),
+    transport: cleanDisplayText(payload?.transport, 80),
+    protocol: cleanDisplayText(payload?.protocol, 80),
+    initialize: sanitizeInitialize(payload?.initialize),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: true,
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: threadRollback.methodsUsed,
+    },
+    action: {
+      type: "thread-rollback",
+      method: "thread/rollback",
+      execution: "rolled-back",
+      wouldRollbackThread: true,
+      threadRolledBack: true,
+      threadStateMutated: true,
+      appServerTouched: true,
+      modelTraffic: false,
+    },
+    preflight: buildConsumedPreflightSummary(consumedPreflight),
+    thread: {
+      threadIdSuffix: threadRollback.threadIdSuffix,
+      numTurns: threadRollback.numTurns,
+      returnedTurnCount: threadRollback.returnedTurnCount,
+      fullIdsReturned: false,
+      contentReturned: false,
+      namesReturned: false,
+      previewsReturned: false,
+      pathsReturned: false,
+    },
+    target: {
+      threadIdSuffix: threadRollback.threadIdSuffix,
+      numTurns: threadRollback.numTurns,
+      rolledBack: true,
+      returnedTurnCount: threadRollback.returnedTurnCount,
+      fullIdsReturned: false,
+      pathsReturned: false,
+    },
+    probes: {
+      threadRollback,
+    },
+    result: {
+      status: threadRollback.status,
+      rolledBack: true,
+      numTurns: threadRollback.numTurns,
+      returnedTurnCount: threadRollback.returnedTurnCount,
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    },
+    policy: {
+      readOnly: false,
+      appServerTraffic: true,
+      modelTraffic: false,
+      commandTraffic: false,
+      threadStateMutated: true,
+      threadRolledBack: true,
+      turnStarted: false,
+      promptTextReturned: false,
+      threadContentReturned: false,
+      fullIdsReturned: false,
+      pathsReturned: false,
+      namesReturned: false,
+      previewsReturned: false,
+      rawPayloadReturned: false,
+      requiresExplicitEnablement: true,
+      executionRouteImplemented: true,
+      executionGateEnabled: true,
+      preflightTokenConsumed: true,
+      auditLogPersistent: Boolean(actionAuditLog?.persistent),
+      auditLogWritableChecked: Boolean(auditLogWritableChecked),
+      auditLogWritten: false,
+      auditLogPathReturned: false,
+      browserMethodCallsAccepted: true,
+      implemented: true,
+      requiresExplicitExecutionGate: true,
+    },
+    notifications: sanitizeNotificationCounts(payload?.notifications),
+  };
+}
+
+export function buildThreadRollbackPreflight(
+  body,
+  { workspace, threadRollbackEnabled = false } = {},
+) {
+  const threadIdSuffix = validateThreadSuffix(body?.thread);
+  const numTurns = validateThreadRollbackTurns(body?.numTurns);
+  const enabled = Boolean(threadRollbackEnabled);
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: publicWorkspaces([workspace])[0],
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+    },
+    action: {
+      type: "thread-rollback-preflight",
+      method: "thread/rollback",
+      execution: "blocked",
+      wouldRollbackThread: false,
+      threadRolledBack: false,
+      threadStateMutated: false,
+      appServerTouched: false,
+      reason: enabled
+        ? "thread-rollback-requires-confirmation"
+        : "thread-rollback-requires-opt-in",
+    },
+    thread: {
+      threadIdSuffix,
+      numTurns,
+      fullIdsReturned: false,
+      contentReturned: false,
+      namesReturned: false,
+      previewsReturned: false,
+      pathsReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      threadStateMutated: false,
+      threadRolledBack: false,
+      turnStarted: false,
+      promptTextReturned: false,
+      threadContentReturned: false,
+      fullIdsReturned: false,
+      pathsReturned: false,
+      namesReturned: false,
+      previewsReturned: false,
+      rawPayloadReturned: false,
+      requiresExplicitEnablement: true,
+      executionRouteImplemented: true,
+      executionGateEnabled: enabled,
+      browserMethodCallsAccepted: false,
+      implemented: false,
+    },
+  };
+}
+
+export function buildThreadRollbackBlocked(preflightPayload) {
+  return {
+    ...preflightPayload,
+    ok: false,
+    error:
+      "Thread rollback is disabled. Set CODEX_APP_PORT_ALLOW_THREAD_ROLLBACK=1 before starting the dev server.",
+    action: {
+      ...preflightPayload.action,
+      execution: "blocked",
+      wouldRollbackThread: false,
+      threadRolledBack: false,
+      threadStateMutated: false,
+      appServerTouched: false,
+      reason: "thread-rollback-disabled",
+    },
+    policy: {
+      ...preflightPayload.policy,
+      appServerTraffic: false,
+      threadStateMutated: false,
+      threadRolledBack: false,
+      executionGateEnabled: false,
+      browserMethodCallsAccepted: false,
+      implemented: false,
+    },
+  };
+}
+
 export function buildThreadDeletePreflight(
   body,
   { workspace, threadDeleteEnabled = false } = {},
@@ -23092,6 +23561,7 @@ function sanitizeThreadLifecycleActionHistory(records) {
         item.action?.threadForked ||
         item.action?.threadStateMutated ||
         item.action?.threadDeleted ||
+        item.action?.threadRolledBack ||
         item.action?.threadCompactionStarted,
     ),
     preflightTokensReturned: false,
@@ -23115,6 +23585,7 @@ function sanitizeThreadLifecycleActionHistoryRecord(record, { recordedAt = null 
   const type = sanitizeThreadLifecycleActionType(action.type);
   const method = sanitizeThreadLifecycleActionMethod(action.method, type);
   const threadCompactionStarted = Boolean(action.threadCompactionStarted);
+  const threadRolledBack = Boolean(action.threadRolledBack);
   return {
     recordedAt: cleanDisplayText(recordedAt ?? record?.recordedAt, 40),
     workspace: record?.workspace
@@ -23135,7 +23606,8 @@ function sanitizeThreadLifecycleActionHistoryRecord(record, { recordedAt = null 
       threadForked: Boolean(action.threadForked),
       threadRenamed: Boolean(action.threadRenamed),
       threadDeleted: Boolean(action.threadDeleted),
-      threadStateMutated: Boolean(action.threadStateMutated || threadCompactionStarted),
+      threadRolledBack,
+      threadStateMutated: Boolean(action.threadStateMutated || threadRolledBack || threadCompactionStarted),
       threadCompactionStarted,
       appServerTouched: Boolean(action.appServerTouched),
       modelTraffic: Boolean(action.modelTraffic),
@@ -23148,7 +23620,10 @@ function sanitizeThreadLifecycleActionHistoryRecord(record, { recordedAt = null 
       deleted: typeof target.deleted === "boolean" ? target.deleted : null,
       forked: typeof target.forked === "boolean" ? target.forked : null,
       renamed: typeof target.renamed === "boolean" ? target.renamed : null,
+      rolledBack: typeof target.rolledBack === "boolean" ? target.rolledBack : null,
       excludeTurns: typeof target.excludeTurns === "boolean" ? target.excludeTurns : null,
+      numTurns: safeCount(target.numTurns),
+      returnedTurnCount: safeCount(target.returnedTurnCount),
       nameCharCount: safeCount(target.nameCharCount),
       nameLineCount: safeCount(target.nameLineCount),
       sourceArchived: typeof target.sourceArchived === "boolean" ? target.sourceArchived : null,
@@ -23161,7 +23636,10 @@ function sanitizeThreadLifecycleActionHistoryRecord(record, { recordedAt = null 
       deleted: typeof result.deleted === "boolean" ? result.deleted : null,
       forked: typeof result.forked === "boolean" ? result.forked : null,
       renamed: typeof result.renamed === "boolean" ? result.renamed : null,
+      rolledBack: typeof result.rolledBack === "boolean" ? result.rolledBack : null,
       excludeTurns: typeof result.excludeTurns === "boolean" ? result.excludeTurns : null,
+      numTurns: safeCount(result.numTurns),
+      returnedTurnCount: safeCount(result.returnedTurnCount),
       nameCharCount: safeCount(result.nameCharCount),
       nameLineCount: safeCount(result.nameLineCount),
       loadedSessionCount: safeCount(result.loadedSessionCount),
@@ -23185,6 +23663,7 @@ function sanitizeThreadLifecycleActionHistoryRecord(record, { recordedAt = null 
       threadForked: Boolean(policy.threadForked),
       threadRenamed: Boolean(policy.threadRenamed),
       threadDeleted: Boolean(policy.threadDeleted),
+      threadRolledBack: Boolean(policy.threadRolledBack),
       threadStateMutated: Boolean(policy.threadStateMutated),
       threadCompactionStarted: Boolean(policy.threadCompactionStarted),
       promptsReturned: false,
@@ -23214,6 +23693,7 @@ function sanitizeThreadLifecycleActionType(type) {
     "thread-delete",
     "thread-fork",
     "thread-rename",
+    "thread-rollback",
     "thread-compact",
   ].includes(type)
     ? type
@@ -23229,6 +23709,7 @@ function sanitizeThreadLifecycleActionMethod(method, type) {
       "thread/delete",
       "thread/fork",
       "thread/name/set",
+      "thread/rollback",
       "thread/compact/start",
     ].includes(method)
   ) {
@@ -23245,6 +23726,8 @@ function sanitizeThreadLifecycleActionMethod(method, type) {
       return "thread/fork";
     case "thread-rename":
       return "thread/name/set";
+    case "thread-rollback":
+      return "thread/rollback";
     case "thread-compact":
       return "thread/compact/start";
     default:
@@ -29809,6 +30292,27 @@ function sanitizeThreadRenameProbe(threadRename) {
   };
 }
 
+function sanitizeThreadRollbackProbe(threadRollback) {
+  const methodsUsed = sanitizeMethodList(threadRollback?.methodsUsed).filter((method) =>
+    ["thread/list", "thread/rollback"].includes(method),
+  );
+  return {
+    method: "thread/rollback",
+    threadIdSuffix: cleanDisplayText(threadRollback?.threadIdSuffix, 16),
+    numTurns: safeCount(threadRollback?.numTurns),
+    status: cleanDisplayText(threadRollback?.status, 80) ?? "rolled-back",
+    returnedTurnCount: safeCount(threadRollback?.returnedTurnCount),
+    methodsUsed: methodsUsed.length > 0 ? methodsUsed : ["thread/list", "thread/rollback"],
+    threadContentReturned: false,
+    fullIdsReturned: false,
+    cwdReturned: false,
+    pathsReturned: false,
+    namesReturned: false,
+    previewsReturned: false,
+    rawPayloadReturned: false,
+  };
+}
+
 function sanitizeThreadCompactProbe(threadCompact) {
   const methodsUsed = sanitizeMethodList(threadCompact?.methodsUsed).filter((method) =>
     ["thread/loaded/list", "thread/compact/start"].includes(method),
@@ -31348,6 +31852,17 @@ function validateThreadRenameName(value) {
     );
   }
   return trimmed;
+}
+
+function validateThreadRollbackTurns(value) {
+  const number = Number(value);
+  if (!Number.isSafeInteger(number) || number < 1 || number > MAX_THREAD_ROLLBACK_TURNS) {
+    throwRequestError(
+      `Thread rollback turns must be an integer between 1 and ${MAX_THREAD_ROLLBACK_TURNS}`,
+      400,
+    );
+  }
+  return number;
 }
 
 function validateThreadArchiveAction(value) {

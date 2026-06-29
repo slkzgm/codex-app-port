@@ -127,6 +127,10 @@ test("action audit log writes sanitized local mutation JSONL", async () => {
       payload: threadArchivePayload(),
     });
     log.append({
+      event: "thread-rollback-recorded",
+      payload: threadRollbackPayload(),
+    });
+    log.append({
       event: "thread-compact-recorded",
       payload: threadCompactPayload(),
     });
@@ -135,7 +139,7 @@ test("action audit log writes sanitized local mutation JSONL", async () => {
       .trim()
       .split("\n")
       .map((line) => JSON.parse(line));
-    assert.equal(records.length, 6);
+    assert.equal(records.length, 7);
     assert.equal(records[0].event, "file-action-recorded");
     assert.equal(records[0].action.fileAction, "writeFile");
     assert.equal(records[0].target.depth, 2);
@@ -164,13 +168,21 @@ test("action audit log writes sanitized local mutation JSONL", async () => {
     assert.equal(records[4].target.threadIdSuffix, "deadbeef");
     assert.equal(records[4].target.archived, true);
     assert.equal(records[4].result.threadContentReturned, false);
-    assert.equal(records[5].event, "thread-compact-recorded");
-    assert.equal(records[5].action.type, "thread-compact");
-    assert.equal(records[5].action.method, "thread/compact/start");
-    assert.equal(records[5].action.modelTraffic, true);
-    assert.equal(records[5].target.threadIdSuffix, "feedbeef");
-    assert.equal(records[5].result.loadedSessionCount, 1);
+    assert.equal(records[5].event, "thread-rollback-recorded");
+    assert.equal(records[5].action.type, "thread-rollback");
+    assert.equal(records[5].action.method, "thread/rollback");
+    assert.equal(records[5].target.threadIdSuffix, "facebeef");
+    assert.equal(records[5].target.rolledBack, true);
+    assert.equal(records[5].target.numTurns, 2);
+    assert.equal(records[5].result.rolledBack, true);
     assert.equal(records[5].result.threadContentReturned, false);
+    assert.equal(records[6].event, "thread-compact-recorded");
+    assert.equal(records[6].action.type, "thread-compact");
+    assert.equal(records[6].action.method, "thread/compact/start");
+    assert.equal(records[6].action.modelTraffic, true);
+    assert.equal(records[6].target.threadIdSuffix, "feedbeef");
+    assert.equal(records[6].result.loadedSessionCount, 1);
+    assert.equal(records[6].result.threadContentReturned, false);
 
     const serialized = JSON.stringify(records);
     for (const marker of [
@@ -187,6 +199,8 @@ test("action audit log writes sanitized local mutation JSONL", async () => {
       "Sensitive terminal output",
       "thread-private-full-id",
       "Sensitive archived content",
+      "Sensitive rollback content",
+      "rollback-secret",
       "Sensitive compacted content",
       "private@example.com",
       "sk-proj-private-auth-token",
@@ -604,6 +618,58 @@ function threadArchivePayload() {
       token: "preflight-private-token",
       scope: {
         kind: "thread-archive-preflight",
+        workspaceId: "default",
+      },
+      oneTimeUseEnforced: true,
+    },
+  };
+}
+
+function threadRollbackPayload() {
+  return {
+    ok: true,
+    workspace: {
+      id: "default",
+      label: "codex-app-port-test",
+      isDefault: true,
+      cwd: "/tmp/private-workspace",
+    },
+    appServer: {
+      touched: true,
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["thread/list", "thread/rollback"],
+    },
+    action: {
+      type: "thread-rollback",
+      method: "thread/rollback",
+      execution: "rolled-back",
+      threadRolledBack: true,
+      threadStateMutated: true,
+      appServerTouched: true,
+      modelTraffic: false,
+    },
+    target: {
+      threadIdSuffix: "facebeef",
+      rolledBack: true,
+      numTurns: 2,
+      returnedTurnCount: 3,
+      fullId: "thread-private-full-id-facebeef",
+      path: "/tmp/private-workspace/rollback-secret.txt",
+    },
+    result: {
+      status: "rolled-back",
+      rolledBack: true,
+      numTurns: 2,
+      returnedTurnCount: 3,
+      threadContent: "Sensitive rollback content",
+      fullIds: ["thread-private-full-id-facebeef"],
+    },
+    preflight: {
+      tokenConsumed: true,
+      token: "preflight-private-token",
+      scope: {
+        kind: "thread-rollback-preflight",
         workspaceId: "default",
       },
       oneTimeUseEnforced: true,

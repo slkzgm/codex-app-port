@@ -110,6 +110,7 @@ async function main() {
   await checkThreadDeleteApi();
   await checkThreadForkApi();
   await checkThreadRenameApi();
+  await checkThreadRollbackApi();
   await checkThreadCompactApi();
   await checkTurnStartGuardApi();
   await checkTurnStartOptInApi();
@@ -895,6 +896,15 @@ async function checkStrictBrowserPostBodies() {
         {
           thread: "12345678",
           name: "private name",
+          preflightToken: "preflight-1234567890abcdef",
+        },
+      ],
+      ["/api/thread-rollback-preflight", { thread: "12345678", numTurns: 1 }],
+      [
+        "/api/thread-rollback-action",
+        {
+          thread: "12345678",
+          numTurns: 1,
           preflightToken: "preflight-1234567890abcdef",
         },
       ],
@@ -1837,6 +1847,34 @@ function assertBrowserPostBodyContracts(cases) {
     threadRenameActionContract.nestedKeySchemas.policy?.includes("unexpected")
   ) {
     throw new Error("thread-rename-action response contract is missing nested schemas");
+  }
+  const threadRollbackPreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-rollback-preflight"];
+  if (
+    threadRollbackPreflightContract.usesRouteSpecificNestedKeySchemas !== true ||
+    !Object.isFrozen(threadRollbackPreflightContract.nestedKeySchemas.policy) ||
+    !threadRollbackPreflightContract.nestedKeySchemas.thread?.includes("numTurns") ||
+    !threadRollbackPreflightContract.nestedKeySchemas.policy?.includes("threadRolledBack") ||
+    threadRollbackPreflightContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("thread-rollback-preflight response contract is missing nested schemas");
+  }
+  const threadRollbackActionContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-rollback-action"];
+  if (
+    threadRollbackActionContract.usesRouteSpecificNestedKeySchemas !== true ||
+    !Object.isFrozen(threadRollbackActionContract.nestedKeySchemas.policy) ||
+    !threadRollbackActionContract.nestedKeySchemas["probes.threadRollback"]?.includes(
+      "methodsUsed",
+    ) ||
+    !threadRollbackActionContract.nestedKeySchemas.target?.includes("rolledBack") ||
+    !threadRollbackActionContract.nestedKeySchemas.result?.includes("returnedTurnCount") ||
+    !threadRollbackActionContract.nestedKeySchemas.policy?.includes(
+      "requiresExplicitExecutionGate",
+    ) ||
+    threadRollbackActionContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("thread-rollback-action response contract is missing nested schemas");
   }
   const threadCompactPreflightContract =
     BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-compact-preflight"];
@@ -5039,6 +5077,121 @@ function assertBrowserPostBodyContracts(cases) {
       },
     ],
     [
+      "/api/thread-rollback-preflight",
+      {
+        ok: true,
+        appServer: {
+          touched: false,
+          modelTraffic: false,
+          commandTraffic: false,
+        },
+        action: {
+          type: "thread-rollback-preflight",
+          method: "thread/rollback",
+          execution: "blocked",
+          wouldRollbackThread: false,
+          threadRolledBack: false,
+          threadStateMutated: false,
+          appServerTouched: false,
+        },
+        thread: {
+          threadIdSuffix: "thread1234",
+          numTurns: 1,
+          fullIdsReturned: false,
+          contentReturned: false,
+          namesReturned: false,
+          previewsReturned: false,
+          pathsReturned: false,
+        },
+        preflight: {
+          token: "preflight-1234567890abcdef",
+          tokenIssued: true,
+          scope: {
+            kind: "thread-rollback-preflight",
+            workspaceId: "default",
+          },
+        },
+        policy: {
+          readOnly: true,
+          appServerTraffic: false,
+          threadStateMutated: false,
+          threadRolledBack: false,
+          executionGateEnabled: true,
+          implemented: false,
+        },
+      },
+    ],
+    [
+      "/api/thread-rollback-action",
+      {
+        ok: true,
+        appServer: {
+          touched: true,
+          modelTraffic: false,
+          commandTraffic: false,
+          auditedMethods: ["thread/list", "thread/rollback"],
+        },
+        action: {
+          type: "thread-rollback",
+          method: "thread/rollback",
+          execution: "rolled-back",
+          threadRolledBack: true,
+          threadStateMutated: true,
+          appServerTouched: true,
+        },
+        target: {
+          threadIdSuffix: "thread1234",
+          rolledBack: true,
+          numTurns: 1,
+          returnedTurnCount: 2,
+          fullIdsReturned: false,
+          pathsReturned: false,
+        },
+        probes: {
+          threadRollback: {
+            method: "thread/rollback",
+            threadIdSuffix: "thread1234",
+            numTurns: 1,
+            status: "rolled-back",
+            returnedTurnCount: 2,
+            methodsUsed: ["thread/list", "thread/rollback"],
+            threadContentReturned: false,
+            fullIdsReturned: false,
+            cwdReturned: false,
+            pathsReturned: false,
+            namesReturned: false,
+            previewsReturned: false,
+            rawPayloadReturned: false,
+          },
+        },
+        result: {
+          status: "rolled-back",
+          rolledBack: true,
+          numTurns: 1,
+          returnedTurnCount: 2,
+          fullIdsReturned: false,
+          threadContentReturned: false,
+        },
+        preflight: {
+          tokenConsumed: true,
+          tokenReturned: false,
+          scope: {
+            kind: "thread-rollback-preflight",
+            workspaceId: "default",
+          },
+        },
+        policy: {
+          readOnly: false,
+          appServerTraffic: true,
+          threadStateMutated: true,
+          threadRolledBack: true,
+          preflightTokenConsumed: true,
+          requiresExplicitExecutionGate: true,
+          implemented: true,
+        },
+      },
+    ],
+    [
       "/api/thread-compact-preflight",
       {
         ok: true,
@@ -6551,6 +6704,72 @@ function assertBrowserPostBodyContracts(cases) {
       JSON.stringify(unexpectedMcpNestedKeyResponse.payload).includes(marker)
     ) {
       throw new Error("browser POST response contract did not block an unexpected MCP nested key");
+    }
+  }
+  for (const [payload, marker] of [
+    [
+      {
+        ok: true,
+        thread: {
+          threadIdSuffix: "thread1234",
+          leakedThreadContent: "private content",
+        },
+      },
+      "private",
+    ],
+    [{ ok: true, policy: { threadRolledBack: false, leakedRollbackPolicy: "private policy" } }, "private"],
+  ]) {
+    const unexpectedThreadRollbackPreflightNestedKeyResponse =
+      applyBrowserPostResponseContract({
+        method: "POST",
+        pathname: "/api/thread-rollback-preflight",
+        statusCode: 200,
+        payload,
+      });
+    if (
+      unexpectedThreadRollbackPreflightNestedKeyResponse.statusCode !== 500 ||
+      JSON.stringify(unexpectedThreadRollbackPreflightNestedKeyResponse.payload).includes(
+        marker,
+      )
+    ) {
+      throw new Error(
+        "browser POST response contract did not block an unexpected thread-rollback preflight nested key",
+      );
+    }
+  }
+  for (const [payload, marker] of [
+    [{ ok: true, target: { threadIdSuffix: "thread1234", leakedThreadPath: "private path" } }, "private"],
+    [
+      {
+        ok: true,
+        probes: {
+          threadRollback: {
+            status: "rolled-back",
+            leakedPreview: "private preview",
+          },
+        },
+      },
+      "private",
+    ],
+    [{ ok: true, result: { status: "rolled-back", leakedRollbackResult: "private result" } }, "private"],
+    [{ ok: true, policy: { threadRolledBack: true, leakedRollbackPolicy: "private policy" } }, "private"],
+  ]) {
+    const unexpectedThreadRollbackActionNestedKeyResponse =
+      applyBrowserPostResponseContract({
+        method: "POST",
+        pathname: "/api/thread-rollback-action",
+        statusCode: 200,
+        payload,
+      });
+    if (
+      unexpectedThreadRollbackActionNestedKeyResponse.statusCode !== 500 ||
+      JSON.stringify(unexpectedThreadRollbackActionNestedKeyResponse.payload).includes(
+        marker,
+      )
+    ) {
+      throw new Error(
+        "browser POST response contract did not block an unexpected thread-rollback action nested key",
+      );
     }
   }
   for (const [payload, marker] of [
@@ -11298,6 +11517,177 @@ async function checkThreadRenameApi() {
     await rm(actionAuditDir, { recursive: true, force: true });
   }
   pass("dev server thread rename consumes opt-in one-time tokens without model traffic");
+}
+
+async function checkThreadRollbackApi() {
+  const actionAuditDir = await mkdtemp(join(tmpdir(), "codex-verify-thread-rollback-audit-"));
+  const actionAuditLogPath = join(actionAuditDir, "actions.jsonl");
+  const calls = [];
+  const server = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    threadRollbackEnabled: true,
+    threadRollbackFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-06-29T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/verify-private-home",
+          userAgent: "verify-private-agent",
+        },
+        probes: {
+          threadRollback: {
+            method: "thread/rollback",
+            threadIdSuffix: "abcd1234",
+            numTurns: 2,
+            status: "rolled-back",
+            returnedTurnCount: 3,
+            methodsUsed: ["thread/list", "thread/rollback"],
+            threadContentReturned: true,
+            fullIdsReturned: true,
+            cwdReturned: true,
+            pathsReturned: true,
+            namesReturned: true,
+            previewsReturned: true,
+            rawPayloadReturned: true,
+            privateName: "Sensitive rollback name",
+            privatePath: "/tmp/codex-app-port-verify/rollback-secret.txt",
+          },
+        },
+        notifications: {
+          "thread/rolledBack": 1,
+        },
+      };
+    },
+    actionAuditLog: createActionAuditLog({
+      path: actionAuditLogPath,
+      now: () => "2026-06-29T00:00:00.000Z",
+    }),
+  });
+  const port = await listenWithFallback(server, { host: "127.0.0.1", port: 0 });
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  try {
+    const token = await readUiSessionToken(baseUrl);
+    const preflightResponse = await fetch(`${baseUrl}/api/thread-rollback-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        thread: "abcd1234",
+        numTurns: 2,
+      }),
+    });
+    if (!preflightResponse.ok) {
+      throw new Error(`thread rollback preflight returned HTTP ${preflightResponse.status}`);
+    }
+    const preflightPayload = await preflightResponse.json();
+    if (
+      preflightPayload.action?.type !== "thread-rollback-preflight" ||
+      preflightPayload.action?.method !== "thread/rollback" ||
+      preflightPayload.action?.threadRolledBack !== false ||
+      preflightPayload.thread?.threadIdSuffix !== "abcd1234" ||
+      preflightPayload.thread?.numTurns !== 2 ||
+      preflightPayload.policy?.executionGateEnabled !== true ||
+      preflightPayload.policy?.threadRolledBack !== false
+    ) {
+      throw new Error("thread rollback preflight did not preserve the gated shape");
+    }
+    assertActionPreflight(preflightPayload, "thread-rollback-preflight", "default");
+
+    const response = await fetch(`${baseUrl}/api/thread-rollback-action`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        thread: "abcd1234",
+        numTurns: 2,
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(`thread rollback returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    assertSanitizedThreadRollback(payload, {
+      token: preflightPayload.preflight.token,
+    });
+    if (
+      calls.length !== 1 ||
+      calls[0].threadIdSuffix !== "abcd1234" ||
+      calls[0].numTurns !== 2 ||
+      calls[0].cwd !== "/tmp/codex-app-port-verify"
+    ) {
+      throw new Error("thread rollback did not call the app-server path once");
+    }
+
+    const replayResponse = await fetch(`${baseUrl}/api/thread-rollback-action`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        thread: "abcd1234",
+        numTurns: 2,
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    if (replayResponse.status !== 409) {
+      throw new Error(`thread rollback replay returned HTTP ${replayResponse.status}`);
+    }
+
+    const auditRecords = (await readFile(actionAuditLogPath, "utf8"))
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    if (
+      auditRecords.length !== 1 ||
+      auditRecords[0].event !== "thread-rollback-recorded" ||
+      auditRecords[0].action?.type !== "thread-rollback" ||
+      auditRecords[0].target?.threadIdSuffix !== "abcd1234" ||
+      auditRecords[0].target?.rolledBack !== true ||
+      auditRecords[0].target?.numTurns !== 2 ||
+      auditRecords[0].result?.rolledBack !== true
+    ) {
+      throw new Error("thread rollback audit record did not preserve sanitized metadata");
+    }
+    assertNoMarkers(JSON.stringify(auditRecords), [
+      preflightPayload.preflight.token,
+      "/tmp/codex-app-port-verify",
+      "/tmp/verify-private-home",
+      "verify-private-agent",
+      "Sensitive rollback name",
+      "rollback-secret.txt",
+      "\"threadContentReturned\":true",
+      "\"fullIdsReturned\":true",
+      "\"pathsReturned\":true",
+    ]);
+
+    const gateResponse = await fetch(`${baseUrl}/api/execution-gate`, {
+      headers: jsonHeaders(token),
+    });
+    if (!gateResponse.ok) {
+      throw new Error(`thread rollback execution gate history returned HTTP ${gateResponse.status}`);
+    }
+    assertSanitizedThreadLifecycleActionHistory(await gateResponse.json(), {
+      count: 1,
+      type: "thread-rollback",
+      method: "thread/rollback",
+      threadIdSuffix: "abcd1234",
+      consumedPreflightToken: preflightPayload.preflight.token,
+      appServerTraffic: true,
+      modelTraffic: false,
+      threadRolledBack: true,
+      threadStateMutated: true,
+      rolledBack: true,
+      numTurns: 2,
+      returnedTurnCount: 3,
+    });
+  } finally {
+    await closeServer(server);
+    await rm(actionAuditDir, { recursive: true, force: true });
+  }
+  pass("dev server thread rollback consumes opt-in one-time tokens without model traffic");
 }
 
 async function checkThreadCompactApi() {
@@ -20945,6 +21335,88 @@ function assertSanitizedThreadRename(payload, { token }) {
   }
 }
 
+function assertSanitizedThreadRollback(payload, { token }) {
+  const serialized = JSON.stringify(payload);
+  assertNoMarkers(serialized, [
+    token,
+    "/tmp/codex-app-port-verify",
+    "/tmp/verify-private-home",
+    "verify-private-agent",
+    "codexHome",
+    "userAgent",
+    "Sensitive rollback name",
+    "rollback-secret.txt",
+    "\"threadContentReturned\":true",
+    "\"fullIdsReturned\":true",
+    "\"cwdReturned\":true",
+    "\"pathsReturned\":true",
+    "\"namesReturned\":true",
+    "\"previewsReturned\":true",
+    "\"rawPayloadReturned\":true",
+  ]);
+  if (
+    !payload.ok ||
+    payload.workspace?.id !== "default" ||
+    Object.hasOwn(payload.workspace, "cwd") ||
+    payload.appServer?.touched !== true ||
+    payload.appServer?.modelTraffic !== false ||
+    payload.appServer?.commandTraffic !== false ||
+    payload.action?.type !== "thread-rollback" ||
+    payload.action?.method !== "thread/rollback" ||
+    payload.action?.execution !== "rolled-back" ||
+    payload.action?.threadRolledBack !== true ||
+    payload.action?.threadStateMutated !== true ||
+    payload.preflight?.tokenConsumed !== true ||
+    payload.preflight?.tokenReturned !== false ||
+    payload.thread?.threadIdSuffix !== "abcd1234" ||
+    payload.thread?.numTurns !== 2 ||
+    payload.thread?.returnedTurnCount !== 3 ||
+    payload.target?.threadIdSuffix !== "abcd1234" ||
+    payload.target?.rolledBack !== true ||
+    payload.target?.numTurns !== 2 ||
+    payload.target?.returnedTurnCount !== 3 ||
+    payload.target?.fullIdsReturned !== false
+  ) {
+    throw new Error("thread rollback payload did not expose sanitized mutation metadata");
+  }
+  const threadRollback = payload.probes?.threadRollback;
+  if (
+    threadRollback?.method !== "thread/rollback" ||
+    threadRollback?.threadIdSuffix !== "abcd1234" ||
+    threadRollback?.numTurns !== 2 ||
+    threadRollback?.status !== "rolled-back" ||
+    threadRollback?.returnedTurnCount !== 3 ||
+    threadRollback?.threadContentReturned !== false ||
+    threadRollback?.fullIdsReturned !== false ||
+    threadRollback?.cwdReturned !== false ||
+    threadRollback?.pathsReturned !== false ||
+    threadRollback?.namesReturned !== false ||
+    threadRollback?.previewsReturned !== false ||
+    threadRollback?.rawPayloadReturned !== false
+  ) {
+    throw new Error("thread rollback probe did not sanitize unsafe fields");
+  }
+  if (
+    payload.policy?.appServerTraffic !== true ||
+    payload.policy?.modelTraffic !== false ||
+    payload.policy?.commandTraffic !== false ||
+    payload.policy?.threadRolledBack !== true ||
+    payload.policy?.threadStateMutated !== true ||
+    payload.policy?.turnStarted !== false ||
+    payload.policy?.threadContentReturned !== false ||
+    payload.policy?.fullIdsReturned !== false ||
+    payload.policy?.pathsReturned !== false ||
+    payload.policy?.namesReturned !== false ||
+    payload.policy?.rawPayloadReturned !== false ||
+    payload.policy?.requiresExplicitEnablement !== true ||
+    payload.policy?.preflightTokenConsumed !== true ||
+    payload.policy?.auditLogWritableChecked !== true ||
+    payload.policy?.implemented !== true
+  ) {
+    throw new Error("thread rollback policy did not preserve opt-in safety gates");
+  }
+}
+
 function assertSanitizedAccountLogin(payload, { token }) {
   const serialized = JSON.stringify(payload);
   assertNoMarkers(serialized, [
@@ -23912,13 +24384,17 @@ function assertSanitizedThreadLifecycleActionHistory(
     threadForked = false,
     threadRenamed = false,
     threadDeleted = false,
+    threadRolledBack = false,
     threadStateMutated = false,
     threadCompactionStarted = false,
     archived = null,
     deleted = null,
     forked = null,
     renamed = null,
+    rolledBack = null,
     excludeTurns = null,
+    numTurns = 0,
+    returnedTurnCount = 0,
     sourceThreadIdSuffix = null,
     nameCharCount = 0,
     nameLineCount = 0,
@@ -23952,6 +24428,7 @@ function assertSanitizedThreadLifecycleActionHistory(
     threadRenamed ||
     threadStateMutated ||
     threadDeleted ||
+    threadRolledBack ||
     threadCompactionStarted;
   if (
     payload.gate?.threadLifecycleActionHistoryVisible !== true ||
@@ -23997,6 +24474,7 @@ function assertSanitizedThreadLifecycleActionHistory(
     item?.action?.threadForked !== threadForked ||
     item?.action?.threadRenamed !== threadRenamed ||
     item?.action?.threadDeleted !== threadDeleted ||
+    item?.action?.threadRolledBack !== threadRolledBack ||
     item?.action?.threadStateMutated !== threadStateMutated ||
     item?.action?.threadCompactionStarted !== threadCompactionStarted ||
     item?.action?.appServerTouched !== appServerTraffic ||
@@ -24008,7 +24486,10 @@ function assertSanitizedThreadLifecycleActionHistory(
     item?.target?.deleted !== deleted ||
     item?.target?.forked !== forked ||
     item?.target?.renamed !== renamed ||
+    item?.target?.rolledBack !== rolledBack ||
     item?.target?.excludeTurns !== excludeTurns ||
+    item?.target?.numTurns !== numTurns ||
+    item?.target?.returnedTurnCount !== returnedTurnCount ||
     item?.target?.nameCharCount !== nameCharCount ||
     item?.target?.nameLineCount !== nameLineCount ||
     item?.target?.fullIdsReturned !== false ||
@@ -24016,7 +24497,10 @@ function assertSanitizedThreadLifecycleActionHistory(
     item?.result?.deleted !== deleted ||
     item?.result?.forked !== forked ||
     item?.result?.renamed !== renamed ||
+    item?.result?.rolledBack !== rolledBack ||
     item?.result?.excludeTurns !== excludeTurns ||
+    item?.result?.numTurns !== numTurns ||
+    item?.result?.returnedTurnCount !== returnedTurnCount ||
     item?.result?.nameCharCount !== nameCharCount ||
     item?.result?.nameLineCount !== nameLineCount ||
     item?.result?.threadContentReturned !== false ||
@@ -24033,6 +24517,7 @@ function assertSanitizedThreadLifecycleActionHistory(
     item?.policy?.threadForked !== threadForked ||
     item?.policy?.threadRenamed !== threadRenamed ||
     item?.policy?.threadDeleted !== threadDeleted ||
+    item?.policy?.threadRolledBack !== threadRolledBack ||
     item?.policy?.fullIdsReturned !== false ||
     item?.policy?.pathsReturned !== false ||
     item?.policy?.namesReturned !== false ||

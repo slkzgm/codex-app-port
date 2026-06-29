@@ -25,6 +25,7 @@ import {
   runThreadDetailProbe,
   runThreadForkProbe,
   runThreadRenameProbe,
+  runThreadRollbackProbe,
   runThreadSearchProbe,
   runThreadStartProbe,
   runThreadTranscriptProbe,
@@ -1229,6 +1230,57 @@ test("runThreadForkProbe forks by suffix without returning ids, paths, names, or
       delete process.env.CODEX_APP_PORT_ALLOW_THREAD_FORK;
     } else {
       process.env.CODEX_APP_PORT_ALLOW_THREAD_FORK = previous;
+    }
+  }
+});
+
+test("runThreadRollbackProbe rolls back by suffix and count without returning ids, paths, names, or content", async () => {
+  const previous = process.env.CODEX_APP_PORT_ALLOW_THREAD_ROLLBACK;
+  process.env.CODEX_APP_PORT_ALLOW_THREAD_ROLLBACK = "1";
+  try {
+    const summary = await runThreadRollbackProbe({
+      codexBin: process.execPath,
+      codexArgs: [mockServer.pathname],
+      cwd: process.cwd(),
+      timeoutMs: 1_000,
+      threadIdSuffix: "00000001",
+      numTurns: 2,
+    });
+
+    assert.equal(summary.ok, true);
+    const rollback = summary.probes.threadRollback;
+    assert.equal(rollback.method, "thread/rollback");
+    assert.equal(rollback.threadIdSuffix, "00000001");
+    assert.equal(rollback.numTurns, 2);
+    assert.equal(rollback.status, "idle");
+    assert.equal(rollback.returnedTurnCount, 1);
+    assert.deepEqual(rollback.methodsUsed, ["thread/list", "thread/rollback"]);
+    assert.equal(rollback.threadContentReturned, false);
+    assert.equal(rollback.fullIdsReturned, false);
+    assert.equal(rollback.cwdReturned, false);
+    assert.equal(rollback.pathsReturned, false);
+    assert.equal(rollback.namesReturned, false);
+    assert.equal(rollback.previewsReturned, false);
+    assert.equal(rollback.rawPayloadReturned, false);
+
+    const serialized = JSON.stringify(summary);
+    for (const marker of [
+      "thread-00000001",
+      "Sensitive rollback",
+      "rollback-secret",
+      "turn-private-rollback",
+      "/tmp/mock-workspace",
+      "mock-codex-home",
+      "userAgent",
+      "codexHome",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    if (previous === undefined) {
+      delete process.env.CODEX_APP_PORT_ALLOW_THREAD_ROLLBACK;
+    } else {
+      process.env.CODEX_APP_PORT_ALLOW_THREAD_ROLLBACK = previous;
     }
   }
 });

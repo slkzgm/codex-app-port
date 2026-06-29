@@ -1293,6 +1293,56 @@ function handle(message) {
     return;
   }
 
+  if (message.method === "thread/rollback") {
+    send({
+      id: message.id,
+      result: {
+        thread: {
+          id: message.params?.threadId,
+          sessionId: "session-rollback-private",
+          forkedFromId: null,
+          preview: "Sensitive rollback preview must not leave sanitizer",
+          ephemeral: false,
+          modelProvider: "openai",
+          createdAt: 0,
+          updatedAt: 0,
+          status: "idle",
+          path: "/tmp/mock-workspace/rollback-secret.jsonl",
+          cwd: "/tmp/mock-workspace",
+          cliVersion: "0.0.0",
+          source: "appServer",
+          threadSource: null,
+          agentNickname: null,
+          agentRole: null,
+          gitInfo: null,
+          name: "Sensitive rollback name must not leave sanitizer",
+          turns: [
+            {
+              id: "turn-private-rollback",
+              items: [
+                {
+                  type: "agentMessage",
+                  text: "Sensitive rollback transcript must not leave sanitizer",
+                },
+              ],
+            },
+          ],
+        },
+        numTurns: message.params?.numTurns,
+        privatePath: "/tmp/mock-workspace/rollback-response-secret.txt",
+      },
+    });
+    send({
+      method: "thread/rolledBack",
+      params: {
+        threadId: message.params?.threadId,
+        cwd: "/tmp/mock-workspace",
+        preview: "Sensitive rollback notification must not leave sanitizer",
+      },
+    });
+    return;
+  }
+
   if (message.method === "thread/compact/start") {
     send({
       id: message.id,

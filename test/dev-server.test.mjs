@@ -247,6 +247,11 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /thread-delete-status/);
     assert.match(appScript, /runThreadDeletePreflight/);
     assert.match(appScript, /runThreadDeleteAction/);
+    assert.match(html, /thread-rollback-preflight-button/);
+    assert.match(html, /thread-rollback-button/);
+    assert.match(html, /thread-rollback-status/);
+    assert.match(appScript, /runThreadRollbackPreflight/);
+    assert.match(appScript, /runThreadRollbackAction/);
     assert.match(html, /account-login-cancel-preflight-button/);
     assert.match(html, /account-login-cancel-button/);
     assert.match(html, /account-login-history-list/);
@@ -286,6 +291,8 @@ test("browser POST body contracts are centralized and immutable", () => {
     "/api/thread-fork-action",
     "/api/thread-rename-preflight",
     "/api/thread-rename-action",
+    "/api/thread-rollback-preflight",
+    "/api/thread-rollback-action",
     "/api/thread-compact-preflight",
     "/api/thread-compact-start",
     "/api/thread-search",
@@ -386,6 +393,17 @@ test("browser POST body contracts are centralized and immutable", () => {
     "workspace",
     "thread",
     "name",
+    "preflightToken",
+  ]);
+  assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/thread-rollback-preflight"].allowedFields], [
+    "workspace",
+    "thread",
+    "numTurns",
+  ]);
+  assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/thread-rollback-action"].allowedFields], [
+    "workspace",
+    "thread",
+    "numTurns",
     "preflightToken",
   ]);
   assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/terminal-command"].allowedFields], [
@@ -598,7 +616,7 @@ test("browser POST body contracts are centralized and immutable", () => {
   assert.equal(confirm.dynamicByActionType, true);
   assert.equal(confirm.usesDynamicValidator, true);
   assert.equal(confirm.enforcedByStrictReader, false);
-  for (const field of ["actionType", "preflightToken", "command", "server", "arguments"]) {
+  for (const field of ["actionType", "preflightToken", "command", "server", "arguments", "numTurns"]) {
     assert.equal(confirm.allowedFields.includes(field), true, field);
   }
   assert.deepEqual([...BROWSER_POST_FIELD_POLICIES.arguments.allowedJsonTypes], [
@@ -622,6 +640,8 @@ test("browser POST body contracts are centralized and immutable", () => {
   assert.equal(BROWSER_POST_FIELD_POLICIES.feature.sensitivity, "settings-feature");
   assert.equal(BROWSER_POST_FIELD_POLICIES.enabled.sensitivity, "settings-enable-state");
   assert.equal(BROWSER_POST_FIELD_POLICIES.command.maxChars, 2_000);
+  assert.equal(BROWSER_POST_FIELD_POLICIES.numTurns.sensitivity, "thread-history-count");
+  assert.equal(BROWSER_POST_FIELD_POLICIES.numTurns.returnedRawValue, false);
   assert.equal(BROWSER_POST_FIELD_POLICIES.prompt.sensitivity, "user-authored-text");
   assert.equal(BROWSER_POST_FIELD_POLICIES.loginRef.sensitivity, "auth-flow-selector");
   assert.equal(BROWSER_POST_FIELD_POLICIES.loginRef.returnedRawValue, false);
@@ -992,6 +1012,20 @@ test("browser POST response contracts block unsafe response values", () => {
   assert.equal(threadRenameActionContract.nestedKeySchemas.result.includes("renamed"), true);
   assert.equal(threadRenameActionContract.nestedKeySchemas.policy.includes("requiresExplicitExecutionGate"), true);
   assert.equal(threadRenameActionContract.nestedKeySchemas.policy.includes("unexpected"), false);
+  const threadRollbackPreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-rollback-preflight"];
+  assert.equal(threadRollbackPreflightContract.usesRouteSpecificNestedKeySchemas, true);
+  assert.equal(threadRollbackPreflightContract.nestedKeySchemas.thread.includes("numTurns"), true);
+  assert.equal(threadRollbackPreflightContract.nestedKeySchemas.policy.includes("threadRolledBack"), true);
+  assert.equal(threadRollbackPreflightContract.nestedKeySchemas.policy.includes("unexpected"), false);
+  const threadRollbackActionContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-rollback-action"];
+  assert.equal(threadRollbackActionContract.usesRouteSpecificNestedKeySchemas, true);
+  assert.equal(threadRollbackActionContract.nestedKeySchemas["probes.threadRollback"].includes("methodsUsed"), true);
+  assert.equal(threadRollbackActionContract.nestedKeySchemas.target.includes("rolledBack"), true);
+  assert.equal(threadRollbackActionContract.nestedKeySchemas.result.includes("returnedTurnCount"), true);
+  assert.equal(threadRollbackActionContract.nestedKeySchemas.policy.includes("requiresExplicitExecutionGate"), true);
+  assert.equal(threadRollbackActionContract.nestedKeySchemas.policy.includes("unexpected"), false);
   const threadCompactPreflightContract =
     BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-compact-preflight"];
   assert.equal(threadCompactPreflightContract.usesRouteSpecificNestedKeySchemas, true);
@@ -3540,6 +3574,121 @@ test("browser POST response contracts block unsafe response values", () => {
       },
     ],
     [
+      "/api/thread-rollback-preflight",
+      {
+        ok: true,
+        appServer: {
+          touched: false,
+          modelTraffic: false,
+          commandTraffic: false,
+        },
+        action: {
+          type: "thread-rollback-preflight",
+          method: "thread/rollback",
+          execution: "blocked",
+          wouldRollbackThread: false,
+          threadRolledBack: false,
+          threadStateMutated: false,
+          appServerTouched: false,
+        },
+        thread: {
+          threadIdSuffix: "thread1234",
+          numTurns: 1,
+          fullIdsReturned: false,
+          contentReturned: false,
+          namesReturned: false,
+          previewsReturned: false,
+          pathsReturned: false,
+        },
+        preflight: {
+          token: "preflight-1234567890abcdef",
+          tokenIssued: true,
+          scope: {
+            kind: "thread-rollback-preflight",
+            workspaceId: "default",
+          },
+        },
+        policy: {
+          readOnly: true,
+          appServerTraffic: false,
+          threadStateMutated: false,
+          threadRolledBack: false,
+          executionGateEnabled: true,
+          implemented: false,
+        },
+      },
+    ],
+    [
+      "/api/thread-rollback-action",
+      {
+        ok: true,
+        appServer: {
+          touched: true,
+          modelTraffic: false,
+          commandTraffic: false,
+          auditedMethods: ["thread/list", "thread/rollback"],
+        },
+        action: {
+          type: "thread-rollback",
+          method: "thread/rollback",
+          execution: "rolled-back",
+          threadRolledBack: true,
+          threadStateMutated: true,
+          appServerTouched: true,
+        },
+        target: {
+          threadIdSuffix: "thread1234",
+          rolledBack: true,
+          numTurns: 1,
+          returnedTurnCount: 2,
+          fullIdsReturned: false,
+          pathsReturned: false,
+        },
+        probes: {
+          threadRollback: {
+            method: "thread/rollback",
+            threadIdSuffix: "thread1234",
+            numTurns: 1,
+            status: "rolled-back",
+            returnedTurnCount: 2,
+            methodsUsed: ["thread/list", "thread/rollback"],
+            threadContentReturned: false,
+            fullIdsReturned: false,
+            cwdReturned: false,
+            pathsReturned: false,
+            namesReturned: false,
+            previewsReturned: false,
+            rawPayloadReturned: false,
+          },
+        },
+        result: {
+          status: "rolled-back",
+          rolledBack: true,
+          numTurns: 1,
+          returnedTurnCount: 2,
+          fullIdsReturned: false,
+          threadContentReturned: false,
+        },
+        preflight: {
+          tokenConsumed: true,
+          tokenReturned: false,
+          scope: {
+            kind: "thread-rollback-preflight",
+            workspaceId: "default",
+          },
+        },
+        policy: {
+          readOnly: false,
+          appServerTraffic: true,
+          threadStateMutated: true,
+          threadRolledBack: true,
+          preflightTokenConsumed: true,
+          requiresExplicitExecutionGate: true,
+          implemented: true,
+        },
+      },
+    ],
+    [
       "/api/thread-compact-preflight",
       {
         ok: true,
@@ -5621,6 +5770,42 @@ test("browser POST response contracts block unsafe response values", () => {
     assert.equal(unexpectedThreadArchiveActionNestedKey.statusCode, 500);
     assert.equal(
       JSON.stringify(unexpectedThreadArchiveActionNestedKey.payload).includes("private"),
+      false,
+    );
+  }
+
+  for (const payload of [
+    { ok: true, thread: { threadIdSuffix: "thread1234", leakedThreadContent: "private content" } },
+    { ok: true, policy: { threadRolledBack: false, leakedRollbackPolicy: "private policy" } },
+  ]) {
+    const unexpectedThreadRollbackPreflightNestedKey = applyBrowserPostResponseContract({
+      method: "POST",
+      pathname: "/api/thread-rollback-preflight",
+      statusCode: 200,
+      payload,
+    });
+    assert.equal(unexpectedThreadRollbackPreflightNestedKey.statusCode, 500);
+    assert.equal(
+      JSON.stringify(unexpectedThreadRollbackPreflightNestedKey.payload).includes("private"),
+      false,
+    );
+  }
+
+  for (const payload of [
+    { ok: true, target: { threadIdSuffix: "thread1234", leakedThreadPath: "private path" } },
+    { ok: true, probes: { threadRollback: { status: "rolled-back", leakedPreview: "private preview" } } },
+    { ok: true, result: { status: "rolled-back", leakedRollbackResult: "private result" } },
+    { ok: true, policy: { threadRolledBack: true, leakedRollbackPolicy: "private policy" } },
+  ]) {
+    const unexpectedThreadRollbackActionNestedKey = applyBrowserPostResponseContract({
+      method: "POST",
+      pathname: "/api/thread-rollback-action",
+      statusCode: 200,
+      payload,
+    });
+    assert.equal(unexpectedThreadRollbackActionNestedKey.statusCode, 500);
+    assert.equal(
+      JSON.stringify(unexpectedThreadRollbackActionNestedKey.payload).includes("private"),
       false,
     );
   }
@@ -9646,6 +9831,217 @@ test("dev server renames threads only behind explicit opt-in and preflight token
       "Sensitive private thread name",
       "rename-secret.txt",
       "\"nameReturned\":true",
+      "\"threadContentReturned\":true",
+      "\"fullIdsReturned\":true",
+      "\"pathsReturned\":true",
+    ]) {
+      assert.equal(auditSerialized.includes(marker), false, `audit leaked ${marker}`);
+    }
+  } finally {
+    await closeServer(server);
+    await rm(actionAuditDir, { recursive: true, force: true });
+  }
+});
+
+test("dev server rolls back threads only behind explicit opt-in and preflight token", async () => {
+  const calls = [];
+  const actionAuditDir = await mkdtemp(join(tmpdir(), "codex-thread-rollback-action-audit-"));
+  const actionAuditLogPath = join(actionAuditDir, "actions.jsonl");
+  const { server, url } = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    threadRollbackEnabled: true,
+    threadRollbackFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-06-29T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/private-home",
+          userAgent: "mock/0.0.0",
+        },
+        probes: {
+          threadRollback: {
+            method: "thread/rollback",
+            threadIdSuffix: "abcd1234",
+            numTurns: 2,
+            status: "rolled-back",
+            returnedTurnCount: 3,
+            methodsUsed: ["thread/list", "thread/rollback"],
+            threadContentReturned: true,
+            fullIdsReturned: true,
+            cwdReturned: true,
+            pathsReturned: true,
+            namesReturned: true,
+            previewsReturned: true,
+            rawPayloadReturned: true,
+            privateName: "Sensitive rollback name",
+            privatePath: "/tmp/default-workspace/rollback-secret.txt",
+          },
+        },
+        notifications: {
+          "thread/rolledBack": 1,
+        },
+      };
+    },
+    actionAuditLog: createActionAuditLog({
+      path: actionAuditLogPath,
+      now: () => "2026-06-29T00:00:00.000Z",
+    }),
+  });
+
+  try {
+    const getResponse = await fetch(`${url}/api/thread-rollback-preflight`, {
+      headers: apiHeaders(server),
+    });
+    assert.equal(getResponse.status, 405);
+
+    const preflightResponse = await fetch(`${url}/api/thread-rollback-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        thread: "abcd1234",
+        numTurns: 2,
+      }),
+    });
+    assert.equal(preflightResponse.status, 200);
+    const preflightPayload = await preflightResponse.json();
+    const preflightSerialized = JSON.stringify(preflightPayload);
+    assert.equal(preflightPayload.action.type, "thread-rollback-preflight");
+    assert.equal(preflightPayload.action.method, "thread/rollback");
+    assert.equal(preflightPayload.action.threadRolledBack, false);
+    assert.equal(preflightPayload.thread.threadIdSuffix, "abcd1234");
+    assert.equal(preflightPayload.thread.numTurns, 2);
+    assert.equal(preflightPayload.policy.executionGateEnabled, true);
+    assert.equal(preflightPayload.policy.threadRolledBack, false);
+    assertActionPreflight(preflightPayload, "thread-rollback-preflight", "default");
+    assert.equal(preflightSerialized.includes("/tmp/default-workspace"), false);
+    assert.equal(calls.length, 0);
+
+    const response = await fetch(`${url}/api/thread-rollback-action`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        thread: "abcd1234",
+        numTurns: 2,
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, true);
+    assert.equal(payload.appServer.modelTraffic, false);
+    assert.deepEqual(payload.appServer.auditedMethods, ["thread/list", "thread/rollback"]);
+    assert.equal(payload.action.type, "thread-rollback");
+    assert.equal(payload.action.threadRolledBack, true);
+    assert.equal(payload.action.threadStateMutated, true);
+    assert.equal(payload.preflight.tokenConsumed, true);
+    assert.equal(payload.thread.threadIdSuffix, "abcd1234");
+    assert.equal(payload.thread.numTurns, 2);
+    assert.equal(payload.thread.returnedTurnCount, 3);
+    assert.equal(payload.target.threadIdSuffix, "abcd1234");
+    assert.equal(payload.target.rolledBack, true);
+    assert.equal(payload.target.numTurns, 2);
+    assert.equal(payload.target.returnedTurnCount, 3);
+    assert.equal(payload.target.fullIdsReturned, false);
+    assert.equal(payload.probes.threadRollback.threadContentReturned, false);
+    assert.equal(payload.probes.threadRollback.fullIdsReturned, false);
+    assert.equal(payload.probes.threadRollback.cwdReturned, false);
+    assert.equal(payload.probes.threadRollback.pathsReturned, false);
+    assert.equal(payload.probes.threadRollback.namesReturned, false);
+    assert.equal(payload.probes.threadRollback.previewsReturned, false);
+    assert.equal(payload.probes.threadRollback.rawPayloadReturned, false);
+    assert.equal(payload.policy.threadRolledBack, true);
+    assert.equal(payload.policy.threadStateMutated, true);
+    assert.equal(payload.policy.turnStarted, false);
+    assert.equal(payload.policy.auditLogPersistent, true);
+    assert.equal(payload.policy.auditLogWritableChecked, true);
+    assert.equal(payload.policy.auditLogWritten, true);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].cwd, "/tmp/default-workspace");
+    assert.equal(calls[0].threadIdSuffix, "abcd1234");
+    assert.equal(calls[0].numTurns, 2);
+    for (const marker of [
+      "/tmp/default-workspace",
+      "/tmp/private-home",
+      "codexHome",
+      "userAgent",
+      "Sensitive rollback name",
+      "rollback-secret.txt",
+      preflightPayload.preflight.token,
+      "\"threadContentReturned\":true",
+      "\"fullIdsReturned\":true",
+      "\"pathsReturned\":true",
+      "\"namesReturned\":true",
+      "\"previewsReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+
+    const gateResponse = await fetch(`${url}/api/execution-gate`, {
+      headers: apiHeaders(server),
+    });
+    assert.equal(gateResponse.status, 200);
+    assertThreadLifecycleHistory(await gateResponse.json(), {
+      count: 1,
+      type: "thread-rollback",
+      method: "thread/rollback",
+      threadIdSuffix: "abcd1234",
+      token: preflightPayload.preflight.token,
+      appServerTraffic: true,
+      modelTraffic: false,
+      threadRolledBack: true,
+      threadStateMutated: true,
+      rolledBack: true,
+      numTurns: 2,
+      returnedTurnCount: 3,
+    });
+
+    const replay = await fetch(`${url}/api/thread-rollback-action`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        thread: "abcd1234",
+        numTurns: 2,
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    assert.equal(replay.status, 409);
+
+    const auditRecords = (await readFile(actionAuditLogPath, "utf8"))
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    assert.equal(auditRecords.length, 1);
+    assert.equal(auditRecords[0].event, "thread-rollback-recorded");
+    assert.equal(auditRecords[0].action.type, "thread-rollback");
+    assert.equal(auditRecords[0].action.method, "thread/rollback");
+    assert.equal(auditRecords[0].target.threadIdSuffix, "abcd1234");
+    assert.equal(auditRecords[0].target.rolledBack, true);
+    assert.equal(auditRecords[0].target.numTurns, 2);
+    assert.equal(auditRecords[0].target.returnedTurnCount, 3);
+    assert.equal(auditRecords[0].result.rolledBack, true);
+    assert.equal(auditRecords[0].result.numTurns, 2);
+    assert.equal(auditRecords[0].result.threadContentReturned, false);
+    assert.equal(auditRecords[0].policy.rawRequestBodyReturned, false);
+    const auditSerialized = JSON.stringify(auditRecords);
+    for (const marker of [
+      preflightPayload.preflight.token,
+      "/tmp/default-workspace",
+      "/tmp/private-home",
+      "codexHome",
+      "userAgent",
+      "Sensitive rollback name",
+      "rollback-secret.txt",
       "\"threadContentReturned\":true",
       "\"fullIdsReturned\":true",
       "\"pathsReturned\":true",
@@ -25934,13 +26330,17 @@ function assertThreadLifecycleHistory(
     threadForked = false,
     threadRenamed = false,
     threadDeleted = false,
+    threadRolledBack = false,
     threadStateMutated = false,
     threadCompactionStarted = false,
     archived = null,
     deleted = null,
     forked = null,
     renamed = null,
+    rolledBack = null,
     excludeTurns = null,
+    numTurns = 0,
+    returnedTurnCount = 0,
     sourceThreadIdSuffix = null,
     nameCharCount = 0,
     nameLineCount = 0,
@@ -25961,6 +26361,7 @@ function assertThreadLifecycleHistory(
       threadRenamed ||
       threadStateMutated ||
       threadDeleted ||
+      threadRolledBack ||
       threadCompactionStarted,
   );
   assert.equal(history.preflightTokensReturned, false);
@@ -26014,6 +26415,7 @@ function assertThreadLifecycleHistory(
   assert.equal(item.action.threadForked, threadForked);
   assert.equal(item.action.threadRenamed, threadRenamed);
   assert.equal(item.action.threadDeleted, threadDeleted);
+  assert.equal(item.action.threadRolledBack, threadRolledBack);
   assert.equal(item.action.threadStateMutated, threadStateMutated);
   assert.equal(item.action.threadCompactionStarted, threadCompactionStarted);
   assert.equal(item.action.appServerTouched, appServerTraffic);
@@ -26025,7 +26427,10 @@ function assertThreadLifecycleHistory(
   assert.equal(item.target.deleted, deleted);
   assert.equal(item.target.forked, forked);
   assert.equal(item.target.renamed, renamed);
+  assert.equal(item.target.rolledBack, rolledBack);
   assert.equal(item.target.excludeTurns, excludeTurns);
+  assert.equal(item.target.numTurns, numTurns);
+  assert.equal(item.target.returnedTurnCount, returnedTurnCount);
   assert.equal(item.target.nameCharCount, nameCharCount);
   assert.equal(item.target.nameLineCount, nameLineCount);
   assert.equal(item.target.fullIdsReturned, false);
@@ -26033,7 +26438,10 @@ function assertThreadLifecycleHistory(
   assert.equal(item.result.deleted, deleted);
   assert.equal(item.result.forked, forked);
   assert.equal(item.result.renamed, renamed);
+  assert.equal(item.result.rolledBack, rolledBack);
   assert.equal(item.result.excludeTurns, excludeTurns);
+  assert.equal(item.result.numTurns, numTurns);
+  assert.equal(item.result.returnedTurnCount, returnedTurnCount);
   assert.equal(item.result.nameCharCount, nameCharCount);
   assert.equal(item.result.nameLineCount, nameLineCount);
   assert.equal(item.result.threadContentReturned, false);
@@ -26050,6 +26458,7 @@ function assertThreadLifecycleHistory(
   assert.equal(item.policy.threadForked, threadForked);
   assert.equal(item.policy.threadRenamed, threadRenamed);
   assert.equal(item.policy.threadDeleted, threadDeleted);
+  assert.equal(item.policy.threadRolledBack, threadRolledBack);
   assert.equal(item.policy.fullIdsReturned, false);
   assert.equal(item.policy.pathsReturned, false);
   assert.equal(item.policy.namesReturned, false);

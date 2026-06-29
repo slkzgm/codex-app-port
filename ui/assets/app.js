@@ -241,6 +241,10 @@ const elements = {
   threadRenamePreflightButton: document.querySelector("#thread-rename-preflight-button"),
   threadRenameButton: document.querySelector("#thread-rename-button"),
   threadRenameStatus: document.querySelector("#thread-rename-status"),
+  threadRollbackTurnsInput: document.querySelector("#thread-rollback-turns-input"),
+  threadRollbackPreflightButton: document.querySelector("#thread-rollback-preflight-button"),
+  threadRollbackButton: document.querySelector("#thread-rollback-button"),
+  threadRollbackStatus: document.querySelector("#thread-rollback-status"),
   threadDeletePreflightButton: document.querySelector("#thread-delete-preflight-button"),
   threadDeleteButton: document.querySelector("#thread-delete-button"),
   threadDeleteStatus: document.querySelector("#thread-delete-status"),
@@ -553,6 +557,7 @@ let lastThreadStartPreflight = null;
 let lastThreadArchivePreflight = null;
 let lastThreadForkPreflight = null;
 let lastThreadRenamePreflight = null;
+let lastThreadRollbackPreflight = null;
 let lastThreadDeletePreflight = null;
 let lastThreadCompactPreflight = null;
 let lastAccountLoginPreflight = null;
@@ -606,6 +611,7 @@ elements.workspaceSelect.addEventListener("change", () => {
   lastThreadArchivePreflight = null;
   lastThreadForkPreflight = null;
   lastThreadRenamePreflight = null;
+  lastThreadRollbackPreflight = null;
   lastThreadDeletePreflight = null;
   lastThreadCompactPreflight = null;
   lastAccountLoginPreflight = null;
@@ -639,6 +645,7 @@ elements.workspaceSelect.addEventListener("change", () => {
   elements.threadStartButton.disabled = true;
   elements.threadArchiveButton.disabled = true;
   elements.threadRenameButton.disabled = true;
+  elements.threadRollbackButton.disabled = true;
   elements.threadCompactButton.disabled = true;
   elements.accountLoginButton.disabled = true;
   elements.accountLoginCancelPreflightButton.disabled = true;
@@ -646,6 +653,7 @@ elements.workspaceSelect.addEventListener("change", () => {
   elements.accountLogoutButton.disabled = true;
   lastGitWorktreePreflight = null;
   lastThreadRenamePreflight = null;
+  lastThreadRollbackPreflight = null;
   clearThreadDetail();
   clearGitWorktree();
   stopEventStream();
@@ -796,6 +804,19 @@ elements.threadRenamePreflightButton.addEventListener("click", () => {
 
 elements.threadRenameButton.addEventListener("click", () => {
   runThreadRenameAction();
+});
+
+elements.threadRollbackTurnsInput.addEventListener("input", () => {
+  lastThreadRollbackPreflight = null;
+  updateThreadRollbackState();
+});
+
+elements.threadRollbackPreflightButton.addEventListener("click", () => {
+  runThreadRollbackPreflight();
+});
+
+elements.threadRollbackButton.addEventListener("click", () => {
+  runThreadRollbackAction();
 });
 
 elements.threadDeletePreflightButton.addEventListener("click", () => {
@@ -1302,6 +1323,14 @@ function threadRenamePreflightEndpoint() {
 
 function threadRenameEndpoint() {
   return "/api/thread-rename-action";
+}
+
+function threadRollbackPreflightEndpoint() {
+  return "/api/thread-rollback-preflight";
+}
+
+function threadRollbackEndpoint() {
+  return "/api/thread-rollback-action";
 }
 
 function threadDeletePreflightEndpoint() {
@@ -4222,6 +4251,7 @@ async function loadThreadDetail(threadIdSuffix, { archived = false } = {}) {
   lastThreadArchivePreflight = null;
   lastThreadForkPreflight = null;
   lastThreadRenamePreflight = null;
+  lastThreadRollbackPreflight = null;
   lastThreadDeletePreflight = null;
   lastThreadCompactPreflight = null;
   elements.liveSessionControlThread.value = threadIdSuffix;
@@ -4233,6 +4263,7 @@ async function loadThreadDetail(threadIdSuffix, { archived = false } = {}) {
   updateThreadArchiveState();
   updateThreadForkState();
   updateThreadRenameState();
+  updateThreadRollbackState();
   updateThreadDeleteState();
   updateThreadCompactState();
   updateTurnDraftState();
@@ -4494,10 +4525,12 @@ async function runThreadArchiveAction() {
     lastThreadArchivePreflight = null;
     lastThreadForkPreflight = null;
     lastThreadRenamePreflight = null;
+    lastThreadRollbackPreflight = null;
     lastThreadDeletePreflight = null;
     updateThreadArchiveState();
     updateThreadForkState();
     updateThreadRenameState();
+    updateThreadRollbackState();
     updateThreadDeleteState();
   }
 }
@@ -4581,7 +4614,9 @@ async function runThreadForkAction() {
     renderError(error);
   } finally {
     lastThreadForkPreflight = null;
+    lastThreadRollbackPreflight = null;
     updateThreadForkState();
+    updateThreadRollbackState();
   }
 }
 
@@ -4664,7 +4699,90 @@ async function runThreadRenameAction() {
     renderError(error);
   } finally {
     updateThreadRenameState();
+    updateThreadRollbackState();
     updateThreadForkState();
+  }
+}
+
+async function runThreadRollbackPreflight() {
+  if (!selectedThreadIdSuffix) {
+    elements.threadRollbackStatus.textContent = "Select a thread first";
+    return;
+  }
+  const numTurns = Number(elements.threadRollbackTurnsInput.value);
+  if (!Number.isSafeInteger(numTurns) || numTurns < 1 || numTurns > 50) {
+    elements.threadRollbackStatus.textContent = "Turns must be 1-50";
+    return;
+  }
+
+  setThreadRollbackLoading(true);
+  lastThreadRollbackPreflight = null;
+  elements.threadRollbackButton.disabled = true;
+  hideError();
+
+  const body = {
+    workspace: selectedWorkspaceId,
+    thread: selectedThreadIdSuffix,
+    numTurns,
+  };
+
+  try {
+    const response = await fetch(threadRollbackPreflightEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify(body),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    lastThreadRollbackPreflight = {
+      body,
+      token: payload.preflight?.token ?? null,
+      enabled: payload.policy?.executionGateEnabled === true,
+    };
+    renderThreadRollbackPreflight(payload);
+  } catch (error) {
+    elements.threadRollbackStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    setThreadRollbackLoading(false);
+  }
+}
+
+async function runThreadRollbackAction() {
+  if (!lastThreadRollbackPreflight?.token || !lastThreadRollbackPreflight?.body) {
+    elements.threadRollbackStatus.textContent = "Run rollback check first";
+    return;
+  }
+
+  elements.threadRollbackButton.disabled = true;
+  elements.threadRollbackStatus.textContent = "Rolling back";
+  hideError();
+
+  try {
+    const response = await fetch(threadRollbackEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify({
+        ...lastThreadRollbackPreflight.body,
+        preflightToken: lastThreadRollbackPreflight.token,
+      }),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderThreadRollbackAction(payload);
+    await refreshStatus({ manageLoading: false });
+  } catch (error) {
+    elements.threadRollbackStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    lastThreadRollbackPreflight = null;
+    updateThreadRollbackState();
   }
 }
 
@@ -4747,8 +4865,10 @@ async function runThreadDeleteAction() {
     lastThreadDeletePreflight = null;
     lastThreadForkPreflight = null;
     lastThreadRenamePreflight = null;
+    lastThreadRollbackPreflight = null;
     updateThreadForkState();
     updateThreadRenameState();
+    updateThreadRollbackState();
     updateThreadDeleteState();
   }
 }
@@ -5436,6 +5556,21 @@ function renderThreadRenameAction(payload) {
     payload.target?.renamed === true ? `Renamed (${count})` : "Rename done";
 }
 
+function renderThreadRollbackPreflight(payload) {
+  const count = Number.isSafeInteger(payload.thread?.numTurns) ? payload.thread.numTurns : 0;
+  elements.threadRollbackStatus.textContent = payload.policy?.executionGateEnabled
+    ? `Rollback ready (${count})`
+    : "Rollback blocked";
+  elements.threadRollbackButton.disabled =
+    !lastThreadRollbackPreflight?.token || lastThreadRollbackPreflight.enabled !== true;
+}
+
+function renderThreadRollbackAction(payload) {
+  const count = Number.isSafeInteger(payload.target?.numTurns) ? payload.target.numTurns : 0;
+  elements.threadRollbackStatus.textContent =
+    payload.target?.rolledBack === true ? `Rolled back ${count}` : "Rollback done";
+}
+
 function renderThreadDeletePreflight(payload) {
   elements.threadDeleteStatus.textContent = payload.policy?.executionGateEnabled
     ? "Delete ready"
@@ -5894,16 +6029,20 @@ function clearThreadDetail() {
   lastThreadArchivePreflight = null;
   lastThreadForkPreflight = null;
   lastThreadRenamePreflight = null;
+  lastThreadRollbackPreflight = null;
   lastThreadDeletePreflight = null;
   lastThreadCompactPreflight = null;
   elements.liveSessionControlThread.value = "";
   elements.liveSessionControlButton.disabled = true;
   elements.threadRenameInput.value = "";
   elements.threadRenameInput.disabled = true;
+  elements.threadRollbackTurnsInput.value = "1";
+  elements.threadRollbackTurnsInput.disabled = true;
   elements.selectedThreadText.textContent = "None";
   elements.threadArchiveStatus.textContent = "Select a thread to manage archive state.";
   elements.threadForkStatus.textContent = "Select a thread to fork.";
   elements.threadRenameStatus.textContent = "Select a thread to rename.";
+  elements.threadRollbackStatus.textContent = "Select a thread to roll back.";
   elements.threadDeleteStatus.textContent = "Select a thread to delete.";
   elements.threadCompactStatus.textContent = "Select a loaded active thread to compact.";
   elements.threadDetailMeta.replaceChildren();
@@ -5914,6 +6053,7 @@ function clearThreadDetail() {
   updateThreadArchiveState();
   updateThreadForkState();
   updateThreadRenameState();
+  updateThreadRollbackState();
   updateThreadDeleteState();
   updateThreadCompactState();
   renderThreadsSelection();
@@ -6010,6 +6150,21 @@ function updateThreadRenameState() {
     elements.threadRenameStatus.textContent = "Select a thread to rename.";
   } else if (!hasName && elements.threadRenameStatus.textContent !== "Renamed") {
     elements.threadRenameStatus.textContent = "Name required.";
+  }
+}
+
+function updateThreadRollbackState() {
+  const hasThread = Boolean(selectedThreadIdSuffix);
+  const numTurns = Number(elements.threadRollbackTurnsInput.value);
+  const hasValidTurns = Number.isSafeInteger(numTurns) && numTurns >= 1 && numTurns <= 50;
+  elements.threadRollbackTurnsInput.disabled = !hasThread;
+  elements.threadRollbackPreflightButton.disabled = !hasThread || !hasValidTurns;
+  elements.threadRollbackButton.disabled =
+    !lastThreadRollbackPreflight?.token || lastThreadRollbackPreflight.enabled !== true;
+  if (!hasThread) {
+    elements.threadRollbackStatus.textContent = "Select a thread to roll back.";
+  } else if (!hasValidTurns && elements.threadRollbackStatus.textContent !== "Rolled back") {
+    elements.threadRollbackStatus.textContent = "Turns must be 1-50.";
   }
 }
 
@@ -6281,6 +6436,8 @@ function renderThreadLifecycleActionHistory(history) {
       typeof target.archived === "boolean" ? (target.archived ? "archived" : "active") : null,
       typeof target.forked === "boolean" && target.forked ? "forked" : null,
       typeof target.renamed === "boolean" && target.renamed ? "renamed" : null,
+      typeof target.rolledBack === "boolean" && target.rolledBack ? "rolled back" : null,
+      target.numTurns ? `${target.numTurns} turns` : null,
       target.nameCharCount ? `${target.nameCharCount} chars` : null,
       action.modelTraffic ? "model traffic" : "no model",
     ]);
@@ -6301,6 +6458,7 @@ function renderThreadLifecycleActionHistory(history) {
       action.threadCreated ? "created" : null,
       action.threadForked ? "forked" : null,
       action.threadRenamed ? "renamed" : null,
+      action.threadRolledBack ? "rolled back" : null,
       action.threadStateMutated ? "state changed" : null,
       action.threadCompactionStarted ? "compact started" : null,
       item.policy?.auditLogWritten ? "audit log" : null,
@@ -9720,6 +9878,22 @@ function setThreadDeleteLoading(isLoading) {
   elements.threadDeletePreflightButton.textContent = isLoading ? "Checking" : "Delete Check";
   if (isLoading) {
     elements.threadDeleteStatus.textContent = "Checking";
+  }
+}
+
+function setThreadRollbackLoading(isLoading) {
+  const hasThread = Boolean(selectedThreadIdSuffix);
+  const numTurns = Number(elements.threadRollbackTurnsInput.value);
+  const hasValidTurns = Number.isSafeInteger(numTurns) && numTurns >= 1 && numTurns <= 50;
+  elements.threadRollbackTurnsInput.disabled = isLoading || !hasThread;
+  elements.threadRollbackPreflightButton.disabled = isLoading || !hasThread || !hasValidTurns;
+  elements.threadRollbackButton.disabled =
+    isLoading ||
+    !lastThreadRollbackPreflight?.token ||
+    lastThreadRollbackPreflight.enabled !== true;
+  elements.threadRollbackPreflightButton.textContent = isLoading ? "Checking" : "Rollback Check";
+  if (isLoading) {
+    elements.threadRollbackStatus.textContent = "Checking";
   }
 }
 

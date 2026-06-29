@@ -150,6 +150,12 @@ export const INTEGRATION_METHOD_AUDIT = Object.freeze([
     "blocked",
   ),
   integrationMethod(
+    "thread/rollback",
+    "thread-lifecycle",
+    "Drops recent persisted thread turns and returns updated thread history that can contain thread content.",
+    "blocked",
+  ),
+  integrationMethod(
     "thread/settings/update",
     "thread-lifecycle",
     "Mutates loaded thread settings for later turns.",

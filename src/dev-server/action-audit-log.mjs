@@ -42,6 +42,7 @@ const ACTION_AUDIT_EVENTS = new Set([
   "thread-delete-recorded",
   "thread-fork-recorded",
   "thread-rename-recorded",
+  "thread-rollback-recorded",
   "thread-start-recorded",
 ]);
 
@@ -233,6 +234,8 @@ function actionAuditEvent(actionType) {
       return "thread-fork-recorded";
     case "thread-rename":
       return "thread-rename-recorded";
+    case "thread-rollback":
+      return "thread-rollback-recorded";
     case "thread-start":
       return "thread-start-recorded";
     case "live-session-control":
@@ -532,6 +535,17 @@ function sanitizeAction(action, actionType, { appServer }) {
       modelTraffic: false,
     };
   }
+  if (actionType === "thread-rollback") {
+    return {
+      type: "thread-rollback",
+      method: "thread/rollback",
+      execution: safeString(action.execution, 40) ?? "rolled-back",
+      threadRolledBack: Boolean(action.threadRolledBack),
+      threadStateMutated: Boolean(action.threadStateMutated),
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: false,
+    };
+  }
   if (actionType === "thread-compact") {
     return {
       type: "thread-compact",
@@ -809,6 +823,16 @@ function sanitizeTarget(target, actionType) {
       renamed: Boolean(target.renamed),
       nameCharCount: safeCount(target.nameCharCount),
       nameLineCount: safeCount(target.nameLineCount),
+      fullIdsReturned: false,
+      pathsReturned: false,
+    };
+  }
+  if (actionType === "thread-rollback") {
+    return {
+      threadIdSuffix: safeString(target.threadIdSuffix, 16),
+      rolledBack: Boolean(target.rolledBack),
+      numTurns: safeCount(target.numTurns),
+      returnedTurnCount: safeCount(target.returnedTurnCount),
       fullIdsReturned: false,
       pathsReturned: false,
     };
@@ -1188,6 +1212,16 @@ function sanitizeResult(result, actionType) {
       threadContentReturned: false,
     };
   }
+  if (actionType === "thread-rollback") {
+    return {
+      status: safeString(result.status, 80) ?? "rolled-back",
+      rolledBack: Boolean(result.rolledBack),
+      numTurns: safeCount(result.numTurns),
+      returnedTurnCount: safeCount(result.returnedTurnCount),
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
   if (actionType === "thread-compact") {
     return {
       status: safeString(result.status, 80) ?? "compact-started",
@@ -1325,6 +1359,7 @@ function sanitizeActionType(value) {
     "thread-delete",
     "thread-fork",
     "thread-rename",
+    "thread-rollback",
     "thread-start",
   ].includes(value)
     ? value
