@@ -577,6 +577,13 @@ Current M1 status:
   `skills/extraRoots/set` payload, and responses plus action audit records
   reduced to status/count/shape metadata without extra roots, paths,
   notifications, tokens, or raw payloads
+- done: opt-in `/api/remote-control-disable` behind
+  `CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_DISABLE=1` and a matching one-time
+  preflight token, with preflight-only validation by default, no browser
+  remote-control params accepted, `null` as the fixed `remoteControl/disable`
+  payload, and responses plus action audit records reduced to
+  status/count/shape metadata without raw status payloads, server names, installation
+  ids, environment ids, notifications, tokens, or raw payloads
 - done: opt-in `/api/config-value-write` behind
   `CODEX_APP_PORT_ALLOW_CONFIG_VALUE_WRITE=1`, an exact
   `CODEX_APP_PORT_CONFIG_VALUE_WRITE_ALLOWLIST` key match, and a matching

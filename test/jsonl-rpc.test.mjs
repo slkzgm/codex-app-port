@@ -17,6 +17,7 @@ import {
   runPluginReadProbe,
   runPluginUninstallProbe,
   runProcessSpawnProbe,
+  runRemoteControlDisableProbe,
   runSkillsConfigWriteProbe,
   runSkillsExtraRootsClearProbe,
   runTerminalCommandExecProbe,
@@ -1379,6 +1380,51 @@ test("runSkillsExtraRootsClearProbe clears extra roots without accepting paths",
       delete process.env.CODEX_APP_PORT_ALLOW_SKILLS_EXTRA_ROOTS_CLEAR;
     } else {
       process.env.CODEX_APP_PORT_ALLOW_SKILLS_EXTRA_ROOTS_CLEAR = previous;
+    }
+  }
+});
+
+test("runRemoteControlDisableProbe disables remote control without returning identities", async () => {
+  const previous = process.env.CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_DISABLE;
+  process.env.CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_DISABLE = "1";
+  try {
+    const summary = await runRemoteControlDisableProbe({
+      codexBin: process.execPath,
+      codexArgs: [mockServer.pathname],
+      cwd: process.cwd(),
+      timeoutMs: 1_000,
+    });
+
+    assert.equal(summary.ok, true);
+    const disable = summary.probes.remoteControlDisable;
+    assert.equal(disable.method, "remoteControl/disable");
+    assert.equal(disable.status, "disabled");
+    assert.equal(disable.statusKnown, true);
+    assert.equal(disable.responseObject, true);
+    assert.equal(disable.responseTopLevelKeyCount, 4);
+    assert.equal(disable.paramsAcceptedFromBrowser, false);
+    assert.equal(disable.statusValueReturned, false);
+    assert.equal(disable.environmentIdReturned, false);
+    assert.equal(disable.installationIdReturned, false);
+    assert.equal(disable.serverNameReturned, false);
+    assert.equal(disable.rawPayloadReturned, false);
+
+    const serialized = JSON.stringify(summary);
+    for (const marker of [
+      "env_private_remote_control",
+      "inst_private_remote_control",
+      "private-remote-control-server",
+      "mock-codex-home",
+      "userAgent",
+      "codexHome",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    if (previous === undefined) {
+      delete process.env.CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_DISABLE;
+    } else {
+      process.env.CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_DISABLE = previous;
     }
   }
 });

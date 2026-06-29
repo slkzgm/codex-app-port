@@ -703,6 +703,40 @@ function handle(message) {
     return;
   }
 
+  if (message.method === "remoteControl/disable") {
+    if (message.params !== null && message.params !== undefined) {
+      send({
+        id: message.id,
+        error: {
+          code: -32602,
+          message: "remote control disable mock accepts only null params",
+        },
+      });
+      return;
+    }
+    send({
+      id: message.id,
+      result: {
+        status: "disabled",
+        environmentId: "env_private_remote_control",
+        installationId: "inst_private_remote_control",
+        serverName: "private-remote-control-server",
+      },
+    });
+    process.stdout.write(
+      `${JSON.stringify({
+        method: "remoteControl/status/changed",
+        params: {
+          status: "disabled",
+          environmentId: "env_private_remote_control",
+          installationId: "inst_private_remote_control",
+          serverName: "private-remote-control-server",
+        },
+      })}\n`,
+    );
+    return;
+  }
+
   if (message.method === "skills/list") {
     send({
       id: message.id,

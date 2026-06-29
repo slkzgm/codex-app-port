@@ -62,6 +62,7 @@ test("protocol contracts name the app-server methods currently used", () => {
   assert.equal(APP_SERVER_METHODS.pluginShareList, "plugin/share/list");
   assert.equal(APP_SERVER_METHODS.pluginSkillRead, "plugin/skill/read");
   assert.equal(APP_SERVER_METHODS.pluginUninstall, "plugin/uninstall");
+  assert.equal(APP_SERVER_METHODS.remoteControlDisable, "remoteControl/disable");
   assert.equal(APP_SERVER_METHODS.remoteControlStatusRead, "remoteControl/status/read");
   assert.equal(APP_SERVER_METHODS.skillsConfigWrite, "skills/config/write");
   assert.equal(APP_SERVER_METHODS.skillsExtraRootsSet, "skills/extraRoots/set");

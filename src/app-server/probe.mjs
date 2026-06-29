@@ -776,6 +776,24 @@ function summarizeSkillsExtraRootsClear(response) {
   };
 }
 
+function summarizeRemoteControlDisable(response) {
+  const objectResponse = response && typeof response === "object" && !Array.isArray(response);
+  const status = safeRemoteControlStatus(response?.status);
+  return {
+    method: APP_SERVER_METHODS.remoteControlDisable,
+    status,
+    statusKnown: status !== "unknown",
+    responseObject: objectResponse,
+    responseTopLevelKeyCount: objectResponse ? Object.keys(response).length : 0,
+    paramsAcceptedFromBrowser: false,
+    statusValueReturned: false,
+    environmentIdReturned: false,
+    installationIdReturned: false,
+    serverNameReturned: false,
+    rawPayloadReturned: false,
+  };
+}
+
 export function summarizeLoadedSessions(
   response,
   { limit = DEFAULT_LOADED_SESSION_LIMIT } = {},
@@ -2453,6 +2471,70 @@ export async function runSkillsExtraRootsClearProbe({
       initialize: summarizeInitialize(initialize),
       probes: {
         skillsExtraRootsClear: summarizeSkillsExtraRootsClear(skillsExtraRootsClear),
+      },
+      notifications: notificationCounts(notifications),
+    };
+  } finally {
+    await client.close();
+  }
+}
+
+export async function runRemoteControlDisableProbe({
+  codexBin = process.env.CODEX_BIN || "codex",
+  codexArgs = ["app-server", "--listen", "stdio://"],
+  cwd = process.cwd(),
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+  onNotification = null,
+} = {}) {
+  if (process.env.CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_DISABLE !== "1") {
+    throw new Error(
+      "remote control disable requires CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_DISABLE=1 because it mutates local Codex remote-control state",
+    );
+  }
+
+  const notifications = [];
+  const client = new JsonlRpcClient({
+    command: codexBin,
+    args: codexArgs,
+    cwd,
+    timeoutMs,
+    onNotification(notification) {
+      notifications.push({
+        method: notification.method,
+      });
+      onNotification?.(notification);
+    },
+  });
+
+  await client.start();
+
+  try {
+    const initialize = normalizeInitializeResponse(
+      await client.request(APP_SERVER_METHODS.initialize, {
+        clientInfo: {
+          name: "codex_app_port",
+          title: "Codex App Port",
+          version: "0.1.0",
+        },
+        capabilities: {
+          experimentalApi: false,
+          requestAttestation: false,
+        },
+      }),
+    );
+
+    client.notify(APP_SERVER_METHODS.initialized);
+
+    const remoteControlDisable = await client.request(APP_SERVER_METHODS.remoteControlDisable, null);
+
+    return {
+      ok: true,
+      generatedAt: new Date().toISOString(),
+      transport: "stdio-jsonl",
+      protocol: "json-rpc-2.0-without-jsonrpc-field",
+      initialize: summarizeInitialize(initialize),
+      probes: {
+        remoteControlDisable: summarizeRemoteControlDisable(remoteControlDisable),
       },
       notifications: notificationCounts(notifications),
     };

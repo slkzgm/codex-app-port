@@ -541,6 +541,15 @@ one-time preflight token is supplied. The app-server call is fixed to
 before app-server traffic, and responses plus action audit records return only
 status/count/shape metadata without extra roots, paths, tokens, or raw
 payloads.
+Remote control disable is also exposed only as a defensive opt-in action.
+`/api/remote-control-disable-preflight` accepts no remote-control parameters,
+and `/api/remote-control-disable` can call `remoteControl/disable` only when
+`CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_DISABLE=1` is set and a matching one-time
+preflight token is supplied. The app-server call sends `null` params; browser
+`ephemeral`, identity, pairing, enable, and client-control fields are rejected
+before app-server traffic, and responses plus action audit records omit remote
+raw status payloads, server names, installation ids, environment ids, tokens,
+and raw payloads.
 Config value preflight accepts only a safe dotted key path, JSON-text value, and
 `replace` or `upsert` merge strategy, then returns key/value shape counts only.
 `/api/config-value-write` can execute `config/value/write` only when

@@ -177,6 +177,14 @@ const elements = {
   skillsExtraRootsClearCount: document.querySelector("#skills-extra-roots-clear-count"),
   skillsExtraRootsBrowserText: document.querySelector("#skills-extra-roots-browser-text"),
   skillsExtraRootsResultText: document.querySelector("#skills-extra-roots-result-text"),
+  remoteControlDisablePreflightButton: document.querySelector(
+    "#remote-control-disable-preflight-button",
+  ),
+  remoteControlDisableButton: document.querySelector("#remote-control-disable-button"),
+  remoteControlDisableStatus: document.querySelector("#remote-control-disable-status"),
+  remoteControlDisableParamsText: document.querySelector("#remote-control-disable-params-text"),
+  remoteControlDisableStatusText: document.querySelector("#remote-control-disable-status-text"),
+  remoteControlDisableIdentityText: document.querySelector("#remote-control-disable-identity-text"),
   integrationActionForm: document.querySelector("#integration-action-form"),
   integrationMethodSelect: document.querySelector("#integration-method-select"),
   integrationTargetInput: document.querySelector("#integration-target-input"),
@@ -558,6 +566,7 @@ let lastPluginReadPreflight = null;
 let lastPluginUninstallPreflight = null;
 let lastSkillsConfigPreflight = null;
 let lastSkillsExtraRootsClearPreflight = null;
+let lastRemoteControlDisablePreflight = null;
 let lastTerminalCleanPreflight = null;
 let lastTerminalBackgroundTerminatePreflight = null;
 let selectedTerminalBackgroundRef = null;
@@ -614,6 +623,7 @@ elements.workspaceSelect.addEventListener("change", () => {
   lastPluginUninstallPreflight = null;
   lastSkillsConfigPreflight = null;
   lastSkillsExtraRootsClearPreflight = null;
+  lastRemoteControlDisablePreflight = null;
   lastTerminalCleanPreflight = null;
   lastTerminalBackgroundTerminatePreflight = null;
   selectedTerminalBackgroundRef = null;
@@ -651,6 +661,7 @@ elements.workspaceSelect.addEventListener("change", () => {
   elements.pluginUninstallRunButton.disabled = true;
   elements.skillsConfigRunButton.disabled = true;
   elements.skillsExtraRootsClearButton.disabled = true;
+  elements.remoteControlDisableButton.disabled = true;
   elements.terminalCleanButton.disabled = true;
   elements.terminalBackgroundTerminatePreflightButton.disabled = true;
   elements.terminalBackgroundTerminateButton.disabled = true;
@@ -1139,6 +1150,14 @@ elements.skillsExtraRootsClearButton.addEventListener("click", () => {
   runSkillsExtraRootsClear();
 });
 
+elements.remoteControlDisablePreflightButton.addEventListener("click", () => {
+  runRemoteControlDisablePreflight();
+});
+
+elements.remoteControlDisableButton.addEventListener("click", () => {
+  runRemoteControlDisable();
+});
+
 elements.configValueForm.addEventListener("submit", (event) => {
   event.preventDefault();
   runConfigValuePreflight();
@@ -1485,6 +1504,14 @@ function skillsExtraRootsClearPreflightEndpoint() {
 
 function skillsExtraRootsClearEndpoint() {
   return "/api/skills-extra-roots-clear";
+}
+
+function remoteControlDisablePreflightEndpoint() {
+  return "/api/remote-control-disable-preflight";
+}
+
+function remoteControlDisableEndpoint() {
+  return "/api/remote-control-disable";
 }
 
 function configValuePreflightEndpoint() {
@@ -2538,6 +2565,75 @@ async function runSkillsExtraRootsClear() {
     lastSkillsExtraRootsClearPreflight = null;
     elements.skillsExtraRootsClearButton.disabled = true;
     setSkillsExtraRootsClearLoading(false);
+  }
+}
+
+async function runRemoteControlDisablePreflight() {
+  setRemoteControlDisableLoading(true);
+  hideError();
+
+  try {
+    lastRemoteControlDisablePreflight = null;
+    elements.remoteControlDisableButton.disabled = true;
+    const body = {
+      workspace: selectedWorkspaceId,
+    };
+    const response = await fetch(remoteControlDisablePreflightEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify(body),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    lastRemoteControlDisablePreflight = {
+      body,
+      token: payload.preflight?.token,
+      enabled: payload.policy?.executionGateEnabled === true,
+    };
+    renderRemoteControlDisablePreflight(payload);
+    await refreshSettingsIntegrations().catch(() => {});
+  } catch (error) {
+    elements.remoteControlDisableStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    setRemoteControlDisableLoading(false);
+  }
+}
+
+async function runRemoteControlDisable() {
+  if (!lastRemoteControlDisablePreflight?.token || !lastRemoteControlDisablePreflight?.body) {
+    return;
+  }
+
+  setRemoteControlDisableLoading(true);
+  hideError();
+
+  try {
+    const response = await fetch(remoteControlDisableEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify({
+        ...lastRemoteControlDisablePreflight.body,
+        preflightToken: lastRemoteControlDisablePreflight.token,
+      }),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderRemoteControlDisable(payload);
+    await refreshSettingsIntegrations().catch(() => {});
+  } catch (error) {
+    elements.remoteControlDisableStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    lastRemoteControlDisablePreflight = null;
+    elements.remoteControlDisableButton.disabled = true;
+    setRemoteControlDisableLoading(false);
   }
 }
 
@@ -8598,6 +8694,35 @@ function renderSkillsExtraRootsClear(payload) {
   elements.skillsExtraRootsResultText.textContent = result.status ?? "cleared";
 }
 
+function renderRemoteControlDisablePreflight(payload) {
+  const result = payload.remoteControlDisable ?? {};
+  elements.remoteControlDisableStatus.textContent = payload.action?.execution ?? "blocked";
+  elements.remoteControlDisableParamsText.textContent = result.paramsAcceptedFromBrowser
+    ? "Accepted"
+    : "Rejected";
+  elements.remoteControlDisableStatusText.textContent = payload.policy?.remoteControlDisableEnabled
+    ? "Ready"
+    : "Blocked";
+  elements.remoteControlDisableIdentityText.textContent = result.serverNameReturned
+    ? "Returned"
+    : "Hidden";
+  elements.remoteControlDisableButton.disabled =
+    !lastRemoteControlDisablePreflight?.token ||
+    lastRemoteControlDisablePreflight.enabled !== true;
+}
+
+function renderRemoteControlDisable(payload) {
+  const result = payload.remoteControlDisable ?? {};
+  elements.remoteControlDisableStatus.textContent = payload.action?.execution ?? "completed";
+  elements.remoteControlDisableParamsText.textContent = payload.policy?.paramsAcceptedFromBrowser
+    ? "Accepted"
+    : "Rejected";
+  elements.remoteControlDisableStatusText.textContent = result.statusKnown ? result.status : "Hidden";
+  elements.remoteControlDisableIdentityText.textContent = payload.policy?.identityReturned
+    ? "Returned"
+    : "Hidden";
+}
+
 function renderConfigValuePreflight(payload) {
   const config = payload.configValueWrite ?? {};
   elements.configValueStatus.textContent = payload.action?.execution ?? "blocked";
@@ -10386,6 +10511,20 @@ function setSkillsExtraRootsClearLoading(isLoading) {
     : "Extra Roots Check";
   if (isLoading) {
     elements.skillsExtraRootsClearStatus.textContent = "Checking";
+  }
+}
+
+function setRemoteControlDisableLoading(isLoading) {
+  elements.remoteControlDisablePreflightButton.disabled = isLoading;
+  elements.remoteControlDisableButton.disabled =
+    isLoading ||
+    !lastRemoteControlDisablePreflight?.token ||
+    lastRemoteControlDisablePreflight.enabled !== true;
+  elements.remoteControlDisablePreflightButton.textContent = isLoading
+    ? "Checking"
+    : "Remote Disable Check";
+  if (isLoading) {
+    elements.remoteControlDisableStatus.textContent = "Checking";
   }
 }
 

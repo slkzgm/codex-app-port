@@ -27,6 +27,7 @@ import {
   runPluginReadProbe,
   runPluginUninstallProbe,
   runProcessSpawnProbe,
+  runRemoteControlDisableProbe,
   runSkillsConfigWriteProbe,
   runSkillsExtraRootsClearProbe,
   runTerminalCommandExecProbe,
@@ -609,6 +610,15 @@ export const ACTION_PREFLIGHT_CONFIRMATION_FIELD_CONTRACTS = Object.freeze({
     "workspace",
     "preflightToken",
   ),
+  "remote-control-disable-preflight": bodyFields(
+    "workspace",
+    "actionType",
+    "preflightToken",
+  ),
+  "remote-control-disable": bodyFields(
+    "workspace",
+    "preflightToken",
+  ),
   "integration-action-preflight": bodyFields(
     "workspace",
     "actionType",
@@ -964,6 +974,14 @@ export const BROWSER_POST_BODY_CONTRACTS = Object.freeze({
     appServerTraffic: false,
   }),
   "/api/skills-extra-roots-clear": bodyContract(["workspace", "preflightToken"], {
+    kind: "mutation",
+    requiresPreflightToken: true,
+  }),
+  "/api/remote-control-disable-preflight": bodyContract(["workspace"], {
+    kind: "preflight",
+    appServerTraffic: false,
+  }),
+  "/api/remote-control-disable": bodyContract(["workspace", "preflightToken"], {
     kind: "mutation",
     requiresPreflightToken: true,
   }),
@@ -6917,6 +6935,149 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
       "implemented",
     ],
   }),
+  "/api/remote-control-disable-preflight": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    appServer: ["touched", "modelTraffic", "commandTraffic", "remoteControlTraffic"],
+    action: [
+      "type",
+      "method",
+      "category",
+      "execution",
+      "wouldDisableRemoteControl",
+      "appServerTouched",
+      "modelTraffic",
+      "reason",
+    ],
+    remoteControlDisable: [
+      "method",
+      "paramsAcceptedFromBrowser",
+      "ephemeralAccepted",
+      "statusValueReturned",
+      "environmentIdReturned",
+      "installationIdReturned",
+      "serverNameReturned",
+      "rawPayloadReturned",
+    ],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "remoteControlDisable",
+      "remoteControlDisableEnabled",
+      "executionRouteImplemented",
+      "executionGateEnabled",
+      "paramsAcceptedFromBrowser",
+      "statusValueReturned",
+      "identityReturned",
+      "rawPayloadsReturned",
+      "requiresApprovalPipeline",
+      "requiresIntegrationProvenance",
+      "requiresExplicitEnablement",
+      "browserMethodCallsAccepted",
+      "implemented",
+    ],
+    preflight: [
+      "token",
+      "tokenIssued",
+      "issuedAt",
+      "expiresAt",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseRequiredForMutation",
+      "consumed",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+  }),
+  "/api/remote-control-disable": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    initialize: ["platformFamily", "platformOs"],
+    appServer: [
+      "touched",
+      "modelTraffic",
+      "commandTraffic",
+      "remoteControlTraffic",
+      "auditedMethods",
+    ],
+    action: [
+      "type",
+      "method",
+      "execution",
+      "remoteControlDisable",
+      "appServerTouched",
+      "modelTraffic",
+      "reason",
+    ],
+    target: [
+      "paramsAcceptedFromBrowser",
+      "ephemeralAccepted",
+      "statusValueReturned",
+      "environmentIdReturned",
+      "installationIdReturned",
+      "serverNameReturned",
+      "rawPayloadReturned",
+    ],
+    remoteControlDisable: [
+      "method",
+      "status",
+      "statusKnown",
+      "responseObject",
+      "responseTopLevelKeyCount",
+      "paramsAcceptedFromBrowser",
+      "statusValueReturned",
+      "environmentIdReturned",
+      "installationIdReturned",
+      "serverNameReturned",
+      "rawPayloadReturned",
+    ],
+    result: [
+      "status",
+      "statusKnown",
+      "responseObject",
+      "responseTopLevelKeyCount",
+      "paramsAcceptedFromBrowser",
+      "statusValueReturned",
+      "environmentIdReturned",
+      "installationIdReturned",
+      "serverNameReturned",
+      "rawPayloadReturned",
+      "fullIdsReturned",
+      "threadContentReturned",
+    ],
+    preflight: [
+      "tokenConsumed",
+      "tokenReturned",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseEnforced",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "modelTraffic",
+      "commandTraffic",
+      "remoteControlDisable",
+      "remoteControlDisableEnabled",
+      "paramsAcceptedFromBrowser",
+      "statusValueReturned",
+      "identityReturned",
+      "rawPayloadsReturned",
+      "preflightTokenReturned",
+      "preflightTokenRequired",
+      "auditLogPersistent",
+      "auditLogPathReturned",
+      "auditLogWritableChecked",
+      "auditLogWritten",
+      "requiresExplicitEnablement",
+      "executionRouteImplemented",
+      "executionGateEnabled",
+      "browserMethodCallsAccepted",
+      "implemented",
+    ],
+  }),
   "/api/config-value-preflight": responseNestedKeySchemas({
     workspace: ["id", "label", "isDefault"],
     appServer: ["touched", "modelTraffic", "commandTraffic", "settingsTraffic"],
@@ -8280,6 +8441,16 @@ const BROWSER_POST_RESPONSE_ROUTE_TOP_LEVEL_KEYS = Object.freeze({
     "skillsExtraRootsClear",
     "result",
   ),
+  "/api/remote-control-disable-preflight": routeResponseTopLevelKeys(
+    ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
+    "remoteControlDisable",
+  ),
+  "/api/remote-control-disable": routeResponseTopLevelKeys(
+    ...RESPONSE_APP_SERVER_MUTATION_TOP_LEVEL_KEYS,
+    "target",
+    "remoteControlDisable",
+    "result",
+  ),
   "/api/integration-action-preflight": routeResponseTopLevelKeys(
     ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
     "integrationAction",
@@ -8439,6 +8610,7 @@ export function createDevServer({
   pluginReadFn = runPluginReadProbe,
   pluginUninstallFn = runPluginUninstallProbe,
   processSpawnFn = runProcessSpawnProbe,
+  remoteControlDisableFn = runRemoteControlDisableProbe,
   skillsConfigWriteFn = runSkillsConfigWriteProbe,
   skillsExtraRootsClearFn = runSkillsExtraRootsClearProbe,
   loadedSessionsFn = runLoadedSessionsProbe,
@@ -8509,6 +8681,8 @@ export function createDevServer({
   skillsConfigWriteEnabled = process.env.CODEX_APP_PORT_ALLOW_SKILLS_CONFIG_WRITE === "1",
   skillsExtraRootsClearEnabled =
     process.env.CODEX_APP_PORT_ALLOW_SKILLS_EXTRA_ROOTS_CLEAR === "1",
+  remoteControlDisableEnabled =
+    process.env.CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_DISABLE === "1",
   loadedSessionsEnabled = process.env.CODEX_APP_PORT_ALLOW_LOADED_SESSIONS === "1",
   liveSessionControlEnabled = process.env.CODEX_APP_PORT_ALLOW_LIVE_SESSION_CONTROL === "1",
   liveSessionBulkControlEnabled =
@@ -8595,6 +8769,7 @@ export function createDevServer({
       pluginReadFn,
       pluginUninstallFn,
       processSpawnFn,
+      remoteControlDisableFn,
       skillsConfigWriteFn,
       skillsExtraRootsClearFn,
       loadedSessionsFn,
@@ -8650,6 +8825,7 @@ export function createDevServer({
       pluginShareListEnabled,
       skillsConfigWriteEnabled,
       skillsExtraRootsClearEnabled,
+      remoteControlDisableEnabled,
       loadedSessionsEnabled,
       liveSessionControlEnabled,
       liveSessionBulkControlEnabled,
@@ -12546,6 +12722,96 @@ export async function handleRequest(request, response, options) {
     return;
   }
 
+  if (url.pathname === "/api/remote-control-disable-preflight") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, ["workspace"]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const payload = buildRemoteControlDisablePreflight(body, {
+        workspace,
+        remoteControlDisableEnabled: options.remoteControlDisableEnabled,
+      });
+      const attached = attachActionPreflight(payload, { body, workspace, options });
+      options.integrationPreflightLedger?.record(attached);
+      sendJson(response, 200, attached);
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error:
+          cleanDisplayText(error.message, 200) ??
+          "Invalid remote control disable preflight request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/remote-control-disable") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, ["workspace", "preflightToken"]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const preflightBody = stripActionPreflightControlFields(body);
+      const preflightPayload = buildRemoteControlDisablePreflight(preflightBody, {
+        workspace,
+        remoteControlDisableEnabled: options.remoteControlDisableEnabled,
+      });
+      if (!preflightPayload.policy.executionGateEnabled) {
+        sendJson(response, 403, buildRemoteControlDisableBlocked(preflightPayload));
+        return;
+      }
+      const consumedPreflight = options.preflightRegistry.consume({
+        token: validateActionPreflightToken(body.preflightToken),
+        kind: preflightPayload.action.type,
+        workspace,
+        intent: actionPreflightIntent(preflightBody, preflightPayload),
+      });
+      const auditLogWritableChecked = ensureActionAuditLogWritable(options.actionAuditLog);
+      const payload = await options.remoteControlDisableFn({
+        codexBin: options.codexBin,
+        cwd: workspace.cwd,
+        timeoutMs: options.timeoutMs,
+      });
+      const sanitized = sanitizeRemoteControlDisablePayload(payload, {
+        workspace,
+        consumedPreflight,
+        actionAuditLog: options.actionAuditLog,
+        auditLogWritableChecked,
+      });
+      sanitized.policy.auditLogWritten = writeActionAuditLog(options.actionAuditLog, sanitized);
+      sendJson(response, 200, sanitized);
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid remote control disable request",
+      });
+    }
+    return;
+  }
+
   if (url.pathname === "/api/integration-action-preflight") {
     if (request.method !== "POST") {
       sendJson(response, 405, { ok: false, error: "Method not allowed" });
@@ -13077,6 +13343,7 @@ export async function handleRequest(request, response, options) {
             pluginShareListEnabled: options.pluginShareListEnabled,
             skillsConfigWriteEnabled: options.skillsConfigWriteEnabled,
             skillsExtraRootsClearEnabled: options.skillsExtraRootsClearEnabled,
+            remoteControlDisableEnabled: options.remoteControlDisableEnabled,
             integrationPreflightHistory,
             integrationPreflightConfirmationHistory,
             accountLoginFlowSummary,
@@ -13107,6 +13374,7 @@ export async function handleRequest(request, response, options) {
           pluginShareListEnabled: options.pluginShareListEnabled,
           skillsConfigWriteEnabled: options.skillsConfigWriteEnabled,
           skillsExtraRootsClearEnabled: options.skillsExtraRootsClearEnabled,
+          remoteControlDisableEnabled: options.remoteControlDisableEnabled,
           integrationPreflightHistory,
           integrationPreflightConfirmationHistory,
           accountLoginFlowSummary,
@@ -13590,6 +13858,11 @@ async function buildConfirmableActionPreflightPayload(actionType, body, { worksp
         workspace,
         skillsExtraRootsClearEnabled: options.skillsExtraRootsClearEnabled,
       });
+    case "remote-control-disable-preflight":
+      return buildRemoteControlDisablePreflight(body, {
+        workspace,
+        remoteControlDisableEnabled: options.remoteControlDisableEnabled,
+      });
     case "integration-action-preflight":
       return buildIntegrationActionPreflight(body, { workspace });
     default:
@@ -13667,6 +13940,7 @@ function isIntegrationPreflightActionType(actionType) {
     actionType === "plugin-content-preflight" ||
     actionType === "skills-config-preflight" ||
     actionType === "skills-extra-roots-clear-preflight" ||
+    actionType === "remote-control-disable-preflight" ||
     actionType === "integration-action-preflight"
   );
 }
@@ -13733,6 +14007,8 @@ function actionAuditEvent(record) {
       return "skills-config-write-recorded";
     case "skills-extra-roots-clear":
       return "skills-extra-roots-clear-recorded";
+    case "remote-control-disable":
+      return "remote-control-disable-recorded";
     case "terminal-background-clean":
       return "terminal-background-clean-recorded";
     case "terminal-background-terminate":
@@ -22098,6 +22374,218 @@ function summarizeSkillsExtraRootsClearResult(value) {
   };
 }
 
+export function buildRemoteControlDisablePreflight(
+  _body,
+  { workspace, remoteControlDisableEnabled = false } = {},
+) {
+  const methodAudit = integrationMethodAudit();
+  const auditEntry = methodAudit.find((entry) => entry.method === "remoteControl/disable");
+  const executionGateEnabled = Boolean(remoteControlDisableEnabled);
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: publicWorkspaces([workspace])[0],
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      remoteControlTraffic: false,
+    },
+    action: {
+      type: "remote-control-disable-preflight",
+      method: "remoteControl/disable",
+      category: auditEntry?.category ?? "remote-control",
+      execution: executionGateEnabled ? "requires-confirmation" : "blocked",
+      wouldDisableRemoteControl: false,
+      appServerTouched: false,
+      modelTraffic: false,
+      reason: executionGateEnabled
+        ? "remote-control-disable-requires-preflight-token"
+        : "remote-control-disable-disabled",
+    },
+    remoteControlDisable: {
+      method: "remoteControl/disable",
+      paramsAcceptedFromBrowser: false,
+      ephemeralAccepted: false,
+      statusValueReturned: false,
+      environmentIdReturned: false,
+      installationIdReturned: false,
+      serverNameReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: false,
+      remoteControlDisable: false,
+      remoteControlDisableEnabled: executionGateEnabled,
+      executionRouteImplemented: true,
+      executionGateEnabled,
+      paramsAcceptedFromBrowser: false,
+      statusValueReturned: false,
+      identityReturned: false,
+      rawPayloadsReturned: false,
+      requiresApprovalPipeline: true,
+      requiresIntegrationProvenance: true,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: executionGateEnabled,
+      implemented: true,
+    },
+  };
+}
+
+function buildRemoteControlDisableBlocked(preflightPayload) {
+  return {
+    ok: false,
+    generatedAt: new Date().toISOString(),
+    workspace: preflightPayload.workspace,
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      remoteControlTraffic: false,
+    },
+    action: {
+      type: "remote-control-disable",
+      method: "remoteControl/disable",
+      execution: "blocked",
+      remoteControlDisable: false,
+      appServerTouched: false,
+      modelTraffic: false,
+      reason: "remote-control-disable-disabled",
+    },
+    remoteControlDisable: {
+      method: "remoteControl/disable",
+      status: "blocked",
+      statusKnown: false,
+      responseObject: false,
+      responseTopLevelKeyCount: 0,
+      paramsAcceptedFromBrowser: false,
+      statusValueReturned: false,
+      environmentIdReturned: false,
+      installationIdReturned: false,
+      serverNameReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: false,
+      remoteControlDisable: false,
+      remoteControlDisableEnabled: false,
+      executionRouteImplemented: true,
+      executionGateEnabled: false,
+      paramsAcceptedFromBrowser: false,
+      statusValueReturned: false,
+      identityReturned: false,
+      rawPayloadsReturned: false,
+      requiresExplicitEnablement: true,
+      preflightTokenRequired: true,
+      implemented: true,
+    },
+  };
+}
+
+function sanitizeRemoteControlDisablePayload(
+  payload,
+  { workspace, consumedPreflight = null, actionAuditLog = null, auditLogWritableChecked = false } = {},
+) {
+  const summary = summarizeRemoteControlDisableResult(payload?.probes?.remoteControlDisable);
+  return {
+    ok: Boolean(payload?.ok),
+    generatedAt: payload?.generatedAt ?? new Date().toISOString(),
+    transport: cleanDisplayText(payload?.transport, 80),
+    protocol: cleanDisplayText(payload?.protocol, 80),
+    initialize: sanitizeInitialize(payload?.initialize),
+    workspace: publicWorkspaces([workspace])[0],
+    appServer: {
+      touched: true,
+      modelTraffic: false,
+      commandTraffic: false,
+      remoteControlTraffic: true,
+      auditedMethods: ["remoteControl/disable"],
+    },
+    action: {
+      type: "remote-control-disable",
+      method: "remoteControl/disable",
+      execution: "completed",
+      remoteControlDisable: true,
+      appServerTouched: true,
+      modelTraffic: false,
+    },
+    target: {
+      paramsAcceptedFromBrowser: false,
+      ephemeralAccepted: false,
+      statusValueReturned: false,
+      environmentIdReturned: false,
+      installationIdReturned: false,
+      serverNameReturned: false,
+      rawPayloadReturned: false,
+    },
+    remoteControlDisable: {
+      method: "remoteControl/disable",
+      status: summary.status,
+      statusKnown: summary.statusKnown,
+      responseObject: summary.responseObject,
+      responseTopLevelKeyCount: summary.responseTopLevelKeyCount,
+      paramsAcceptedFromBrowser: false,
+      statusValueReturned: false,
+      environmentIdReturned: false,
+      installationIdReturned: false,
+      serverNameReturned: false,
+      rawPayloadReturned: false,
+    },
+    result: {
+      status: summary.status,
+      statusKnown: summary.statusKnown,
+      responseObject: summary.responseObject,
+      responseTopLevelKeyCount: summary.responseTopLevelKeyCount,
+      paramsAcceptedFromBrowser: false,
+      statusValueReturned: false,
+      environmentIdReturned: false,
+      installationIdReturned: false,
+      serverNameReturned: false,
+      rawPayloadReturned: false,
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    },
+    preflight: buildConsumedPreflightSummary(consumedPreflight),
+    policy: {
+      readOnly: false,
+      appServerTraffic: true,
+      modelTraffic: false,
+      commandTraffic: false,
+      remoteControlDisable: true,
+      remoteControlDisableEnabled: true,
+      paramsAcceptedFromBrowser: false,
+      statusValueReturned: false,
+      identityReturned: false,
+      rawPayloadsReturned: false,
+      preflightTokenReturned: false,
+      preflightTokenRequired: true,
+      auditLogPersistent: Boolean(actionAuditLog?.persistent),
+      auditLogPathReturned: false,
+      auditLogWritableChecked: Boolean(auditLogWritableChecked),
+      auditLogWritten: false,
+      requiresExplicitEnablement: true,
+      executionRouteImplemented: true,
+      executionGateEnabled: true,
+      browserMethodCallsAccepted: true,
+      implemented: true,
+    },
+    notifications: sanitizeNotificationCounts(payload?.notifications),
+  };
+}
+
+function summarizeRemoteControlDisableResult(value) {
+  const cleanStatus = cleanDisplayText(value?.status, 80);
+  const status = SAFE_REMOTE_CONTROL_STATUSES.includes(cleanStatus) ? cleanStatus : "unknown";
+  return {
+    status,
+    statusKnown: status !== "unknown",
+    responseObject: Boolean(value?.responseObject),
+    responseTopLevelKeyCount: safeCount(value?.responseTopLevelKeyCount),
+  };
+}
+
 export function buildIntegrationActionPreflight(body, { workspace }) {
   const methodAudit = integrationMethodAudit();
   const method = validateIntegrationMutationMethod(body?.method, methodAudit);
@@ -23052,6 +23540,7 @@ export function sanitizeSettingsIntegrationsPayload(
     pluginShareListEnabled = false,
     skillsConfigWriteEnabled = false,
     skillsExtraRootsClearEnabled = false,
+    remoteControlDisableEnabled = false,
     integrationPreflightHistory = [],
     integrationPreflightConfirmationHistory = [],
     accountLoginFlowSummary = null,
@@ -23101,6 +23590,7 @@ export function sanitizeSettingsIntegrationsPayload(
     pluginShareListEnabled,
     skillsConfigWriteEnabled,
     skillsExtraRootsClearEnabled,
+    remoteControlDisableEnabled,
     namesReturned,
   });
   const result = {
@@ -23131,6 +23621,7 @@ export function sanitizeSettingsIntegrationsPayload(
         collaborationModeListingAvailable: inventory.collaborationModes.ok,
         permissionProfileListingAvailable: inventory.permissionProfiles.ok,
         remoteControlStatusAvailable: inventory.remoteControlStatus.ok,
+        remoteControlDisableEnabled: Boolean(remoteControlDisableEnabled),
         hookListingAvailable: inventory.hooks.ok,
         appListingAvailable: inventory.apps.ok,
         externalAgentConfigDetectionAvailable: inventory.externalAgentConfig.ok,
@@ -23138,7 +23629,10 @@ export function sanitizeSettingsIntegrationsPayload(
         configBatchWriteEnabled: Boolean(configBatchWriteEnabled),
         experimentalFeatureSetEnabled: Boolean(experimentalFeatureSetEnabled),
         mutationEnabled: Boolean(
-          configBatchWriteEnabled || configValueWriteEnabled || experimentalFeatureSetEnabled,
+          configBatchWriteEnabled ||
+            configValueWriteEnabled ||
+            experimentalFeatureSetEnabled ||
+            remoteControlDisableEnabled,
         ),
         secretsReturned: false,
         source: "sanitized config/read plus counts-only model, permission-profile, remote-control, app, migration, experimental feature, and integration inventory",
@@ -23148,7 +23642,9 @@ export function sanitizeSettingsIntegrationsPayload(
             ? "config-value-write-opt-in-only"
             : experimentalFeatureSetEnabled
               ? "experimental-feature-set-opt-in-only"
-              : "counts-only-inventory",
+              : remoteControlDisableEnabled
+                ? "remote-control-disable-opt-in-only"
+                : "counts-only-inventory",
       },
       auth: {
         state:
@@ -28513,6 +29009,7 @@ export function buildSettingsIntegrations({
   pluginShareListEnabled = false,
   skillsConfigWriteEnabled = false,
   skillsExtraRootsClearEnabled = false,
+  remoteControlDisableEnabled = false,
   integrationPreflightHistory = [],
   integrationPreflightConfirmationHistory = [],
   accountLoginFlowSummary = null,
@@ -28547,6 +29044,7 @@ export function buildSettingsIntegrations({
     pluginShareListEnabled,
     skillsConfigWriteEnabled,
     skillsExtraRootsClearEnabled,
+    remoteControlDisableEnabled,
   });
   const result = {
     ok: true,
@@ -28572,10 +29070,14 @@ export function buildSettingsIntegrations({
         appListingAvailable: false,
         externalAgentConfigDetectionAvailable: false,
         experimentalFeatureListingAvailable: false,
+        remoteControlDisableEnabled: Boolean(remoteControlDisableEnabled),
         configBatchWriteEnabled: Boolean(configBatchWriteEnabled),
         experimentalFeatureSetEnabled: Boolean(experimentalFeatureSetEnabled),
         mutationEnabled: Boolean(
-          configBatchWriteEnabled || configValueWriteEnabled || experimentalFeatureSetEnabled,
+          configBatchWriteEnabled ||
+            configValueWriteEnabled ||
+            experimentalFeatureSetEnabled ||
+            remoteControlDisableEnabled,
         ),
         secretsReturned: false,
         source: "sanitized config/read via /api/status",
@@ -28585,7 +29087,9 @@ export function buildSettingsIntegrations({
             ? "config-value-write-opt-in-only"
             : experimentalFeatureSetEnabled
               ? "experimental-feature-set-opt-in-only"
-              : "settings-summary-only",
+              : remoteControlDisableEnabled
+                ? "remote-control-disable-opt-in-only"
+                : "settings-summary-only",
       },
       auth: {
         state: loginEnabled || loginCancelEnabled || logoutEnabled ? "partial" : "blocked",
@@ -28781,6 +29285,7 @@ function buildIntegrationActionScope({
   pluginShareListEnabled = false,
   skillsConfigWriteEnabled = false,
   skillsExtraRootsClearEnabled = false,
+  remoteControlDisableEnabled = false,
   namesReturned = false,
 } = {}) {
   const readMethods = [
@@ -28813,6 +29318,7 @@ function buildIntegrationActionScope({
     pluginShareListEnabled ? "plugin/share/list" : null,
     skillsConfigWriteEnabled ? "skills/config/write" : null,
     skillsExtraRootsClearEnabled ? "skills/extraRoots/set" : null,
+    remoteControlDisableEnabled ? "remoteControl/disable" : null,
   ].filter(Boolean);
   const blockedMutationMethods = blockedIntegrationMutationMethods();
   return {
@@ -28837,6 +29343,7 @@ function buildIntegrationActionScope({
     configBatchWriteEnabled: Boolean(configBatchWriteEnabled),
     configValueWriteEnabled: Boolean(configValueWriteEnabled),
     experimentalFeatureSetEnabled: Boolean(experimentalFeatureSetEnabled),
+    remoteControlDisableEnabled: Boolean(remoteControlDisableEnabled),
     mcpOauthEnabled: Boolean(mcpOauthLoginEnabled),
     mcpOauthLoginEnabled: Boolean(mcpOauthLoginEnabled),
     mcpServerReloadEnabled: Boolean(mcpServerReloadEnabled),

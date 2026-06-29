@@ -380,6 +380,15 @@
   `{"extraRoots":[]}`. Responses and action audit records may expose only
   status/count/shape metadata; they must not expose extra roots, paths,
   notifications, preflight tokens, or raw app-server payloads.
+- Browser-facing `remoteControl/disable` must stay blocked as a generic
+  mutation. The only allowed route is the disabled-by-default defensive action:
+  when `CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_DISABLE=1` is enabled,
+  `/api/remote-control-disable` must consume a matching one-time preflight
+  token, reject all browser remote-control params, and call app-server only with
+  `null` params. Responses and action audit records may expose only
+  status/count/shape metadata; they must not expose raw remote-control status
+  payloads, server names, installation ids, environment ids, notifications,
+  preflight tokens, or raw app-server payloads.
 - Browser-facing `config/value/write` must be blocked by default and opt-in
   only. When `CODEX_APP_PORT_ALLOW_CONFIG_VALUE_WRITE=1` is enabled,
   `/api/config-value-write` must require an exact

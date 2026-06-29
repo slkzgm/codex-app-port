@@ -31,6 +31,7 @@ const ACTION_AUDIT_EVENTS = new Set([
   "plugin-read-recorded",
   "plugin-uninstall-recorded",
   "process-spawn-recorded",
+  "remote-control-disable-recorded",
   "skills-config-write-recorded",
   "skills-extra-roots-clear-recorded",
   "terminal-background-clean-recorded",
@@ -140,6 +141,10 @@ export function sanitizeActionAuditRecord(record, { generatedAt = null } = {}) {
         actionType === "skills-extra-roots-clear"
           ? Boolean(appServer.skillsExtraRootsTraffic)
           : false,
+      remoteControlTraffic:
+        actionType === "remote-control-disable"
+          ? Boolean(appServer.remoteControlTraffic)
+          : false,
       auditedMethods: sanitizeMethodList(appServer.auditedMethods),
     },
     target: sanitizeTarget(target, actionType),
@@ -219,6 +224,8 @@ function actionAuditEvent(actionType) {
       return "plugin-content-read-recorded";
     case "process-spawn":
       return "process-spawn-recorded";
+    case "remote-control-disable":
+      return "remote-control-disable-recorded";
     case "skills-config-write":
       return "skills-config-write-recorded";
     case "skills-extra-roots-clear":
@@ -446,6 +453,16 @@ function sanitizeAction(action, actionType, { appServer }) {
       method: "skills/extraRoots/set",
       execution: safeString(action.execution, 40) ?? "completed",
       skillsExtraRootsClear: Boolean(action.skillsExtraRootsClear),
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: false,
+    };
+  }
+  if (actionType === "remote-control-disable") {
+    return {
+      type: "remote-control-disable",
+      method: "remoteControl/disable",
+      execution: safeString(action.execution, 40) ?? "completed",
+      remoteControlDisable: Boolean(action.remoteControlDisable),
       appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
       modelTraffic: false,
     };
@@ -796,6 +813,17 @@ function sanitizeTarget(target, actionType) {
       browserRootsAccepted: false,
       extraRootsReturned: false,
       pathsReturned: false,
+      rawPayloadReturned: false,
+    };
+  }
+  if (actionType === "remote-control-disable") {
+    return {
+      paramsAcceptedFromBrowser: false,
+      ephemeralAccepted: false,
+      statusValueReturned: false,
+      environmentIdReturned: false,
+      installationIdReturned: false,
+      serverNameReturned: false,
       rawPayloadReturned: false,
     };
   }
@@ -1189,6 +1217,22 @@ function sanitizeResult(result, actionType) {
       threadContentReturned: false,
     };
   }
+  if (actionType === "remote-control-disable") {
+    return {
+      status: safeString(result.status, 80) ?? "unknown",
+      statusKnown: Boolean(result.statusKnown),
+      responseObject: Boolean(result.responseObject),
+      responseTopLevelKeyCount: safeCount(result.responseTopLevelKeyCount),
+      paramsAcceptedFromBrowser: false,
+      statusValueReturned: false,
+      environmentIdReturned: false,
+      installationIdReturned: false,
+      serverNameReturned: false,
+      rawPayloadReturned: false,
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
   if (actionType === "terminal-command") {
     return {
       status: safeString(result.status, 80) ?? "completed",
@@ -1425,6 +1469,7 @@ function sanitizeActionType(value) {
     "plugin-read",
     "plugin-uninstall",
     "process-spawn",
+    "remote-control-disable",
     "skills-config-write",
     "skills-extra-roots-clear",
     "terminal-control",

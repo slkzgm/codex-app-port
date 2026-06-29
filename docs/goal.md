@@ -95,5 +95,11 @@ Target parity with the Codex desktop workflow:
   matching one-time preflight token, accepts no browser roots/paths/arguments,
   sends only `{"extraRoots":[]}`, and returns only status/count/shape metadata,
   not extra roots, paths, notifications, preflight tokens, or raw payloads.
+- `remoteControl/disable` has a separate disabled-by-default defensive path
+  behind `CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_DISABLE=1`; it consumes a
+  matching one-time preflight token, accepts no browser remote-control params,
+  sends `null`, and returns only status/count/shape metadata, not status
+  payloads, server names, installation ids, environment ids, notifications,
+  preflight tokens, or raw payloads.
 - The referenced unofficial Linux port converts the macOS DMG into a Linux
   Electron bundle and patches/stubs platform-specific pieces.

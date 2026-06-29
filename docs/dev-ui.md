@@ -110,6 +110,11 @@ The server binds to `127.0.0.1` by default and serves:
   one-time preflight token; execution accepts no browser roots, paths, or
   arguments and sends only `{"extraRoots":[]}`, returning status/count/shape
   metadata only
+- `/api/remote-control-disable-preflight` and `/api/remote-control-disable`:
+  opt-in defensive `remoteControl/disable` behind
+  `CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_DISABLE=1` plus a matching one-time
+  preflight token; execution accepts no browser remote-control params and sends
+  `null`, returning status/count/shape metadata only without identities
 - `/api/config-value-preflight` and `/api/config-value-write`: opt-in
   `config/value/write` behind `CODEX_APP_PORT_ALLOW_CONFIG_VALUE_WRITE=1`, an
   exact `CODEX_APP_PORT_CONFIG_VALUE_WRITE_ALLOWLIST` key match, and a matching
@@ -727,6 +732,17 @@ rejects browser-provided roots, paths, and unknown fields before app-server
 traffic, calls `skills/extraRoots/set` only with `{"extraRoots":[]}`, and
 reduces the result to status/count/shape metadata. It does not return or audit
 extra roots, paths, tokens, notifications, or raw payloads.
+
+The remote-control-disable-preflight endpoint accepts no remote-control params
+and creates only a local one-time confirmation token. The matching
+`/api/remote-control-disable` route is fail-closed unless
+`CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_DISABLE=1` is enabled before launch. It
+rebuilds the same empty-intent preflight, consumes a matching token once,
+rejects browser-provided `ephemeral`, identity, pairing, enable, and client
+fields before app-server traffic, calls `remoteControl/disable` only with
+`null` params, and reduces the result to status/count/shape metadata. It does
+not return or audit raw remote-control status payloads, server names, installation
+ids, environment ids, tokens, notifications, or raw payloads.
 
 The config-value-preflight endpoint accepts only `config/value/write` intent for
 local validation. It returns key-path/value shape counts only, does not return
@@ -1646,6 +1662,10 @@ paths, argument text, tokens, or raw payloads, that
 `skills/extraRoots/set` traffic with `{"extraRoots":[]}` and sanitized
 status/count/shape metadata, without accepting or returning extra roots, paths,
 tokens, notifications, or raw payloads, that
+`/api/remote-control-disable` can execute only as opt-in defensive
+`remoteControl/disable` traffic with `null` params and sanitized
+status/count/shape metadata, without accepting browser params or returning
+remote-control identities, tokens, notifications, or raw payloads, that
 `/api/config-value-write` can execute only as opt-in allowlisted
 `config/value/write` traffic with JSON-text values, one-time tokens, and
 `filePath`/`expectedVersion` forced to `null`, returning only count/shape

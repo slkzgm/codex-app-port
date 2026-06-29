@@ -139,6 +139,10 @@ test("action audit log writes sanitized local mutation JSONL", async () => {
       payload: skillsExtraRootsClearPayload(),
     });
     log.append({
+      event: "remote-control-disable-recorded",
+      payload: remoteControlDisablePayload(),
+    });
+    log.append({
       event: "thread-compact-recorded",
       payload: threadCompactPayload(),
     });
@@ -147,7 +151,7 @@ test("action audit log writes sanitized local mutation JSONL", async () => {
       .trim()
       .split("\n")
       .map((line) => JSON.parse(line));
-    assert.equal(records.length, 9);
+    assert.equal(records.length, 10);
     assert.equal(records[0].event, "file-action-recorded");
     assert.equal(records[0].action.fileAction, "writeFile");
     assert.equal(records[0].target.depth, 2);
@@ -203,13 +207,23 @@ test("action audit log writes sanitized local mutation JSONL", async () => {
     assert.equal(records[7].result.status, "cleared");
     assert.equal(records[7].result.extraRootsReturned, false);
     assert.equal(records[7].result.pathsReturned, false);
-    assert.equal(records[8].event, "thread-compact-recorded");
-    assert.equal(records[8].action.type, "thread-compact");
-    assert.equal(records[8].action.method, "thread/compact/start");
-    assert.equal(records[8].action.modelTraffic, true);
-    assert.equal(records[8].target.threadIdSuffix, "feedbeef");
-    assert.equal(records[8].result.loadedSessionCount, 1);
-    assert.equal(records[8].result.threadContentReturned, false);
+    assert.equal(records[8].event, "remote-control-disable-recorded");
+    assert.equal(records[8].action.type, "remote-control-disable");
+    assert.equal(records[8].action.method, "remoteControl/disable");
+    assert.equal(records[8].action.remoteControlDisable, true);
+    assert.equal(records[8].appServer.remoteControlTraffic, true);
+    assert.equal(records[8].target.paramsAcceptedFromBrowser, false);
+    assert.equal(records[8].target.serverNameReturned, false);
+    assert.equal(records[8].result.status, "disabled");
+    assert.equal(records[8].result.statusValueReturned, false);
+    assert.equal(records[8].result.serverNameReturned, false);
+    assert.equal(records[9].event, "thread-compact-recorded");
+    assert.equal(records[9].action.type, "thread-compact");
+    assert.equal(records[9].action.method, "thread/compact/start");
+    assert.equal(records[9].action.modelTraffic, true);
+    assert.equal(records[9].target.threadIdSuffix, "feedbeef");
+    assert.equal(records[9].result.loadedSessionCount, 1);
+    assert.equal(records[9].result.threadContentReturned, false);
 
     const serialized = JSON.stringify(records);
     for (const marker of [
@@ -231,6 +245,9 @@ test("action audit log writes sanitized local mutation JSONL", async () => {
       "safety-lock-secret",
       "private-extra-roots-secret",
       "private-extra-root",
+      "private-remote-control-server",
+      "inst_private_remote_control",
+      "env_private_remote_control",
       "rollback-secret",
       "Sensitive compacted content",
       "private@example.com",
@@ -807,6 +824,56 @@ function skillsExtraRootsClearPayload() {
       token: "preflight-private-token",
       scope: {
         kind: "skills-extra-roots-clear-preflight",
+        workspaceId: "default",
+      },
+      oneTimeUseEnforced: true,
+    },
+  };
+}
+
+function remoteControlDisablePayload() {
+  return {
+    ok: true,
+    workspace: {
+      id: "default",
+      label: "codex-app-port-test",
+      isDefault: true,
+      cwd: "/tmp/private-workspace",
+    },
+    appServer: {
+      touched: true,
+      modelTraffic: false,
+      commandTraffic: false,
+      remoteControlTraffic: true,
+      auditedMethods: ["remoteControl/disable"],
+    },
+    action: {
+      type: "remote-control-disable",
+      method: "remoteControl/disable",
+      execution: "completed",
+      remoteControlDisable: true,
+      appServerTouched: true,
+      modelTraffic: false,
+    },
+    target: {
+      paramsAcceptedFromBrowser: false,
+      ephemeral: true,
+      serverName: "private-remote-control-server",
+    },
+    result: {
+      status: "disabled",
+      statusKnown: true,
+      responseObject: true,
+      responseTopLevelKeyCount: 4,
+      environmentId: "env_private_remote_control",
+      installationId: "inst_private_remote_control",
+      serverName: "private-remote-control-server",
+    },
+    preflight: {
+      tokenConsumed: true,
+      token: "preflight-private-token",
+      scope: {
+        kind: "remote-control-disable-preflight",
         workspaceId: "default",
       },
       oneTimeUseEnforced: true,

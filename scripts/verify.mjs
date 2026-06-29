@@ -87,6 +87,7 @@ async function main() {
   await checkPluginContentReadApi();
   await checkSkillsConfigWriteApi();
   await checkSkillsExtraRootsClearApi();
+  await checkRemoteControlDisableApi();
   await checkIntegrationActionPreflightApi();
   await checkTerminalActionsApi();
   await checkTerminalCommandPreflightApi();
@@ -1123,6 +1124,13 @@ async function checkStrictBrowserPostBodies() {
           preflightToken: "preflight-1234567890abcdef",
         },
       ],
+      ["/api/remote-control-disable-preflight", {}],
+      [
+        "/api/remote-control-disable",
+        {
+          preflightToken: "preflight-1234567890abcdef",
+        },
+      ],
       ["/api/integration-action-preflight", { method: "plugin/install", target: "safe-plugin" }],
       [
         "/api/action-preflight-confirm",
@@ -1439,6 +1447,35 @@ function assertBrowserPostBodyContracts(cases) {
     skillsExtraRootsClearContract.nestedKeySchemas.policy?.includes("unexpected")
   ) {
     throw new Error("skills-extra-roots-clear response contract is missing nested schemas");
+  }
+  const remoteControlDisablePreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/remote-control-disable-preflight"];
+  if (
+    remoteControlDisablePreflightContract.usesRouteSpecificNestedKeySchemas !== true ||
+    !Object.isFrozen(remoteControlDisablePreflightContract.nestedKeySchemas.policy) ||
+    !remoteControlDisablePreflightContract.nestedKeySchemas.remoteControlDisable?.includes(
+      "paramsAcceptedFromBrowser",
+    ) ||
+    !remoteControlDisablePreflightContract.nestedKeySchemas.policy?.includes(
+      "remoteControlDisable",
+    ) ||
+    remoteControlDisablePreflightContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("remote-control-disable-preflight response contract is missing nested schemas");
+  }
+  const remoteControlDisableContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/remote-control-disable"];
+  if (
+    remoteControlDisableContract.usesRouteSpecificNestedKeySchemas !== true ||
+    !Object.isFrozen(remoteControlDisableContract.nestedKeySchemas.policy) ||
+    !remoteControlDisableContract.nestedKeySchemas.remoteControlDisable?.includes(
+      "responseTopLevelKeyCount",
+    ) ||
+    !remoteControlDisableContract.nestedKeySchemas.result?.includes("serverNameReturned") ||
+    !remoteControlDisableContract.nestedKeySchemas.policy?.includes("remoteControlDisable") ||
+    remoteControlDisableContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("remote-control-disable response contract is missing nested schemas");
   }
   const configValuePreflightContract =
     BROWSER_POST_RESPONSE_CONTRACTS["/api/config-value-preflight"];
@@ -17363,6 +17400,167 @@ async function checkSkillsExtraRootsClearApi() {
   pass("dev server skills extra roots clear is opt-in, preflighted, and sanitized");
 }
 
+async function checkRemoteControlDisableApi() {
+  const auditDir = await mkdtemp(join(tmpdir(), "codex-app-port-verify-remote-control-"));
+  const auditLogPath = join(auditDir, "actions.jsonl");
+  const calls = [];
+  const remoteControlDisableFn = async (options) => {
+    calls.push(options);
+    return {
+      ok: true,
+      generatedAt: "2026-06-29T00:00:00.000Z",
+      transport: "stdio-jsonl",
+      protocol: "json-rpc-2.0-without-jsonrpc-field",
+      initialize: { platformOs: "linux", platformFamily: "unix" },
+      probes: {
+        remoteControlDisable: {
+          method: "remoteControl/disable",
+          status: "disabled",
+          statusKnown: true,
+          responseObject: true,
+          responseTopLevelKeyCount: 4,
+          paramsAcceptedFromBrowser: true,
+          statusValueReturned: true,
+          environmentIdReturned: true,
+          installationIdReturned: true,
+          serverNameReturned: true,
+          rawPayloadReturned: true,
+          environmentId: "env_private_remote_control",
+          installationId: "inst_private_remote_control",
+          serverName: "private-remote-control-server",
+        },
+      },
+      notifications: { "remoteControl/status/changed": 1 },
+    };
+  };
+
+  const disabled = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    workspaceInputs: ["/tmp/codex-app-port-verify-extra"],
+    remoteControlDisableFn,
+  });
+  const disabledPort = await listenWithFallback(disabled, { host: "127.0.0.1", port: 0 });
+  const disabledBaseUrl = `http://127.0.0.1:${disabledPort}`;
+
+  try {
+    const token = await readUiSessionToken(disabledBaseUrl);
+    const preflight = await fetch(`${disabledBaseUrl}/api/remote-control-disable-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({ workspace: "workspace-2" }),
+    });
+    if (!preflight.ok) {
+      throw new Error(`disabled remote control disable preflight returned HTTP ${preflight.status}`);
+    }
+    const preflightPayload = await preflight.json();
+    if (
+      preflightPayload.policy?.executionGateEnabled !== false ||
+      preflightPayload.policy?.remoteControlDisableEnabled !== false
+    ) {
+      throw new Error("disabled remote control disable preflight unexpectedly enabled mutation");
+    }
+    const blocked = await fetch(`${disabledBaseUrl}/api/remote-control-disable`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    if (blocked.status !== 403) {
+      throw new Error(`disabled remote control disable returned HTTP ${blocked.status}`);
+    }
+    if (calls.length !== 0) {
+      throw new Error("disabled remote control disable called the app-server probe");
+    }
+  } finally {
+    await closeServer(disabled);
+  }
+
+  const server = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    workspaceInputs: ["/tmp/codex-app-port-verify-extra"],
+    remoteControlDisableEnabled: true,
+    remoteControlDisableFn,
+    actionAuditLog: createActionAuditLog({ path: auditLogPath }),
+  });
+  const port = await listenWithFallback(server, { host: "127.0.0.1", port: 0 });
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  try {
+    const token = await readUiSessionToken(baseUrl);
+    const preflight = await fetch(`${baseUrl}/api/remote-control-disable-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({ workspace: "workspace-2" }),
+    });
+    if (!preflight.ok) {
+      throw new Error(`remote control disable preflight returned HTTP ${preflight.status}`);
+    }
+    const preflightPayload = await preflight.json();
+    assertSanitizedRemoteControlDisablePreflight(preflightPayload, { gateEnabled: true });
+
+    const rejectedUnknown = await fetch(`${baseUrl}/api/remote-control-disable`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        ephemeral: true,
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    if (rejectedUnknown.status !== 400) {
+      throw new Error(`remote control disable with params returned HTTP ${rejectedUnknown.status}`);
+    }
+    if (calls.length !== 0) {
+      throw new Error("rejected remote control disable called the app-server probe");
+    }
+
+    const response = await fetch(`${baseUrl}/api/remote-control-disable`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(`remote control disable returned HTTP ${response.status}`);
+    }
+    assertSanitizedRemoteControlDisable(await response.json(), {
+      token: preflightPayload.preflight.token,
+    });
+
+    if (calls.length !== 1 || calls[0].cwd !== "/tmp/codex-app-port-verify-extra") {
+      throw new Error("remote control disable did not call the app-server probe with expected parameters");
+    }
+
+    const replay = await fetch(`${baseUrl}/api/remote-control-disable`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    if (replay.status !== 409) {
+      throw new Error(`remote control disable replay returned HTTP ${replay.status}`);
+    }
+
+    const records = (await readFile(auditLogPath, "utf8"))
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    assertSanitizedRemoteControlDisableAudit(records, {
+      token: preflightPayload.preflight.token,
+    });
+  } finally {
+    await closeServer(server);
+    await rm(auditDir, { recursive: true, force: true });
+  }
+  pass("dev server remote control disable is opt-in, preflighted, and sanitized");
+}
+
 async function checkIntegrationActionPreflightApi() {
   let probeCalled = false;
   const server = createDevServer({
@@ -31086,6 +31284,200 @@ function assertSanitizedSkillsExtraRootsClearAudit(records, { token }) {
   ]) {
     if (serialized.includes(marker)) {
       throw new Error(`skills extra roots clear audit leaked ${marker}`);
+    }
+  }
+}
+
+function assertSanitizedRemoteControlDisablePreflight(payload, { gateEnabled }) {
+  if (!payload.ok) {
+    throw new Error("remote control disable preflight payload is not ok");
+  }
+  const serialized = JSON.stringify(payload);
+  for (const marker of [
+    "/tmp/codex-app-port-verify",
+    "/tmp/codex-app-port-verify-extra",
+    "private-remote-control-server",
+    "inst_private_remote_control",
+    "env_private_remote_control",
+    "codexHome",
+    "userAgent",
+  ]) {
+    if (serialized.includes(marker)) {
+      throw new Error(`remote control disable preflight payload leaked ${marker}`);
+    }
+  }
+  if (
+    payload.appServer?.touched !== false ||
+    payload.appServer?.modelTraffic !== false ||
+    payload.appServer?.remoteControlTraffic !== false
+  ) {
+    throw new Error("remote control disable preflight unexpectedly touched app-server");
+  }
+  if (
+    payload.action?.type !== "remote-control-disable-preflight" ||
+    payload.action?.method !== "remoteControl/disable" ||
+    payload.action?.category !== "remote-control" ||
+    payload.action?.execution !== (gateEnabled ? "requires-confirmation" : "blocked") ||
+    payload.action?.wouldDisableRemoteControl !== false ||
+    payload.action?.appServerTouched !== false
+  ) {
+    throw new Error("remote control disable preflight did not preserve action metadata");
+  }
+  assertActionPreflight(payload, "remote-control-disable-preflight", "workspace-2");
+  if (
+    payload.remoteControlDisable?.paramsAcceptedFromBrowser !== false ||
+    payload.remoteControlDisable?.ephemeralAccepted !== false ||
+    payload.remoteControlDisable?.statusValueReturned !== false ||
+    payload.remoteControlDisable?.environmentIdReturned !== false ||
+    payload.remoteControlDisable?.installationIdReturned !== false ||
+    payload.remoteControlDisable?.serverNameReturned !== false ||
+    payload.remoteControlDisable?.rawPayloadReturned !== false
+  ) {
+    throw new Error("remote control disable preflight did not preserve safe metadata");
+  }
+  if (
+    payload.policy?.readOnly !== true ||
+    payload.policy?.appServerTraffic !== false ||
+    payload.policy?.remoteControlDisable !== false ||
+    payload.policy?.remoteControlDisableEnabled !== gateEnabled ||
+    payload.policy?.executionRouteImplemented !== true ||
+    payload.policy?.executionGateEnabled !== gateEnabled ||
+    payload.policy?.paramsAcceptedFromBrowser !== false ||
+    payload.policy?.statusValueReturned !== false ||
+    payload.policy?.identityReturned !== false ||
+    payload.policy?.rawPayloadsReturned !== false ||
+    payload.policy?.requiresApprovalPipeline !== true ||
+    payload.policy?.requiresIntegrationProvenance !== true ||
+    payload.policy?.requiresExplicitEnablement !== true ||
+    payload.policy?.browserMethodCallsAccepted !== gateEnabled ||
+    payload.policy?.implemented !== true
+  ) {
+    throw new Error("remote control disable preflight policy did not preserve fail-closed gates");
+  }
+}
+
+function assertSanitizedRemoteControlDisable(payload, { token }) {
+  if (!payload.ok) {
+    throw new Error("remote control disable payload is not ok");
+  }
+  const serialized = JSON.stringify(payload);
+  for (const marker of [
+    token,
+    "/tmp/codex-app-port-verify",
+    "/tmp/codex-app-port-verify-extra",
+    "private-remote-control-server",
+    "inst_private_remote_control",
+    "env_private_remote_control",
+    "codexHome",
+    "userAgent",
+    "\"serverNameReturned\":true",
+    "\"statusValueReturned\":true",
+    "\"rawPayloadReturned\":true",
+  ]) {
+    if (serialized.includes(marker)) {
+      throw new Error(`remote control disable payload leaked ${marker}`);
+    }
+  }
+  if (
+    payload.appServer?.touched !== true ||
+    payload.appServer?.modelTraffic !== false ||
+    payload.appServer?.remoteControlTraffic !== true ||
+    !payload.appServer?.auditedMethods?.includes("remoteControl/disable")
+  ) {
+    throw new Error("remote control disable payload did not record sanitized app-server traffic");
+  }
+  if (
+    payload.action?.type !== "remote-control-disable" ||
+    payload.action?.method !== "remoteControl/disable" ||
+    payload.action?.execution !== "completed" ||
+    payload.action?.remoteControlDisable !== true ||
+    payload.action?.modelTraffic !== false
+  ) {
+    throw new Error("remote control disable payload did not expose expected action metadata");
+  }
+  if (
+    payload.target?.paramsAcceptedFromBrowser !== false ||
+    payload.target?.ephemeralAccepted !== false ||
+    payload.target?.serverNameReturned !== false ||
+    payload.target?.rawPayloadReturned !== false
+  ) {
+    throw new Error("remote control disable target summary did not preserve redaction flags");
+  }
+  if (
+    payload.remoteControlDisable?.method !== "remoteControl/disable" ||
+    payload.remoteControlDisable?.status !== "disabled" ||
+    payload.remoteControlDisable?.statusKnown !== true ||
+    payload.remoteControlDisable?.responseObject !== true ||
+    payload.remoteControlDisable?.responseTopLevelKeyCount !== 4 ||
+    payload.remoteControlDisable?.paramsAcceptedFromBrowser !== false ||
+    payload.remoteControlDisable?.statusValueReturned !== false ||
+    payload.remoteControlDisable?.environmentIdReturned !== false ||
+    payload.remoteControlDisable?.installationIdReturned !== false ||
+    payload.remoteControlDisable?.serverNameReturned !== false ||
+    payload.remoteControlDisable?.rawPayloadReturned !== false
+  ) {
+    throw new Error("remote control disable payload did not preserve count-only metadata");
+  }
+  if (
+    payload.result?.status !== "disabled" ||
+    payload.result?.responseTopLevelKeyCount !== 4 ||
+    payload.result?.serverNameReturned !== false ||
+    payload.result?.rawPayloadReturned !== false
+  ) {
+    throw new Error("remote control disable result did not preserve sanitized metadata");
+  }
+  if (
+    payload.preflight?.tokenConsumed !== true ||
+    payload.preflight?.tokenReturned !== false ||
+    payload.policy?.readOnly !== false ||
+    payload.policy?.appServerTraffic !== true ||
+    payload.policy?.remoteControlDisable !== true ||
+    payload.policy?.remoteControlDisableEnabled !== true ||
+    payload.policy?.paramsAcceptedFromBrowser !== false ||
+    payload.policy?.identityReturned !== false ||
+    payload.policy?.rawPayloadsReturned !== false ||
+    payload.policy?.preflightTokenReturned !== false ||
+    payload.policy?.auditLogWritten !== true ||
+    payload.policy?.executionGateEnabled !== true ||
+    payload.policy?.implemented !== true
+  ) {
+    throw new Error("remote control disable policy did not preserve execution guardrails");
+  }
+}
+
+function assertSanitizedRemoteControlDisableAudit(records, { token }) {
+  if (
+    records.length !== 1 ||
+    records[0]?.event !== "remote-control-disable-recorded" ||
+    records[0]?.action?.type !== "remote-control-disable" ||
+    records[0]?.action?.method !== "remoteControl/disable" ||
+    records[0]?.action?.remoteControlDisable !== true ||
+    records[0]?.appServer?.remoteControlTraffic !== true ||
+    records[0]?.target?.paramsAcceptedFromBrowser !== false ||
+    records[0]?.target?.serverNameReturned !== false ||
+    records[0]?.result?.status !== "disabled" ||
+    records[0]?.result?.statusValueReturned !== false ||
+    records[0]?.result?.serverNameReturned !== false ||
+    records[0]?.preflight?.tokenConsumed !== true ||
+    records[0]?.preflight?.tokenReturned !== false
+  ) {
+    throw new Error("remote control disable audit record was not sanitized as expected");
+  }
+  const serialized = JSON.stringify(records);
+  for (const marker of [
+    token,
+    "/tmp/codex-app-port-verify",
+    "/tmp/codex-app-port-verify-extra",
+    "private-remote-control-server",
+    "inst_private_remote_control",
+    "env_private_remote_control",
+    "codexHome",
+    "userAgent",
+    "\"serverNameReturned\":true",
+    "\"statusValueReturned\":true",
+  ]) {
+    if (serialized.includes(marker)) {
+      throw new Error(`remote control disable audit leaked ${marker}`);
     }
   }
 }

@@ -411,6 +411,15 @@ one-time preflight token, accepts no browser roots/paths/arguments, calls
 app-server only with `{"extraRoots":[]}`, and returns status/count/shape
 metadata only. Extra roots, paths, notifications, tokens, and raw payloads
 remain omitted from responses and action audit records.
+`remoteControl/disable` remains blocked as a generic browser mutation and is
+exposed only through the dedicated local defensive pair:
+`/api/remote-control-disable-preflight` and `/api/remote-control-disable`.
+The action route is disabled unless `CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_DISABLE=1`
+is set, requires a matching one-time preflight token, accepts no browser
+remote-control params, calls app-server only with `null` params, and returns
+status/count/shape metadata only. Raw remote-control status payloads, server names,
+installation ids, environment ids, notifications, tokens, and raw payloads
+remain omitted from responses and action audit records.
 `config/value/write` is exposed only through the dedicated local
 `/api/config-value-preflight` and `/api/config-value-write` pair. The write
 route is disabled unless `CODEX_APP_PORT_ALLOW_CONFIG_VALUE_WRITE=1` is set,
