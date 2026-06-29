@@ -26743,6 +26743,7 @@ export function sanitizeSettingsIntegrationsPayload(
           loginEnabled ||
           loginCancelEnabled ||
           creditsNudgeEnabled ||
+          resetCreditConsumeEnabled ||
           logoutEnabled
             ? "partial"
             : "blocked",
@@ -26760,17 +26761,26 @@ export function sanitizeSettingsIntegrationsPayload(
         loginCancelEnabled,
         creditsNudgeAvailable: true,
         creditsNudgeEnabled,
+        resetCreditConsumeAvailable: true,
+        resetCreditConsumeEnabled,
         activeLoginFlowCount: safeCount(accountLoginFlowSummary?.activeCount),
         loginRefsReturned: false,
         logoutAvailable: true,
         logoutEnabled,
-        mutationEnabled: loginEnabled || loginCancelEnabled || creditsNudgeEnabled || logoutEnabled,
+        mutationEnabled:
+          loginEnabled ||
+          loginCancelEnabled ||
+          creditsNudgeEnabled ||
+          resetCreditConsumeEnabled ||
+          logoutEnabled,
         reason: loginEnabled
           ? "account-login-device-code-opt-in-only"
           : loginCancelEnabled
           ? "account-login-cancel-opt-in-only"
           : creditsNudgeEnabled
           ? "account-credits-nudge-opt-in-only"
+          : resetCreditConsumeEnabled
+          ? "account-reset-credit-consume-opt-in-only"
           : logoutEnabled
           ? "account-logout-opt-in-only"
           : inventory.account.ok || inventory.rateLimits.ok
@@ -32722,7 +32732,11 @@ export function buildSettingsIntegrations({
       },
       auth: {
         state:
-          loginEnabled || loginCancelEnabled || creditsNudgeEnabled || logoutEnabled
+          loginEnabled ||
+          loginCancelEnabled ||
+          creditsNudgeEnabled ||
+          resetCreditConsumeEnabled ||
+          logoutEnabled
             ? "partial"
             : "blocked",
         stateVisible: false,
@@ -32736,17 +32750,26 @@ export function buildSettingsIntegrations({
         loginCancelEnabled,
         creditsNudgeAvailable: true,
         creditsNudgeEnabled,
+        resetCreditConsumeAvailable: true,
+        resetCreditConsumeEnabled,
         activeLoginFlowCount: safeCount(accountLoginFlowSummary?.activeCount),
         loginRefsReturned: false,
         logoutAvailable: true,
         logoutEnabled,
-        mutationEnabled: loginEnabled || loginCancelEnabled || creditsNudgeEnabled || logoutEnabled,
+        mutationEnabled:
+          loginEnabled ||
+          loginCancelEnabled ||
+          creditsNudgeEnabled ||
+          resetCreditConsumeEnabled ||
+          logoutEnabled,
         reason: loginEnabled
           ? "account-login-device-code-opt-in-only"
           : loginCancelEnabled
           ? "account-login-cancel-opt-in-only"
           : creditsNudgeEnabled
           ? "account-credits-nudge-opt-in-only"
+          : resetCreditConsumeEnabled
+          ? "account-reset-credit-consume-opt-in-only"
           : logoutEnabled
           ? "account-logout-opt-in-only"
           : "requires-explicit-inventory-enable",

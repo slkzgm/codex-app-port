@@ -14164,6 +14164,8 @@ async function checkAccountResetCreditConsumeApi() {
     }
     const settingsPayload = await settingsResponse.json();
     if (
+      settingsPayload.surfaces?.auth?.resetCreditConsumeAvailable !== true ||
+      settingsPayload.surfaces?.auth?.resetCreditConsumeEnabled !== true ||
       settingsPayload.integrationScope?.accountResetCreditConsumeEnabled !== true ||
       settingsPayload.integrationScope?.authResetCreditConsumeEnabled !== true ||
       !settingsPayload.integrationScope?.enabledLocalGates?.includes(
@@ -36393,6 +36395,10 @@ async function readUiSessionToken(baseUrl) {
   if (
     !html.includes("account-login-button") ||
     !html.includes("account-login-cancel-button") ||
+    !html.includes("account-reset-credit-button") ||
+    !html.includes("account-reset-credit-status") ||
+    !appScript.includes("runAccountResetCreditPreflight") ||
+    !appScript.includes("runAccountResetCredit") ||
     !html.includes("account-login-history-list")
   ) {
     throw new Error("dev server UI is missing the account login controls");

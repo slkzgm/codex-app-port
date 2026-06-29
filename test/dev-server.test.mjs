@@ -286,6 +286,11 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(appScript, /runThreadSafetyLockAction/);
     assert.match(html, /account-login-cancel-preflight-button/);
     assert.match(html, /account-login-cancel-button/);
+    assert.match(html, /account-reset-credit-preflight-button/);
+    assert.match(html, /account-reset-credit-button/);
+    assert.match(html, /account-reset-credit-status/);
+    assert.match(appScript, /runAccountResetCreditPreflight/);
+    assert.match(appScript, /runAccountResetCredit/);
     assert.match(html, /account-login-history-list/);
     assert.match(html, /integration-execution-readiness/);
     assert.match(html, /integration-safety-contract/);
@@ -11205,6 +11210,16 @@ test("dev server consumes account reset credits only behind explicit opt-in and 
     assert.equal(preflightPayload.policy.executionGateEnabled, true);
     assert.equal(preflightPayload.policy.quotaMutations, false);
     assertActionPreflight(preflightPayload, "account-reset-credit-consume-preflight", "default");
+
+    const settingsResponse = await fetch(`${url}/api/settings-integrations`, {
+      headers: apiHeaders(server),
+    });
+    assert.equal(settingsResponse.status, 200);
+    const settingsPayload = await settingsResponse.json();
+    assert.equal(settingsPayload.surfaces.auth.resetCreditConsumeAvailable, true);
+    assert.equal(settingsPayload.surfaces.auth.resetCreditConsumeEnabled, true);
+    assert.equal(settingsPayload.integrationScope.accountResetCreditConsumeEnabled, true);
+    assert.equal(settingsPayload.integrationScope.authResetCreditConsumeEnabled, true);
 
     const response = await fetch(`${url}/api/account-reset-credit-consume`, {
       method: "POST",

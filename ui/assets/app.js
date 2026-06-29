@@ -26,6 +26,7 @@ const elements = {
   authCallbackText: document.querySelector("#auth-callback-text"),
   accountLoginText: document.querySelector("#account-login-text"),
   accountLoginCancelText: document.querySelector("#account-login-cancel-text"),
+  accountResetCreditText: document.querySelector("#account-reset-credit-text"),
   activeLoginFlowCount: document.querySelector("#active-login-flow-count"),
   accountLoginHistoryCount: document.querySelector("#account-login-history-count"),
   accountLogoutText: document.querySelector("#account-logout-text"),
@@ -53,6 +54,11 @@ const elements = {
   accountLoginCancelPreflightButton: document.querySelector("#account-login-cancel-preflight-button"),
   accountLoginCancelButton: document.querySelector("#account-login-cancel-button"),
   accountLoginCancelStatus: document.querySelector("#account-login-cancel-status"),
+  accountResetCreditPreflightButton: document.querySelector(
+    "#account-reset-credit-preflight-button",
+  ),
+  accountResetCreditButton: document.querySelector("#account-reset-credit-button"),
+  accountResetCreditStatus: document.querySelector("#account-reset-credit-status"),
   accountLogoutPreflightButton: document.querySelector("#account-logout-preflight-button"),
   accountLogoutButton: document.querySelector("#account-logout-button"),
   accountLogoutStatus: document.querySelector("#account-logout-status"),
@@ -636,6 +642,7 @@ let lastThreadCompactPreflight = null;
 let lastAccountLoginPreflight = null;
 let lastAccountLoginCancelPreflight = null;
 let lastAccountLoginCancelRef = null;
+let lastAccountResetCreditPreflight = null;
 let lastAccountLogoutPreflight = null;
 let pendingRoute = readInitialRoute();
 let streamAbortController = null;
@@ -700,6 +707,7 @@ elements.workspaceSelect.addEventListener("change", () => {
   lastAccountLoginPreflight = null;
   lastAccountLoginCancelPreflight = null;
   lastAccountLoginCancelRef = null;
+  lastAccountResetCreditPreflight = null;
   lastAccountLogoutPreflight = null;
   lastApprovalPayload = null;
   lastApprovalQueue = [];
@@ -741,6 +749,7 @@ elements.workspaceSelect.addEventListener("change", () => {
   elements.accountLoginButton.disabled = true;
   elements.accountLoginCancelPreflightButton.disabled = true;
   elements.accountLoginCancelButton.disabled = true;
+  elements.accountResetCreditButton.disabled = true;
   elements.accountLogoutButton.disabled = true;
   lastGitWorktreePreflight = null;
   lastThreadRenamePreflight = null;
@@ -1353,6 +1362,14 @@ elements.accountLoginCancelButton.addEventListener("click", () => {
   runAccountLoginCancel();
 });
 
+elements.accountResetCreditPreflightButton.addEventListener("click", () => {
+  runAccountResetCreditPreflight();
+});
+
+elements.accountResetCreditButton.addEventListener("click", () => {
+  runAccountResetCredit();
+});
+
 elements.accountLogoutPreflightButton.addEventListener("click", () => {
   runAccountLogoutPreflight();
 });
@@ -1697,6 +1714,14 @@ function accountLoginCancelPreflightEndpoint() {
 
 function accountLoginCancelEndpoint() {
   return "/api/account-login-cancel";
+}
+
+function accountResetCreditPreflightEndpoint() {
+  return "/api/account-reset-credit-consume-preflight";
+}
+
+function accountResetCreditEndpoint() {
+  return "/api/account-reset-credit-consume";
 }
 
 function accountLogoutPreflightEndpoint() {
@@ -3433,6 +3458,76 @@ async function runAccountLoginCancel() {
     }
     elements.accountLoginCancelPreflightButton.disabled = !lastAccountLoginCancelRef;
     elements.accountLoginCancelButton.disabled = true;
+  }
+}
+
+async function runAccountResetCreditPreflight() {
+  setAccountResetCreditLoading(true);
+  lastAccountResetCreditPreflight = null;
+  elements.accountResetCreditButton.disabled = true;
+  hideError();
+
+  const body = {
+    workspace: selectedWorkspaceId,
+  };
+
+  try {
+    const response = await fetch(accountResetCreditPreflightEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify(body),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    lastAccountResetCreditPreflight = {
+      body,
+      token: payload.preflight?.token ?? null,
+      enabled: payload.policy?.executionGateEnabled === true,
+    };
+    renderAccountResetCreditPreflight(payload);
+  } catch (error) {
+    elements.accountResetCreditStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    setAccountResetCreditLoading(false);
+  }
+}
+
+async function runAccountResetCredit() {
+  if (!lastAccountResetCreditPreflight?.token || !lastAccountResetCreditPreflight?.body) {
+    elements.accountResetCreditStatus.textContent = "Run reset check first";
+    return;
+  }
+
+  elements.accountResetCreditButton.disabled = true;
+  elements.accountResetCreditStatus.textContent = "Using reset credit";
+  hideError();
+
+  try {
+    const response = await fetch(accountResetCreditEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify({
+        ...lastAccountResetCreditPreflight.body,
+        preflightToken: lastAccountResetCreditPreflight.token,
+      }),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderAccountResetCredit(payload);
+    await refreshSettingsIntegrations().catch(() => {});
+  } catch (error) {
+    elements.accountResetCreditStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    lastAccountResetCreditPreflight = null;
+    elements.accountResetCreditButton.disabled = true;
   }
 }
 
@@ -8329,6 +8424,7 @@ function renderSettingsIntegrations(payload) {
   elements.authCallbackText.textContent = auth.callbackHandlersEnabled ? "Enabled" : "Blocked";
   elements.accountLoginText.textContent = auth.loginEnabled ? "Enabled" : "Blocked";
   elements.accountLoginCancelText.textContent = auth.loginCancelEnabled ? "Enabled" : "Blocked";
+  elements.accountResetCreditText.textContent = auth.resetCreditConsumeEnabled ? "Enabled" : "Blocked";
   elements.activeLoginFlowCount.textContent = String(auth.activeLoginFlowCount ?? 0);
   elements.accountLogoutText.textContent = auth.logoutEnabled ? "Enabled" : "Blocked";
   elements.integrationScopeText.textContent =
@@ -9513,6 +9609,22 @@ function renderAccountLoginCancel(payload) {
   elements.accountLoginStatus.textContent = canceled ? "Login canceled" : elements.accountLoginStatus.textContent;
   elements.accountLoginCancelPreflightButton.disabled = true;
   elements.accountLoginCancelButton.disabled = true;
+}
+
+function renderAccountResetCreditPreflight(payload) {
+  elements.accountResetCreditStatus.textContent = payload.policy?.executionGateEnabled
+    ? "Reset ready"
+    : "Reset blocked";
+  elements.accountResetCreditText.textContent =
+    payload.policy?.executionGateEnabled ? "Ready" : "Blocked";
+  elements.accountResetCreditButton.disabled =
+    !lastAccountResetCreditPreflight?.token ||
+    lastAccountResetCreditPreflight.enabled !== true;
+}
+
+function renderAccountResetCredit(payload) {
+  elements.accountResetCreditStatus.textContent = payload.result?.outcome ?? "Completed";
+  elements.accountResetCreditText.textContent = "Completed";
 }
 
 function renderAccountLogoutPreflight(payload) {
@@ -11296,6 +11408,18 @@ function setAccountLoginCancelLoading(isLoading) {
   elements.accountLoginCancelPreflightButton.textContent = isLoading ? "Checking" : "Cancel Check";
   if (isLoading) {
     elements.accountLoginCancelStatus.textContent = "Checking";
+  }
+}
+
+function setAccountResetCreditLoading(isLoading) {
+  elements.accountResetCreditPreflightButton.disabled = isLoading;
+  elements.accountResetCreditButton.disabled =
+    isLoading ||
+    !lastAccountResetCreditPreflight?.token ||
+    lastAccountResetCreditPreflight.enabled !== true;
+  elements.accountResetCreditPreflightButton.textContent = isLoading ? "Checking" : "Reset Check";
+  if (isLoading) {
+    elements.accountResetCreditStatus.textContent = "Checking";
   }
 }
 

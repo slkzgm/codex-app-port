@@ -1526,6 +1526,10 @@ Current UI scope:
   `account/sendAddCreditsNudgeEmail` only, `credits`/`usage_limit` validation,
   and no email address, token, account identifier, URL, path, raw payload, or
   token echo
+- opt-in account reset credit consumption behind one-time preflight token, with
+  `account/rateLimitResetCredit/consume` only, server-generated idempotency key,
+  bounded outcome-only UI status, and no idempotency key, quota value, account
+  identifier, URL, path, raw payload, or token echo
 - sanitized account logout history with method/status/audit metadata only and
   no auth token, account identifier, URL, path, raw payload, or token echo
 - sanitized account login history with method/status/audit metadata only and no

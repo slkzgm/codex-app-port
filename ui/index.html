@@ -305,6 +305,10 @@
               <dd id="account-login-cancel-text">Blocked</dd>
             </div>
             <div>
+              <dt>Reset Credit</dt>
+              <dd id="account-reset-credit-text">Blocked</dd>
+            </div>
+            <div>
               <dt>Active Logins</dt>
               <dd id="active-login-flow-count">0</dd>
             </div>
@@ -444,6 +448,15 @@
               Cancel Login
             </button>
             <span id="account-login-cancel-status" class="empty-state">No active device login.</span>
+          </div>
+          <div class="turn-actions">
+            <button id="account-reset-credit-preflight-button" class="secondary-button" type="button">
+              Reset Check
+            </button>
+            <button id="account-reset-credit-button" class="secondary-button" type="button" disabled>
+              Use Reset Credit
+            </button>
+            <span id="account-reset-credit-status" class="empty-state">Reset credit disabled by default.</span>
           </div>
           <div class="turn-actions">
             <button id="account-logout-preflight-button" class="secondary-button" type="button">
