@@ -241,6 +241,11 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /remote-control-disable-status/);
     assert.match(appScript, /runRemoteControlDisablePreflight/);
     assert.match(appScript, /runRemoteControlDisable/);
+    assert.match(html, /environment-add-form/);
+    assert.match(html, /environment-add-status/);
+    assert.match(html, /environment-add-run-button/);
+    assert.match(appScript, /runEnvironmentAddPreflight/);
+    assert.match(appScript, /runEnvironmentAdd/);
     assert.match(html, /plugin-share-checkout-form/);
     assert.match(html, /plugin-share-checkout-status/);
     assert.match(html, /plugin-share-checkout-run-button/);
@@ -379,6 +384,8 @@ test("browser POST body contracts are centralized and immutable", () => {
     "/api/skills-extra-roots-clear",
     "/api/remote-control-disable-preflight",
     "/api/remote-control-disable",
+    "/api/environment-add-preflight",
+    "/api/environment-add",
     "/api/integration-action-preflight",
     "/api/live-session-control-preflight",
     "/api/live-session-control",
@@ -655,6 +662,16 @@ test("browser POST body contracts are centralized and immutable", () => {
     [...BROWSER_POST_BODY_CONTRACTS["/api/remote-control-disable"].allowedFields],
     ["workspace", "preflightToken"],
   );
+  assert.deepEqual(
+    [...BROWSER_POST_BODY_CONTRACTS["/api/environment-add-preflight"].allowedFields],
+    ["workspace", "environmentId", "execServerUrl"],
+  );
+  assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/environment-add"].allowedFields], [
+    "workspace",
+    "environmentId",
+    "execServerUrl",
+    "preflightToken",
+  ]);
 
   for (const [path, contract] of Object.entries(BROWSER_POST_BODY_CONTRACTS)) {
     assert.equal(Object.isFrozen(contract), true, path);
@@ -894,6 +911,27 @@ test("browser POST response contracts block unsafe response values", () => {
     true,
   );
   assert.equal(remoteControlDisableContract.nestedKeySchemas.policy.includes("unexpected"), false);
+  const environmentAddPreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/environment-add-preflight"];
+  assert.equal(environmentAddPreflightContract.usesRouteSpecificNestedKeySchemas, true);
+  assert.equal(
+    environmentAddPreflightContract.nestedKeySchemas.environmentAdd.includes("allowlistMatched"),
+    true,
+  );
+  assert.equal(
+    environmentAddPreflightContract.nestedKeySchemas.policy.includes("environmentAdd"),
+    true,
+  );
+  assert.equal(environmentAddPreflightContract.nestedKeySchemas.policy.includes("unexpected"), false);
+  const environmentAddContract = BROWSER_POST_RESPONSE_CONTRACTS["/api/environment-add"];
+  assert.equal(environmentAddContract.usesRouteSpecificNestedKeySchemas, true);
+  assert.equal(
+    environmentAddContract.nestedKeySchemas.environmentAdd.includes("responseTopLevelKeyCount"),
+    true,
+  );
+  assert.equal(environmentAddContract.nestedKeySchemas.result.includes("execServerUrlReturned"), true);
+  assert.equal(environmentAddContract.nestedKeySchemas.policy.includes("environmentAdd"), true);
+  assert.equal(environmentAddContract.nestedKeySchemas.policy.includes("unexpected"), false);
   const configValuePreflightContract =
     BROWSER_POST_RESPONSE_CONTRACTS["/api/config-value-preflight"];
   assert.equal(configValuePreflightContract.usesRouteSpecificNestedKeySchemas, true);
@@ -16682,7 +16720,7 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.integrationScope.state, "partial");
     assert.equal(payload.integrationScope.enabledReadMethodCount, 1);
     assert.deepEqual(payload.integrationScope.enabledReadMethods, ["config/read"]);
-    assert.equal(payload.integrationScope.enabledLocalGateCount, 11);
+    assert.equal(payload.integrationScope.enabledLocalGateCount, 12);
     assert.deepEqual(payload.integrationScope.enabledLocalGates, [
       "mcp-tool-preflight",
       "mcp-oauth-login-preflight",
@@ -16694,6 +16732,7 @@ test("dev server exposes settings and integration boundary without app-server tr
       "config-value-preflight",
       "config-batch-preflight",
       "experimental-feature-preflight",
+      "environment-add-preflight",
       "integration-action-preflight",
     ]);
     assert.equal(
@@ -16744,7 +16783,7 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.integrationLifecycle.partialSurfaceCount, 1);
     assert.equal(payload.integrationLifecycle.blockedSurfaceCount, 6);
     assert.equal(payload.integrationLifecycle.readMethodCount, 1);
-    assert.equal(payload.integrationLifecycle.localGateCount, 11);
+    assert.equal(payload.integrationLifecycle.localGateCount, 12);
     assert.equal(payload.integrationLifecycle.enabledMutationGateCount, 0);
     assert.equal(
       payload.integrationLifecycle.blockedMutationMethodCount,
@@ -16756,8 +16795,8 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.integrationLifecycle.integrationActions.returned, true);
     assert.equal(payload.integrationLifecycle.integrationActions.state, "preflight-only");
     assert.equal(payload.integrationLifecycle.integrationActions.readMethodCount, 1);
-    assert.equal(payload.integrationLifecycle.integrationActions.localGateCount, 11);
-    assert.equal(payload.integrationLifecycle.integrationActions.preflightOnlyGateCount, 11);
+    assert.equal(payload.integrationLifecycle.integrationActions.localGateCount, 12);
+    assert.equal(payload.integrationLifecycle.integrationActions.preflightOnlyGateCount, 12);
     assert.equal(payload.integrationLifecycle.integrationActions.executableActionCount, 0);
     assert.equal(payload.integrationLifecycle.integrationActions.enabledMutationGateCount, 0);
     assert.equal(
@@ -16781,8 +16820,8 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.integrationLifecycle.integrationManagement.partialSurfaceCount, 1);
     assert.equal(payload.integrationLifecycle.integrationManagement.blockedSurfaceCount, 6);
     assert.equal(payload.integrationLifecycle.integrationManagement.readMethodCount, 1);
-    assert.equal(payload.integrationLifecycle.integrationManagement.localGateCount, 11);
-    assert.equal(payload.integrationLifecycle.integrationManagement.preflightOnlyGateCount, 11);
+    assert.equal(payload.integrationLifecycle.integrationManagement.localGateCount, 12);
+    assert.equal(payload.integrationLifecycle.integrationManagement.preflightOnlyGateCount, 12);
     assert.equal(payload.integrationLifecycle.integrationManagement.executableActionCount, 0);
     assert.equal(payload.integrationLifecycle.integrationManagement.enabledMutationGateCount, 0);
     assert.equal(
@@ -16813,8 +16852,8 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.returned, true);
     assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.state, "preflight-only");
     assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.readMethodCount, 1);
-    assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.localGateCount, 11);
-    assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.preflightOnlyGateCount, 11);
+    assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.localGateCount, 12);
+    assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.preflightOnlyGateCount, 12);
     assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.executableActionCount, 0);
     assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.enabledActionFamilyCount, 0);
     assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.enabledMutationGateCount, 0);
@@ -16875,8 +16914,8 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.integrationLifecycle.integrationSafetyContract.returned, true);
     assert.equal(payload.integrationLifecycle.integrationSafetyContract.state, "preflight-only");
     assert.equal(payload.integrationLifecycle.integrationSafetyContract.readMethodCount, 1);
-    assert.equal(payload.integrationLifecycle.integrationSafetyContract.localGateCount, 11);
-    assert.equal(payload.integrationLifecycle.integrationSafetyContract.preflightOnlyGateCount, 11);
+    assert.equal(payload.integrationLifecycle.integrationSafetyContract.localGateCount, 12);
+    assert.equal(payload.integrationLifecycle.integrationSafetyContract.preflightOnlyGateCount, 12);
     assert.equal(payload.integrationLifecycle.integrationSafetyContract.executableActionCount, 0);
     assert.equal(payload.integrationLifecycle.integrationSafetyContract.enabledActionFamilyCount, 0);
     assert.equal(payload.integrationLifecycle.integrationSafetyContract.enabledMutationGateCount, 0);
@@ -16920,8 +16959,8 @@ test("dev server exposes settings and integration boundary without app-server tr
       state: "preflight-only",
       routingMode: "local-preflight-only",
       readMethodCount: 1,
-      localGateCount: 11,
-      preflightOnlyGateCount: 11,
+      localGateCount: 12,
+      preflightOnlyGateCount: 12,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -16950,8 +16989,8 @@ test("dev server exposes settings and integration boundary without app-server tr
       partialSurfaceCount: 1,
       blockedSurfaceCount: 6,
       readMethodCount: 1,
-      localGateCount: 11,
-      preflightOnlyGateCount: 11,
+      localGateCount: 12,
+      preflightOnlyGateCount: 12,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -16984,8 +17023,8 @@ test("dev server exposes settings and integration boundary without app-server tr
       workflowMode: "preflight-review",
       routingMode: "local-preflight-only",
       readMethodCount: 1,
-      localGateCount: 11,
-      preflightOnlyGateCount: 11,
+      localGateCount: 12,
+      preflightOnlyGateCount: 12,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -17016,8 +17055,8 @@ test("dev server exposes settings and integration boundary without app-server tr
       workflowMode: "preflight-review",
       routingMode: "local-preflight-only",
       readMethodCount: 1,
-      localGateCount: 11,
-      preflightOnlyGateCount: 11,
+      localGateCount: 12,
+      preflightOnlyGateCount: 12,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -17045,8 +17084,8 @@ test("dev server exposes settings and integration boundary without app-server tr
       workflowMode: "preflight-review",
       routingMode: "local-preflight-only",
       readMethodCount: 1,
-      localGateCount: 11,
-      preflightOnlyGateCount: 11,
+      localGateCount: 12,
+      preflightOnlyGateCount: 12,
       executableActionCount: 0,
       externalActionCount: 0,
       enabledMutationGateCount: 0,
@@ -17653,7 +17692,7 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
       "config/read",
       ...optInIntegrationReadMethods(),
     ]);
-    assert.equal(payload.integrationScope.enabledLocalGateCount, 11);
+    assert.equal(payload.integrationScope.enabledLocalGateCount, 12);
     assert.equal(
       payload.integrationScope.blockedMutationMethodCount,
       blockedIntegrationMutationMethods().length,
@@ -17676,8 +17715,8 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
       state: "preflight-only",
       routingMode: "local-preflight-only",
       readMethodCount: ["config/read", ...optInIntegrationReadMethods()].length,
-      localGateCount: 11,
-      preflightOnlyGateCount: 11,
+      localGateCount: 12,
+      preflightOnlyGateCount: 12,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -17710,8 +17749,8 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
         (surface) => surface?.state === "blocked",
       ).length,
       readMethodCount: ["config/read", ...optInIntegrationReadMethods()].length,
-      localGateCount: 11,
-      preflightOnlyGateCount: 11,
+      localGateCount: 12,
+      preflightOnlyGateCount: 12,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -17744,8 +17783,8 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
       workflowMode: "preflight-review",
       routingMode: "local-preflight-only",
       readMethodCount: ["config/read", ...optInIntegrationReadMethods()].length,
-      localGateCount: 11,
-      preflightOnlyGateCount: 11,
+      localGateCount: 12,
+      preflightOnlyGateCount: 12,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -17776,8 +17815,8 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
       workflowMode: "preflight-review",
       routingMode: "local-preflight-only",
       readMethodCount: ["config/read", ...optInIntegrationReadMethods()].length,
-      localGateCount: 11,
-      preflightOnlyGateCount: 11,
+      localGateCount: 12,
+      preflightOnlyGateCount: 12,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -17805,8 +17844,8 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
       workflowMode: "preflight-review",
       routingMode: "local-preflight-only",
       readMethodCount: ["config/read", ...optInIntegrationReadMethods()].length,
-      localGateCount: 11,
-      preflightOnlyGateCount: 11,
+      localGateCount: 12,
+      preflightOnlyGateCount: 12,
       executableActionCount: 0,
       externalActionCount: 0,
       enabledMutationGateCount: 0,
@@ -21582,6 +21621,254 @@ test("dev server disables remote control only behind opt-in and preflight tokens
       preflightPayload.preflight.token,
       "\"serverNameReturned\":true",
       "\"statusValueReturned\":true",
+    ]) {
+      assert.equal(auditSerialized.includes(marker), false, `audit leaked ${marker}`);
+    }
+  } finally {
+    await closeServer(enabled.server);
+    await rm(auditDir, { recursive: true, force: true });
+  }
+});
+
+test("dev server adds remote environments only behind opt-in allowlist and preflight tokens", async () => {
+  const auditDir = await mkdtemp(join(tmpdir(), "codex-app-port-environment-add-"));
+  const auditLogPath = join(auditDir, "actions.jsonl");
+  const calls = [];
+  const environmentId = "private-remote-env";
+  const execServerUrl = "wss://private-env.example.test/exec";
+  const environmentAddFn = async (options) => {
+    calls.push(options);
+    return {
+      ok: true,
+      generatedAt: "2026-06-29T00:00:00.000Z",
+      transport: "stdio-jsonl",
+      protocol: "json-rpc-2.0-without-jsonrpc-field",
+      initialize: { platformOs: "linux", platformFamily: "unix" },
+      probes: {
+        environmentAdd: {
+          method: "environment/add",
+          status: "added-with-redactions",
+          responseObject: true,
+          responseTopLevelKeyCount: 4,
+          environmentIdReturned: true,
+          execServerUrlReturned: true,
+          urlsReturned: true,
+          pathsReturned: true,
+          rawPayloadReturned: true,
+          environmentId: options.environmentId,
+          execServerUrl: options.execServerUrl,
+          privateEnvironmentName: "private environment",
+          privateToken: "sk-proj-private-env",
+        },
+      },
+      notifications: { "environment/add/private": 1 },
+    };
+  };
+
+  const disabled = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    workspaceInputs: ["/tmp/second-workspace"],
+    environmentAddFn,
+  });
+
+  try {
+    const preflightResponse = await fetch(`${disabled.url}/api/environment-add-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(disabled.server),
+      body: JSON.stringify({ workspace: "workspace-2", environmentId, execServerUrl }),
+    });
+    assert.equal(preflightResponse.status, 200);
+    const preflightPayload = await preflightResponse.json();
+    assert.equal(preflightPayload.policy.executionGateEnabled, false);
+    assert.equal(preflightPayload.policy.environmentAddEnabled, false);
+    const blocked = await fetch(`${disabled.url}/api/environment-add`, {
+      method: "POST",
+      headers: jsonHeaders(disabled.server),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        environmentId,
+        execServerUrl,
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    assert.equal(blocked.status, 403);
+    assert.equal(calls.length, 0);
+  } finally {
+    await closeServer(disabled.server);
+  }
+
+  const enabled = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    workspaceInputs: ["/tmp/second-workspace"],
+    environmentAddEnabled: true,
+    environmentAddAllowlist: [{ environmentId, execServerUrl }],
+    environmentAddFn,
+    actionAuditLog: createActionAuditLog({ path: auditLogPath }),
+  });
+
+  try {
+    const preflightResponse = await fetch(`${enabled.url}/api/environment-add-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(enabled.server),
+      body: JSON.stringify({ workspace: "workspace-2", environmentId, execServerUrl }),
+    });
+    assert.equal(preflightResponse.status, 200);
+    const preflightPayload = await preflightResponse.json();
+    const preflightSerialized = JSON.stringify(preflightPayload);
+    assert.equal(preflightPayload.action.type, "environment-add-preflight");
+    assert.equal(preflightPayload.action.method, "environment/add");
+    assert.equal(preflightPayload.action.execution, "requires-confirmation");
+    assert.equal(preflightPayload.appServer.touched, false);
+    assert.equal(preflightPayload.appServer.remoteEnvironmentTraffic, false);
+    assert.equal(preflightPayload.environmentAdd.environmentIdCharCount, environmentId.length);
+    assert.equal(preflightPayload.environmentAdd.execServerUrlCharCount, execServerUrl.length);
+    assert.equal(preflightPayload.environmentAdd.allowlistMatched, true);
+    assert.equal(preflightPayload.environmentAdd.connectTimeoutAcceptedFromBrowser, false);
+    assert.equal(preflightPayload.policy.environmentAdd, false);
+    assert.equal(preflightPayload.policy.environmentAddEnabled, true);
+    assert.equal(preflightPayload.policy.executionGateEnabled, true);
+    assert.equal(preflightPayload.policy.allowlistRequired, true);
+    assert.equal(preflightPayload.policy.allowlistMatched, true);
+    assert.equal(preflightPayload.policy.environmentIdReturned, false);
+    assert.equal(preflightPayload.policy.execServerUrlReturned, false);
+    assertActionPreflight(preflightPayload, "environment-add-preflight", "workspace-2");
+    for (const marker of [
+      environmentId,
+      execServerUrl,
+      "private-env.example.test",
+      "/tmp/second-workspace",
+      "private environment",
+      "sk-proj-private-env",
+    ]) {
+      assert.equal(preflightSerialized.includes(marker), false, `preflight leaked ${marker}`);
+    }
+
+    const rejectedUnknown = await fetch(`${enabled.url}/api/environment-add`, {
+      method: "POST",
+      headers: jsonHeaders(enabled.server),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        environmentId,
+        execServerUrl,
+        connectTimeoutMs: 1000,
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    assert.equal(rejectedUnknown.status, 400);
+    assert.equal(calls.length, 0);
+
+    const rejectedTarget = await fetch(`${enabled.url}/api/environment-add`, {
+      method: "POST",
+      headers: jsonHeaders(enabled.server),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        environmentId: "not-allowlisted-env",
+        execServerUrl,
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    assert.equal(rejectedTarget.status, 403);
+    assert.equal(calls.length, 0);
+
+    const response = await fetch(`${enabled.url}/api/environment-add`, {
+      method: "POST",
+      headers: jsonHeaders(enabled.server),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        environmentId,
+        execServerUrl,
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, true);
+    assert.equal(payload.appServer.remoteEnvironmentTraffic, true);
+    assert.deepEqual(payload.appServer.auditedMethods, ["environment/add"]);
+    assert.equal(payload.action.type, "environment-add");
+    assert.equal(payload.action.method, "environment/add");
+    assert.equal(payload.action.remoteEnvironmentMutation, true);
+    assert.equal(payload.environmentAdd.status, "added-with-redactions");
+    assert.equal(payload.environmentAdd.responseObject, true);
+    assert.equal(payload.environmentAdd.responseTopLevelKeyCount, 4);
+    assert.equal(payload.environmentAdd.environmentIdReturned, false);
+    assert.equal(payload.environmentAdd.execServerUrlReturned, false);
+    assert.equal(payload.environmentAdd.urlsReturned, false);
+    assert.equal(payload.environmentAdd.pathsReturned, false);
+    assert.equal(payload.environmentAdd.rawPayloadReturned, false);
+    assert.equal(payload.result.status, "added-with-redactions");
+    assert.equal(payload.result.responseTopLevelKeyCount, 4);
+    assert.equal(payload.policy.environmentAdd, true);
+    assert.equal(payload.policy.environmentAddEnabled, true);
+    assert.equal(payload.policy.allowlistMatched, true);
+    assert.equal(payload.policy.auditLogWritten, true);
+    assert.equal(payload.preflight.tokenConsumed, true);
+    assert.equal(payload.preflight.tokenReturned, false);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].cwd, "/tmp/second-workspace");
+    assert.equal(calls[0].environmentId, environmentId);
+    assert.equal(calls[0].execServerUrl, execServerUrl);
+    assert.equal(calls[0].connectTimeoutMs, null);
+    for (const marker of [
+      environmentId,
+      execServerUrl,
+      "private-env.example.test",
+      "/tmp/second-workspace",
+      "private environment",
+      "sk-proj-private-env",
+      preflightPayload.preflight.token,
+      "\"environmentIdReturned\":true",
+      "\"execServerUrlReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+
+    const replay = await fetch(`${enabled.url}/api/environment-add`, {
+      method: "POST",
+      headers: jsonHeaders(enabled.server),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        environmentId,
+        execServerUrl,
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    assert.equal(replay.status, 409);
+    assert.equal(calls.length, 1);
+
+    const auditRecords = (await readFile(auditLogPath, "utf8"))
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    assert.equal(auditRecords.length, 1);
+    assert.equal(auditRecords[0].event, "environment-add-recorded");
+    assert.equal(auditRecords[0].action.type, "environment-add");
+    assert.equal(auditRecords[0].action.method, "environment/add");
+    assert.equal(auditRecords[0].action.remoteEnvironmentMutation, true);
+    assert.equal(auditRecords[0].appServer.remoteEnvironmentTraffic, true);
+    assert.equal(auditRecords[0].target.environmentIdCharCount, environmentId.length);
+    assert.equal(auditRecords[0].target.execServerUrlCharCount, execServerUrl.length);
+    assert.equal(auditRecords[0].target.environmentIdReturned, false);
+    assert.equal(auditRecords[0].target.execServerUrlReturned, false);
+    assert.equal(auditRecords[0].result.status, "added-with-redactions");
+    assert.equal(auditRecords[0].result.environmentIdReturned, false);
+    assert.equal(auditRecords[0].result.execServerUrlReturned, false);
+    assert.equal(auditRecords[0].preflight.tokenConsumed, true);
+    assert.equal(auditRecords[0].preflight.tokenReturned, false);
+    const auditSerialized = JSON.stringify(auditRecords);
+    for (const marker of [
+      environmentId,
+      execServerUrl,
+      "private-env.example.test",
+      "/tmp/second-workspace",
+      "private environment",
+      "sk-proj-private-env",
+      preflightPayload.preflight.token,
+      "\"environmentIdReturned\":true",
+      "\"execServerUrlReturned\":true",
     ]) {
       assert.equal(auditSerialized.includes(marker), false, `audit leaked ${marker}`);
     }

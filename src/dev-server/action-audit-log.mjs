@@ -19,6 +19,7 @@ const ACTION_AUDIT_EVENTS = new Set([
   "account-logout-recorded",
   "config-batch-write-recorded",
   "config-value-write-recorded",
+  "environment-add-recorded",
   "experimental-feature-set-recorded",
   "file-action-recorded",
   "live-session-bulk-control-recorded",
@@ -121,6 +122,7 @@ export function sanitizeActionAuditRecord(record, { generatedAt = null } = {}) {
         actionType === "config-batch-write" ||
         actionType === "config-value-write" ||
         actionType === "experimental-feature-set" ||
+        actionType === "environment-add" ||
         actionType === "thread-safety-lock"
           ? Boolean(appServer.settingsTraffic)
           : false,
@@ -147,6 +149,10 @@ export function sanitizeActionAuditRecord(record, { generatedAt = null } = {}) {
       remoteControlTraffic:
         actionType === "remote-control-disable"
           ? Boolean(appServer.remoteControlTraffic)
+          : false,
+      remoteEnvironmentTraffic:
+        actionType === "environment-add"
+          ? Boolean(appServer.remoteEnvironmentTraffic)
           : false,
       auditedMethods: sanitizeMethodList(appServer.auditedMethods),
     },
@@ -209,6 +215,8 @@ function actionAuditEvent(actionType) {
       return "config-batch-write-recorded";
     case "experimental-feature-set":
       return "experimental-feature-set-recorded";
+    case "environment-add":
+      return "environment-add-recorded";
     case "file-action":
       return "file-action-recorded";
     case "mcp-tool-call":
@@ -479,6 +487,17 @@ function sanitizeAction(action, actionType, { appServer }) {
       method: "remoteControl/disable",
       execution: safeString(action.execution, 40) ?? "completed",
       remoteControlDisable: Boolean(action.remoteControlDisable),
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: false,
+    };
+  }
+  if (actionType === "environment-add") {
+    return {
+      type: "environment-add",
+      method: "environment/add",
+      execution: safeString(action.execution, 40) ?? "completed",
+      remoteEnvironmentMutation: Boolean(action.remoteEnvironmentMutation),
+      environmentAdd: Boolean(action.environmentAdd),
       appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
       modelTraffic: false,
     };
@@ -852,6 +871,18 @@ function sanitizeTarget(target, actionType) {
       environmentIdReturned: false,
       installationIdReturned: false,
       serverNameReturned: false,
+      rawPayloadReturned: false,
+    };
+  }
+  if (actionType === "environment-add") {
+    return {
+      environmentIdCharCount: safeCount(target.environmentIdCharCount),
+      execServerUrlCharCount: safeCount(target.execServerUrlCharCount),
+      connectTimeoutAcceptedFromBrowser: false,
+      environmentIdReturned: false,
+      execServerUrlReturned: false,
+      urlsReturned: false,
+      pathsReturned: false,
       rawPayloadReturned: false,
     };
   }
@@ -1284,6 +1315,20 @@ function sanitizeResult(result, actionType) {
       threadContentReturned: false,
     };
   }
+  if (actionType === "environment-add") {
+    return {
+      status: safeString(result.status, 80) ?? "added-with-redactions",
+      responseObject: Boolean(result.responseObject),
+      responseTopLevelKeyCount: safeCount(result.responseTopLevelKeyCount),
+      environmentIdReturned: false,
+      execServerUrlReturned: false,
+      urlsReturned: false,
+      pathsReturned: false,
+      rawPayloadReturned: false,
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
   if (actionType === "terminal-command") {
     return {
       status: safeString(result.status, 80) ?? "completed",
@@ -1508,6 +1553,7 @@ function sanitizeActionType(value) {
     "account-logout",
     "config-batch-write",
     "config-value-write",
+    "environment-add",
     "experimental-feature-set",
     "file-action",
     "live-session-bulk-control",

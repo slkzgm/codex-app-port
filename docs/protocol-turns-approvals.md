@@ -86,6 +86,16 @@ sandbox, instruction, permission, and runtime-root overrides are rejected by
 omission from the route body contract. It returns source suffix, forked suffix,
 status, method, and exclude-turns metadata only, with no full ids, names,
 previews, paths, thread content, preflight tokens, or raw payloads. The
+`environment/add` method now has a separate disabled-by-default route:
+`POST /api/environment-add-preflight` validates only a safe environment id and
+`https:`/`wss:` exec-server URL without app-server traffic, and
+`POST /api/environment-add` requires `CODEX_APP_PORT_ALLOW_ENVIRONMENT_ADD=1`,
+an exact `CODEX_APP_PORT_ENVIRONMENT_ADD_ALLOWLIST`
+`environmentId=execServerUrl` match, and the matching one-time token before
+calling `environment/add`. Browser-supplied timeout or extra app-server
+parameters are rejected; the server fixes `connectTimeoutMs` to `null`.
+Responses and action audit records expose only status/count/shape metadata,
+with no environment ids, exec-server URLs, paths, tokens, or raw payloads. The
 other refreshed 0.142 methods remain blocked until separately audited.
 
 New server request methods and request-shape changes:

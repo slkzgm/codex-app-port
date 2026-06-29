@@ -41,6 +41,7 @@ export const APP_SERVER_METHODS = Object.freeze({
   configBatchWrite: "config/batchWrite",
   experimentalFeatureList: "experimentalFeature/list",
   experimentalFeatureEnablementSet: "experimentalFeature/enablement/set",
+  environmentAdd: "environment/add",
   externalAgentConfigImportReadHistories: "externalAgentConfig/import/readHistories",
   configMcpServerReload: "config/mcpServer/reload",
   mcpServerOauthLogin: "mcpServer/oauth/login",

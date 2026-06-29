@@ -15,6 +15,7 @@ import {
   runAppServerProbe,
   runConfigBatchWriteProbe,
   runConfigValueWriteProbe,
+  runEnvironmentAddProbe,
   runExperimentalFeatureEnablementSetProbe,
   runIntegrationsInventoryProbe,
   runLiveSessionControlProbe,
@@ -308,6 +309,16 @@ export const BROWSER_POST_FIELD_POLICIES = Object.freeze({
     maxChars: MAX_INTEGRATION_TARGET_CHARS,
     returnedRawValue: false,
     sensitivity: "integration-target",
+  }),
+  environmentId: bodyFieldPolicy(["string", "null"], {
+    maxChars: MAX_MCP_REFERENCE_CHARS,
+    returnedRawValue: false,
+    sensitivity: "remote-environment-id",
+  }),
+  execServerUrl: bodyFieldPolicy(["string", "null"], {
+    maxChars: MAX_INTEGRATION_TARGET_CHARS,
+    returnedRawValue: false,
+    sensitivity: "remote-environment-url",
   }),
   keyPath: bodyFieldPolicy(["string", "null"], {
     maxChars: 120,
@@ -629,6 +640,19 @@ export const ACTION_PREFLIGHT_CONFIRMATION_FIELD_CONTRACTS = Object.freeze({
   ),
   "remote-control-disable": bodyFields(
     "workspace",
+    "preflightToken",
+  ),
+  "environment-add-preflight": bodyFields(
+    "workspace",
+    "actionType",
+    "preflightToken",
+    "environmentId",
+    "execServerUrl",
+  ),
+  "environment-add": bodyFields(
+    "workspace",
+    "environmentId",
+    "execServerUrl",
     "preflightToken",
   ),
   "integration-action-preflight": bodyFields(
@@ -1005,6 +1029,17 @@ export const BROWSER_POST_BODY_CONTRACTS = Object.freeze({
     kind: "mutation",
     requiresPreflightToken: true,
   }),
+  "/api/environment-add-preflight": bodyContract(["workspace", "environmentId", "execServerUrl"], {
+    kind: "preflight",
+    appServerTraffic: false,
+  }),
+  "/api/environment-add": bodyContract(
+    ["workspace", "environmentId", "execServerUrl", "preflightToken"],
+    {
+      kind: "mutation",
+      requiresPreflightToken: true,
+    },
+  ),
   "/api/integration-action-preflight": bodyContract(
     ["workspace", "method", "target", "arguments"],
     {
@@ -1091,6 +1126,7 @@ const BROWSER_POST_RESPONSE_TOP_LEVEL_KEYS = Object.freeze({
     "pluginUninstall",
     "pluginShareCheckout",
     "pluginContentRead",
+    "environmentAdd",
     "skillsConfigWrite",
     "content",
     "server",
@@ -1139,7 +1175,9 @@ const BROWSER_POST_RESPONSE_TOP_LEVEL_KEYS = Object.freeze({
     "mcpResourceRead",
     "pluginRead",
     "pluginUninstall",
+    "pluginShareCheckout",
     "pluginContentRead",
+    "environmentAdd",
     "skillsConfigWrite",
     "content",
     "filesystem",
@@ -1217,7 +1255,9 @@ const BROWSER_POST_RESPONSE_FORBIDDEN_TRUTHY_FLAG_KEYS = Object.freeze([
   "decisionTokensReturned",
   "descriptionsReturned",
   "enablementValuesReturned",
+  "environmentIdReturned",
   "environmentReturned",
+  "execServerUrlReturned",
   "executableReturned",
   "featureNameReturned",
   "fileChangePatchTextReturned",
@@ -7297,6 +7337,178 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
       "implemented",
     ],
   }),
+  "/api/environment-add-preflight": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    appServer: ["touched", "modelTraffic", "commandTraffic", "remoteEnvironmentTraffic"],
+    action: [
+      "type",
+      "method",
+      "category",
+      "execution",
+      "wouldAddEnvironment",
+      "wouldMutateRemoteEnvironments",
+      "appServerTouched",
+      "modelTraffic",
+      "reason",
+    ],
+    integrationAction: ["method", "category", "target", "arguments", "methodAllowedByAudit"],
+    "integrationAction.target": ["present", "charCount", "lineCount", "textReturned"],
+    "integrationAction.arguments": [
+      "present",
+      "charCount",
+      "lineCount",
+      "validJsonObject",
+      "topLevelKeyCount",
+      "textReturned",
+    ],
+    environmentAdd: [
+      "method",
+      "environmentIdCharCount",
+      "execServerUrlCharCount",
+      "allowlistMatched",
+      "allowlistEntryCount",
+      "connectTimeoutAcceptedFromBrowser",
+      "environmentIdReturned",
+      "execServerUrlReturned",
+      "urlsReturned",
+      "pathsReturned",
+      "rawPayloadReturned",
+    ],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "remoteEnvironmentMutation",
+      "environmentAdd",
+      "environmentAddEnabled",
+      "executionRouteImplemented",
+      "executionGateEnabled",
+      "allowlistRequired",
+      "allowlistMatched",
+      "connectTimeoutAcceptedFromBrowser",
+      "environmentIdReturned",
+      "execServerUrlReturned",
+      "targetReturned",
+      "argumentTextReturned",
+      "urlsReturned",
+      "pathsReturned",
+      "rawPayloadsReturned",
+      "requiresApprovalPipeline",
+      "requiresIntegrationProvenance",
+      "requiresExplicitEnablement",
+      "browserMethodCallsAccepted",
+      "implemented",
+    ],
+    preflight: [
+      "token",
+      "tokenIssued",
+      "issuedAt",
+      "expiresAt",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseRequiredForMutation",
+      "consumed",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+  }),
+  "/api/environment-add": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    initialize: ["platformFamily", "platformOs"],
+    appServer: [
+      "touched",
+      "modelTraffic",
+      "commandTraffic",
+      "remoteEnvironmentTraffic",
+      "auditedMethods",
+    ],
+    action: [
+      "type",
+      "method",
+      "execution",
+      "remoteEnvironmentMutation",
+      "environmentAdd",
+      "appServerTouched",
+      "modelTraffic",
+      "reason",
+    ],
+    target: [
+      "environmentIdCharCount",
+      "execServerUrlCharCount",
+      "connectTimeoutAcceptedFromBrowser",
+      "environmentIdReturned",
+      "execServerUrlReturned",
+      "urlsReturned",
+      "pathsReturned",
+      "rawPayloadReturned",
+    ],
+    environmentAdd: [
+      "method",
+      "status",
+      "environmentIdCharCount",
+      "execServerUrlCharCount",
+      "responseObject",
+      "responseTopLevelKeyCount",
+      "connectTimeoutAcceptedFromBrowser",
+      "environmentIdReturned",
+      "execServerUrlReturned",
+      "urlsReturned",
+      "pathsReturned",
+      "rawPayloadReturned",
+    ],
+    result: [
+      "status",
+      "responseObject",
+      "responseTopLevelKeyCount",
+      "environmentIdReturned",
+      "execServerUrlReturned",
+      "urlsReturned",
+      "pathsReturned",
+      "rawPayloadReturned",
+      "fullIdsReturned",
+      "threadContentReturned",
+    ],
+    preflight: [
+      "tokenConsumed",
+      "tokenReturned",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseEnforced",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "modelTraffic",
+      "commandTraffic",
+      "remoteEnvironmentMutation",
+      "environmentAdd",
+      "environmentAddEnabled",
+      "executionRouteImplemented",
+      "executionGateEnabled",
+      "allowlistRequired",
+      "allowlistMatched",
+      "connectTimeoutAcceptedFromBrowser",
+      "environmentIdReturned",
+      "execServerUrlReturned",
+      "targetReturned",
+      "argumentTextReturned",
+      "urlsReturned",
+      "pathsReturned",
+      "rawPayloadsReturned",
+      "preflightTokenReturned",
+      "preflightTokenRequired",
+      "auditLogPersistent",
+      "auditLogPathReturned",
+      "auditLogWritableChecked",
+      "auditLogWritten",
+      "requiresExplicitEnablement",
+      "browserMethodCallsAccepted",
+      "implemented",
+    ],
+  }),
   "/api/config-value-preflight": responseNestedKeySchemas({
     workspace: ["id", "label", "isDefault"],
     appServer: ["touched", "modelTraffic", "commandTraffic", "settingsTraffic"],
@@ -8681,6 +8893,17 @@ const BROWSER_POST_RESPONSE_ROUTE_TOP_LEVEL_KEYS = Object.freeze({
     "remoteControlDisable",
     "result",
   ),
+  "/api/environment-add-preflight": routeResponseTopLevelKeys(
+    ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
+    "integrationAction",
+    "environmentAdd",
+  ),
+  "/api/environment-add": routeResponseTopLevelKeys(
+    ...RESPONSE_APP_SERVER_MUTATION_TOP_LEVEL_KEYS,
+    "target",
+    "environmentAdd",
+    "result",
+  ),
   "/api/integration-action-preflight": routeResponseTopLevelKeys(
     ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
     "integrationAction",
@@ -8832,6 +9055,7 @@ export function createDevServer({
   integrationsInventoryFn = runIntegrationsInventoryProbe,
   configBatchWriteFn = runConfigBatchWriteProbe,
   configValueWriteFn = runConfigValueWriteProbe,
+  environmentAddFn = runEnvironmentAddProbe,
   experimentalFeatureSetFn = runExperimentalFeatureEnablementSetProbe,
   mcpServerReloadFn = runMcpServerReloadProbe,
   mcpToolCallFn = runMcpToolCallProbe,
@@ -8919,6 +9143,10 @@ export function createDevServer({
     process.env.CODEX_APP_PORT_ALLOW_SKILLS_EXTRA_ROOTS_CLEAR === "1",
   remoteControlDisableEnabled =
     process.env.CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_DISABLE === "1",
+  environmentAddEnabled = process.env.CODEX_APP_PORT_ALLOW_ENVIRONMENT_ADD === "1",
+  environmentAddAllowlist = parseEnvironmentAddAllowlist(
+    process.env.CODEX_APP_PORT_ENVIRONMENT_ADD_ALLOWLIST,
+  ),
   loadedSessionsEnabled = process.env.CODEX_APP_PORT_ALLOW_LOADED_SESSIONS === "1",
   liveSessionControlEnabled = process.env.CODEX_APP_PORT_ALLOW_LIVE_SESSION_CONTROL === "1",
   liveSessionBulkControlEnabled =
@@ -8996,6 +9224,7 @@ export function createDevServer({
       integrationsInventoryFn,
       configBatchWriteFn,
       configValueWriteFn,
+      environmentAddFn,
       experimentalFeatureSetFn,
       mcpServerReloadFn,
       mcpOauthLoginFn,
@@ -9065,6 +9294,8 @@ export function createDevServer({
       skillsConfigWriteEnabled,
       skillsExtraRootsClearEnabled,
       remoteControlDisableEnabled,
+      environmentAddEnabled,
+      environmentAddAllowlist,
       loadedSessionsEnabled,
       liveSessionControlEnabled,
       liveSessionBulkControlEnabled,
@@ -13152,6 +13383,113 @@ export async function handleRequest(request, response, options) {
     return;
   }
 
+  if (url.pathname === "/api/environment-add-preflight") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, [
+        "workspace",
+        "environmentId",
+        "execServerUrl",
+      ]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const payload = buildEnvironmentAddPreflight(body, {
+        workspace,
+        environmentAddEnabled: options.environmentAddEnabled,
+        environmentAddAllowlist: options.environmentAddAllowlist,
+      });
+      const attached = attachActionPreflight(payload, { body, workspace, options });
+      options.integrationPreflightLedger?.record(attached);
+      sendJson(response, 200, attached);
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid environment add preflight request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/environment-add") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, [
+        "workspace",
+        "environmentId",
+        "execServerUrl",
+        "preflightToken",
+      ]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const preflightBody = stripActionPreflightControlFields(body);
+      const preflightPayload = buildEnvironmentAddPreflight(preflightBody, {
+        workspace,
+        environmentAddEnabled: options.environmentAddEnabled,
+        environmentAddAllowlist: options.environmentAddAllowlist,
+      });
+      if (!preflightPayload.policy.executionGateEnabled) {
+        sendJson(response, 403, buildEnvironmentAddBlocked(preflightPayload));
+        return;
+      }
+      const environmentParams = validateEnvironmentAddExecutionParams(
+        preflightBody.environmentId,
+        preflightBody.execServerUrl,
+        options.environmentAddAllowlist,
+      );
+      const consumedPreflight = options.preflightRegistry.consume({
+        token: validateActionPreflightToken(body.preflightToken),
+        kind: preflightPayload.action.type,
+        workspace,
+        intent: actionPreflightIntent(preflightBody, preflightPayload),
+      });
+      const auditLogWritableChecked = ensureActionAuditLogWritable(options.actionAuditLog);
+      const payload = await options.environmentAddFn({
+        codexBin: options.codexBin,
+        cwd: workspace.cwd,
+        timeoutMs: options.timeoutMs,
+        connectTimeoutMs: null,
+        ...environmentParams,
+      });
+      const sanitized = sanitizeEnvironmentAddPayload(payload, {
+        workspace,
+        preflightPayload,
+        consumedPreflight,
+        actionAuditLog: options.actionAuditLog,
+        auditLogWritableChecked,
+      });
+      sanitized.policy.auditLogWritten = writeActionAuditLog(options.actionAuditLog, sanitized);
+      sendJson(response, 200, sanitized);
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid environment add request",
+      });
+    }
+    return;
+  }
+
   if (url.pathname === "/api/integration-action-preflight") {
     if (request.method !== "POST") {
       sendJson(response, 405, { ok: false, error: "Method not allowed" });
@@ -13685,6 +14023,7 @@ export async function handleRequest(request, response, options) {
             skillsConfigWriteEnabled: options.skillsConfigWriteEnabled,
             skillsExtraRootsClearEnabled: options.skillsExtraRootsClearEnabled,
             remoteControlDisableEnabled: options.remoteControlDisableEnabled,
+            environmentAddEnabled: options.environmentAddEnabled,
             integrationPreflightHistory,
             integrationPreflightConfirmationHistory,
             accountLoginFlowSummary,
@@ -13717,6 +14056,7 @@ export async function handleRequest(request, response, options) {
           skillsConfigWriteEnabled: options.skillsConfigWriteEnabled,
           skillsExtraRootsClearEnabled: options.skillsExtraRootsClearEnabled,
           remoteControlDisableEnabled: options.remoteControlDisableEnabled,
+          environmentAddEnabled: options.environmentAddEnabled,
           integrationPreflightHistory,
           integrationPreflightConfirmationHistory,
           accountLoginFlowSummary,
@@ -14211,6 +14551,12 @@ async function buildConfirmableActionPreflightPayload(actionType, body, { worksp
         workspace,
         remoteControlDisableEnabled: options.remoteControlDisableEnabled,
       });
+    case "environment-add-preflight":
+      return buildEnvironmentAddPreflight(body, {
+        workspace,
+        environmentAddEnabled: options.environmentAddEnabled,
+        environmentAddAllowlist: options.environmentAddAllowlist,
+      });
     case "integration-action-preflight":
       return buildIntegrationActionPreflight(body, { workspace });
     default:
@@ -14290,6 +14636,7 @@ function isIntegrationPreflightActionType(actionType) {
     actionType === "skills-config-preflight" ||
     actionType === "skills-extra-roots-clear-preflight" ||
     actionType === "remote-control-disable-preflight" ||
+    actionType === "environment-add-preflight" ||
     actionType === "integration-action-preflight"
   );
 }
@@ -14360,6 +14707,8 @@ function actionAuditEvent(record) {
       return "skills-extra-roots-clear-recorded";
     case "remote-control-disable":
       return "remote-control-disable-recorded";
+    case "environment-add":
+      return "environment-add-recorded";
     case "terminal-background-clean":
       return "terminal-background-clean-recorded";
     case "terminal-background-terminate":
@@ -23277,6 +23626,372 @@ function summarizeRemoteControlDisableResult(value) {
   };
 }
 
+function parseEnvironmentAddAllowlist(value) {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    return [];
+  }
+  return value
+    .split(/[\n,]/)
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .map((entry) => {
+      const separatorIndex = entry.indexOf("=");
+      if (separatorIndex <= 0 || separatorIndex === entry.length - 1) {
+        return null;
+      }
+      try {
+        return {
+          environmentId: validateRemoteEnvironmentId(entry.slice(0, separatorIndex)),
+          execServerUrl: validateRemoteEnvironmentUrl(entry.slice(separatorIndex + 1)),
+        };
+      } catch {
+        return null;
+      }
+    })
+    .filter(Boolean);
+}
+
+function sanitizeEnvironmentAddAllowlist(allowlist = []) {
+  return Array.isArray(allowlist)
+    ? allowlist
+        .map((entry) => {
+          try {
+            return {
+              environmentId: validateRemoteEnvironmentId(entry?.environmentId),
+              execServerUrl: validateRemoteEnvironmentUrl(entry?.execServerUrl),
+            };
+          } catch {
+            return null;
+          }
+        })
+        .filter(Boolean)
+    : [];
+}
+
+function isEnvironmentAddAllowed(environmentId, execServerUrl, allowlist = []) {
+  return sanitizeEnvironmentAddAllowlist(allowlist).some(
+    (entry) => entry.environmentId === environmentId && entry.execServerUrl === execServerUrl,
+  );
+}
+
+function validateRemoteEnvironmentId(value) {
+  if (typeof value !== "string") {
+    throwRequestError("Remote environment id must be a string", 400);
+  }
+  const trimmed = value.trim();
+  if (trimmed.length === 0 || trimmed.length > MAX_MCP_REFERENCE_CHARS) {
+    throwRequestError("Remote environment id is empty or too long", 400);
+  }
+  if (!/^[A-Za-z0-9][A-Za-z0-9._:-]*$/.test(trimmed)) {
+    throwRequestError("Remote environment id contains unsupported characters", 400);
+  }
+  return trimmed;
+}
+
+function validateRemoteEnvironmentUrl(value) {
+  if (typeof value !== "string") {
+    throwRequestError("Remote environment URL must be a string", 400);
+  }
+  const trimmed = value.trim();
+  if (trimmed.length === 0 || trimmed.length > MAX_INTEGRATION_TARGET_CHARS) {
+    throwRequestError("Remote environment URL is empty or too long", 400);
+  }
+  let parsed;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    throwRequestError("Remote environment URL is invalid", 400);
+  }
+  if (!["https:", "wss:"].includes(parsed.protocol)) {
+    throwRequestError("Remote environment URL must use https or wss", 400);
+  }
+  if (parsed.username || parsed.password || parsed.hash) {
+    throwRequestError("Remote environment URL must not include credentials or fragments", 400);
+  }
+  return parsed.toString();
+}
+
+function validateEnvironmentAddExecutionParams(environmentIdValue, execServerUrlValue, allowlist) {
+  const environmentId = validateRemoteEnvironmentId(environmentIdValue);
+  const execServerUrl = validateRemoteEnvironmentUrl(execServerUrlValue);
+  if (!isEnvironmentAddAllowed(environmentId, execServerUrl, allowlist)) {
+    throwRequestError("Remote environment is not allowlisted", 403);
+  }
+  return { environmentId, execServerUrl };
+}
+
+export function buildEnvironmentAddPreflight(
+  body,
+  { workspace, environmentAddEnabled = false, environmentAddAllowlist = [] } = {},
+) {
+  const methodAudit = integrationMethodAudit();
+  const auditEntry = methodAudit.find((entry) => entry.method === "environment/add");
+  const environmentId = validateRemoteEnvironmentId(body?.environmentId);
+  const execServerUrl = validateRemoteEnvironmentUrl(body?.execServerUrl);
+  const allowlisted = isEnvironmentAddAllowed(environmentId, execServerUrl, environmentAddAllowlist);
+  const executionGateEnabled = Boolean(environmentAddEnabled && allowlisted);
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: publicWorkspaces([workspace])[0],
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      remoteEnvironmentTraffic: false,
+    },
+    action: {
+      type: "environment-add-preflight",
+      method: "environment/add",
+      category: auditEntry?.category ?? "remote-environment",
+      execution: executionGateEnabled ? "requires-confirmation" : "blocked",
+      wouldAddEnvironment: false,
+      wouldMutateRemoteEnvironments: false,
+      appServerTouched: false,
+      modelTraffic: false,
+      reason: executionGateEnabled
+        ? "environment-add-requires-preflight-token"
+        : environmentAddEnabled
+          ? "environment-add-not-allowlisted"
+          : "environment-add-disabled",
+    },
+    integrationAction: {
+      method: "environment/add",
+      category: auditEntry?.category ?? "remote-environment",
+      target: {
+        present: true,
+        charCount: environmentId.length,
+        lineCount: 1,
+        textReturned: false,
+      },
+      arguments: {
+        present: true,
+        charCount: execServerUrl.length,
+        lineCount: 1,
+        validJsonObject: true,
+        topLevelKeyCount: 1,
+        textReturned: false,
+      },
+      methodAllowedByAudit: auditEntry?.status === "blocked",
+    },
+    environmentAdd: {
+      method: "environment/add",
+      environmentIdCharCount: environmentId.length,
+      execServerUrlCharCount: execServerUrl.length,
+      allowlistMatched: allowlisted,
+      allowlistEntryCount: sanitizeEnvironmentAddAllowlist(environmentAddAllowlist).length,
+      connectTimeoutAcceptedFromBrowser: false,
+      environmentIdReturned: false,
+      execServerUrlReturned: false,
+      urlsReturned: false,
+      pathsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: false,
+      remoteEnvironmentMutation: false,
+      environmentAdd: false,
+      environmentAddEnabled: Boolean(environmentAddEnabled),
+      executionRouteImplemented: true,
+      executionGateEnabled,
+      allowlistRequired: true,
+      allowlistMatched: allowlisted,
+      connectTimeoutAcceptedFromBrowser: false,
+      environmentIdReturned: false,
+      execServerUrlReturned: false,
+      targetReturned: false,
+      argumentTextReturned: false,
+      urlsReturned: false,
+      pathsReturned: false,
+      rawPayloadsReturned: false,
+      requiresApprovalPipeline: true,
+      requiresIntegrationProvenance: true,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: executionGateEnabled,
+      implemented: true,
+    },
+  };
+}
+
+function buildEnvironmentAddBlocked(preflightPayload) {
+  const add = preflightPayload.environmentAdd ?? {};
+  return {
+    ok: false,
+    generatedAt: new Date().toISOString(),
+    workspace: preflightPayload.workspace,
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      remoteEnvironmentTraffic: false,
+    },
+    action: {
+      type: "environment-add",
+      method: "environment/add",
+      execution: "blocked",
+      remoteEnvironmentMutation: false,
+      environmentAdd: false,
+      appServerTouched: false,
+      modelTraffic: false,
+      reason: preflightPayload.policy?.environmentAddEnabled
+        ? "environment-add-not-allowlisted"
+        : "environment-add-disabled",
+    },
+    environmentAdd: {
+      method: "environment/add",
+      status: "blocked",
+      environmentIdCharCount: safeCount(add.environmentIdCharCount),
+      execServerUrlCharCount: safeCount(add.execServerUrlCharCount),
+      responseObject: false,
+      responseTopLevelKeyCount: 0,
+      connectTimeoutAcceptedFromBrowser: false,
+      environmentIdReturned: false,
+      execServerUrlReturned: false,
+      urlsReturned: false,
+      pathsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: false,
+      remoteEnvironmentMutation: false,
+      environmentAdd: false,
+      environmentAddEnabled: Boolean(preflightPayload.policy?.environmentAddEnabled),
+      executionRouteImplemented: true,
+      executionGateEnabled: false,
+      allowlistRequired: true,
+      allowlistMatched: Boolean(add.allowlistMatched),
+      connectTimeoutAcceptedFromBrowser: false,
+      environmentIdReturned: false,
+      execServerUrlReturned: false,
+      targetReturned: false,
+      argumentTextReturned: false,
+      urlsReturned: false,
+      pathsReturned: false,
+      rawPayloadsReturned: false,
+      requiresExplicitEnablement: true,
+      preflightTokenRequired: true,
+      implemented: true,
+    },
+  };
+}
+
+function sanitizeEnvironmentAddPayload(
+  payload,
+  {
+    workspace,
+    preflightPayload = null,
+    consumedPreflight = null,
+    actionAuditLog = null,
+    auditLogWritableChecked = false,
+  } = {},
+) {
+  const summary = summarizeEnvironmentAddResult(payload?.probes?.environmentAdd);
+  const add = preflightPayload?.environmentAdd ?? {};
+  return {
+    ok: Boolean(payload?.ok),
+    generatedAt: payload?.generatedAt ?? new Date().toISOString(),
+    transport: cleanDisplayText(payload?.transport, 80),
+    protocol: cleanDisplayText(payload?.protocol, 80),
+    initialize: sanitizeInitialize(payload?.initialize),
+    workspace: publicWorkspaces([workspace])[0],
+    appServer: {
+      touched: true,
+      modelTraffic: false,
+      commandTraffic: false,
+      remoteEnvironmentTraffic: true,
+      auditedMethods: ["environment/add"],
+    },
+    action: {
+      type: "environment-add",
+      method: "environment/add",
+      execution: "completed",
+      remoteEnvironmentMutation: true,
+      environmentAdd: true,
+      appServerTouched: true,
+      modelTraffic: false,
+      reason: "environment-add-completed",
+    },
+    target: {
+      environmentIdCharCount: safeCount(add.environmentIdCharCount),
+      execServerUrlCharCount: safeCount(add.execServerUrlCharCount),
+      connectTimeoutAcceptedFromBrowser: false,
+      environmentIdReturned: false,
+      execServerUrlReturned: false,
+      urlsReturned: false,
+      pathsReturned: false,
+      rawPayloadReturned: false,
+    },
+    environmentAdd: {
+      method: "environment/add",
+      status: summary.status,
+      environmentIdCharCount: safeCount(add.environmentIdCharCount),
+      execServerUrlCharCount: safeCount(add.execServerUrlCharCount),
+      responseObject: summary.responseObject,
+      responseTopLevelKeyCount: summary.responseTopLevelKeyCount,
+      connectTimeoutAcceptedFromBrowser: false,
+      environmentIdReturned: false,
+      execServerUrlReturned: false,
+      urlsReturned: false,
+      pathsReturned: false,
+      rawPayloadReturned: false,
+    },
+    result: {
+      status: summary.status,
+      responseObject: summary.responseObject,
+      responseTopLevelKeyCount: summary.responseTopLevelKeyCount,
+      environmentIdReturned: false,
+      execServerUrlReturned: false,
+      urlsReturned: false,
+      pathsReturned: false,
+      rawPayloadReturned: false,
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    },
+    preflight: buildConsumedPreflightSummary(consumedPreflight),
+    policy: {
+      readOnly: false,
+      appServerTraffic: true,
+      modelTraffic: false,
+      commandTraffic: false,
+      remoteEnvironmentMutation: true,
+      environmentAdd: true,
+      environmentAddEnabled: true,
+      executionRouteImplemented: true,
+      executionGateEnabled: true,
+      allowlistRequired: true,
+      allowlistMatched: true,
+      connectTimeoutAcceptedFromBrowser: false,
+      environmentIdReturned: false,
+      execServerUrlReturned: false,
+      targetReturned: false,
+      argumentTextReturned: false,
+      urlsReturned: false,
+      pathsReturned: false,
+      rawPayloadsReturned: false,
+      preflightTokenReturned: false,
+      preflightTokenRequired: true,
+      auditLogPersistent: Boolean(actionAuditLog?.persistent),
+      auditLogPathReturned: false,
+      auditLogWritableChecked: Boolean(auditLogWritableChecked),
+      auditLogWritten: false,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: true,
+      implemented: true,
+    },
+    notifications: sanitizeNotificationCounts(payload?.notifications),
+  };
+}
+
+function summarizeEnvironmentAddResult(value) {
+  return {
+    status: cleanDisplayText(value?.status, 80) ?? "added-with-redactions",
+    responseObject: Boolean(value?.responseObject),
+    responseTopLevelKeyCount: safeCount(value?.responseTopLevelKeyCount),
+  };
+}
+
 export function buildIntegrationActionPreflight(body, { workspace }) {
   const methodAudit = integrationMethodAudit();
   const method = validateIntegrationMutationMethod(body?.method, methodAudit);
@@ -24233,6 +24948,7 @@ export function sanitizeSettingsIntegrationsPayload(
     skillsConfigWriteEnabled = false,
     skillsExtraRootsClearEnabled = false,
     remoteControlDisableEnabled = false,
+    environmentAddEnabled = false,
     integrationPreflightHistory = [],
     integrationPreflightConfirmationHistory = [],
     accountLoginFlowSummary = null,
@@ -24284,6 +25000,7 @@ export function sanitizeSettingsIntegrationsPayload(
     skillsConfigWriteEnabled,
     skillsExtraRootsClearEnabled,
     remoteControlDisableEnabled,
+    environmentAddEnabled,
     namesReturned,
   });
   const result = {
@@ -24315,6 +25032,7 @@ export function sanitizeSettingsIntegrationsPayload(
         permissionProfileListingAvailable: inventory.permissionProfiles.ok,
         remoteControlStatusAvailable: inventory.remoteControlStatus.ok,
         remoteControlDisableEnabled: Boolean(remoteControlDisableEnabled),
+        environmentAddEnabled: Boolean(environmentAddEnabled),
         hookListingAvailable: inventory.hooks.ok,
         appListingAvailable: inventory.apps.ok,
         externalAgentConfigDetectionAvailable: inventory.externalAgentConfig.ok,
@@ -24325,7 +25043,8 @@ export function sanitizeSettingsIntegrationsPayload(
           configBatchWriteEnabled ||
             configValueWriteEnabled ||
             experimentalFeatureSetEnabled ||
-            remoteControlDisableEnabled,
+            remoteControlDisableEnabled ||
+            environmentAddEnabled,
         ),
         secretsReturned: false,
         source: "sanitized config/read plus counts-only model, permission-profile, remote-control, app, migration, experimental feature, and integration inventory",
@@ -24337,6 +25056,8 @@ export function sanitizeSettingsIntegrationsPayload(
               ? "experimental-feature-set-opt-in-only"
               : remoteControlDisableEnabled
                 ? "remote-control-disable-opt-in-only"
+                : environmentAddEnabled
+                  ? "environment-add-opt-in-only"
                 : "counts-only-inventory",
       },
       auth: {
@@ -29706,6 +30427,7 @@ export function buildSettingsIntegrations({
   skillsConfigWriteEnabled = false,
   skillsExtraRootsClearEnabled = false,
   remoteControlDisableEnabled = false,
+  environmentAddEnabled = false,
   integrationPreflightHistory = [],
   integrationPreflightConfirmationHistory = [],
   accountLoginFlowSummary = null,
@@ -29742,6 +30464,7 @@ export function buildSettingsIntegrations({
     skillsConfigWriteEnabled,
     skillsExtraRootsClearEnabled,
     remoteControlDisableEnabled,
+    environmentAddEnabled,
   });
   const result = {
     ok: true,
@@ -29768,13 +30491,15 @@ export function buildSettingsIntegrations({
         externalAgentConfigDetectionAvailable: false,
         experimentalFeatureListingAvailable: false,
         remoteControlDisableEnabled: Boolean(remoteControlDisableEnabled),
+        environmentAddEnabled: Boolean(environmentAddEnabled),
         configBatchWriteEnabled: Boolean(configBatchWriteEnabled),
         experimentalFeatureSetEnabled: Boolean(experimentalFeatureSetEnabled),
         mutationEnabled: Boolean(
           configBatchWriteEnabled ||
             configValueWriteEnabled ||
             experimentalFeatureSetEnabled ||
-            remoteControlDisableEnabled,
+            remoteControlDisableEnabled ||
+            environmentAddEnabled,
         ),
         secretsReturned: false,
         source: "sanitized config/read via /api/status",
@@ -29786,6 +30511,8 @@ export function buildSettingsIntegrations({
               ? "experimental-feature-set-opt-in-only"
               : remoteControlDisableEnabled
                 ? "remote-control-disable-opt-in-only"
+                : environmentAddEnabled
+                  ? "environment-add-opt-in-only"
                 : "settings-summary-only",
       },
       auth: {
@@ -29986,6 +30713,7 @@ function buildIntegrationActionScope({
   skillsConfigWriteEnabled = false,
   skillsExtraRootsClearEnabled = false,
   remoteControlDisableEnabled = false,
+  environmentAddEnabled = false,
   namesReturned = false,
 } = {}) {
   const readMethods = [
@@ -30002,6 +30730,7 @@ function buildIntegrationActionScope({
     "config-value-preflight",
     "config-batch-preflight",
     "experimental-feature-preflight",
+    "environment-add-preflight",
     "integration-action-preflight",
     accountLoginEnabled ? "account/login/start" : null,
     accountLoginCancelEnabled ? "account/login/cancel" : null,
@@ -30021,6 +30750,7 @@ function buildIntegrationActionScope({
     skillsConfigWriteEnabled ? "skills/config/write" : null,
     skillsExtraRootsClearEnabled ? "skills/extraRoots/set" : null,
     remoteControlDisableEnabled ? "remoteControl/disable" : null,
+    environmentAddEnabled ? "environment/add" : null,
   ].filter(Boolean);
   const blockedMutationMethods = blockedIntegrationMutationMethods();
   return {
@@ -30040,12 +30770,16 @@ function buildIntegrationActionScope({
     authCallbacksEnabled: false,
     authTokenAccessEnabled: false,
     settingsWriteEnabled: Boolean(
-      configBatchWriteEnabled || configValueWriteEnabled || experimentalFeatureSetEnabled,
+      configBatchWriteEnabled ||
+        configValueWriteEnabled ||
+        experimentalFeatureSetEnabled ||
+        environmentAddEnabled,
     ),
     configBatchWriteEnabled: Boolean(configBatchWriteEnabled),
     configValueWriteEnabled: Boolean(configValueWriteEnabled),
     experimentalFeatureSetEnabled: Boolean(experimentalFeatureSetEnabled),
     remoteControlDisableEnabled: Boolean(remoteControlDisableEnabled),
+    environmentAddEnabled: Boolean(environmentAddEnabled),
     mcpOauthEnabled: Boolean(mcpOauthLoginEnabled),
     mcpOauthLoginEnabled: Boolean(mcpOauthLoginEnabled),
     mcpServerReloadEnabled: Boolean(mcpServerReloadEnabled),
@@ -30836,6 +31570,7 @@ function summarizeIntegrationActions({
     integrationScope.configBatchWriteEnabled,
     integrationScope.configValueWriteEnabled,
     integrationScope.experimentalFeatureSetEnabled,
+    integrationScope.environmentAddEnabled,
   ].filter(Boolean).length;
   const mcpActionCount = [
     integrationScope.mcpOauthLoginEnabled,
@@ -31076,6 +31811,7 @@ function countEnabledIntegrationMutationGates(integrationScope = {}) {
     integrationScope.settingsWriteEnabled,
     integrationScope.configBatchWriteEnabled,
     integrationScope.experimentalFeatureSetEnabled,
+    integrationScope.environmentAddEnabled,
     integrationScope.mcpOauthLoginEnabled,
     integrationScope.mcpServerReloadEnabled,
     integrationScope.mcpToolInvocationEnabled,

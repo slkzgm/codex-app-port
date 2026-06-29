@@ -54,6 +54,7 @@ test("protocol contracts name the app-server methods currently used", () => {
     APP_SERVER_METHODS.experimentalFeatureEnablementSet,
     "experimentalFeature/enablement/set",
   );
+  assert.equal(APP_SERVER_METHODS.environmentAdd, "environment/add");
   assert.equal(APP_SERVER_METHODS.configMcpServerReload, "config/mcpServer/reload");
   assert.equal(APP_SERVER_METHODS.mcpServerOauthLogin, "mcpServer/oauth/login");
   assert.equal(APP_SERVER_METHODS.mcpToolCall, "mcpServer/tool/call");

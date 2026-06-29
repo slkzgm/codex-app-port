@@ -198,6 +198,16 @@ const elements = {
   remoteControlDisableParamsText: document.querySelector("#remote-control-disable-params-text"),
   remoteControlDisableStatusText: document.querySelector("#remote-control-disable-status-text"),
   remoteControlDisableIdentityText: document.querySelector("#remote-control-disable-identity-text"),
+  environmentAddForm: document.querySelector("#environment-add-form"),
+  environmentAddIdInput: document.querySelector("#environment-add-id-input"),
+  environmentAddUrlInput: document.querySelector("#environment-add-url-input"),
+  environmentAddButton: document.querySelector("#environment-add-button"),
+  environmentAddRunButton: document.querySelector("#environment-add-run-button"),
+  environmentAddStatus: document.querySelector("#environment-add-status"),
+  environmentAddIdChars: document.querySelector("#environment-add-id-chars"),
+  environmentAddUrlChars: document.querySelector("#environment-add-url-chars"),
+  environmentAddUrlText: document.querySelector("#environment-add-url-text"),
+  environmentAddResultText: document.querySelector("#environment-add-result-text"),
   integrationActionForm: document.querySelector("#integration-action-form"),
   integrationMethodSelect: document.querySelector("#integration-method-select"),
   integrationTargetInput: document.querySelector("#integration-target-input"),
@@ -581,6 +591,7 @@ let lastPluginUninstallPreflight = null;
 let lastSkillsConfigPreflight = null;
 let lastSkillsExtraRootsClearPreflight = null;
 let lastRemoteControlDisablePreflight = null;
+let lastEnvironmentAddPreflight = null;
 let lastTerminalCleanPreflight = null;
 let lastTerminalBackgroundTerminatePreflight = null;
 let selectedTerminalBackgroundRef = null;
@@ -639,6 +650,7 @@ elements.workspaceSelect.addEventListener("change", () => {
   lastSkillsConfigPreflight = null;
   lastSkillsExtraRootsClearPreflight = null;
   lastRemoteControlDisablePreflight = null;
+  lastEnvironmentAddPreflight = null;
   lastTerminalCleanPreflight = null;
   lastTerminalBackgroundTerminatePreflight = null;
   selectedTerminalBackgroundRef = null;
@@ -678,6 +690,7 @@ elements.workspaceSelect.addEventListener("change", () => {
   elements.skillsConfigRunButton.disabled = true;
   elements.skillsExtraRootsClearButton.disabled = true;
   elements.remoteControlDisableButton.disabled = true;
+  elements.environmentAddRunButton.disabled = true;
   elements.terminalCleanButton.disabled = true;
   elements.terminalBackgroundTerminatePreflightButton.disabled = true;
   elements.terminalBackgroundTerminateButton.disabled = true;
@@ -1188,6 +1201,22 @@ elements.remoteControlDisableButton.addEventListener("click", () => {
   runRemoteControlDisable();
 });
 
+elements.environmentAddForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  runEnvironmentAddPreflight();
+});
+
+for (const input of [elements.environmentAddIdInput, elements.environmentAddUrlInput]) {
+  input.addEventListener("input", () => {
+    lastEnvironmentAddPreflight = null;
+    elements.environmentAddRunButton.disabled = true;
+  });
+}
+
+elements.environmentAddRunButton.addEventListener("click", () => {
+  runEnvironmentAdd();
+});
+
 elements.configValueForm.addEventListener("submit", (event) => {
   event.preventDefault();
   runConfigValuePreflight();
@@ -1550,6 +1579,14 @@ function remoteControlDisablePreflightEndpoint() {
 
 function remoteControlDisableEndpoint() {
   return "/api/remote-control-disable";
+}
+
+function environmentAddPreflightEndpoint() {
+  return "/api/environment-add-preflight";
+}
+
+function environmentAddEndpoint() {
+  return "/api/environment-add";
 }
 
 function configValuePreflightEndpoint() {
@@ -2742,6 +2779,84 @@ async function runRemoteControlDisable() {
     lastRemoteControlDisablePreflight = null;
     elements.remoteControlDisableButton.disabled = true;
     setRemoteControlDisableLoading(false);
+  }
+}
+
+async function runEnvironmentAddPreflight() {
+  const environmentId = elements.environmentAddIdInput.value.trim();
+  const execServerUrl = elements.environmentAddUrlInput.value.trim();
+  if (!environmentId || !execServerUrl) {
+    elements.environmentAddStatus.textContent = "Target required";
+    return;
+  }
+
+  setEnvironmentAddLoading(true);
+  hideError();
+
+  try {
+    lastEnvironmentAddPreflight = null;
+    elements.environmentAddRunButton.disabled = true;
+    const body = {
+      workspace: selectedWorkspaceId,
+      environmentId,
+      execServerUrl,
+    };
+    const response = await fetch(environmentAddPreflightEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify(body),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    lastEnvironmentAddPreflight = {
+      body,
+      token: payload.preflight?.token,
+      enabled: payload.policy?.executionGateEnabled === true,
+    };
+    renderEnvironmentAddPreflight(payload);
+    await refreshSettingsIntegrations().catch(() => {});
+  } catch (error) {
+    elements.environmentAddStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    setEnvironmentAddLoading(false);
+  }
+}
+
+async function runEnvironmentAdd() {
+  if (!lastEnvironmentAddPreflight?.token || !lastEnvironmentAddPreflight?.body) {
+    return;
+  }
+
+  setEnvironmentAddLoading(true);
+  hideError();
+
+  try {
+    const response = await fetch(environmentAddEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify({
+        ...lastEnvironmentAddPreflight.body,
+        preflightToken: lastEnvironmentAddPreflight.token,
+      }),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderEnvironmentAdd(payload);
+    await refreshSettingsIntegrations().catch(() => {});
+  } catch (error) {
+    elements.environmentAddStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    lastEnvironmentAddPreflight = null;
+    elements.environmentAddRunButton.disabled = true;
+    setEnvironmentAddLoading(false);
   }
 }
 
@@ -8373,6 +8488,12 @@ function renderIntegrationPreflightHistory(history) {
         `${item.integrationAction?.argumentTopLevelKeyCount ?? 0} values`,
         "feature omitted",
       ]);
+    } else if (item.action?.type === "environment-add-preflight") {
+      detail.textContent = joinParts([
+        `${item.integrationAction?.targetCharCount ?? 0} id chars`,
+        `${item.integrationAction?.argumentCharCount ?? 0} url chars`,
+        "url omitted",
+      ]);
     } else {
       detail.textContent = joinParts([
         item.integrationAction?.category,
@@ -8858,6 +8979,28 @@ function renderRemoteControlDisable(payload) {
   elements.remoteControlDisableIdentityText.textContent = payload.policy?.identityReturned
     ? "Returned"
     : "Hidden";
+}
+
+function renderEnvironmentAddPreflight(payload) {
+  const result = payload.environmentAdd ?? {};
+  elements.environmentAddStatus.textContent = payload.action?.execution ?? "blocked";
+  elements.environmentAddIdChars.textContent = String(result.environmentIdCharCount ?? 0);
+  elements.environmentAddUrlChars.textContent = String(result.execServerUrlCharCount ?? 0);
+  elements.environmentAddUrlText.textContent = result.execServerUrlReturned ? "Returned" : "Hidden";
+  elements.environmentAddResultText.textContent = payload.policy?.executionGateEnabled
+    ? "Ready"
+    : "Blocked";
+  elements.environmentAddRunButton.disabled =
+    !lastEnvironmentAddPreflight?.token || lastEnvironmentAddPreflight.enabled !== true;
+}
+
+function renderEnvironmentAdd(payload) {
+  const result = payload.environmentAdd ?? {};
+  elements.environmentAddStatus.textContent = payload.action?.execution ?? "completed";
+  elements.environmentAddIdChars.textContent = String(result.environmentIdCharCount ?? 0);
+  elements.environmentAddUrlChars.textContent = String(result.execServerUrlCharCount ?? 0);
+  elements.environmentAddUrlText.textContent = result.execServerUrlReturned ? "Returned" : "Hidden";
+  elements.environmentAddResultText.textContent = result.status ?? "added-with-redactions";
 }
 
 function renderConfigValuePreflight(payload) {
@@ -10674,6 +10817,16 @@ function setRemoteControlDisableLoading(isLoading) {
     : "Remote Disable Check";
   if (isLoading) {
     elements.remoteControlDisableStatus.textContent = "Checking";
+  }
+}
+
+function setEnvironmentAddLoading(isLoading) {
+  elements.environmentAddButton.disabled = isLoading;
+  elements.environmentAddRunButton.disabled =
+    isLoading || !lastEnvironmentAddPreflight?.token || lastEnvironmentAddPreflight.enabled !== true;
+  elements.environmentAddButton.textContent = isLoading ? "Checking" : "Environment Check";
+  if (isLoading) {
+    elements.environmentAddStatus.textContent = "Checking";
   }
 }
 

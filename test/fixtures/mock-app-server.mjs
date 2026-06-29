@@ -72,6 +72,42 @@ function handle(message) {
     return;
   }
 
+  if (message.method === "environment/add") {
+    const paramKeys = Object.keys(message.params ?? {}).sort();
+    const allowedKeys = ["connectTimeoutMs", "environmentId", "execServerUrl"];
+    if (
+      JSON.stringify(paramKeys) !== JSON.stringify(allowedKeys) ||
+      typeof message.params?.environmentId !== "string" ||
+      typeof message.params?.execServerUrl !== "string" ||
+      message.params?.connectTimeoutMs !== null
+    ) {
+      send({
+        id: message.id,
+        error: {
+          code: -32602,
+          message: "unsafe environment add payload",
+          data: {
+            keys: paramKeys,
+            environmentId: message.params?.environmentId,
+            execServerUrl: message.params?.execServerUrl,
+            connectTimeoutMs: message.params?.connectTimeoutMs,
+          },
+        },
+      });
+      return;
+    }
+    send({
+      id: message.id,
+      result: {
+        environmentId: message.params.environmentId,
+        execServerUrl: message.params.execServerUrl,
+        privateEnvironmentName: "private-remote-environment-name",
+        privateToken: "sk-proj-private-remote-environment-token",
+      },
+    });
+    return;
+  }
+
   if (message.method === "config/read") {
     send({
       id: message.id,

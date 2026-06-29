@@ -7,6 +7,7 @@ import {
   runAccountLogoutProbe,
   runConfigBatchWriteProbe,
   runConfigValueWriteProbe,
+  runEnvironmentAddProbe,
   runExperimentalFeatureEnablementSetProbe,
   runIntegrationsInventoryProbe,
   runMcpServerOauthLoginProbe,
@@ -1056,6 +1057,48 @@ test("runPluginShareCheckoutProbe returns count-only plugin materialization meta
       delete process.env.CODEX_APP_PORT_ALLOW_PLUGIN_SHARE_CHECKOUT;
     } else {
       process.env.CODEX_APP_PORT_ALLOW_PLUGIN_SHARE_CHECKOUT = previous;
+    }
+  }
+});
+
+test("runEnvironmentAddProbe returns count-only remote environment metadata", async () => {
+  const previous = process.env.CODEX_APP_PORT_ALLOW_ENVIRONMENT_ADD;
+  process.env.CODEX_APP_PORT_ALLOW_ENVIRONMENT_ADD = "1";
+  try {
+    const summary = await runEnvironmentAddProbe({
+      codexBin: process.execPath,
+      codexArgs: [mockServer.pathname],
+      cwd: process.cwd(),
+      timeoutMs: 1_000,
+      environmentId: "private-remote-env",
+      execServerUrl: "wss://private-env.example.test/exec",
+    });
+
+    const environmentAdd = summary.probes.environmentAdd;
+    assert.equal(summary.ok, true);
+    assert.equal(environmentAdd.method, "environment/add");
+    assert.equal(environmentAdd.status, "added-with-redactions");
+    assert.equal(environmentAdd.responseObject, true);
+    assert.equal(environmentAdd.responseTopLevelKeyCount, 4);
+    assert.equal(environmentAdd.environmentIdReturned, false);
+    assert.equal(environmentAdd.execServerUrlReturned, false);
+    assert.equal(environmentAdd.urlsReturned, false);
+    assert.equal(environmentAdd.rawPayloadReturned, false);
+
+    const serialized = JSON.stringify(summary);
+    for (const marker of [
+      "private-remote-env",
+      "private-env.example.test",
+      "private-remote-environment-name",
+      "sk-proj-private-remote-environment-token",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    if (previous == null) {
+      delete process.env.CODEX_APP_PORT_ALLOW_ENVIRONMENT_ADD;
+    } else {
+      process.env.CODEX_APP_PORT_ALLOW_ENVIRONMENT_ADD = previous;
     }
   }
 });

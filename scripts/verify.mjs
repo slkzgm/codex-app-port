@@ -89,6 +89,7 @@ async function main() {
   await checkSkillsConfigWriteApi();
   await checkSkillsExtraRootsClearApi();
   await checkRemoteControlDisableApi();
+  await checkEnvironmentAddApi();
   await checkIntegrationActionPreflightApi();
   await checkTerminalActionsApi();
   await checkTerminalCommandPreflightApi();
@@ -1140,6 +1141,21 @@ async function checkStrictBrowserPostBodies() {
           preflightToken: "preflight-1234567890abcdef",
         },
       ],
+      [
+        "/api/environment-add-preflight",
+        {
+          environmentId: "verify-remote-env",
+          execServerUrl: "wss://verify-env.example.test/exec",
+        },
+      ],
+      [
+        "/api/environment-add",
+        {
+          environmentId: "verify-remote-env",
+          execServerUrl: "wss://verify-env.example.test/exec",
+          preflightToken: "preflight-1234567890abcdef",
+        },
+      ],
       ["/api/integration-action-preflight", { method: "plugin/install", target: "safe-plugin" }],
       [
         "/api/action-preflight-confirm",
@@ -1485,6 +1501,32 @@ function assertBrowserPostBodyContracts(cases) {
     remoteControlDisableContract.nestedKeySchemas.policy?.includes("unexpected")
   ) {
     throw new Error("remote-control-disable response contract is missing nested schemas");
+  }
+  const environmentAddPreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/environment-add-preflight"];
+  if (
+    environmentAddPreflightContract.usesRouteSpecificNestedKeySchemas !== true ||
+    !Object.isFrozen(environmentAddPreflightContract.nestedKeySchemas.policy) ||
+    !environmentAddPreflightContract.nestedKeySchemas.environmentAdd?.includes(
+      "allowlistMatched",
+    ) ||
+    !environmentAddPreflightContract.nestedKeySchemas.policy?.includes("environmentAdd") ||
+    environmentAddPreflightContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("environment-add-preflight response contract is missing nested schemas");
+  }
+  const environmentAddContract = BROWSER_POST_RESPONSE_CONTRACTS["/api/environment-add"];
+  if (
+    environmentAddContract.usesRouteSpecificNestedKeySchemas !== true ||
+    !Object.isFrozen(environmentAddContract.nestedKeySchemas.policy) ||
+    !environmentAddContract.nestedKeySchemas.environmentAdd?.includes(
+      "responseTopLevelKeyCount",
+    ) ||
+    !environmentAddContract.nestedKeySchemas.result?.includes("execServerUrlReturned") ||
+    !environmentAddContract.nestedKeySchemas.policy?.includes("environmentAdd") ||
+    environmentAddContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("environment-add response contract is missing nested schemas");
   }
   const configValuePreflightContract =
     BROWSER_POST_RESPONSE_CONTRACTS["/api/config-value-preflight"];
@@ -17774,6 +17816,200 @@ async function checkRemoteControlDisableApi() {
   pass("dev server remote control disable is opt-in, preflighted, and sanitized");
 }
 
+async function checkEnvironmentAddApi() {
+  const auditDir = await mkdtemp(join(tmpdir(), "codex-app-port-verify-environment-add-"));
+  const auditLogPath = join(auditDir, "actions.jsonl");
+  const calls = [];
+  const environmentId = "verify-remote-env";
+  const execServerUrl = "wss://verify-env.example.test/exec";
+  const environmentAddFn = async (options) => {
+    calls.push(options);
+    return {
+      ok: true,
+      generatedAt: "2026-06-29T00:00:00.000Z",
+      transport: "stdio-jsonl",
+      protocol: "json-rpc-2.0-without-jsonrpc-field",
+      initialize: { platformOs: "linux", platformFamily: "unix" },
+      probes: {
+        environmentAdd: {
+          method: "environment/add",
+          status: "added-with-redactions",
+          responseObject: true,
+          responseTopLevelKeyCount: 4,
+          environmentIdReturned: true,
+          execServerUrlReturned: true,
+          urlsReturned: true,
+          pathsReturned: true,
+          rawPayloadReturned: true,
+          environmentId: options.environmentId,
+          execServerUrl: options.execServerUrl,
+          privateEnvironmentName: "verify private environment",
+          privateToken: "sk-proj-verify-env",
+        },
+      },
+      notifications: { "environment/add/private": 1 },
+    };
+  };
+
+  const disabled = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    workspaceInputs: ["/tmp/codex-app-port-verify-extra"],
+    environmentAddFn,
+  });
+  const disabledPort = await listenWithFallback(disabled, { host: "127.0.0.1", port: 0 });
+  const disabledBaseUrl = `http://127.0.0.1:${disabledPort}`;
+
+  try {
+    const token = await readUiSessionToken(disabledBaseUrl);
+    const preflight = await fetch(`${disabledBaseUrl}/api/environment-add-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({ workspace: "workspace-2", environmentId, execServerUrl }),
+    });
+    if (!preflight.ok) {
+      throw new Error(`disabled environment add preflight returned HTTP ${preflight.status}`);
+    }
+    const preflightPayload = await preflight.json();
+    assertSanitizedEnvironmentAddPreflight(preflightPayload, {
+      environmentIdLength: environmentId.length,
+      execServerUrlLength: execServerUrl.length,
+      gateEnabled: false,
+    });
+    const blocked = await fetch(`${disabledBaseUrl}/api/environment-add`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        environmentId,
+        execServerUrl,
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    if (blocked.status !== 403) {
+      throw new Error(`disabled environment add returned HTTP ${blocked.status}`);
+    }
+    if (calls.length !== 0) {
+      throw new Error("disabled environment add called the app-server probe");
+    }
+  } finally {
+    await closeServer(disabled);
+  }
+
+  const server = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    workspaceInputs: ["/tmp/codex-app-port-verify-extra"],
+    environmentAddEnabled: true,
+    environmentAddAllowlist: [{ environmentId, execServerUrl }],
+    environmentAddFn,
+    actionAuditLog: createActionAuditLog({ path: auditLogPath }),
+  });
+  const port = await listenWithFallback(server, { host: "127.0.0.1", port: 0 });
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  try {
+    const token = await readUiSessionToken(baseUrl);
+    const preflight = await fetch(`${baseUrl}/api/environment-add-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({ workspace: "workspace-2", environmentId, execServerUrl }),
+    });
+    if (!preflight.ok) {
+      throw new Error(`environment add preflight returned HTTP ${preflight.status}`);
+    }
+    const preflightPayload = await preflight.json();
+    assertSanitizedEnvironmentAddPreflight(preflightPayload, {
+      environmentIdLength: environmentId.length,
+      execServerUrlLength: execServerUrl.length,
+      gateEnabled: true,
+    });
+
+    const rejectedUnknown = await fetch(`${baseUrl}/api/environment-add`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        environmentId,
+        execServerUrl,
+        connectTimeoutMs: 1000,
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    if (rejectedUnknown.status !== 400 || calls.length !== 0) {
+      throw new Error("environment add accepted browser-controlled execution parameters");
+    }
+
+    const rejectedTarget = await fetch(`${baseUrl}/api/environment-add`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        environmentId: "verify-unallowlisted-env",
+        execServerUrl,
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    if (rejectedTarget.status !== 403 || calls.length !== 0) {
+      throw new Error("unallowlisted environment add was not rejected before app-server traffic");
+    }
+
+    const response = await fetch(`${baseUrl}/api/environment-add`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        environmentId,
+        execServerUrl,
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(`environment add returned HTTP ${response.status}`);
+    }
+    assertSanitizedEnvironmentAdd(await response.json(), {
+      token: preflightPayload.preflight.token,
+      environmentIdLength: environmentId.length,
+      execServerUrlLength: execServerUrl.length,
+    });
+    if (
+      calls.length !== 1 ||
+      calls[0].cwd !== "/tmp/codex-app-port-verify-extra" ||
+      calls[0].environmentId !== environmentId ||
+      calls[0].execServerUrl !== execServerUrl ||
+      calls[0].connectTimeoutMs !== null
+    ) {
+      throw new Error("environment add did not call the app-server probe with expected parameters");
+    }
+
+    const replay = await fetch(`${baseUrl}/api/environment-add`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        environmentId,
+        execServerUrl,
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    if (replay.status !== 409 || calls.length !== 1) {
+      throw new Error("environment add preflight token replay was not rejected before app-server traffic");
+    }
+
+    const records = (await readFile(auditLogPath, "utf8"))
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    assertSanitizedEnvironmentAddAudit(records, {
+      token: preflightPayload.preflight.token,
+      environmentIdLength: environmentId.length,
+      execServerUrlLength: execServerUrl.length,
+    });
+  } finally {
+    await closeServer(server);
+    await rm(auditDir, { recursive: true, force: true });
+  }
+  pass("dev server environment add is opt-in, allowlisted, preflighted, and sanitized");
+}
+
 async function checkIntegrationActionPreflightApi() {
   let probeCalled = false;
   const server = createDevServer({
@@ -22681,7 +22917,7 @@ function assertSanitizedAccountLoginHistory(payload, { token, workspaceId = "def
     partialSurfaceCount: 2,
     blockedSurfaceCount: 5,
     readMethodCount: 1,
-    localGateCount: 12,
+    localGateCount: 13,
     enabledMutationGateCount: 1,
     historyCount: 1,
     appServerTouched: false,
@@ -22842,7 +23078,7 @@ function assertSanitizedAccountLogoutHistory(payload, { token, workspaceId = "de
     partialSurfaceCount: 2,
     blockedSurfaceCount: 5,
     readMethodCount: 1,
-    localGateCount: 12,
+    localGateCount: 13,
     enabledMutationGateCount: 1,
     historyCount: 1,
     appServerTouched: false,
@@ -27194,7 +27430,7 @@ function assertSanitizedSettingsIntegrations(payload) {
     payload.integrationScope?.enabledReadMethodCount !== 1 ||
     JSON.stringify(payload.integrationScope?.enabledReadMethods ?? []) !==
       JSON.stringify(["config/read"]) ||
-    payload.integrationScope?.enabledLocalGateCount !== 11 ||
+    payload.integrationScope?.enabledLocalGateCount !== 12 ||
     !payload.integrationScope?.enabledLocalGates?.includes("mcp-tool-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("mcp-oauth-login-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("mcp-resource-preflight") ||
@@ -27205,6 +27441,7 @@ function assertSanitizedSettingsIntegrations(payload) {
     !payload.integrationScope?.enabledLocalGates?.includes("config-value-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("config-batch-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("experimental-feature-preflight") ||
+    !payload.integrationScope?.enabledLocalGates?.includes("environment-add-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("integration-action-preflight") ||
     payload.integrationScope?.blockedMutationMethodCount !==
       blockedIntegrationMutationMethods().length ||
@@ -27233,6 +27470,7 @@ function assertSanitizedSettingsIntegrations(payload) {
     payload.integrationScope?.pluginContentReadEnabled !== false ||
     payload.integrationScope?.pluginShareListEnabled !== false ||
     payload.integrationScope?.marketplaceMutationEnabled !== false ||
+    payload.integrationScope?.environmentAddEnabled !== false ||
     payload.integrationScope?.namesReturned !== false ||
     payload.integrationScope?.hookCommandsReturned !== false ||
     payload.integrationScope?.rateLimitDetailsReturned !== false ||
@@ -27251,7 +27489,7 @@ function assertSanitizedSettingsIntegrations(payload) {
     partialSurfaceCount: 1,
     blockedSurfaceCount: 6,
     readMethodCount: 1,
-    localGateCount: 11,
+    localGateCount: 12,
     enabledMutationGateCount: 0,
     historyCount: 0,
     appServerTouched: false,
@@ -27514,6 +27752,7 @@ function assertSanitizedIntegrationActions(
   const settingsActionCount = [
     scope.configBatchWriteEnabled,
     scope.configValueWriteEnabled,
+    scope.environmentAddEnabled,
     scope.experimentalFeatureSetEnabled,
   ].filter(Boolean).length;
   const mcpActionCount = [
@@ -28466,6 +28705,7 @@ function assertSanitizedIntegrationLifecycleMatchesPayload(payload, { latestActi
     payload.integrationScope?.accountLogoutEnabled,
     payload.integrationScope?.settingsWriteEnabled,
     payload.integrationScope?.configBatchWriteEnabled,
+    payload.integrationScope?.environmentAddEnabled,
     payload.integrationScope?.experimentalFeatureSetEnabled,
     payload.integrationScope?.mcpOauthLoginEnabled,
     payload.integrationScope?.mcpServerReloadEnabled,
@@ -28595,7 +28835,7 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
       ["config/read", ...optInIntegrationReadMethods()].length ||
     JSON.stringify(payload.integrationScope?.enabledReadMethods ?? []) !==
       JSON.stringify(["config/read", ...optInIntegrationReadMethods()]) ||
-    payload.integrationScope?.enabledLocalGateCount !== 11 ||
+    payload.integrationScope?.enabledLocalGateCount !== 12 ||
     payload.integrationScope?.blockedMutationMethodCount !==
       blockedIntegrationMutationMethods().length ||
     payload.integrationScope?.accountLoginEnabled !== false ||
@@ -28612,6 +28852,7 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
     payload.integrationScope?.pluginContentReadEnabled !== false ||
     payload.integrationScope?.pluginShareListEnabled !== false ||
     payload.integrationScope?.marketplaceMutationEnabled !== false ||
+    payload.integrationScope?.environmentAddEnabled !== false ||
     payload.integrationScope?.pathsReturned !== false ||
     payload.integrationScope?.urlsReturned !== false ||
     payload.integrationScope?.secretsReturned !== false ||
@@ -28625,7 +28866,7 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
     partialSurfaceCount: 7,
     blockedSurfaceCount: 0,
     readMethodCount: ["config/read", ...optInIntegrationReadMethods()].length,
-    localGateCount: 11,
+    localGateCount: 12,
     enabledMutationGateCount: 0,
     historyCount: 0,
     appServerTouched: true,
@@ -31862,6 +32103,248 @@ function assertSanitizedRemoteControlDisableAudit(records, { token }) {
   ]) {
     if (serialized.includes(marker)) {
       throw new Error(`remote control disable audit leaked ${marker}`);
+    }
+  }
+}
+
+function assertSanitizedEnvironmentAddPreflight(
+  payload,
+  { environmentIdLength, execServerUrlLength, gateEnabled },
+) {
+  if (!payload.ok) {
+    throw new Error("environment add preflight payload is not ok");
+  }
+  const serialized = JSON.stringify(payload);
+  for (const marker of [
+    "/tmp/codex-app-port-verify",
+    "/tmp/codex-app-port-verify-extra",
+    "verify-remote-env",
+    "verify-env.example.test",
+    "verify private environment",
+    "sk-proj-verify-env",
+    "codexHome",
+    "userAgent",
+  ]) {
+    if (serialized.includes(marker)) {
+      throw new Error(`environment add preflight payload leaked ${marker}`);
+    }
+  }
+  if (
+    payload.appServer?.touched !== false ||
+    payload.appServer?.modelTraffic !== false ||
+    payload.appServer?.remoteEnvironmentTraffic !== false
+  ) {
+    throw new Error("environment add preflight unexpectedly touched app-server");
+  }
+  if (
+    payload.action?.type !== "environment-add-preflight" ||
+    payload.action?.method !== "environment/add" ||
+    payload.action?.execution !== (gateEnabled ? "requires-confirmation" : "blocked") ||
+    payload.action?.wouldAddEnvironment !== false ||
+    payload.action?.wouldMutateRemoteEnvironments !== false ||
+    payload.action?.appServerTouched !== false
+  ) {
+    throw new Error("environment add preflight did not preserve action metadata");
+  }
+  assertActionPreflight(payload, "environment-add-preflight", "workspace-2");
+  if (
+    payload.environmentAdd?.method !== "environment/add" ||
+    payload.environmentAdd?.environmentIdCharCount !== environmentIdLength ||
+    payload.environmentAdd?.execServerUrlCharCount !== execServerUrlLength ||
+    payload.environmentAdd?.allowlistMatched !== gateEnabled ||
+    payload.environmentAdd?.allowlistEntryCount !== (gateEnabled ? 1 : 0) ||
+    payload.environmentAdd?.connectTimeoutAcceptedFromBrowser !== false ||
+    payload.environmentAdd?.environmentIdReturned !== false ||
+    payload.environmentAdd?.execServerUrlReturned !== false ||
+    payload.environmentAdd?.urlsReturned !== false ||
+    payload.environmentAdd?.pathsReturned !== false ||
+    payload.environmentAdd?.rawPayloadReturned !== false
+  ) {
+    throw new Error("environment add preflight did not preserve count-only metadata");
+  }
+  if (
+    payload.policy?.readOnly !== true ||
+    payload.policy?.appServerTraffic !== false ||
+    payload.policy?.remoteEnvironmentMutation !== false ||
+    payload.policy?.environmentAdd !== false ||
+    payload.policy?.environmentAddEnabled !== gateEnabled ||
+    payload.policy?.executionRouteImplemented !== true ||
+    payload.policy?.executionGateEnabled !== gateEnabled ||
+    payload.policy?.allowlistRequired !== true ||
+    payload.policy?.allowlistMatched !== gateEnabled ||
+    payload.policy?.connectTimeoutAcceptedFromBrowser !== false ||
+    payload.policy?.environmentIdReturned !== false ||
+    payload.policy?.execServerUrlReturned !== false ||
+    payload.policy?.targetReturned !== false ||
+    payload.policy?.argumentTextReturned !== false ||
+    payload.policy?.urlsReturned !== false ||
+    payload.policy?.pathsReturned !== false ||
+    payload.policy?.rawPayloadsReturned !== false ||
+    payload.policy?.requiresApprovalPipeline !== true ||
+    payload.policy?.requiresIntegrationProvenance !== true ||
+    payload.policy?.requiresExplicitEnablement !== true ||
+    payload.policy?.browserMethodCallsAccepted !== gateEnabled ||
+    payload.policy?.implemented !== true
+  ) {
+    throw new Error("environment add preflight policy did not preserve fail-closed gates");
+  }
+}
+
+function assertSanitizedEnvironmentAdd(
+  payload,
+  { token, environmentIdLength, execServerUrlLength },
+) {
+  if (!payload.ok) {
+    throw new Error("environment add payload is not ok");
+  }
+  const serialized = JSON.stringify(payload);
+  for (const marker of [
+    token,
+    "/tmp/codex-app-port-verify",
+    "/tmp/codex-app-port-verify-extra",
+    "verify-remote-env",
+    "verify-env.example.test",
+    "verify private environment",
+    "sk-proj-verify-env",
+    "codexHome",
+    "userAgent",
+    "\"environmentIdReturned\":true",
+    "\"execServerUrlReturned\":true",
+    "\"rawPayloadReturned\":true",
+  ]) {
+    if (serialized.includes(marker)) {
+      throw new Error(`environment add payload leaked ${marker}`);
+    }
+  }
+  if (
+    payload.appServer?.touched !== true ||
+    payload.appServer?.modelTraffic !== false ||
+    payload.appServer?.commandTraffic !== false ||
+    payload.appServer?.remoteEnvironmentTraffic !== true ||
+    !payload.appServer?.auditedMethods?.includes("environment/add")
+  ) {
+    throw new Error("environment add payload did not record sanitized app-server traffic");
+  }
+  if (
+    payload.action?.type !== "environment-add" ||
+    payload.action?.method !== "environment/add" ||
+    payload.action?.execution !== "completed" ||
+    payload.action?.remoteEnvironmentMutation !== true ||
+    payload.action?.environmentAdd !== true ||
+    payload.action?.modelTraffic !== false
+  ) {
+    throw new Error("environment add payload did not expose expected action metadata");
+  }
+  if (
+    payload.target?.environmentIdCharCount !== environmentIdLength ||
+    payload.target?.execServerUrlCharCount !== execServerUrlLength ||
+    payload.target?.connectTimeoutAcceptedFromBrowser !== false ||
+    payload.target?.environmentIdReturned !== false ||
+    payload.target?.execServerUrlReturned !== false ||
+    payload.target?.urlsReturned !== false ||
+    payload.target?.pathsReturned !== false ||
+    payload.target?.rawPayloadReturned !== false
+  ) {
+    throw new Error("environment add target summary did not preserve redaction flags");
+  }
+  if (
+    payload.environmentAdd?.method !== "environment/add" ||
+    payload.environmentAdd?.status !== "added-with-redactions" ||
+    payload.environmentAdd?.environmentIdCharCount !== environmentIdLength ||
+    payload.environmentAdd?.execServerUrlCharCount !== execServerUrlLength ||
+    payload.environmentAdd?.responseObject !== true ||
+    payload.environmentAdd?.responseTopLevelKeyCount !== 4 ||
+    payload.environmentAdd?.connectTimeoutAcceptedFromBrowser !== false ||
+    payload.environmentAdd?.environmentIdReturned !== false ||
+    payload.environmentAdd?.execServerUrlReturned !== false ||
+    payload.environmentAdd?.urlsReturned !== false ||
+    payload.environmentAdd?.pathsReturned !== false ||
+    payload.environmentAdd?.rawPayloadReturned !== false
+  ) {
+    throw new Error("environment add payload did not preserve count-only metadata");
+  }
+  if (
+    payload.result?.status !== "added-with-redactions" ||
+    payload.result?.responseObject !== true ||
+    payload.result?.responseTopLevelKeyCount !== 4 ||
+    payload.result?.environmentIdReturned !== false ||
+    payload.result?.execServerUrlReturned !== false ||
+    payload.result?.urlsReturned !== false ||
+    payload.result?.pathsReturned !== false ||
+    payload.result?.rawPayloadReturned !== false
+  ) {
+    throw new Error("environment add result did not preserve sanitized metadata");
+  }
+  if (
+    payload.preflight?.tokenConsumed !== true ||
+    payload.preflight?.tokenReturned !== false ||
+    payload.policy?.readOnly !== false ||
+    payload.policy?.appServerTraffic !== true ||
+    payload.policy?.remoteEnvironmentMutation !== true ||
+    payload.policy?.environmentAdd !== true ||
+    payload.policy?.environmentAddEnabled !== true ||
+    payload.policy?.executionGateEnabled !== true ||
+    payload.policy?.allowlistRequired !== true ||
+    payload.policy?.allowlistMatched !== true ||
+    payload.policy?.connectTimeoutAcceptedFromBrowser !== false ||
+    payload.policy?.environmentIdReturned !== false ||
+    payload.policy?.execServerUrlReturned !== false ||
+    payload.policy?.targetReturned !== false ||
+    payload.policy?.argumentTextReturned !== false ||
+    payload.policy?.urlsReturned !== false ||
+    payload.policy?.pathsReturned !== false ||
+    payload.policy?.rawPayloadsReturned !== false ||
+    payload.policy?.preflightTokenReturned !== false ||
+    payload.policy?.auditLogWritten !== true ||
+    payload.policy?.implemented !== true
+  ) {
+    throw new Error("environment add policy did not preserve execution guardrails");
+  }
+}
+
+function assertSanitizedEnvironmentAddAudit(
+  records,
+  { token, environmentIdLength, execServerUrlLength },
+) {
+  if (
+    records.length !== 1 ||
+    records[0]?.event !== "environment-add-recorded" ||
+    records[0]?.action?.type !== "environment-add" ||
+    records[0]?.action?.method !== "environment/add" ||
+    records[0]?.action?.remoteEnvironmentMutation !== true ||
+    records[0]?.action?.environmentAdd !== true ||
+    records[0]?.appServer?.remoteEnvironmentTraffic !== true ||
+    records[0]?.target?.environmentIdCharCount !== environmentIdLength ||
+    records[0]?.target?.execServerUrlCharCount !== execServerUrlLength ||
+    records[0]?.target?.connectTimeoutAcceptedFromBrowser !== false ||
+    records[0]?.target?.environmentIdReturned !== false ||
+    records[0]?.target?.execServerUrlReturned !== false ||
+    records[0]?.result?.status !== "added-with-redactions" ||
+    records[0]?.result?.responseTopLevelKeyCount !== 4 ||
+    records[0]?.result?.environmentIdReturned !== false ||
+    records[0]?.result?.execServerUrlReturned !== false ||
+    records[0]?.result?.rawPayloadReturned !== false ||
+    records[0]?.preflight?.tokenConsumed !== true ||
+    records[0]?.preflight?.tokenReturned !== false
+  ) {
+    throw new Error("environment add audit record was not sanitized as expected");
+  }
+  const serialized = JSON.stringify(records);
+  for (const marker of [
+    token,
+    "/tmp/codex-app-port-verify",
+    "/tmp/codex-app-port-verify-extra",
+    "verify-remote-env",
+    "verify-env.example.test",
+    "verify private environment",
+    "sk-proj-verify-env",
+    "codexHome",
+    "userAgent",
+    "\"environmentIdReturned\":true",
+    "\"execServerUrlReturned\":true",
+  ]) {
+    if (serialized.includes(marker)) {
+      throw new Error(`environment add audit leaked ${marker}`);
     }
   }
 }

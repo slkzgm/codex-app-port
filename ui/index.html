@@ -960,6 +960,43 @@
               <dd id="remote-control-disable-identity-text">Hidden</dd>
             </div>
           </dl>
+          <form id="environment-add-form" class="turn-form">
+            <div class="thread-tools">
+              <label class="search-control" for="environment-add-id-input">
+                Environment
+                <input id="environment-add-id-input" type="text" autocomplete="off" maxlength="200" />
+              </label>
+              <label class="search-control" for="environment-add-url-input">
+                Exec URL
+                <input id="environment-add-url-input" type="url" autocomplete="off" maxlength="500" />
+              </label>
+              <button id="environment-add-button" class="secondary-button" type="submit">
+                Environment Check
+              </button>
+              <button id="environment-add-run-button" class="secondary-button" type="button" disabled>
+                Add Environment
+              </button>
+              <span id="environment-add-status" class="empty-state">Blocked</span>
+            </div>
+          </form>
+          <dl class="agent-grid">
+            <div>
+              <dt>ID chars</dt>
+              <dd id="environment-add-id-chars">0</dd>
+            </div>
+            <div>
+              <dt>URL chars</dt>
+              <dd id="environment-add-url-chars">0</dd>
+            </div>
+            <div>
+              <dt>URL</dt>
+              <dd id="environment-add-url-text">Hidden</dd>
+            </div>
+            <div>
+              <dt>Result</dt>
+              <dd id="environment-add-result-text">Blocked</dd>
+            </div>
+          </dl>
           <form id="integration-action-form" class="turn-form">
             <div class="thread-tools">
               <label class="workspace-control" for="integration-method-select">

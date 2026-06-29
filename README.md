@@ -366,14 +366,15 @@ external config import mutations, ungated MCP tool/resource calls and server rel
 plugin detail reads, config writes, ungated config-value writes, ungated
 config-batch writes, ungated
 experimental feature writes, ungated skill writes, plugin skill reads, plugin
-share-list reads, hook commands, plugin installs/uninstalls/sharing, and marketplace
-mutations are blocked.
+share-list reads, hook commands, remote environment adds, plugin
+installs/uninstalls/sharing, and marketplace mutations are blocked.
 `/api/settings-integrations` also returns a compact integration scope summary
 with active read methods, local preflight/login/login-cancel/logout gates, and
 blocked mutation method names/counts, including MCP reload, config-value,
-config-batch, plugin-uninstall, skills-config, and experimental-feature gates when enabled; it never
-returns secrets, auth tokens, names unless the name gate is enabled, paths,
-URLs, hook commands, rate-limit details, or raw payloads.
+config-batch, plugin-uninstall, skills-config, remote environment add, and
+experimental-feature gates when enabled; it never returns secrets, auth tokens,
+names unless the name gate is enabled, paths, URLs, hook commands, rate-limit
+details, or raw payloads.
 Its lifecycle response also includes sanitized integration management and
 execution-readiness metadata for the UI: blocked/read-only/preflight-only/
 actionable/inventory/history-only state, surface counts, preflight/executable
@@ -559,6 +560,15 @@ preflight token is supplied. The app-server call sends `null` params; browser
 before app-server traffic, and responses plus action audit records omit remote
 raw status payloads, server names, installation ids, environment ids, tokens,
 and raw payloads.
+Remote environment add is a separate disabled-by-default mutation path.
+`/api/environment-add-preflight` validates only a safe remote environment id and
+`https:`/`wss:` exec-server URL, and `/api/environment-add` can call
+`environment/add` only when `CODEX_APP_PORT_ALLOW_ENVIRONMENT_ADD=1` is set,
+the `environmentId=execServerUrl` pair exactly matches
+`CODEX_APP_PORT_ENVIRONMENT_ADD_ALLOWLIST`, and a matching one-time preflight
+token is supplied. The app-server call fixes `connectTimeoutMs` to `null`;
+responses plus action audit records return only status/count/shape metadata and
+omit environment ids, exec-server URLs, paths, tokens, and raw payloads.
 Config value preflight accepts only a safe dotted key path, JSON-text value, and
 `replace` or `upsert` merge strategy, then returns key/value shape counts only.
 `/api/config-value-write` can execute `config/value/write` only when

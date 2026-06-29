@@ -65,9 +65,9 @@
   The turn-start and approval-decision routes plus MCP tool-call
   preflight/execution, MCP resource-read execution, MCP OAuth-login
   preflight/execution, MCP server-reload preflight/execution, skills-config
-  preflight/execution, config-value preflight/execution, config-batch
-  preflight/execution, experimental-feature preflight/execution, and generic
-  integration mutation preflights already
+  preflight/execution, environment-add preflight/execution, config-value
+  preflight/execution, config-batch preflight/execution, experimental-feature
+  preflight/execution, and generic integration mutation preflights already
   enforce these schemas for their sanitized turn/probe/event, decision, queue,
   history, target, argument/risk summary, result, auth, policy, and preflight
   objects.
@@ -389,6 +389,16 @@
   status/count/shape metadata; they must not expose raw remote-control status
   payloads, server names, installation ids, environment ids, notifications,
   preflight tokens, or raw app-server payloads.
+- Browser-facing `environment/add` must be blocked by default and exact
+  allowlist only. When `CODEX_APP_PORT_ALLOW_ENVIRONMENT_ADD=1` is enabled,
+  `/api/environment-add` must consume a matching one-time preflight token,
+  require an exact `CODEX_APP_PORT_ENVIRONMENT_ADD_ALLOWLIST`
+  `environmentId=execServerUrl` match, accept only safe environment ids and
+  `https:`/`wss:` exec-server URLs, reject browser timeout or extra app-server
+  parameters, and call app-server with `connectTimeoutMs: null`. Responses and
+  action audit records may expose only status/count/shape metadata; they must
+  not expose environment ids, exec-server URLs, paths, notifications, preflight
+  tokens, or raw app-server payloads.
 - Browser-facing `config/value/write` must be blocked by default and opt-in
   only. When `CODEX_APP_PORT_ALLOW_CONFIG_VALUE_WRITE=1` is enabled,
   `/api/config-value-write` must require an exact

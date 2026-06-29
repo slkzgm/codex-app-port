@@ -123,6 +123,13 @@ The server binds to `127.0.0.1` by default and serves:
   `CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_DISABLE=1` plus a matching one-time
   preflight token; execution accepts no browser remote-control params and sends
   `null`, returning status/count/shape metadata only without identities
+- `/api/environment-add-preflight` and `/api/environment-add`: opt-in
+  `environment/add` behind `CODEX_APP_PORT_ALLOW_ENVIRONMENT_ADD=1`, an exact
+  `CODEX_APP_PORT_ENVIRONMENT_ADD_ALLOWLIST` `environmentId=execServerUrl`
+  match, and a matching one-time preflight token; execution accepts only the
+  allowlisted remote environment id and `https:`/`wss:` exec-server URL, fixes
+  `connectTimeoutMs` server-side to `null`, and returns only count/shape
+  metadata without ids, URLs, paths, tokens, or raw payloads
 - `/api/config-value-preflight` and `/api/config-value-write`: opt-in
   `config/value/write` behind `CODEX_APP_PORT_ALLOW_CONFIG_VALUE_WRITE=1`, an
   exact `CODEX_APP_PORT_CONFIG_VALUE_WRITE_ALLOWLIST` key match, and a matching
