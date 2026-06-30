@@ -971,13 +971,14 @@ Current M1 status:
   preflight, plugin-share-action preflight, marketplace-action preflight, plugin-uninstall
   preflight/execution, plugin-enablement preflight/execution, skills-config preflight/execution, config-value preflight/execution, config-batch
   preflight/execution, experimental-feature preflight/execution,
-  Git branch/commit/worktree preflight/execution, and generic integration
+  Git branch/commit/worktree preflight/execution, file-action
+  preflight/execution, action-preflight confirmation, and generic integration
   mutation preflight routes,
   fail-closing unexpected keys inside
   sanitized turn/probe/event, decision, queue, history, target, argument/risk,
-  Git status/safety/subprocess, result, method-specific risk summary, `policy`,
-  and `preflight` objects before
-  turn/approval/MCP/auth/settings/plugin/Git responses reach the browser
+  Git status/safety/subprocess, file metadata/content/filesystem summaries,
+  result, method-specific risk summary, `policy`, and `preflight` objects before
+  turn/approval/MCP/auth/settings/plugin/Git/file-action responses reach the browser
 - done: method-specific high-risk summaries for generic integration mutation
   preflights, classifying auth callbacks/mutations, MCP OAuth/tool calls,
   settings writes/mutations, plugin installs, plugin sharing, marketplace
@@ -1037,6 +1038,10 @@ Current M1 status:
   rejection, symlink parent/target rejection, sanitized response metadata, and
   no path/content/stdout/stderr/argv disclosure, plus sanitized persistent
   action audit records that omit paths, basenames, and contents when configured
+- done: route-specific nested response-key schemas for file-action preflight,
+  file-action execution, and action-preflight confirmation, fail-closing
+  unexpected keys inside workspace, app-server, action, source/target, content,
+  filesystem, policy, result, and preflight scope summaries
 - done: sanitized active-session lifecycle summary and UI state for
   blocked/idle/active/history-only loaded sessions, loaded/control counts, and
   explicit interrupt/unsubscribe/steer gate status without raw session ids,
@@ -1154,9 +1159,9 @@ Current M1 status:
   summaries, gate flags, execution-readiness state, managed-client state,
   loaded-session suffixes, latest suffix/status/event metadata, and
   recent-control metadata
-- pending: finish per-route nested object-shape validation for the remaining
-  `file-action` and dynamic action-preflight confirmation response surfaces
-  before broadening additional enabled mutations
+- done: every audited browser POST response contract now has route-specific
+  nested object-shape validation; new POST routes must add nested schemas before
+  passing the verifier
 
 M2: Omarchy desktop shell.
 

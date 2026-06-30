@@ -1553,6 +1553,9 @@ function assertBrowserPostBodyContracts(cases) {
     if (!Object.isFrozen(responseContract.nestedKeySchemas)) {
       throw new Error(`${path} browser POST response contract has mutable nested schemas`);
     }
+    if (responseContract.usesRouteSpecificNestedKeySchemas !== true) {
+      throw new Error(`${path} browser POST response contract is missing nested schemas`);
+    }
   }
   const gitResponseContractPaths = [
     "/api/git-branch-preflight",
@@ -1628,6 +1631,38 @@ function assertBrowserPostBodyContracts(cases) {
     gitWorktreeActionContract.nestedKeySchemas.policy?.includes("unexpected")
   ) {
     throw new Error("git-worktree-action response contract is missing nested schemas");
+  }
+  const fileActionPreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/file-action-preflight"];
+  if (
+    fileActionPreflightContract.usesRouteSpecificNestedKeySchemas !== true ||
+    !fileActionPreflightContract.nestedKeySchemas.target?.includes("pathReturned") ||
+    !fileActionPreflightContract.nestedKeySchemas.content?.includes("charCount") ||
+    !fileActionPreflightContract.nestedKeySchemas.policy?.includes("requiresWorkspacePathPolicy") ||
+    fileActionPreflightContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("file-action-preflight response contract is missing nested schemas");
+  }
+  const fileActionContract = BROWSER_POST_RESPONSE_CONTRACTS["/api/file-action"];
+  if (
+    fileActionContract.usesRouteSpecificNestedKeySchemas !== true ||
+    !fileActionContract.nestedKeySchemas.filesystem?.includes("wroteFile") ||
+    !fileActionContract.nestedKeySchemas.policy?.includes("auditLogWritten") ||
+    !fileActionContract.nestedKeySchemas["preflight.scope"]?.includes("workspaceId") ||
+    fileActionContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("file-action response contract is missing nested schemas");
+  }
+  const actionPreflightConfirmContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/action-preflight-confirm"];
+  if (
+    actionPreflightConfirmContract.usesRouteSpecificNestedKeySchemas !== true ||
+    !actionPreflightConfirmContract.nestedKeySchemas.action?.includes("preflightConfirmed") ||
+    !actionPreflightConfirmContract.nestedKeySchemas.policy?.includes("mutationExecuted") ||
+    !actionPreflightConfirmContract.nestedKeySchemas["preflight.scope"]?.includes("workspaceId") ||
+    actionPreflightConfirmContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("action-preflight-confirm response contract is missing nested schemas");
   }
   const integrationPreflightContract =
     BROWSER_POST_RESPONSE_CONTRACTS["/api/integration-action-preflight"];
@@ -3354,6 +3389,165 @@ function assertBrowserPostBodyContracts(cases) {
     JSON.stringify(unexpectedGitNestedKeyResponse.payload).includes("private git status")
   ) {
     throw new Error("browser POST response contract did not block an unexpected Git nested key");
+  }
+  const allowedNestedFileActionPreflightResponse = applyBrowserPostResponseContract({
+    method: "POST",
+    pathname: "/api/file-action-preflight",
+    statusCode: 200,
+    payload: {
+      ok: true,
+      appServer: {
+        touched: false,
+        modelTraffic: false,
+        commandTraffic: false,
+      },
+      action: {
+        type: "file-action-preflight",
+        fileAction: "writeFile",
+        method: "fs/writeFile",
+        execution: "blocked",
+        wouldMutateFilesystem: false,
+        filesystemWrites: false,
+        appServerTouched: false,
+        reason: "filesystem-action-requires-opt-in",
+      },
+      target: {
+        basename: "note.txt",
+        depth: 1,
+        pathReturned: false,
+      },
+      content: {
+        present: true,
+        charCount: 4,
+        lineCount: 1,
+        textReturned: false,
+      },
+      policy: {
+        readOnly: true,
+        appServerTraffic: false,
+        filesystemWrites: false,
+        fileContentsReturned: false,
+        fullPathsReturned: false,
+        requiresApprovalPipeline: true,
+        requiresWorkspacePathPolicy: true,
+        executionRouteImplemented: true,
+        executionGateEnabled: false,
+        browserMethodCallsAccepted: false,
+        implemented: false,
+      },
+      preflight: {
+        token: "preflight-1234567890abcdef",
+        tokenIssued: true,
+        issuedAt: "2026-06-30T00:00:00.000Z",
+        expiresAt: "2026-06-30T00:05:00.000Z",
+        scope: {
+          kind: "file-action-preflight",
+          workspaceId: "default",
+        },
+        rawIntentStored: false,
+        rawIntentReturned: false,
+        intentHashReturned: false,
+        oneTimeUseRequiredForMutation: true,
+        consumed: false,
+      },
+    },
+  });
+  if (allowedNestedFileActionPreflightResponse.statusCode !== 200) {
+    throw new Error("browser POST response contract rejected an allowed file-action preflight shape");
+  }
+  const allowedNestedActionPreflightConfirmResponse = applyBrowserPostResponseContract({
+    method: "POST",
+    pathname: "/api/action-preflight-confirm",
+    statusCode: 200,
+    payload: {
+      ok: true,
+      appServer: {
+        touched: false,
+        modelTraffic: false,
+        commandTraffic: false,
+        toolTraffic: false,
+      },
+      action: {
+        type: "file-action-preflight",
+        method: "fs/writeFile",
+        execution: "blocked",
+        preflightConfirmed: true,
+        mutationExecuted: false,
+        appServerTouched: false,
+        reason: "mutation-pipeline-not-implemented",
+      },
+      preflight: {
+        tokenConsumed: true,
+        tokenReturned: false,
+        scope: {
+          kind: "file-action-preflight",
+          workspaceId: "default",
+        },
+        rawIntentStored: false,
+        rawIntentReturned: false,
+        intentHashReturned: false,
+        oneTimeUseEnforced: true,
+      },
+      policy: {
+        readOnly: true,
+        appServerTraffic: false,
+        modelTraffic: false,
+        commandExecution: false,
+        filesystemWrites: false,
+        gitWrites: false,
+        toolInvocation: false,
+        pluginRead: false,
+        pluginContentRead: false,
+        pluginShareList: false,
+        mutationExecuted: false,
+        requiresApprovalPipeline: true,
+        requiresLiveSessionManager: false,
+        requiresIntegrationProvenance: false,
+        requiresWorkspacePathPolicy: true,
+        implemented: false,
+      },
+    },
+  });
+  if (allowedNestedActionPreflightConfirmResponse.statusCode !== 200) {
+    throw new Error("browser POST response contract rejected an allowed preflight confirmation shape");
+  }
+  const unexpectedFileActionNestedKeyResponse = applyBrowserPostResponseContract({
+    method: "POST",
+    pathname: "/api/file-action",
+    statusCode: 200,
+    payload: {
+      ok: true,
+      target: {
+        basename: "note.txt",
+        leakedFullPath: "private file path",
+      },
+    },
+  });
+  if (
+    unexpectedFileActionNestedKeyResponse.statusCode !== 500 ||
+    JSON.stringify(unexpectedFileActionNestedKeyResponse.payload).includes("private file path")
+  ) {
+    throw new Error("browser POST response contract did not block an unexpected file-action nested key");
+  }
+  const unexpectedActionPreflightConfirmNestedKeyResponse = applyBrowserPostResponseContract({
+    method: "POST",
+    pathname: "/api/action-preflight-confirm",
+    statusCode: 200,
+    payload: {
+      ok: true,
+      policy: {
+        readOnly: true,
+        leakedConfirmation: "private confirmation",
+      },
+    },
+  });
+  if (
+    unexpectedActionPreflightConfirmNestedKeyResponse.statusCode !== 500 ||
+    JSON.stringify(unexpectedActionPreflightConfirmNestedKeyResponse.payload).includes(
+      "private confirmation",
+    )
+  ) {
+    throw new Error("browser POST response contract did not block an unexpected confirmation nested key");
   }
   const allowedThreadResumeInjectPreflightShape = applyBrowserPostResponseContract({
     method: "POST",

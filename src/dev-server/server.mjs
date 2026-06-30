@@ -1986,6 +1986,82 @@ const GIT_RESPONSE_WORKTREE_ACTION_STATUS_SCHEMA = Object.freeze([
   ...GIT_RESPONSE_STATUS_PAIR_SCHEMA,
   ...GIT_RESPONSE_WORKTREE_COUNT_STATUS_SCHEMA,
 ]);
+const FILE_ACTION_PATH_METADATA_SCHEMA = Object.freeze(["basename", "depth", "pathReturned"]);
+const FILE_ACTION_CONTENT_SCHEMA = Object.freeze([
+  "present",
+  "charCount",
+  "lineCount",
+  "textReturned",
+]);
+const FILE_ACTION_PREFLIGHT_ACTION_SCHEMA = Object.freeze([
+  "type",
+  "fileAction",
+  "method",
+  "execution",
+  "wouldMutateFilesystem",
+  "filesystemWrites",
+  "appServerTouched",
+  "reason",
+]);
+const FILE_ACTION_EXECUTION_ACTION_SCHEMA = Object.freeze([
+  ...FILE_ACTION_PREFLIGHT_ACTION_SCHEMA,
+]);
+const FILE_ACTION_FILESYSTEM_SCHEMA = Object.freeze([
+  "wroteFile",
+  "removed",
+  "copied",
+  "createdDirectory",
+  "pathsReturned",
+  "fileContentsReturned",
+]);
+const FILE_ACTION_PREFLIGHT_POLICY_SCHEMA = Object.freeze([
+  "readOnly",
+  "appServerTraffic",
+  "filesystemWrites",
+  "fileContentsReturned",
+  "fullPathsReturned",
+  "requiresApprovalPipeline",
+  "requiresWorkspacePathPolicy",
+  "executionRouteImplemented",
+  "executionGateEnabled",
+  "browserMethodCallsAccepted",
+  "implemented",
+]);
+const FILE_ACTION_EXECUTION_POLICY_SCHEMA = Object.freeze([
+  ...FILE_ACTION_PREFLIGHT_POLICY_SCHEMA,
+  "preflightTokenConsumed",
+  "auditLogPersistent",
+  "auditLogWritableChecked",
+  "auditLogWritten",
+  "auditLogPathReturned",
+]);
+const ACTION_PREFLIGHT_CONFIRMATION_ACTION_SCHEMA = Object.freeze([
+  "type",
+  "method",
+  "execution",
+  "preflightConfirmed",
+  "mutationExecuted",
+  "appServerTouched",
+  "reason",
+]);
+const ACTION_PREFLIGHT_CONFIRMATION_POLICY_SCHEMA = Object.freeze([
+  "readOnly",
+  "appServerTraffic",
+  "modelTraffic",
+  "commandExecution",
+  "filesystemWrites",
+  "gitWrites",
+  "toolInvocation",
+  "pluginRead",
+  "pluginContentRead",
+  "pluginShareList",
+  "mutationExecuted",
+  "requiresApprovalPipeline",
+  "requiresLiveSessionManager",
+  "requiresIntegrationProvenance",
+  "requiresWorkspacePathPolicy",
+  "implemented",
+]);
 
 const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
   "/api/approval-decisions": responseNestedKeySchemas({
@@ -5922,6 +5998,31 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
       "promptTextReturned",
       "fullIdsReturned",
     ],
+  }),
+  "/api/file-action-preflight": responseNestedKeySchemas({
+    workspace: RESPONSE_PUBLIC_WORKSPACE_SCHEMA,
+    appServer: RESPONSE_LOCAL_APP_SERVER_SCHEMA,
+    action: FILE_ACTION_PREFLIGHT_ACTION_SCHEMA,
+    target: FILE_ACTION_PATH_METADATA_SCHEMA,
+    source: FILE_ACTION_PATH_METADATA_SCHEMA,
+    content: FILE_ACTION_CONTENT_SCHEMA,
+    filesystem: FILE_ACTION_FILESYSTEM_SCHEMA,
+    policy: FILE_ACTION_PREFLIGHT_POLICY_SCHEMA,
+    preflight: RESPONSE_ISSUED_PREFLIGHT_SCHEMA,
+    "preflight.scope": RESPONSE_PREFLIGHT_SCOPE_SCHEMA,
+  }),
+  "/api/file-action": responseNestedKeySchemas({
+    workspace: RESPONSE_PUBLIC_WORKSPACE_SCHEMA,
+    appServer: RESPONSE_LOCAL_APP_SERVER_SCHEMA,
+    action: FILE_ACTION_EXECUTION_ACTION_SCHEMA,
+    preflight: RESPONSE_CONSUMED_PREFLIGHT_SCHEMA,
+    "preflight.scope": RESPONSE_PREFLIGHT_SCOPE_SCHEMA,
+    target: FILE_ACTION_PATH_METADATA_SCHEMA,
+    source: FILE_ACTION_PATH_METADATA_SCHEMA,
+    content: FILE_ACTION_CONTENT_SCHEMA,
+    filesystem: FILE_ACTION_FILESYSTEM_SCHEMA,
+    result: FILE_ACTION_FILESYSTEM_SCHEMA,
+    policy: FILE_ACTION_EXECUTION_POLICY_SCHEMA,
   }),
   "/api/terminal-control-preflight": responseNestedKeySchemas({
     workspace: ["id", "label", "isDefault"],
@@ -12138,6 +12239,14 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
       "consumed",
     ],
     "preflight.scope": ["kind", "workspaceId"],
+  }),
+  "/api/action-preflight-confirm": responseNestedKeySchemas({
+    workspace: RESPONSE_PUBLIC_WORKSPACE_SCHEMA,
+    appServer: ["touched", "modelTraffic", "commandTraffic", "toolTraffic"],
+    action: ACTION_PREFLIGHT_CONFIRMATION_ACTION_SCHEMA,
+    preflight: RESPONSE_CONSUMED_PREFLIGHT_SCHEMA,
+    "preflight.scope": RESPONSE_PREFLIGHT_SCOPE_SCHEMA,
+    policy: ACTION_PREFLIGHT_CONFIRMATION_POLICY_SCHEMA,
   }),
 });
 

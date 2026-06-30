@@ -392,12 +392,14 @@ preflight/execution, MCP resource-read execution, MCP OAuth-login
 preflight/execution, MCP server-reload preflight/execution, skills-config
 preflight/execution, config-value preflight/execution, config-batch
 preflight/execution, experimental-feature preflight/execution,
-Git branch/commit/worktree preflight/execution, and generic integration
+Git branch/commit/worktree preflight/execution, file-action
+preflight/execution, action-preflight confirmation, and generic integration
 mutation preflight routes
 additionally have route-specific nested key schemas for their sanitized
 turn/probe/event, decision/queue/history, target, argument/risk, result, policy,
-Git status/safety/subprocess, and preflight objects so unexpected
-sanitized-looking fields fail closed before the response reaches the browser.
+Git status/safety/subprocess, file metadata/content/filesystem, and preflight
+objects so unexpected sanitized-looking fields fail closed before the response
+reaches the browser.
 App-server responses are first normalized through local runtime protocol
 contracts for the methods this prototype uses, then reduced again by
 browser-facing sanitizers.
@@ -1332,6 +1334,8 @@ app-server`. The `/api/file-action` route is disabled unless
 consumes the token, rejects symlinked parent/target paths, performs only the
 requested workspace-local write/remove/copy/create-directory action, and still
 returns no paths, file contents, stdout, stderr, argv, or app-server traffic.
+Both file-action routes and the shared action-preflight-confirm response are
+constrained by route-specific nested response schemas.
 Successful file actions are written to the sanitized action audit log when
 configured, after appendability is checked and without paths, file basenames,
 file contents, stdout, stderr, or argv.

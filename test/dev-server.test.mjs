@@ -1069,6 +1069,7 @@ test("browser POST response contracts block unsafe response values", () => {
     assert.equal(contract.forbiddenNestedKeys.includes("cancelRef"), false, path);
     assert.equal(contract.forbiddenNestedKeys.includes("stdout"), false, path);
     assert.equal(Object.isFrozen(contract.nestedKeySchemas), true, path);
+    assert.equal(contract.usesRouteSpecificNestedKeySchemas, true, path);
     assert.equal(Object.isFrozen(contract.allowedPreflightTokenPaths), true, path);
   }
   const gitResponseContractPaths = [
@@ -1153,6 +1154,42 @@ test("browser POST response contracts block unsafe response values", () => {
   );
   assert.equal(gitWorktreeActionContract.nestedKeySchemas.policy.includes("worktreeRemoved"), true);
   assert.equal(gitWorktreeActionContract.nestedKeySchemas.policy.includes("unexpected"), false);
+  const fileActionPreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/file-action-preflight"];
+  assert.equal(fileActionPreflightContract.usesRouteSpecificNestedKeySchemas, true);
+  assert.deepEqual(fileActionPreflightContract.nestedKeySchemas.target, [
+    "basename",
+    "depth",
+    "pathReturned",
+  ]);
+  assert.equal(fileActionPreflightContract.nestedKeySchemas.content.includes("charCount"), true);
+  assert.equal(
+    fileActionPreflightContract.nestedKeySchemas.policy.includes("requiresWorkspacePathPolicy"),
+    true,
+  );
+  assert.equal(fileActionPreflightContract.nestedKeySchemas.policy.includes("unexpected"), false);
+  const fileActionContract = BROWSER_POST_RESPONSE_CONTRACTS["/api/file-action"];
+  assert.equal(fileActionContract.usesRouteSpecificNestedKeySchemas, true);
+  assert.equal(fileActionContract.nestedKeySchemas.filesystem.includes("wroteFile"), true);
+  assert.equal(fileActionContract.nestedKeySchemas.policy.includes("auditLogWritten"), true);
+  assert.equal(fileActionContract.nestedKeySchemas["preflight.scope"].includes("workspaceId"), true);
+  assert.equal(fileActionContract.nestedKeySchemas.policy.includes("unexpected"), false);
+  const actionPreflightConfirmContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/action-preflight-confirm"];
+  assert.equal(actionPreflightConfirmContract.usesRouteSpecificNestedKeySchemas, true);
+  assert.equal(
+    actionPreflightConfirmContract.nestedKeySchemas.action.includes("preflightConfirmed"),
+    true,
+  );
+  assert.equal(
+    actionPreflightConfirmContract.nestedKeySchemas.policy.includes("mutationExecuted"),
+    true,
+  );
+  assert.equal(
+    actionPreflightConfirmContract.nestedKeySchemas["preflight.scope"].includes("workspaceId"),
+    true,
+  );
+  assert.equal(actionPreflightConfirmContract.nestedKeySchemas.policy.includes("unexpected"), false);
   const integrationPreflightContract =
     BROWSER_POST_RESPONSE_CONTRACTS["/api/integration-action-preflight"];
   assert.equal(integrationPreflightContract.usesRouteSpecificNestedKeySchemas, true);
@@ -2467,6 +2504,158 @@ test("browser POST response contracts block unsafe response values", () => {
   });
   assert.equal(unexpectedGitNestedKey.statusCode, 500);
   assert.equal(JSON.stringify(unexpectedGitNestedKey.payload).includes("private git status"), false);
+
+  const allowedNestedFileActionPreflightShape = applyBrowserPostResponseContract({
+    method: "POST",
+    pathname: "/api/file-action-preflight",
+    statusCode: 200,
+    payload: {
+      ok: true,
+      appServer: {
+        touched: false,
+        modelTraffic: false,
+        commandTraffic: false,
+      },
+      action: {
+        type: "file-action-preflight",
+        fileAction: "writeFile",
+        method: "fs/writeFile",
+        execution: "blocked",
+        wouldMutateFilesystem: false,
+        filesystemWrites: false,
+        appServerTouched: false,
+        reason: "filesystem-action-requires-opt-in",
+      },
+      target: {
+        basename: "note.txt",
+        depth: 1,
+        pathReturned: false,
+      },
+      content: {
+        present: true,
+        charCount: 4,
+        lineCount: 1,
+        textReturned: false,
+      },
+      policy: {
+        readOnly: true,
+        appServerTraffic: false,
+        filesystemWrites: false,
+        fileContentsReturned: false,
+        fullPathsReturned: false,
+        requiresApprovalPipeline: true,
+        requiresWorkspacePathPolicy: true,
+        executionRouteImplemented: true,
+        executionGateEnabled: false,
+        browserMethodCallsAccepted: false,
+        implemented: false,
+      },
+      preflight: {
+        token: "preflight-1234567890abcdef",
+        tokenIssued: true,
+        issuedAt: "2026-06-30T00:00:00.000Z",
+        expiresAt: "2026-06-30T00:05:00.000Z",
+        scope: {
+          kind: "file-action-preflight",
+          workspaceId: "default",
+        },
+        rawIntentStored: false,
+        rawIntentReturned: false,
+        intentHashReturned: false,
+        oneTimeUseRequiredForMutation: true,
+        consumed: false,
+      },
+    },
+  });
+  assert.equal(allowedNestedFileActionPreflightShape.statusCode, 200);
+
+  const allowedNestedActionPreflightConfirmShape = applyBrowserPostResponseContract({
+    method: "POST",
+    pathname: "/api/action-preflight-confirm",
+    statusCode: 200,
+    payload: {
+      ok: true,
+      appServer: {
+        touched: false,
+        modelTraffic: false,
+        commandTraffic: false,
+        toolTraffic: false,
+      },
+      action: {
+        type: "file-action-preflight",
+        method: "fs/writeFile",
+        execution: "blocked",
+        preflightConfirmed: true,
+        mutationExecuted: false,
+        appServerTouched: false,
+        reason: "mutation-pipeline-not-implemented",
+      },
+      preflight: {
+        tokenConsumed: true,
+        tokenReturned: false,
+        scope: {
+          kind: "file-action-preflight",
+          workspaceId: "default",
+        },
+        rawIntentStored: false,
+        rawIntentReturned: false,
+        intentHashReturned: false,
+        oneTimeUseEnforced: true,
+      },
+      policy: {
+        readOnly: true,
+        appServerTraffic: false,
+        modelTraffic: false,
+        commandExecution: false,
+        filesystemWrites: false,
+        gitWrites: false,
+        toolInvocation: false,
+        pluginRead: false,
+        pluginContentRead: false,
+        pluginShareList: false,
+        mutationExecuted: false,
+        requiresApprovalPipeline: true,
+        requiresLiveSessionManager: false,
+        requiresIntegrationProvenance: false,
+        requiresWorkspacePathPolicy: true,
+        implemented: false,
+      },
+    },
+  });
+  assert.equal(allowedNestedActionPreflightConfirmShape.statusCode, 200);
+
+  const unexpectedFileActionNestedKey = applyBrowserPostResponseContract({
+    method: "POST",
+    pathname: "/api/file-action",
+    statusCode: 200,
+    payload: {
+      ok: true,
+      target: {
+        basename: "note.txt",
+        leakedFullPath: "private file path",
+      },
+    },
+  });
+  assert.equal(unexpectedFileActionNestedKey.statusCode, 500);
+  assert.equal(JSON.stringify(unexpectedFileActionNestedKey.payload).includes("private file path"), false);
+
+  const unexpectedActionPreflightConfirmNestedKey = applyBrowserPostResponseContract({
+    method: "POST",
+    pathname: "/api/action-preflight-confirm",
+    statusCode: 200,
+    payload: {
+      ok: true,
+      policy: {
+        readOnly: true,
+        leakedConfirmation: "private confirmation",
+      },
+    },
+  });
+  assert.equal(unexpectedActionPreflightConfirmNestedKey.statusCode, 500);
+  assert.equal(
+    JSON.stringify(unexpectedActionPreflightConfirmNestedKey.payload).includes("private confirmation"),
+    false,
+  );
 
   const allowedNestedIntegrationShape = applyBrowserPostResponseContract({
     method: "POST",

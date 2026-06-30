@@ -67,11 +67,12 @@
   preflight/execution, MCP server-reload preflight/execution, skills-config
   preflight/execution, environment-add preflight/execution, config-value
   preflight/execution, config-batch preflight/execution, experimental-feature
-  preflight/execution, Git branch/commit/worktree preflight/execution, and
-  generic integration mutation preflights already enforce these schemas for their
+  preflight/execution, Git branch/commit/worktree preflight/execution,
+  file-action preflight/execution, action-preflight confirmation, and generic
+  integration mutation preflights already enforce these schemas for their
   sanitized turn/probe/event, decision, queue, history, target, argument/risk
-  summary, Git status/safety/subprocess, result, auth, policy, and preflight
-  objects.
+  summary, Git status/safety/subprocess, file metadata/content/filesystem,
+  result, auth, policy, and preflight objects.
 - Do not expose unbounded local streams; streaming endpoints need a duration or
   resource cap and must project events through a sanitizer.
 - Browser-facing live output may expose only bounded, path-redacted,
