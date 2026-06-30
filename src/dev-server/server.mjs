@@ -32056,7 +32056,7 @@ export function buildExecutionGate({
     generatedAt: new Date().toISOString(),
     workspace: publicWorkspaces([workspace])[0],
     gate: {
-      state: turnStartEnabled ? "partial" : "blocked",
+      state: turnExecutionReadiness.state,
       pendingApprovalCount,
       executionEnabled: turnStartEnabled,
       approvalPipelineImplemented: approvalForwardingGateEnabled,

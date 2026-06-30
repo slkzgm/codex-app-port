@@ -279,10 +279,12 @@ Current M1 status:
 - done: opt-in `/api/turn-start` path behind `CODEX_APP_PORT_ALLOW_TURN_START=1`
   with matching one-time turn-preflight token consumption, read-only sandbox
   policy, network disabled, user-routed approvals, empty environments,
-  deny-only approval responses, and sanitized response metadata
+  automatic deny handling on the throwaway path, request-scoped managed
+  deny/accept-once approval handling when the approval-forwarding gates are
+  enabled, and sanitized response metadata
 - done: read-only process-local `/api/turn-sessions` ledger for sanitized
   opt-in turn-start records and bounded sanitized live event snapshots without
-  prompt text, full ids, paths, or accepted approval decisions
+  prompt text, full ids, paths, decision tokens, or raw approval details
 - done: client-side Approvals detail pane derived only from sanitized queue
   metadata, showing request kind/route/state/scope, command/file counts,
   permissions presence, safe decision counts, and audit flags without decision
@@ -1006,12 +1008,13 @@ Current M1 status:
   without decision tokens, request keys, raw approval details, preview text,
   command text, file-change patches, file contents, ids, paths, prompts, or
   app-server payloads
-- pending: full real `turn/start` parity and broader active-session workflows
-  beyond sanitized operation/management summaries, explicit request-scoped
-  approval policy, request-scoped approve/deny controls, gate flags,
-  execution-readiness state, managed-client state, loaded-session suffixes,
-  latest suffix/status/event metadata, and recent-control metadata
-- pending: full real `turn/start` parity behind explicit execution and approval gates
+- done: request-scoped real `turn/start` parity behind explicit execution and
+  approval gates, with session-wide approval, permission grant, execpolicy,
+  network, and persistent-root-grant escalation deliberately blocked
+- pending: broader active-session workflows beyond sanitized operation/
+  management summaries, gate flags, execution-readiness state, managed-client
+  state, loaded-session suffixes, latest suffix/status/event metadata, and
+  recent-control metadata
 - pending: expand per-route nested object-shape validation beyond the generic
   integration mutation preflight route before broadening enabled mutations
 

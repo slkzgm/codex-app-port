@@ -5592,7 +5592,7 @@ test("browser POST response contracts block unsafe response values", () => {
         sendsPromptToAppServer: true,
       },
       gate: {
-        state: "partial",
+        state: "managed-ready",
         pendingApprovalCount: 0,
       },
       target: {
@@ -16489,7 +16489,7 @@ test("dev server execution gate reflects explicit turn and approval opt-ins", as
     const payload = await response.json();
     const serialized = JSON.stringify(payload);
     assert.equal(payload.ok, true);
-    assert.equal(payload.gate.state, "partial");
+    assert.equal(payload.gate.state, "pending-approval");
     assert.equal(payload.gate.pendingApprovalCount, 3);
     assert.equal(payload.gate.executionEnabled, true);
     assert.equal(payload.gate.approvalPipelineImplemented, true);

@@ -423,9 +423,11 @@ When the server is started with `CODEX_APP_PORT_ALLOW_TURN_START=1`,
 consuming a matching one-time `/api/turn-preflight` token. Missing, stale, or
 intent-mismatched tokens fail before app-server traffic. That opt-in path forces
 `approvalPolicy: "on-request"`, `approvalsReviewer: "user"`, a read-only sandbox
-policy with network disabled, empty environments, and deny-only approval
-responses. The browser cannot provide turn-scoped cwd, sandbox, permissions,
-model, environment, output schema, or reviewer overrides.
+policy with network disabled, empty environments, automatic deny handling on the
+throwaway path, and request-scoped managed deny/accept-once handling when the
+session-manager approval gates are enabled. The browser cannot provide
+turn-scoped cwd, sandbox, permissions, model, environment, output schema, or
+reviewer overrides.
 Successful starts are also recorded in `/api/turn-sessions` with sanitized id
 suffixes, prompt counts, completion status, notification counts, bounded
 sanitized live event snapshots, and sanitized approval summaries.

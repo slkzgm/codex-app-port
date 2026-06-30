@@ -21,7 +21,7 @@ test("goal audit reports the current port as incomplete with concrete gaps", asy
   assert.equal(byId.get("thread-transcript")?.status, "met");
   assert.equal(byId.get("project-selection")?.status, "met");
   assert.equal(byId.get("streamed-agent-output")?.status, "met");
-  assert.equal(byId.get("real-turn-start")?.status, "partial");
+  assert.equal(byId.get("real-turn-start")?.status, "met");
   assert.equal(byId.get("approval-decisions")?.status, "met");
   assert.equal(byId.get("diff-review")?.status, "met");
   assert.equal(byId.get("git-worktree-workflows")?.status, "met");
@@ -38,7 +38,7 @@ test("formatGoalAudit highlights only partial or missing work", async () => {
   const formatted = formatGoalAudit(audit);
 
   assert.match(formatted, /Complete: no/);
-  assert.match(formatted, /real-turn-start/);
+  assert.doesNotMatch(formatted, /real-turn-start/);
   assert.doesNotMatch(formatted, /approval-decisions/);
   assert.equal(formatted.includes("[met] security-threat-model"), false);
 });

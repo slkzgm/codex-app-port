@@ -1238,9 +1238,10 @@ not echo the prompt, and does not touch `codex app-server`. When explicitly
 enabled with `CODEX_APP_PORT_ALLOW_TURN_START=1`, it first consumes the matching
 one-time turn-preflight token, then sends the prompt to `turn/start` with
 read-only sandbox policy, network disabled, user-routed approvals, empty
-environments, and deny-only command/file-change/permissions approval
-responses. The browser still cannot provide turn-scoped cwd, sandbox,
-permissions, model, environment, output schema, or reviewer overrides.
+environments, automatic deny handling on the throwaway path, and
+request-scoped managed deny/accept-once handling when the session-manager
+approval gates are enabled. The browser still cannot provide turn-scoped cwd,
+sandbox, permissions, model, environment, output schema, or reviewer overrides.
 With `CODEX_APP_PORT_ALLOW_SESSION_MANAGER=1`, this opt-in route uses a
 persistent per-workspace app-server client that remains alive for subsequent
 loaded-session inventory and interrupt/unsubscribe/steer actions; without that
@@ -1250,9 +1251,9 @@ Successful opt-in starts are recorded in an in-memory turn-session ledger. The
 ledger is read-only, process-local, capped, and prompt-free: it exposes only
 workspace public metadata, id suffixes, prompt counts, completion status,
 notification counts, bounded sanitized live event snapshots, and sanitized
-deny-only approval summaries. Local file-change approval summaries keep only
-redacted reason metadata and the grant-root basename when present; full paths,
-patches, file contents, prompt text, and tokens stay omitted.
+approval summaries. Local file-change approval summaries keep only redacted
+reason metadata and the grant-root basename when present; full paths, patches,
+file contents, prompt text, and tokens stay omitted.
 The same response includes a sanitized turn-session lifecycle summary for the
 UI: session count, sessions with pending or decided approvals, event-session
 count, model-traffic session count, pending/decided approval counts, returned

@@ -378,7 +378,7 @@ async function checkGoalAudit() {
     ["local-threads", "met"],
     ["streamed-agent-output", "met"],
     ["thread-transcript", "met"],
-    ["real-turn-start", "partial"],
+    ["real-turn-start", "met"],
     ["approval-decisions", "met"],
     ["diff-review", "met"],
     ["terminal-action-surfaces", "met"],
@@ -7663,7 +7663,7 @@ function assertBrowserPostBodyContracts(cases) {
         sendsPromptToAppServer: true,
       },
       gate: {
-        state: "partial",
+        state: "managed-ready",
         pendingApprovalCount: 0,
       },
       target: {
