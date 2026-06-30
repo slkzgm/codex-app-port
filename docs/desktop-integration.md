@@ -159,9 +159,13 @@ npm run url:validate -- --json 'codex-app-port://thread/b0153f06?workspace=defau
 
 It accepts only the local `codex-app-port://` scheme, rejects the official
 `codex://` scheme until callback behavior is audited, rejects callback/auth
-parameters, and always returns `accepted: false`. It does not open a browser,
-start the server, call app-server, execute commands, or register a desktop URL
-handler.
+parameters, and always returns `accepted: false`. The local scheme recognizes
+only audited destinations: `open`, `workspace`, `thread`, `threads/new`, `new`,
+`settings`, `skills`, and `automations`. Official deep-link parameters that can
+carry prompts, paths, origin URLs, marketplace/plugin targets, pet metadata, or
+auth data are rejected without echoing values. Validate-only mode does not open a
+browser, start the server, call app-server, execute commands, or register a
+desktop URL handler.
 
 For user-scoped Linux integration, opt in during local install:
 
@@ -172,11 +176,12 @@ npm run install:local -- --url-handler
 This writes a separate hidden desktop entry,
 `~/.local/share/applications/codex-app-port-url-handler.desktop`, with
 `MimeType=x-scheme-handler/codex-app-port;`. It does not register the official
-`codex://` scheme. The handler validates the URL, rejects unknown or
-callback/auth parameters, then opens a loopback UI URL such as
-`http://127.0.0.1:14570/#thread=b0153f06&workspace=default` with `xdg-open`.
-It does not start the server, call app-server, send model traffic, or execute
-commands.
+`codex://` scheme. The handler validates the URL, rejects unknown,
+callback/auth, or sensitive official deep-link parameters, then opens a loopback
+UI URL such as `http://127.0.0.1:14570/#thread=b0153f06&workspace=default`,
+`http://127.0.0.1:14570/#threads`, or
+`http://127.0.0.1:14570/#settings` with `xdg-open`. It does not start the
+server, call app-server, send model traffic, or execute commands.
 
 ## Guardrails
 
@@ -186,7 +191,8 @@ commands.
   before launch.
 - URL handler registration is user-scoped, opt-in, and limited to
   `codex-app-port://`; the packaged Omarchy template still avoids scheme
-  registration by default.
+  registration by default, and the handler does not claim or proxy the official
+  `codex://` scheme.
 - No global packages are installed.
 - No automatic updater is installed or enabled.
 - The local installer is user-scoped and refuses install targets outside the

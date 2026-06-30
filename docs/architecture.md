@@ -1208,7 +1208,10 @@ M4: Desktop integration.
   template
 - done: manual update policy with no automatic updater
 - done: opt-in user-scoped URL handler for `codex-app-port://` only; it rejects
-  callbacks, unknown params, and the official `codex://` scheme
+  callbacks, sensitive official deep-link params, unknown params in registered
+  mode, unsupported official subpaths, and the official `codex://` scheme, while
+  mapping only audited local thread, new-thread, settings, skills, and
+  automations destinations to loopback UI fragments
 - done: packaged Omarchy `.desktop` template pointing at the safe launcher and
   local icon, with no default URL handler registration
 - done: local desktop launcher wires persistent sanitized approval/action audit

@@ -1085,7 +1085,11 @@ automatic updater, or URL handler registration. Running `makepkg` and
 installing the resulting package remain explicit operator actions outside this
 repo's scripts.
 URL handler validation exists for the local `codex-app-port://` scheme, and
-desktop registration is user-scoped and opt-in only.
+desktop registration is user-scoped and opt-in only. The registered local handler
+can open only audited loopback UI fragments such as threads, settings, skills,
+automations, or the new-thread panel; it still rejects the official `codex://`
+scheme and official deep-link parameters that can carry prompts, filesystem
+paths, origin URLs, marketplace/plugin identifiers, pet metadata, or auth data.
 
 `npm run goal:audit` is the current completion audit. It maps the requested full
 Omarchy/Linux Codex App port to concrete repo evidence and reports remaining

@@ -2755,13 +2755,32 @@ const CHECKS = [
     requirement: "Implement Linux URL handler integration after validating scheme/callback behavior.",
     status: "met",
     evidence: [
-      "Opt-in user-scoped codex-app-port:// desktop handler validates local scheme targets, rejects callbacks and official codex://, and opens only loopback UI URLs.",
+      "Opt-in user-scoped codex-app-port:// desktop handler validates audited local thread/new-thread/settings/skills/automations targets, rejects callbacks, sensitive official deep-link parameters, unsupported subpaths, unknown params in registered mode, and official codex://, and opens only loopback UI URLs.",
     ],
-    verify: fileIncludes("src/desktop/install.mjs", [
-      "URL_HANDLER_DESKTOP_FILENAME",
-      "MimeType=x-scheme-handler/codex-app-port;",
-      "url-handler.mjs",
-    ]),
+    verify: allOf(
+      fileIncludes("src/desktop/install.mjs", [
+        "URL_HANDLER_DESKTOP_FILENAME",
+        "MimeType=x-scheme-handler/codex-app-port;",
+        "url-handler.mjs",
+      ]),
+      fileIncludes("src/desktop/url-handler.mjs", [
+        "LOCAL_URL_HANDLER_DESTINATIONS",
+        "\"threads/new\"",
+        "settings",
+        "skills",
+        "automations",
+        "BLOCKED_OFFICIAL_DEEP_LINK_PARAMS",
+        "originUrl",
+        "sensitive-params-blocked",
+        "officialCodexSchemeRegistered: false",
+      ]),
+      fileIncludes("test/url-handler.test.mjs", [
+        "maps audited local app destinations",
+        "rejects sensitive official deep-link parameters",
+        "codex-app-port://threads/new",
+        "codex-app-port://settings",
+      ]),
+    ),
   },
   {
     id: "package-icon-update-policy",

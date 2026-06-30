@@ -989,7 +989,10 @@
 - URL handler registration must be user-scoped and opt-in. It may register only
   `codex-app-port://`, must reject auth/callback parameters and the official
   `codex://` scheme, and must not start app-server, model traffic, shell
-  commands, or host-wide registration.
+  commands, or host-wide registration. Local scheme destinations may map only to
+  audited loopback UI fragments, and official deep-link parameters that can carry
+  prompts, paths, origin URLs, marketplace/plugin targets, pet metadata, or auth
+  data must fail closed without echoing values.
 - App-server response handling must pass through maintained protocol contracts
   before browser-facing sanitizers rely on the shape of a payload.
 - Do not silently widen Codex permissions beyond the user's configured policy.
@@ -999,6 +1002,8 @@
   handling.
 - URL handler validation must reject callback/auth parameters and stay blocked
   until desktop registration and callback behavior are explicitly audited.
+  Registered local mode must still reject unknown parameters before opening a
+  browser target.
 - Do not disable Electron/Chromium sandboxing without a documented reason and a
   compensating containment plan.
 

@@ -4,8 +4,10 @@ import process from "node:process";
 import { test } from "node:test";
 
 import {
+  BLOCKED_OFFICIAL_DEEP_LINK_PARAMS,
   buildBlockedUrlHandlerResult,
   buildRegisteredUrlHandlerResult,
+  LOCAL_URL_HANDLER_DESTINATIONS,
   openRegisteredUrl,
   parseUrlHandlerInput,
 } from "../src/desktop/url-handler.mjs";
@@ -23,6 +25,7 @@ test("parseUrlHandlerInput accepts only the local port scheme and returns blocke
   assert.equal(result.action, "thread");
   assert.equal(result.target.threadIdSuffix, "b0153f06");
   assert.equal(result.target.workspaceId, "workspace-2");
+  assert.equal(result.target.sectionId, "threads");
   assert.equal(result.capabilities.opensBrowser, false);
   assert.equal(result.capabilities.startsServer, false);
   assert.equal(result.capabilities.appServerTraffic, false);
@@ -30,6 +33,36 @@ test("parseUrlHandlerInput accepts only the local port scheme and returns blocke
   assert.equal(result.capabilities.commandExecution, false);
   assert.equal(result.unknownParamCount, 1);
   assert.equal(JSON.stringify(result).includes("/tmp/private"), false);
+});
+
+test("parseUrlHandlerInput maps audited local app destinations without side effects", () => {
+  assert.deepEqual(Object.keys(LOCAL_URL_HANDLER_DESTINATIONS), [
+    "open",
+    "workspace",
+    "thread",
+    "threads/new",
+    "new",
+    "settings",
+    "skills",
+    "automations",
+  ]);
+  assert.equal(BLOCKED_OFFICIAL_DEEP_LINK_PARAMS.includes("prompt"), true);
+  assert.equal(BLOCKED_OFFICIAL_DEEP_LINK_PARAMS.includes("path"), true);
+  assert.equal(BLOCKED_OFFICIAL_DEEP_LINK_PARAMS.includes("originUrl"), true);
+
+  const newThread = parseUrlHandlerInput("codex-app-port://threads/new");
+  assert.equal(newThread.action, "threads-new");
+  assert.equal(newThread.target.sectionId, "threads");
+  assert.equal(newThread.capabilities.appServerTraffic, false);
+  assert.equal(newThread.capabilities.modelTraffic, false);
+
+  const settings = parseUrlHandlerInput("codex-app-port://settings");
+  assert.equal(settings.action, "settings");
+  assert.equal(settings.target.sectionId, "settings");
+
+  const skills = parseUrlHandlerInput("codex-app-port://skills");
+  assert.equal(skills.action, "skills");
+  assert.equal(skills.target.sectionId, "settings");
 });
 
 test("parseUrlHandlerInput rejects official codex scheme until callback behavior is audited", () => {
@@ -46,6 +79,23 @@ test("parseUrlHandlerInput rejects callback and auth parameters without echoing 
         "codex-app-port://open?code=secret-code&state=/tmp/private&redirect_uri=https://example.test/callback",
       ),
     /callback\/auth/,
+  );
+});
+
+test("parseUrlHandlerInput rejects sensitive official deep-link parameters without echoing values", () => {
+  assert.throws(
+    () =>
+      parseUrlHandlerInput(
+        "codex-app-port://threads/new?prompt=secret-text&path=/tmp/private&originUrl=https://example.test/repo",
+      ),
+    /unsupported official deep-link parameters/,
+  );
+});
+
+test("parseUrlHandlerInput rejects unsupported official-style subpaths", () => {
+  assert.throws(
+    () => parseUrlHandlerInput("codex-app-port://settings/connections/ssh/add?name=prod"),
+    /unsupported official deep-link parameters|URL action is not supported/,
   );
 });
 
@@ -70,6 +120,22 @@ test("buildRegisteredUrlHandlerResult accepts only sanitized local UI targets", 
   assert.equal(result.policy.registeredInDesktopEntry, true);
   assert.equal(result.policy.officialCodexSchemeRegistered, false);
   assert.equal(result.localUiUrl, "http://127.0.0.1:14570/#thread=b0153f06&workspace=workspace-2");
+});
+
+test("buildRegisteredUrlHandlerResult opens audited app sections without app-server traffic", () => {
+  const settings = buildRegisteredUrlHandlerResult("codex-app-port://settings", {
+    origin: "http://127.0.0.1:14570/",
+  });
+  assert.equal(settings.accepted, true);
+  assert.equal(settings.localUiUrl, "http://127.0.0.1:14570/#settings");
+  assert.equal(settings.capabilities.appServerTraffic, false);
+  assert.equal(settings.policy.officialCodexSchemeRegistered, false);
+
+  const newThread = buildRegisteredUrlHandlerResult("codex-app-port://threads/new", {
+    origin: "http://127.0.0.1:14570/",
+  });
+  assert.equal(newThread.action, "threads-new");
+  assert.equal(newThread.localUiUrl, "http://127.0.0.1:14570/#threads");
 });
 
 test("buildRegisteredUrlHandlerResult rejects unknown parameters before opening", () => {
@@ -166,4 +232,23 @@ test("url-handler script rejects unsupported URLs", () => {
   assert.equal(payload.accepted, false);
   assert.equal(payload.code, "unsupported-scheme");
   assert.equal(JSON.stringify(payload).includes("secret"), false);
+});
+
+test("url-handler script rejects sensitive deep-link parameters without leaking values", () => {
+  const result = spawnSync(
+    process.execPath,
+    [
+      script,
+      "--json",
+      "codex-app-port://threads/new?prompt=secret-text&path=/tmp/private",
+    ],
+    { encoding: "utf8" },
+  );
+
+  assert.notEqual(result.status, 0);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.ok, false);
+  assert.equal(payload.code, "sensitive-params-blocked");
+  assert.equal(JSON.stringify(payload).includes("secret-text"), false);
+  assert.equal(JSON.stringify(payload).includes("/tmp/private"), false);
 });

@@ -207,6 +207,42 @@ async function checkUrlHandlerValidation() {
   if (JSON.stringify(rejected).includes("secret")) {
     throw new Error("url handler rejection leaked sensitive query data");
   }
+  const newThread = await runJsonCommand(
+    process.execPath,
+    ["scripts/url-handler.mjs", "--json", "codex-app-port://threads/new"],
+    "url handler new thread validation",
+  );
+  if (
+    newThread.ok !== true ||
+    newThread.accepted !== false ||
+    newThread.action !== "threads-new" ||
+    newThread.target?.sectionId !== "threads" ||
+    newThread.capabilities?.appServerTraffic !== false ||
+    newThread.capabilities?.modelTraffic !== false
+  ) {
+    throw new Error("url handler did not validate the local new-thread target safely");
+  }
+  const sensitive = await runJsonCommand(
+    process.execPath,
+    [
+      "scripts/url-handler.mjs",
+      "--json",
+      "codex-app-port://threads/new?prompt=secret-text&path=/tmp/private&originUrl=https://example.test/repo",
+    ],
+    "url handler sensitive deep-link params",
+    { expectFailure: true },
+  );
+  if (sensitive.ok !== false || sensitive.code !== "sensitive-params-blocked") {
+    throw new Error("url handler did not reject sensitive official deep-link parameters");
+  }
+  const sensitivePayload = JSON.stringify(sensitive);
+  if (
+    sensitivePayload.includes("secret-text") ||
+    sensitivePayload.includes("/tmp/private") ||
+    sensitivePayload.includes("example.test")
+  ) {
+    throw new Error("url handler sensitive-parameter rejection leaked URL values");
+  }
   const opened = await runJsonCommand(
     process.execPath,
     [
@@ -235,6 +271,33 @@ async function checkUrlHandlerValidation() {
     opened.localUiUrl !== "http://127.0.0.1:14570/#thread=b0153f06&workspace=default"
   ) {
     throw new Error("url handler registered mode did not preserve local-only policy");
+  }
+  const settingsOpened = await runJsonCommand(
+    process.execPath,
+    [
+      "scripts/url-handler.mjs",
+      "--json",
+      "--open",
+      "--origin",
+      "http://127.0.0.1:14570/",
+      "codex-app-port://settings",
+    ],
+    "url handler registered settings open",
+    {
+      env: {
+        ...process.env,
+        CODEX_APP_PORT_OPENER: "/bin/true",
+      },
+    },
+  );
+  if (
+    settingsOpened.accepted !== true ||
+    settingsOpened.opened !== true ||
+    settingsOpened.localUiUrl !== "http://127.0.0.1:14570/#settings" ||
+    settingsOpened.capabilities?.appServerTraffic !== false ||
+    settingsOpened.policy?.officialCodexSchemeRegistered !== false
+  ) {
+    throw new Error("url handler registered settings target did not preserve local-only policy");
   }
   pass("url handler validates and opens only the local scheme");
 }

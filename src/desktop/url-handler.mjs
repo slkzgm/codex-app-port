@@ -3,6 +3,29 @@ import { spawn } from "node:child_process";
 export const URL_HANDLER_SCHEME = "codex-app-port:";
 export const MAX_HANDLER_URL_CHARS = 2_048;
 export const DEFAULT_LOCAL_UI_ORIGIN = "http://127.0.0.1:14570/";
+export const LOCAL_URL_HANDLER_DESTINATIONS = Object.freeze({
+  open: Object.freeze({ action: "open", sectionId: "overview", query: ["thread", "workspace"] }),
+  workspace: Object.freeze({ action: "workspace", sectionId: "overview", query: ["workspace"] }),
+  thread: Object.freeze({ action: "thread", sectionId: "threads", query: ["thread", "workspace"] }),
+  "threads/new": Object.freeze({ action: "threads-new", sectionId: "threads", query: [] }),
+  new: Object.freeze({ action: "threads-new", sectionId: "threads", query: [] }),
+  settings: Object.freeze({ action: "settings", sectionId: "settings", query: [] }),
+  skills: Object.freeze({ action: "skills", sectionId: "settings", query: [] }),
+  automations: Object.freeze({ action: "automations", sectionId: "settings", query: [] }),
+});
+export const BLOCKED_OFFICIAL_DEEP_LINK_PARAMS = Object.freeze([
+  "description",
+  "hostId",
+  "imageUrl",
+  "marketplace",
+  "marketplacePath",
+  "mode",
+  "name",
+  "originUrl",
+  "path",
+  "prompt",
+  "source",
+]);
 
 const CALLBACK_PARAM_NAMES = new Set([
   "callback",
@@ -11,7 +34,9 @@ const CALLBACK_PARAM_NAMES = new Set([
   "state",
   "token",
 ]);
-const ALLOWED_ACTIONS = new Set(["open", "thread", "workspace"]);
+const BLOCKED_OFFICIAL_DEEP_LINK_PARAM_SET = new Set(
+  BLOCKED_OFFICIAL_DEEP_LINK_PARAMS.map((name) => name.toLowerCase()),
+);
 
 export function parseUrlHandlerInput(value) {
   const url = parseRawUrl(value);
@@ -26,19 +51,32 @@ export function parseUrlHandlerInput(value) {
     throwRequestError("URL callback/auth parameters are not supported", "callback-params-blocked");
   }
 
-  const action = parseAction(url);
-  const threadIdSuffix = parseThreadSuffix(url);
-  const workspaceId = parseWorkspaceId(url.searchParams.get("workspace"));
+  const sensitiveParams = [...url.searchParams.keys()].filter((key) =>
+    BLOCKED_OFFICIAL_DEEP_LINK_PARAM_SET.has(key.toLowerCase()),
+  );
+  if (sensitiveParams.length > 0) {
+    throwRequestError(
+      "URL contains unsupported official deep-link parameters",
+      "sensitive-params-blocked",
+    );
+  }
+
+  const destination = parseDestination(url);
+  const threadIdSuffix = parseThreadSuffix(url, destination);
+  const workspaceId = destination.allowedQuery.has("workspace")
+    ? parseWorkspaceId(url.searchParams.get("workspace"))
+    : null;
 
   return {
     ok: true,
     accepted: false,
     reason: "url-handler-not-registered",
     scheme: "codex-app-port",
-    action,
+    action: destination.action,
     target: {
       threadIdSuffix,
       workspaceId,
+      sectionId: destination.sectionId,
     },
     capabilities: {
       opensBrowser: false,
@@ -48,7 +86,7 @@ export function parseUrlHandlerInput(value) {
       commandExecution: false,
       acceptsCallbacks: false,
     },
-    unknownParamCount: countUnknownParams(url),
+    unknownParamCount: countUnknownParams(url, destination.allowedQuery),
   };
 }
 
@@ -122,6 +160,8 @@ export function buildLocalUiUrl(parsed, { origin = DEFAULT_LOCAL_UI_ORIGIN } = {
   }
   if ([...hash.keys()].length > 0) {
     url.hash = hash.toString();
+  } else if (parsed.target.sectionId && parsed.target.sectionId !== "overview") {
+    url.hash = parsed.target.sectionId;
   }
   return url.toString();
 }
@@ -143,20 +183,47 @@ function parseRawUrl(value) {
   }
 }
 
-function parseAction(url) {
-  const candidate = cleanToken(url.hostname || url.pathname.split("/").filter(Boolean)[0]);
-  if (!candidate) {
-    return "open";
+function parseDestination(url) {
+  const host = cleanToken(url.hostname);
+  const pathParts = url.pathname.split("/").filter(Boolean).map(cleanToken).filter(Boolean);
+  const route = [host, ...pathParts].filter(Boolean).join("/") || "open";
+
+  if (route === "thread" || route.startsWith("thread/")) {
+    if (pathParts.length > 1) {
+      throwRequestError("URL action path is not supported", "unsupported-action-path");
+    }
+    return buildDestination("thread", pathParts);
   }
-  if (!ALLOWED_ACTIONS.has(candidate)) {
-    throwRequestError("URL action is not supported", "unsupported-action");
+
+  if (Object.hasOwn(LOCAL_URL_HANDLER_DESTINATIONS, route)) {
+    return buildDestination(route, pathParts);
   }
-  return candidate;
+
+  throwRequestError("URL action is not supported", "unsupported-action");
 }
 
-function parseThreadSuffix(url) {
-  const fromQuery = url.searchParams.get("thread");
-  const fromPath = url.hostname === "thread" ? url.pathname.split("/").filter(Boolean)[0] : null;
+function buildDestination(route, pathParts) {
+  const definition = LOCAL_URL_HANDLER_DESTINATIONS[route];
+  if (!definition) {
+    throwRequestError("URL action is not supported", "unsupported-action");
+  }
+  return {
+    action: definition.action,
+    sectionId: definition.sectionId,
+    allowedQuery: new Set(definition.query),
+    pathThreadSuffix: route === "thread" ? pathParts[0] ?? null : null,
+  };
+}
+
+function parseThreadSuffix(url, destination) {
+  if (!destination.allowedQuery.has("thread") && !destination.pathThreadSuffix) {
+    return null;
+  }
+  const fromQuery = destination.allowedQuery.has("thread") ? url.searchParams.get("thread") : null;
+  const fromPath = destination.pathThreadSuffix;
+  if (fromQuery && fromPath && fromQuery !== fromPath) {
+    throwRequestError("Thread selectors must match", "invalid-thread");
+  }
   const candidate = fromQuery ?? fromPath;
   if (candidate == null || candidate.length === 0) {
     return null;
@@ -177,10 +244,10 @@ function parseWorkspaceId(value) {
   return value;
 }
 
-function countUnknownParams(url) {
+function countUnknownParams(url, allowedQuery) {
   let count = 0;
   for (const key of url.searchParams.keys()) {
-    if (key !== "thread" && key !== "workspace") {
+    if (!allowedQuery.has(key)) {
       count += 1;
     }
   }
