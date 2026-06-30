@@ -793,6 +793,10 @@ schemas, and returns only aggregate counts.
 individual and bulk controls: recent action counts, succeeded/failed counts, and
 latest-control method/status/suffix/count metadata only, with no prompt text,
 preflight tokens, full ids, paths, thread content, or raw app-server payloads.
+It also exposes sanitized active-session interaction metadata for UI-only row
+draft/preflight controls, bulk controls, client-side grouping,
+refresh-after-control behavior, route labels, suffix-only targets, action-audit requirements,
+one-time preflight requirements, and hard session-wide-control rejection.
 Persistent action audit logging is available through `scripts/dev-server.mjs`: successful
 device-code account login, account login cancel, account credits nudge, account logout, thread creation, thread archive/unarchive, thread deletion, thread forking, thread renaming, thread rollback, thread safety lock, thread compaction,
 individual and bulk live-session controls, allowlisted terminal command executions, separate

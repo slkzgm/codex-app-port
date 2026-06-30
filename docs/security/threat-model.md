@@ -309,6 +309,13 @@
   state, and one-time preflight requirements only. They must not return raw
   session identifiers, prompt text, preflight tokens, paths, transcript content,
   terminal output, command output, or raw app-server payloads.
+- Browser-facing active-session interaction summaries may expose only UI
+  interaction modes, row draft/preflight visibility, bulk control visibility,
+  client-side grouping, refresh-after-control requirements, route labels,
+  suffix-only target requirements, action-audit requirements, and sanitized
+  history/control counts. They must not grant session-wide authority or expose
+  full ids, prompt text, preflight tokens, paths, transcript content, raw control
+  payloads, or raw app-server payloads.
 - Browser-facing active-session management summaries may expose only
   inspectable/actionable/history-only state, loaded-session suffix counts,
   actionability counts, suffix-only selection requirements, preflight

@@ -1127,6 +1127,12 @@ Current M1 status:
   requirement, suffix-only targets, and no session-wide controls without
   prompts, ids, paths, preflight tokens, thread content, raw control payloads,
   or app-server payloads
+- done: sanitized active-session interaction contract in `/api/live-sessions`
+  and the UI for row draft/preflight controls, bulk preflight/execution
+  visibility, client-side grouping, refresh-after-control behavior, route state,
+  suffix-only targets, one-time preflight requirements, action-audit
+  requirements, and no session-wide controls without prompts, ids, paths,
+  preflight tokens, thread content, raw control payloads, or app-server payloads
 - done: sanitized approval decision contract summary in
   `/api/approval-decisions` and the UI for decision-intake mode, accepted
   decision-kind count, request-scoped token/replay/audit gates, local/forwarded
@@ -1138,8 +1144,9 @@ Current M1 status:
   approval gates, with session-wide approval, permission grant, execpolicy,
   network, and persistent-root-grant escalation deliberately blocked
 - pending: broader active-session workflows beyond sanitized operation/
-  management summaries, gate flags, execution-readiness state, managed-client
-  state, loaded-session suffixes, latest suffix/status/event metadata, and
+  management, readiness, routing, workflow, safety, audit, and interaction
+  summaries, gate flags, execution-readiness state, managed-client state,
+  loaded-session suffixes, latest suffix/status/event metadata, and
   recent-control metadata
 - pending: expand per-route nested object-shape validation beyond the generic
   integration mutation preflight route before broadening enabled mutations

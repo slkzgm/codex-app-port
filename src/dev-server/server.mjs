@@ -37786,6 +37786,15 @@ function buildLiveSessionLifecycle({ liveSessions, recentControls, options = {} 
     recentFailedControlCount,
     options,
   });
+  const activeSessionInteractionContract = buildActiveSessionInteractionContract({
+    activeSessionOperations,
+    activeSessionManagement,
+    activeSessionReadiness,
+    activeSessionRoutingContract,
+    activeSessionWorkflowContract,
+    activeSessionSafetyContract,
+    activeSessionAuditContract,
+  });
   return {
     state: inventoryVisible
       ? loadedThreadCount > 0
@@ -37825,6 +37834,7 @@ function buildLiveSessionLifecycle({ liveSessions, recentControls, options = {} 
     activeSessionWorkflowContract,
     activeSessionSafetyContract,
     activeSessionAuditContract,
+    activeSessionInteractionContract,
     fullIdsReturned: false,
     promptsReturned: false,
     pathsReturned: false,
@@ -37834,6 +37844,149 @@ function buildLiveSessionLifecycle({ liveSessions, recentControls, options = {} 
     latestControlReturned: Boolean(latestControl),
     controlPromptTextReturned: false,
     controlPreflightTokensReturned: false,
+  };
+}
+
+function buildActiveSessionInteractionContract({
+  activeSessionOperations = {},
+  activeSessionManagement = {},
+  activeSessionReadiness = {},
+  activeSessionRoutingContract = {},
+  activeSessionWorkflowContract = {},
+  activeSessionSafetyContract = {},
+  activeSessionAuditContract = {},
+} = {}) {
+  const inventoryVisible = Boolean(activeSessionOperations.inventoryVisible);
+  const loadedThreadCount = safeCount(activeSessionOperations.loadedThreadCount);
+  const selectableThreadSuffixCount = safeCount(
+    activeSessionManagement.selectableThreadSuffixCount,
+  );
+  const actionableLoadedThreadCount = safeCount(
+    activeSessionManagement.actionableLoadedThreadCount,
+  );
+  const recentControlCount = safeCount(activeSessionManagement.recentControlCount);
+  const enabledSingleSessionControlCount = safeCount(
+    activeSessionOperations.enabledSingleSessionControlCount,
+  );
+  const enabledBulkControlCount = safeCount(activeSessionOperations.enabledBulkControlCount);
+  const enabledOperationCount = safeCount(activeSessionOperations.enabledOperationCount);
+  const rowControlsRendered = Boolean(
+    activeSessionWorkflowContract.rowControlsReturned && inventoryVisible,
+  );
+  const bulkControlsRendered = Boolean(activeSessionWorkflowContract.bulkControlGroupVisible);
+  const rowExecutionControlsRendered = Boolean(
+    rowControlsRendered && enabledSingleSessionControlCount > 0,
+  );
+  const bulkExecutionControlsRendered = Boolean(
+    bulkControlsRendered && enabledBulkControlCount > 0,
+  );
+  return {
+    returned: true,
+    state:
+      cleanDisplayText(activeSessionReadiness.state, 80) ??
+      cleanDisplayText(activeSessionManagement.state, 80) ??
+      "blocked",
+    interactionMode: inventoryVisible
+      ? rowExecutionControlsRendered && bulkExecutionControlsRendered
+        ? "row-and-bulk-controls"
+        : rowExecutionControlsRendered
+          ? "row-controls"
+          : bulkExecutionControlsRendered
+            ? "bulk-controls"
+            : "read-only-inventory"
+      : recentControlCount > 0
+        ? "history-only"
+        : enabledOperationCount > 0
+          ? "gated-no-inventory"
+          : "blocked",
+    workflowMode: cleanDisplayText(activeSessionWorkflowContract.workflowMode, 80) ?? "blocked",
+    safetyMode: cleanDisplayText(activeSessionSafetyContract.safetyMode, 80) ?? "blocked",
+    auditMode:
+      cleanDisplayText(activeSessionAuditContract.auditMode, 120) ??
+      "process-local-control-history",
+    routingMode: cleanDisplayText(activeSessionRoutingContract.routingMode, 80) ?? "blocked",
+    inventoryRoute: cleanDisplayText(activeSessionRoutingContract.inventoryRoute, 80) ?? "blocked",
+    singleSessionControlRoute:
+      cleanDisplayText(activeSessionRoutingContract.singleSessionControlRoute, 80) ?? "blocked",
+    bulkControlRoute: cleanDisplayText(activeSessionRoutingContract.bulkControlRoute, 80) ?? "blocked",
+    modelTrafficControlRoute:
+      cleanDisplayText(activeSessionRoutingContract.modelTrafficControlRoute, 80) ?? "blocked",
+    inventoryReadAvailable: Boolean(activeSessionOperations.inventoryReadAvailable),
+    inventoryVisible,
+    loadedThreadCount,
+    selectableThreadSuffixCount,
+    actionableLoadedThreadCount,
+    recentControlCount,
+    recentHistoryVisible: true,
+    latestActionAvailable: Boolean(activeSessionManagement.latestActionAvailable),
+    enabledOperationCount,
+    singleSessionControlCount: safeCount(activeSessionOperations.singleSessionControlCount),
+    enabledSingleSessionControlCount,
+    bulkControlCount: safeCount(activeSessionOperations.bulkControlCount),
+    enabledBulkControlCount,
+    inventoryListRendered: true,
+    inventoryRowsRendered: inventoryVisible,
+    historyRowsRendered: recentControlCount > 0,
+    rowControlsRendered,
+    rowDraftControlsRendered: rowControlsRendered,
+    rowPreflightControlsRendered: rowControlsRendered,
+    rowExecutionControlsRendered,
+    singleSessionControlFormRendered: true,
+    singleSessionPreflightButtonRendered: true,
+    singleSessionExecutionButtonRequiresPreflight: true,
+    bulkControlsRendered,
+    bulkPreflightControlsRendered: bulkControlsRendered,
+    bulkExecutionControlsRendered,
+    bulkExecutionButtonRequiresPreflight: true,
+    clientSideDraftOnly: true,
+    clientSideGroupingOnly: Boolean(activeSessionWorkflowContract.clientSideGroupingOnly),
+    clientGroupCount: safeCount(activeSessionWorkflowContract.clientGroupCount),
+    refreshAfterControlRequired: true,
+    controlHistoryRendered: true,
+    controlHistoryLimit: safeCount(
+      activeSessionAuditContract.controlHistoryLimit ?? MAX_LIVE_SESSION_CONTROL_RECORDS,
+    ),
+    actionAuditRequiredForMutation: true,
+    actionAuditPersistent: Boolean(activeSessionAuditContract.actionAuditPersistent),
+    interruptEnabled: Boolean(activeSessionOperations.interruptEnabled),
+    unsubscribeEnabled: Boolean(activeSessionOperations.unsubscribeEnabled),
+    steerEnabled: Boolean(activeSessionOperations.steerEnabled),
+    bulkUnsubscribeEnabled: Boolean(activeSessionOperations.bulkUnsubscribeEnabled),
+    modelTrafficControlEnabled: Boolean(activeSessionOperations.modelTrafficControlEnabled),
+    sessionManagerEnabled: Boolean(activeSessionOperations.sessionManagerEnabled),
+    sessionManagerBackedControls: Boolean(activeSessionOperations.sessionManagerBackedControls),
+    sessionManagerRequiredForSingleSessionControls: Boolean(
+      activeSessionOperations.sessionManagerRequiredForSingleSessionControls,
+    ),
+    sessionManagerRequiredForBulkControl: Boolean(
+      activeSessionOperations.sessionManagerRequiredForBulkControl,
+    ),
+    modelTrafficControlRequiresSeparateOptIn: true,
+    bulkControlRequiresSessionManager: true,
+    sessionWideControlsAccepted: false,
+    targetSelection: "suffix-only",
+    requiresThreadSuffixForSingleSessionControls: true,
+    requiresTurnSuffixForInterrupt: true,
+    requiresTurnSuffixForSteer: true,
+    requiresTurnSuffixForUnsubscribe: false,
+    preflightRequired: true,
+    preflightTokenRequired: true,
+    onePreflightTokenPerControlAction: true,
+    oneTimePreflightTokensRequired: true,
+    dedicatedRoutesOnly: true,
+    dedicatedControlRoutesOnly: true,
+    browserPromptsAcceptedByReadEndpoint: false,
+    browserControlPayloadsAcceptedByReadEndpoint: false,
+    browserMethodCallsAcceptedByReadEndpoint: false,
+    promptTextReturned: false,
+    preflightTokensReturned: false,
+    promptsReturned: false,
+    fullIdsReturned: false,
+    pathsReturned: false,
+    threadContentReturned: false,
+    rawControlPayloadsReturned: false,
+    rawPayloadsReturned: false,
+    appServerPayloadReturned: false,
   };
 }
 
@@ -39873,6 +40026,7 @@ function liveSessionsPolicy({ appServerTraffic }) {
     activeSessionWorkflowContractReturned: true,
     activeSessionSafetyContractReturned: true,
     activeSessionAuditContractReturned: true,
+    activeSessionInteractionContractReturned: true,
     activeSessionOperationTokensReturned: false,
     activeSessionManagementTokensReturned: false,
     activeSessionReadinessTokensReturned: false,
@@ -39880,6 +40034,9 @@ function liveSessionsPolicy({ appServerTraffic }) {
     activeSessionWorkflowContractTokensReturned: false,
     activeSessionSafetyContractTokensReturned: false,
     activeSessionAuditContractTokensReturned: false,
+    activeSessionInteractionContractTokensReturned: false,
+    activeSessionInteractionContractPromptsReturned: false,
+    activeSessionInteractionContractFullIdsReturned: false,
     activeSessionOperationRawPayloadsReturned: false,
     activeSessionManagementRawPayloadsReturned: false,
     activeSessionReadinessRawPayloadsReturned: false,
@@ -39887,6 +40044,7 @@ function liveSessionsPolicy({ appServerTraffic }) {
     activeSessionWorkflowContractRawPayloadsReturned: false,
     activeSessionSafetyContractRawPayloadsReturned: false,
     activeSessionAuditContractRawPayloadsReturned: false,
+    activeSessionInteractionContractRawPayloadsReturned: false,
     controlPromptTextReturned: false,
     controlPreflightTokensReturned: false,
     requiresExplicitEnablement: true,

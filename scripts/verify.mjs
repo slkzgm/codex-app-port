@@ -30773,6 +30773,72 @@ function assertSanitizedActiveSessionAuditContract(payload, expected) {
   }
 }
 
+function assertSanitizedActiveSessionInteractionContract(payload, expected) {
+  const contract = payload.lifecycle?.activeSessionInteractionContract;
+  if (!contract || contract.returned !== true) {
+    throw new Error("active-session interaction contract was not returned");
+  }
+  for (const [field, value] of Object.entries(expected)) {
+    if (contract[field] !== value) {
+      throw new Error(`active-session interaction ${field} did not match ${value}`);
+    }
+  }
+  if (
+    contract.recentHistoryVisible !== true ||
+    contract.singleSessionControlCount !== 3 ||
+    contract.bulkControlCount !== 1 ||
+    contract.inventoryListRendered !== true ||
+    contract.singleSessionControlFormRendered !== true ||
+    contract.singleSessionPreflightButtonRendered !== true ||
+    contract.singleSessionExecutionButtonRequiresPreflight !== true ||
+    contract.bulkControlsRendered !== true ||
+    contract.bulkPreflightControlsRendered !== true ||
+    contract.bulkExecutionButtonRequiresPreflight !== true ||
+    contract.clientSideDraftOnly !== true ||
+    contract.clientSideGroupingOnly !== true ||
+    contract.clientGroupCount !== 4 ||
+    contract.refreshAfterControlRequired !== true ||
+    contract.controlHistoryRendered !== true ||
+    contract.controlHistoryLimit !== 20 ||
+    contract.actionAuditRequiredForMutation !== true ||
+    contract.sessionManagerRequiredForSingleSessionControls !== false ||
+    contract.sessionManagerRequiredForBulkControl !== true ||
+    contract.modelTrafficControlRequiresSeparateOptIn !== true ||
+    contract.bulkControlRequiresSessionManager !== true ||
+    contract.sessionWideControlsAccepted !== false ||
+    contract.targetSelection !== "suffix-only" ||
+    contract.requiresThreadSuffixForSingleSessionControls !== true ||
+    contract.requiresTurnSuffixForInterrupt !== true ||
+    contract.requiresTurnSuffixForSteer !== true ||
+    contract.requiresTurnSuffixForUnsubscribe !== false ||
+    contract.preflightRequired !== true ||
+    contract.preflightTokenRequired !== true ||
+    contract.onePreflightTokenPerControlAction !== true ||
+    contract.oneTimePreflightTokensRequired !== true ||
+    contract.dedicatedRoutesOnly !== true ||
+    contract.dedicatedControlRoutesOnly !== true ||
+    contract.browserPromptsAcceptedByReadEndpoint !== false ||
+    contract.browserControlPayloadsAcceptedByReadEndpoint !== false ||
+    contract.browserMethodCallsAcceptedByReadEndpoint !== false ||
+    contract.promptTextReturned !== false ||
+    contract.preflightTokensReturned !== false ||
+    contract.promptsReturned !== false ||
+    contract.fullIdsReturned !== false ||
+    contract.pathsReturned !== false ||
+    contract.threadContentReturned !== false ||
+    contract.rawControlPayloadsReturned !== false ||
+    contract.rawPayloadsReturned !== false ||
+    contract.appServerPayloadReturned !== false ||
+    payload.policy?.activeSessionInteractionContractReturned !== true ||
+    payload.policy?.activeSessionInteractionContractTokensReturned !== false ||
+    payload.policy?.activeSessionInteractionContractPromptsReturned !== false ||
+    payload.policy?.activeSessionInteractionContractFullIdsReturned !== false ||
+    payload.policy?.activeSessionInteractionContractRawPayloadsReturned !== false
+  ) {
+    throw new Error("active-session interaction contract did not preserve safe metadata");
+  }
+}
+
 function assertSanitizedLiveSessionsBlocked(payload) {
   if (!payload.ok) {
     throw new Error("live sessions blocked payload is not ok");
@@ -31022,6 +31088,41 @@ function assertSanitizedLiveSessionsBlocked(payload) {
     sessionManagerEnabled: false,
     sessionManagerBackedControls: false,
   });
+  assertSanitizedActiveSessionInteractionContract(payload, {
+    state: "blocked",
+    interactionMode: "blocked",
+    workflowMode: "blocked",
+    safetyMode: "blocked",
+    auditMode: "process-local-control-history",
+    routingMode: "blocked",
+    inventoryRoute: "blocked",
+    singleSessionControlRoute: "blocked",
+    bulkControlRoute: "blocked",
+    modelTrafficControlRoute: "blocked",
+    inventoryReadAvailable: true,
+    inventoryVisible: false,
+    loadedThreadCount: 0,
+    selectableThreadSuffixCount: 0,
+    actionableLoadedThreadCount: 0,
+    recentControlCount: 0,
+    latestActionAvailable: false,
+    enabledOperationCount: 0,
+    enabledSingleSessionControlCount: 0,
+    enabledBulkControlCount: 0,
+    inventoryRowsRendered: false,
+    historyRowsRendered: false,
+    rowControlsRendered: false,
+    rowExecutionControlsRendered: false,
+    bulkExecutionControlsRendered: false,
+    actionAuditPersistent: false,
+    interruptEnabled: false,
+    unsubscribeEnabled: false,
+    steerEnabled: false,
+    bulkUnsubscribeEnabled: false,
+    modelTrafficControlEnabled: false,
+    sessionManagerEnabled: false,
+    sessionManagerBackedControls: false,
+  });
   if (
     payload.policy?.readOnly !== true ||
     payload.policy?.appServerTraffic !== false ||
@@ -31045,6 +31146,7 @@ function assertSanitizedLiveSessionsBlocked(payload) {
     payload.policy?.activeSessionWorkflowContractReturned !== true ||
     payload.policy?.activeSessionSafetyContractReturned !== true ||
     payload.policy?.activeSessionAuditContractReturned !== true ||
+    payload.policy?.activeSessionInteractionContractReturned !== true ||
     payload.policy?.activeSessionOperationTokensReturned !== false ||
     payload.policy?.activeSessionManagementTokensReturned !== false ||
     payload.policy?.activeSessionReadinessTokensReturned !== false ||
@@ -31052,6 +31154,9 @@ function assertSanitizedLiveSessionsBlocked(payload) {
     payload.policy?.activeSessionWorkflowContractTokensReturned !== false ||
     payload.policy?.activeSessionSafetyContractTokensReturned !== false ||
     payload.policy?.activeSessionAuditContractTokensReturned !== false ||
+    payload.policy?.activeSessionInteractionContractTokensReturned !== false ||
+    payload.policy?.activeSessionInteractionContractPromptsReturned !== false ||
+    payload.policy?.activeSessionInteractionContractFullIdsReturned !== false ||
     payload.policy?.activeSessionOperationRawPayloadsReturned !== false ||
     payload.policy?.activeSessionManagementRawPayloadsReturned !== false ||
     payload.policy?.activeSessionReadinessRawPayloadsReturned !== false ||
@@ -31059,6 +31164,7 @@ function assertSanitizedLiveSessionsBlocked(payload) {
     payload.policy?.activeSessionWorkflowContractRawPayloadsReturned !== false ||
     payload.policy?.activeSessionSafetyContractRawPayloadsReturned !== false ||
     payload.policy?.activeSessionAuditContractRawPayloadsReturned !== false ||
+    payload.policy?.activeSessionInteractionContractRawPayloadsReturned !== false ||
     payload.policy?.controlPromptTextReturned !== false ||
     payload.policy?.controlPreflightTokensReturned !== false ||
     payload.policy?.requiresExplicitEnablement !== true ||
@@ -31301,6 +31407,41 @@ function assertSanitizedLiveSessionsOptIn(payload) {
     sessionManagerEnabled: false,
     sessionManagerBackedControls: false,
   });
+  assertSanitizedActiveSessionInteractionContract(payload, {
+    state: "inspectable",
+    interactionMode: "read-only-inventory",
+    workflowMode: "inspect-live-sessions",
+    safetyMode: "read-only-inventory",
+    auditMode: "process-local-control-history",
+    routingMode: "read-only-inventory",
+    inventoryRoute: "loaded-sessions",
+    singleSessionControlRoute: "blocked",
+    bulkControlRoute: "blocked",
+    modelTrafficControlRoute: "blocked",
+    inventoryReadAvailable: true,
+    inventoryVisible: true,
+    loadedThreadCount: 2,
+    selectableThreadSuffixCount: 2,
+    actionableLoadedThreadCount: 0,
+    recentControlCount: 0,
+    latestActionAvailable: false,
+    enabledOperationCount: 1,
+    enabledSingleSessionControlCount: 0,
+    enabledBulkControlCount: 0,
+    inventoryRowsRendered: true,
+    historyRowsRendered: false,
+    rowControlsRendered: true,
+    rowExecutionControlsRendered: false,
+    bulkExecutionControlsRendered: false,
+    actionAuditPersistent: false,
+    interruptEnabled: false,
+    unsubscribeEnabled: false,
+    steerEnabled: false,
+    bulkUnsubscribeEnabled: false,
+    modelTrafficControlEnabled: false,
+    sessionManagerEnabled: false,
+    sessionManagerBackedControls: false,
+  });
   if (
     payload.policy?.readOnly !== true ||
     payload.policy?.appServerTraffic !== true ||
@@ -31323,6 +31464,7 @@ function assertSanitizedLiveSessionsOptIn(payload) {
     payload.policy?.activeSessionWorkflowContractReturned !== true ||
     payload.policy?.activeSessionSafetyContractReturned !== true ||
     payload.policy?.activeSessionAuditContractReturned !== true ||
+    payload.policy?.activeSessionInteractionContractReturned !== true ||
     payload.policy?.activeSessionOperationTokensReturned !== false ||
     payload.policy?.activeSessionManagementTokensReturned !== false ||
     payload.policy?.activeSessionReadinessTokensReturned !== false ||
@@ -31330,6 +31472,9 @@ function assertSanitizedLiveSessionsOptIn(payload) {
     payload.policy?.activeSessionWorkflowContractTokensReturned !== false ||
     payload.policy?.activeSessionSafetyContractTokensReturned !== false ||
     payload.policy?.activeSessionAuditContractTokensReturned !== false ||
+    payload.policy?.activeSessionInteractionContractTokensReturned !== false ||
+    payload.policy?.activeSessionInteractionContractPromptsReturned !== false ||
+    payload.policy?.activeSessionInteractionContractFullIdsReturned !== false ||
     payload.policy?.activeSessionOperationRawPayloadsReturned !== false ||
     payload.policy?.activeSessionManagementRawPayloadsReturned !== false ||
     payload.policy?.activeSessionReadinessRawPayloadsReturned !== false ||
@@ -31337,6 +31482,7 @@ function assertSanitizedLiveSessionsOptIn(payload) {
     payload.policy?.activeSessionWorkflowContractRawPayloadsReturned !== false ||
     payload.policy?.activeSessionSafetyContractRawPayloadsReturned !== false ||
     payload.policy?.activeSessionAuditContractRawPayloadsReturned !== false ||
+    payload.policy?.activeSessionInteractionContractRawPayloadsReturned !== false ||
     payload.policy?.controlPromptTextReturned !== false ||
     payload.policy?.controlPreflightTokensReturned !== false ||
     payload.policy?.browserMethodCallsAccepted !== false
@@ -31642,6 +31788,41 @@ function assertSanitizedLiveSessionControlHistory(
     sessionManagerEnabled: false,
     latestActionAvailable: true,
   });
+  assertSanitizedActiveSessionInteractionContract(payload, {
+    state: "history-only",
+    interactionMode: "history-only",
+    workflowMode: "history-review",
+    safetyMode: "gated-controls",
+    auditMode: "process-local-control-history-with-persistent-action-audit",
+    routingMode: "local-single-session",
+    inventoryRoute: "blocked",
+    singleSessionControlRoute: "live-session-control",
+    bulkControlRoute: "blocked",
+    modelTrafficControlRoute: "live-session-control-steer",
+    inventoryReadAvailable: true,
+    inventoryVisible: false,
+    loadedThreadCount: 0,
+    selectableThreadSuffixCount: 0,
+    actionableLoadedThreadCount: 0,
+    recentControlCount: expectedCount,
+    latestActionAvailable: true,
+    enabledOperationCount: 3,
+    enabledSingleSessionControlCount: 3,
+    enabledBulkControlCount: 0,
+    inventoryRowsRendered: false,
+    historyRowsRendered: true,
+    rowControlsRendered: false,
+    rowExecutionControlsRendered: false,
+    bulkExecutionControlsRendered: false,
+    actionAuditPersistent: true,
+    interruptEnabled: true,
+    unsubscribeEnabled: true,
+    steerEnabled: true,
+    bulkUnsubscribeEnabled: false,
+    modelTrafficControlEnabled: true,
+    sessionManagerEnabled: false,
+    sessionManagerBackedControls: false,
+  });
   if (
     latest?.action?.liveSessionAction !== latestAction ||
     latest?.action?.method !== (latestAction === "steer" ? "turn/steer" : "turn/interrupt") ||
@@ -31903,6 +32084,41 @@ function assertSanitizedLiveSessionBulkControlHistory(payload, consumedPreflight
     modelTrafficManagementEnabled: false,
     sessionManagerEnabled: true,
     latestActionAvailable: true,
+  });
+  assertSanitizedActiveSessionInteractionContract(payload, {
+    state: "history-only",
+    interactionMode: "history-only",
+    workflowMode: "history-review",
+    safetyMode: "gated-controls",
+    auditMode: "process-local-control-history-with-persistent-action-audit",
+    routingMode: "session-manager-bulk",
+    inventoryRoute: "blocked",
+    singleSessionControlRoute: "blocked",
+    bulkControlRoute: "live-session-bulk-control",
+    modelTrafficControlRoute: "blocked",
+    inventoryReadAvailable: true,
+    inventoryVisible: false,
+    loadedThreadCount: 0,
+    selectableThreadSuffixCount: 0,
+    actionableLoadedThreadCount: 0,
+    recentControlCount: 1,
+    latestActionAvailable: true,
+    enabledOperationCount: 1,
+    enabledSingleSessionControlCount: 0,
+    enabledBulkControlCount: 1,
+    inventoryRowsRendered: false,
+    historyRowsRendered: true,
+    rowControlsRendered: false,
+    rowExecutionControlsRendered: false,
+    bulkExecutionControlsRendered: true,
+    actionAuditPersistent: true,
+    interruptEnabled: false,
+    unsubscribeEnabled: false,
+    steerEnabled: false,
+    bulkUnsubscribeEnabled: true,
+    modelTrafficControlEnabled: false,
+    sessionManagerEnabled: true,
+    sessionManagerBackedControls: true,
   });
   if (
     latest?.action?.type !== "live-session-bulk-control" ||
@@ -41592,6 +41808,7 @@ async function readUiSessionToken(baseUrl) {
     "approvalAuditContractText",
     "approvalAuthorityContractText",
     "approvalInteractionContractText",
+    "liveSessionInteractionContractText",
     "manualRefreshApprovalDecisions",
     "setApprovalRefreshState",
     "manualRefreshSettingsIntegrations",
@@ -41662,6 +41879,9 @@ async function readUiSessionToken(baseUrl) {
   }
   if (!html.includes("live-session-audit")) {
     throw new Error("dev server UI is missing the live session audit control");
+  }
+  if (!html.includes("live-session-interaction")) {
+    throw new Error("dev server UI is missing the live session interaction control");
   }
   if (
     !html.includes("account-login-button") ||

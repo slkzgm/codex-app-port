@@ -1816,6 +1816,12 @@ action-audit availability, sanitized action-audit guarantees, dedicated route
 requirements, separate model-traffic opt-in for steering, and no session-wide
 controls without returning ids, prompts, paths, tokens, thread content, raw
 control payloads, or app-server payloads.
+It also renders `activeSessionInteractionContract`, derived only from the same
+sanitized summaries, to show row draft/preflight controls, bulk control
+visibility, client-side grouping, refresh-after-control behavior, route state,
+suffix-only targets, one-time preflight requirements, action-audit requirements,
+and no session-wide controls without returning ids, prompts, paths, tokens,
+thread content, raw control payloads, or app-server payloads.
 Session-wide acceptance remains blocked.
 
 Useful options:
@@ -1988,6 +1994,10 @@ Current UI scope:
   active suffixes, notification counts, and pending/resolved approval counts
 - sanitized active-session management UI for suffix-only actionability,
   preflight requirements, bulk scope, and latest control metadata
+- sanitized active-session interaction UI for row draft/preflight controls,
+  bulk controls, client-side grouping, refresh-after-control behavior,
+  suffix-only targets, one-time preflight requirements, and no session-wide
+  controls
 - gated agent-turn probe surface
 - sanitized agent-turn event log
 - security guardrail status

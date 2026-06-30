@@ -151,6 +151,7 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /live-session-workflow/);
     assert.match(html, /live-session-safety/);
     assert.match(html, /live-session-audit/);
+    assert.match(html, /live-session-interaction/);
     assert.match(html, /approval-accept-once-text/);
     assert.match(html, /approval-kind-count/);
     assert.match(html, /approval-rejected-scope-count/);
@@ -215,6 +216,7 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /approval-interaction-contract/);
     assert.match(appScript, /approvalAuthorityContractText/);
     assert.match(appScript, /approvalInteractionContractText/);
+    assert.match(appScript, /liveSessionInteractionContractText/);
     assert.match(appScript, /runThreadServerSearch/);
     assert.match(appScript, /renderThreadServerSearch/);
     assert.match(appScript, /loadThreadTurnItems/);
@@ -18524,6 +18526,41 @@ test("dev server exposes blocked live-session inventory without app-server traff
       sessionManagerEnabled: false,
       sessionManagerBackedControls: false,
     });
+    assertActiveSessionInteractionContract(payload, {
+      state: "blocked",
+      interactionMode: "blocked",
+      workflowMode: "blocked",
+      safetyMode: "blocked",
+      auditMode: "process-local-control-history",
+      routingMode: "blocked",
+      inventoryRoute: "blocked",
+      singleSessionControlRoute: "blocked",
+      bulkControlRoute: "blocked",
+      modelTrafficControlRoute: "blocked",
+      inventoryReadAvailable: true,
+      inventoryVisible: false,
+      loadedThreadCount: 0,
+      selectableThreadSuffixCount: 0,
+      actionableLoadedThreadCount: 0,
+      recentControlCount: 0,
+      latestActionAvailable: false,
+      enabledOperationCount: 0,
+      enabledSingleSessionControlCount: 0,
+      enabledBulkControlCount: 0,
+      inventoryRowsRendered: false,
+      historyRowsRendered: false,
+      rowControlsRendered: false,
+      rowExecutionControlsRendered: false,
+      bulkExecutionControlsRendered: false,
+      actionAuditPersistent: false,
+      interruptEnabled: false,
+      unsubscribeEnabled: false,
+      steerEnabled: false,
+      bulkUnsubscribeEnabled: false,
+      modelTrafficControlEnabled: false,
+      sessionManagerEnabled: false,
+      sessionManagerBackedControls: false,
+    });
     assert.equal(payload.lifecycle.controlBreakdownReturned, true);
     assert.equal(payload.lifecycle.latestControlReturned, false);
     assert.equal(payload.lifecycle.controlPromptTextReturned, false);
@@ -18545,6 +18582,7 @@ test("dev server exposes blocked live-session inventory without app-server traff
     assert.equal(payload.policy.activeSessionWorkflowContractReturned, true);
     assert.equal(payload.policy.activeSessionSafetyContractReturned, true);
     assert.equal(payload.policy.activeSessionAuditContractReturned, true);
+    assert.equal(payload.policy.activeSessionInteractionContractReturned, true);
     assert.equal(payload.policy.activeSessionOperationTokensReturned, false);
     assert.equal(payload.policy.activeSessionManagementTokensReturned, false);
     assert.equal(payload.policy.activeSessionReadinessTokensReturned, false);
@@ -18552,6 +18590,9 @@ test("dev server exposes blocked live-session inventory without app-server traff
     assert.equal(payload.policy.activeSessionWorkflowContractTokensReturned, false);
     assert.equal(payload.policy.activeSessionSafetyContractTokensReturned, false);
     assert.equal(payload.policy.activeSessionAuditContractTokensReturned, false);
+    assert.equal(payload.policy.activeSessionInteractionContractTokensReturned, false);
+    assert.equal(payload.policy.activeSessionInteractionContractPromptsReturned, false);
+    assert.equal(payload.policy.activeSessionInteractionContractFullIdsReturned, false);
     assert.equal(payload.policy.activeSessionOperationRawPayloadsReturned, false);
     assert.equal(payload.policy.activeSessionManagementRawPayloadsReturned, false);
     assert.equal(payload.policy.activeSessionReadinessRawPayloadsReturned, false);
@@ -18559,6 +18600,7 @@ test("dev server exposes blocked live-session inventory without app-server traff
     assert.equal(payload.policy.activeSessionWorkflowContractRawPayloadsReturned, false);
     assert.equal(payload.policy.activeSessionSafetyContractRawPayloadsReturned, false);
     assert.equal(payload.policy.activeSessionAuditContractRawPayloadsReturned, false);
+    assert.equal(payload.policy.activeSessionInteractionContractRawPayloadsReturned, false);
     assert.equal(payload.policy.controlPromptTextReturned, false);
     assert.equal(payload.policy.controlPreflightTokensReturned, false);
     assert.equal(payload.policy.requiresExplicitEnablement, true);
@@ -18810,6 +18852,41 @@ test("dev server exposes opt-in loaded sessions as suffixes only", async () => {
       sessionManagerEnabled: false,
       sessionManagerBackedControls: false,
     });
+    assertActiveSessionInteractionContract(payload, {
+      state: "inspectable",
+      interactionMode: "read-only-inventory",
+      workflowMode: "inspect-live-sessions",
+      safetyMode: "read-only-inventory",
+      auditMode: "process-local-control-history",
+      routingMode: "read-only-inventory",
+      inventoryRoute: "loaded-sessions",
+      singleSessionControlRoute: "blocked",
+      bulkControlRoute: "blocked",
+      modelTrafficControlRoute: "blocked",
+      inventoryReadAvailable: true,
+      inventoryVisible: true,
+      loadedThreadCount: 2,
+      selectableThreadSuffixCount: 2,
+      actionableLoadedThreadCount: 0,
+      recentControlCount: 0,
+      latestActionAvailable: false,
+      enabledOperationCount: 1,
+      enabledSingleSessionControlCount: 0,
+      enabledBulkControlCount: 0,
+      inventoryRowsRendered: true,
+      historyRowsRendered: false,
+      rowControlsRendered: true,
+      rowExecutionControlsRendered: false,
+      bulkExecutionControlsRendered: false,
+      actionAuditPersistent: false,
+      interruptEnabled: false,
+      unsubscribeEnabled: false,
+      steerEnabled: false,
+      bulkUnsubscribeEnabled: false,
+      modelTrafficControlEnabled: false,
+      sessionManagerEnabled: false,
+      sessionManagerBackedControls: false,
+    });
     assert.equal(payload.lifecycle.controlBreakdownReturned, true);
     assert.equal(payload.lifecycle.latestControlReturned, false);
     assert.equal(payload.lifecycle.controlPromptTextReturned, false);
@@ -18828,16 +18905,21 @@ test("dev server exposes opt-in loaded sessions as suffixes only", async () => {
     assert.equal(payload.policy.activeSessionWorkflowContractReturned, true);
     assert.equal(payload.policy.activeSessionSafetyContractReturned, true);
     assert.equal(payload.policy.activeSessionAuditContractReturned, true);
+    assert.equal(payload.policy.activeSessionInteractionContractReturned, true);
     assert.equal(payload.policy.activeSessionReadinessTokensReturned, false);
     assert.equal(payload.policy.activeSessionRoutingContractTokensReturned, false);
     assert.equal(payload.policy.activeSessionWorkflowContractTokensReturned, false);
     assert.equal(payload.policy.activeSessionSafetyContractTokensReturned, false);
     assert.equal(payload.policy.activeSessionAuditContractTokensReturned, false);
+    assert.equal(payload.policy.activeSessionInteractionContractTokensReturned, false);
+    assert.equal(payload.policy.activeSessionInteractionContractPromptsReturned, false);
+    assert.equal(payload.policy.activeSessionInteractionContractFullIdsReturned, false);
     assert.equal(payload.policy.activeSessionReadinessRawPayloadsReturned, false);
     assert.equal(payload.policy.activeSessionRoutingContractRawPayloadsReturned, false);
     assert.equal(payload.policy.activeSessionWorkflowContractRawPayloadsReturned, false);
     assert.equal(payload.policy.activeSessionSafetyContractRawPayloadsReturned, false);
     assert.equal(payload.policy.activeSessionAuditContractRawPayloadsReturned, false);
+    assert.equal(payload.policy.activeSessionInteractionContractRawPayloadsReturned, false);
     assert.equal(payload.policy.controlPromptTextReturned, false);
     assert.equal(payload.policy.controlPreflightTokensReturned, false);
     assert.equal(payload.notifications["thread/loaded/changed"], 1);
@@ -19197,6 +19279,41 @@ test("dev server controls live sessions only behind explicit opt-in and prefligh
       modelTrafficManagementEnabled: true,
       sessionManagerEnabled: false,
       latestActionAvailable: true,
+    });
+    assertActiveSessionInteractionContract(history, {
+      state: "history-only",
+      interactionMode: "history-only",
+      workflowMode: "history-review",
+      safetyMode: "gated-controls",
+      auditMode: "process-local-control-history-with-persistent-action-audit",
+      routingMode: "local-single-session",
+      inventoryRoute: "blocked",
+      singleSessionControlRoute: "live-session-control",
+      bulkControlRoute: "blocked",
+      modelTrafficControlRoute: "live-session-control-steer",
+      inventoryReadAvailable: true,
+      inventoryVisible: false,
+      loadedThreadCount: 0,
+      selectableThreadSuffixCount: 0,
+      actionableLoadedThreadCount: 0,
+      recentControlCount: 1,
+      latestActionAvailable: true,
+      enabledOperationCount: 3,
+      enabledSingleSessionControlCount: 3,
+      enabledBulkControlCount: 0,
+      inventoryRowsRendered: false,
+      historyRowsRendered: true,
+      rowControlsRendered: false,
+      rowExecutionControlsRendered: false,
+      bulkExecutionControlsRendered: false,
+      actionAuditPersistent: true,
+      interruptEnabled: true,
+      unsubscribeEnabled: true,
+      steerEnabled: true,
+      bulkUnsubscribeEnabled: false,
+      modelTrafficControlEnabled: true,
+      sessionManagerEnabled: false,
+      sessionManagerBackedControls: false,
     });
     assert.equal(history.lifecycle.fullIdsReturned, false);
     assert.equal(history.lifecycle.controlBreakdownReturned, true);
@@ -19632,6 +19749,41 @@ test("dev server bulk unsubscribes live sessions only behind separate opt-in and
       modelTrafficManagementEnabled: false,
       sessionManagerEnabled: true,
       latestActionAvailable: true,
+    });
+    assertActiveSessionInteractionContract(history, {
+      state: "history-only",
+      interactionMode: "history-only",
+      workflowMode: "history-review",
+      safetyMode: "gated-controls",
+      auditMode: "process-local-control-history-with-persistent-action-audit",
+      routingMode: "session-manager-bulk",
+      inventoryRoute: "blocked",
+      singleSessionControlRoute: "blocked",
+      bulkControlRoute: "live-session-bulk-control",
+      modelTrafficControlRoute: "blocked",
+      inventoryReadAvailable: true,
+      inventoryVisible: false,
+      loadedThreadCount: 0,
+      selectableThreadSuffixCount: 0,
+      actionableLoadedThreadCount: 0,
+      recentControlCount: 1,
+      latestActionAvailable: true,
+      enabledOperationCount: 1,
+      enabledSingleSessionControlCount: 0,
+      enabledBulkControlCount: 1,
+      inventoryRowsRendered: false,
+      historyRowsRendered: true,
+      rowControlsRendered: false,
+      rowExecutionControlsRendered: false,
+      bulkExecutionControlsRendered: true,
+      actionAuditPersistent: true,
+      interruptEnabled: false,
+      unsubscribeEnabled: false,
+      steerEnabled: false,
+      bulkUnsubscribeEnabled: true,
+      modelTrafficControlEnabled: false,
+      sessionManagerEnabled: true,
+      sessionManagerBackedControls: true,
     });
     assert.equal(history.lifecycle.latestControlReturned, true);
     assert.equal(history.lifecycle.latestControl.type, "live-session-bulk-control");
@@ -34732,6 +34884,64 @@ function assertActiveSessionAuditContract(payload, expected) {
   assert.equal(payload.policy?.activeSessionAuditContractReturned, true);
   assert.equal(payload.policy?.activeSessionAuditContractTokensReturned, false);
   assert.equal(payload.policy?.activeSessionAuditContractRawPayloadsReturned, false);
+}
+
+function assertActiveSessionInteractionContract(payload, expected) {
+  const contract = payload.lifecycle?.activeSessionInteractionContract;
+  assert.equal(contract?.returned, true);
+  for (const [field, value] of Object.entries(expected)) {
+    assert.equal(contract?.[field], value, `activeSessionInteractionContract.${field}`);
+  }
+  assert.equal(contract.recentHistoryVisible, true);
+  assert.equal(contract.singleSessionControlCount, 3);
+  assert.equal(contract.bulkControlCount, 1);
+  assert.equal(contract.inventoryListRendered, true);
+  assert.equal(contract.singleSessionControlFormRendered, true);
+  assert.equal(contract.singleSessionPreflightButtonRendered, true);
+  assert.equal(contract.singleSessionExecutionButtonRequiresPreflight, true);
+  assert.equal(contract.bulkControlsRendered, true);
+  assert.equal(contract.bulkPreflightControlsRendered, true);
+  assert.equal(contract.bulkExecutionButtonRequiresPreflight, true);
+  assert.equal(contract.clientSideDraftOnly, true);
+  assert.equal(contract.clientSideGroupingOnly, true);
+  assert.equal(contract.clientGroupCount, 4);
+  assert.equal(contract.refreshAfterControlRequired, true);
+  assert.equal(contract.controlHistoryRendered, true);
+  assert.equal(contract.controlHistoryLimit, 20);
+  assert.equal(contract.actionAuditRequiredForMutation, true);
+  assert.equal(contract.sessionManagerRequiredForSingleSessionControls, false);
+  assert.equal(contract.sessionManagerRequiredForBulkControl, true);
+  assert.equal(contract.modelTrafficControlRequiresSeparateOptIn, true);
+  assert.equal(contract.bulkControlRequiresSessionManager, true);
+  assert.equal(contract.sessionWideControlsAccepted, false);
+  assert.equal(contract.targetSelection, "suffix-only");
+  assert.equal(contract.requiresThreadSuffixForSingleSessionControls, true);
+  assert.equal(contract.requiresTurnSuffixForInterrupt, true);
+  assert.equal(contract.requiresTurnSuffixForSteer, true);
+  assert.equal(contract.requiresTurnSuffixForUnsubscribe, false);
+  assert.equal(contract.preflightRequired, true);
+  assert.equal(contract.preflightTokenRequired, true);
+  assert.equal(contract.onePreflightTokenPerControlAction, true);
+  assert.equal(contract.oneTimePreflightTokensRequired, true);
+  assert.equal(contract.dedicatedRoutesOnly, true);
+  assert.equal(contract.dedicatedControlRoutesOnly, true);
+  assert.equal(contract.browserPromptsAcceptedByReadEndpoint, false);
+  assert.equal(contract.browserControlPayloadsAcceptedByReadEndpoint, false);
+  assert.equal(contract.browserMethodCallsAcceptedByReadEndpoint, false);
+  assert.equal(contract.promptTextReturned, false);
+  assert.equal(contract.preflightTokensReturned, false);
+  assert.equal(contract.promptsReturned, false);
+  assert.equal(contract.fullIdsReturned, false);
+  assert.equal(contract.pathsReturned, false);
+  assert.equal(contract.threadContentReturned, false);
+  assert.equal(contract.rawControlPayloadsReturned, false);
+  assert.equal(contract.rawPayloadsReturned, false);
+  assert.equal(contract.appServerPayloadReturned, false);
+  assert.equal(payload.policy?.activeSessionInteractionContractReturned, true);
+  assert.equal(payload.policy?.activeSessionInteractionContractTokensReturned, false);
+  assert.equal(payload.policy?.activeSessionInteractionContractPromptsReturned, false);
+  assert.equal(payload.policy?.activeSessionInteractionContractFullIdsReturned, false);
+  assert.equal(payload.policy?.activeSessionInteractionContractRawPayloadsReturned, false);
 }
 
 function assertActionPreflight(payload, kind, workspaceId) {

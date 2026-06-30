@@ -737,6 +737,7 @@ const elements = {
   liveSessionWorkflow: document.querySelector("#live-session-workflow"),
   liveSessionSafety: document.querySelector("#live-session-safety"),
   liveSessionAudit: document.querySelector("#live-session-audit"),
+  liveSessionInteraction: document.querySelector("#live-session-interaction"),
   liveSessionControlBreakdown: document.querySelector("#live-session-control-breakdown"),
   liveSessionControlResultCounts: document.querySelector("#live-session-control-result-counts"),
   liveSessionLatestControl: document.querySelector("#live-session-latest-control"),
@@ -12891,6 +12892,9 @@ function renderLiveSessions(payload) {
   elements.liveSessionAudit.textContent = liveSessionAuditContractText(
     lifecycle.activeSessionAuditContract,
   );
+  elements.liveSessionInteraction.textContent = liveSessionInteractionContractText(
+    lifecycle.activeSessionInteractionContract,
+  );
   elements.liveSessionControlBreakdown.textContent = [
     lifecycle.recentInterruptCount ?? 0,
     lifecycle.recentUnsubscribeCount ?? 0,
@@ -13181,6 +13185,27 @@ function liveSessionAuditContractText(contract) {
     contract.actionAuditPersistent ? "action audit" : null,
     contract.preflightTokenRequired ? "preflight" : null,
   ]) || "History";
+}
+
+function liveSessionInteractionContractText(contract) {
+  if (!contract || contract.returned !== true) {
+    return "Blocked";
+  }
+  const loaded = Number.isSafeInteger(contract.loadedThreadCount)
+    ? contract.loadedThreadCount
+    : 0;
+  const controls = Number.isSafeInteger(contract.enabledSingleSessionControlCount)
+    ? contract.enabledSingleSessionControlCount
+    : 0;
+  return joinParts([
+    contract.interactionMode ?? contract.state ?? "blocked",
+    loaded > 0 ? `${loaded} loaded` : null,
+    controls > 0 ? `${controls} controls` : null,
+    contract.bulkExecutionControlsRendered ? "bulk" : null,
+    contract.rowPreflightControlsRendered ? "row check" : null,
+    contract.singleSessionExecutionButtonRequiresPreflight ? "preflight" : null,
+    contract.sessionWideControlsAccepted ? "session" : "no session",
+  ]) || "Blocked";
 }
 
 function latestLiveSessionControlText(control) {
