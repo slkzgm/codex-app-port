@@ -98,7 +98,14 @@ cursors, or raw payloads. `thread/search` has a separate disabled-by-default
 it accepts the search term only in the request body and returns only
 accepted-state, counts, cursor-presence booleans, and suffix/status/source
 metadata, never the search term, snippets, thread names, previews, full ids,
-paths, cursors, thread content, or raw payloads. `thread/delete` also has a
+paths, cursors, thread content, or raw payloads. `thread/turns/items/list` has
+a separate disabled-by-default `GET /api/thread-turn-items` path behind
+`CODEX_APP_PORT_ALLOW_THREAD_TURN_ITEMS=1`; it resolves the thread suffix
+through `thread/list`, resolves the turn suffix through `thread/turns/list`
+with `itemsView:notLoaded`, and returns only item suffix/type/status/count
+metadata plus redaction flags, never message text, prompts, commands, output,
+patches, paths, cursor values, full ids, timestamps, or raw payloads.
+`thread/delete` also has a
 separate disabled-by-default destructive path:
 `POST /api/thread-delete-preflight` validates only suffix and archived-state
 metadata without app-server traffic, and `POST /api/thread-delete-action`

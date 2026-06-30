@@ -139,7 +139,7 @@ const CHECKS = [
     requirement: "Show local Codex threads.",
     status: "met",
     evidence: [
-      "Recent and archived thread metadata are listed with client-side search/filtering, sanitized thread detail/transcript views, a disabled-by-default `thread/search` server-side search route that returns only suffix/count metadata when explicitly enabled, a disabled-by-default `thread/goal/get` route that returns only goal status/usage/count metadata without objective text, and a disabled-by-default `thread/turns/list` route that returns only paged turn status/count/cursor-presence metadata with `itemsView:notLoaded`.",
+      "Recent and archived thread metadata are listed with client-side search/filtering, sanitized thread detail/transcript views, a disabled-by-default `thread/search` server-side search route that returns only suffix/count metadata when explicitly enabled, a disabled-by-default `thread/goal/get` route that returns only goal status/usage/count metadata without objective text, a disabled-by-default `thread/turns/list` route that returns only paged turn status/count/cursor-presence metadata with `itemsView:notLoaded`, and a disabled-by-default `thread/turns/items/list` route that returns only item suffix/type/status/count metadata without message text, prompts, commands, output, patches, paths, cursor values, full ids, timestamps, or raw payloads.",
     ],
     verify: allOf(
       fileIncludes("ui/index.html", [
@@ -149,34 +149,43 @@ const CHECKS = [
         "thread-server-search-button",
         "thread-goal-button",
         "thread-turns-button",
+        "thread-turn-items-button",
       ]),
       fileIncludes("src/app-server/probe.mjs", [
         "runThreadSearchProbe",
         "runThreadGoalProbe",
         "runThreadTurnsProbe",
+        "runThreadTurnItemsProbe",
         "CODEX_APP_PORT_ALLOW_THREAD_SEARCH",
         "CODEX_APP_PORT_ALLOW_THREAD_GOAL",
         "CODEX_APP_PORT_ALLOW_THREAD_TURNS",
+        "CODEX_APP_PORT_ALLOW_THREAD_TURN_ITEMS",
         "summarizeThreadSearch",
         "summarizeThreadGoal",
         "summarizeThreadTurnsPage",
+        "summarizeThreadTurnItemsPage",
       ]),
       fileIncludes("src/dev-server/server.mjs", [
         "/api/thread-search",
         "/api/thread-goal",
         "/api/thread-turns",
+        "/api/thread-turn-items",
         "sanitizeThreadSearchPayload",
         "sanitizeThreadGoalPayload",
         "sanitizeThreadTurnsPayload",
+        "sanitizeThreadTurnItemsPayload",
         "threadSearchPolicy",
         "threadGoalPolicy",
         "threadTurnsPolicy",
+        "threadTurnItemsPolicy",
       ]),
       fileIncludes("scripts/verify.mjs", [
         "checkThreadGoalApi",
         "assertSanitizedThreadGoal",
         "checkThreadTurnsApi",
         "assertSanitizedThreadTurns",
+        "checkThreadTurnItemsApi",
+        "assertSanitizedThreadTurnItems",
       ]),
     ),
   },
@@ -2350,7 +2359,7 @@ const CHECKS = [
     requirement: "Generate or maintain typed app-server protocol contracts.",
     status: "met",
     evidence: [
-      "Official generated JSON Schema snapshot is versioned alongside dependency-free runtime contracts for methods used by the prototype; the snapshot was refreshed to local codex-cli 0.142.4 with 335 schema files and identifies new remote-control, permission-profile, account-usage, account-message, environment, plugin, skill-root, thread, attestation, current-time, import-progress, model-safety, and moderation surfaces. `permissionProfile/list`, `account/usage/read`, `account/workspaceMessages/read`, `externalAgentConfig/import/readHistories`, `plugin/installed`, and `remoteControl/status/read` now have counts-only opt-in inventory coverage; `thread/search` has a dedicated opt-in runtime contract and browser route that returns suffix/count metadata only; `thread/goal/get` has a dedicated opt-in runtime contract and browser route that returns goal status/usage/count metadata without objective text; `thread/goal/set` and `thread/goal/clear` now have dedicated opt-in runtime contracts and browser routes that return suffix/status/count metadata only; `thread/memoryMode/set` now has a dedicated opt-in runtime contract and browser route that returns suffix/mode/status metadata only; `thread/turns/list` has a dedicated opt-in runtime contract and browser route that returns turn status/count/cursor-presence metadata only with `itemsView:notLoaded`; `thread/delete` has a dedicated opt-in runtime contract and destructive browser route that returns suffix/state/method metadata only; `thread/fork` has a dedicated opt-in runtime contract and browser route that returns source/fork suffix/status metadata only; `thread/name/set` has a dedicated opt-in runtime contract and browser route that returns suffix/name-count/method metadata only; `thread/rollback` has a dedicated opt-in runtime contract and browser route that returns suffix/count/status metadata only; the rest remain blocked until separately audited.",
+      "Official generated JSON Schema snapshot is versioned alongside dependency-free runtime contracts for methods used by the prototype; the snapshot was refreshed to local codex-cli 0.142.4 with 335 schema files and identifies new remote-control, permission-profile, account-usage, account-message, environment, plugin, skill-root, thread, attestation, current-time, import-progress, model-safety, and moderation surfaces. `permissionProfile/list`, `account/usage/read`, `account/workspaceMessages/read`, `externalAgentConfig/import/readHistories`, `plugin/installed`, and `remoteControl/status/read` now have counts-only opt-in inventory coverage; `thread/search` has a dedicated opt-in runtime contract and browser route that returns suffix/count metadata only; `thread/goal/get` has a dedicated opt-in runtime contract and browser route that returns goal status/usage/count metadata without objective text; `thread/goal/set` and `thread/goal/clear` now have dedicated opt-in runtime contracts and browser routes that return suffix/status/count metadata only; `thread/memoryMode/set` now has a dedicated opt-in runtime contract and browser route that returns suffix/mode/status metadata only; `thread/turns/list` has a dedicated opt-in runtime contract and browser route that returns turn status/count/cursor-presence metadata only with `itemsView:notLoaded`; `thread/turns/items/list` has a dedicated opt-in runtime contract and browser route that returns item suffix/type/status/count metadata only without message text, commands, output, patches, paths, cursor values, full ids, timestamps, or raw payloads; `thread/delete` has a dedicated opt-in runtime contract and destructive browser route that returns suffix/state/method metadata only; `thread/fork` has a dedicated opt-in runtime contract and browser route that returns source/fork suffix/status metadata only; `thread/name/set` has a dedicated opt-in runtime contract and browser route that returns suffix/name-count/method metadata only; `thread/rollback` has a dedicated opt-in runtime contract and browser route that returns suffix/count/status metadata only; the rest remain blocked until separately audited.",
     ],
     verify: allOf(
       allFiles([

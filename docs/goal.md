@@ -86,6 +86,13 @@ Target parity with the Codex desktop workflow:
   `thread/turns/list` with `itemsView:notLoaded`, and returns only turn
   status/count/cursor-presence metadata, not item content, cursor values, full
   ids, timestamps, paths, or raw payloads.
+- `thread/turns/items/list` has a separate disabled-by-default
+  `GET /api/thread-turn-items` path behind
+  `CODEX_APP_PORT_ALLOW_THREAD_TURN_ITEMS=1`; it resolves the thread suffix
+  through `thread/list`, resolves the turn suffix through `thread/turns/list`
+  with `itemsView:notLoaded`, and returns only item suffix/type/status/count
+  metadata plus redaction flags, not message text, prompts, commands, output,
+  patches, paths, cursor values, full ids, timestamps, or raw payloads.
 - `thread/delete` has a separate disabled-by-default destructive
   `POST /api/thread-delete-action` path behind
   `CODEX_APP_PORT_ALLOW_THREAD_DELETE=1`; it consumes a matching one-time

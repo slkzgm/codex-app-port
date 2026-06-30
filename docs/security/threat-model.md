@@ -228,6 +228,17 @@
   status/count metadata, cursor-presence booleans, and redaction flags. They
   must not return item content, cursor values, full ids, exact turn timestamps,
   cwd, paths, thread content, or raw app-server payloads.
+- Browser-facing paged turn-item reads must be blocked by default and opt-in
+  only. When `CODEX_APP_PORT_ALLOW_THREAD_TURN_ITEMS=1` is enabled,
+  `/api/thread-turn-items` may call only `thread/list` for suffix resolution,
+  `thread/turns/list` with `itemsView:notLoaded` to resolve the selected turn,
+  and `thread/turns/items/list` for the capped item page. Responses must expose
+  only item suffix, type, status/phase, content-type labels, text-length/count
+  metadata, change counts, cursor-presence booleans, and redaction flags. They
+  must not return message text, prompt text, command text, stdout/stderr,
+  aggregated output, patches, file paths, cursor values, full ids, exact
+  timestamps, raw item payloads, raw thread payloads, or raw app-server
+  payloads.
 - Browser-facing thread lifecycle histories must be process-local, capped, and
   sanitized. They may expose only action type/method, thread suffix, safe
   status/count metadata, token-consumed state, model-traffic booleans, and audit

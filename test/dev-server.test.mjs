@@ -176,6 +176,9 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /thread-server-search-button/);
     assert.match(html, /thread-server-search-status/);
     assert.match(html, /thread-server-search-list/);
+    assert.match(html, /thread-turn-items-input/);
+    assert.match(html, /thread-turn-items-button/);
+    assert.match(html, /thread-turn-items-status/);
     const appResponse = await fetch(`${url}/assets/app.js`);
     assert.equal(appResponse.status, 200);
     const appScript = await appResponse.text();
@@ -195,6 +198,8 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(appScript, /approvalInteractionContractText/);
     assert.match(appScript, /runThreadServerSearch/);
     assert.match(appScript, /renderThreadServerSearch/);
+    assert.match(appScript, /loadThreadTurnItems/);
+    assert.match(appScript, /renderThreadTurnItems/);
     assert.match(appScript, /manualRefreshSettingsIntegrations/);
     assert.match(appScript, /setSettingsRefreshState/);
     assert.match(appScript, /turnExecutionAuthorityText/);
@@ -28162,6 +28167,179 @@ test("dev server exposes thread turns metadata only behind opt-in without turn i
       "/tmp/default-workspace",
       "/tmp/private-home",
       "1782726047",
+      "userAgent",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    await closeServer(server);
+  }
+});
+
+test("dev server exposes thread turn item metadata only behind opt-in without sensitive item fields", async () => {
+  const blockedCalls = [];
+  const blockedServer = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    threadTurnItemsProbeFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+
+  try {
+    const response = await fetch(
+      `${blockedServer.url}/api/thread-turn-items?thread=b0153f06&turn=turn1111`,
+      {
+        headers: apiHeaders(blockedServer.server),
+      },
+    );
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, false);
+    assert.equal(payload.policy.turnItemsReadEnabled, false);
+    assert.equal(payload.probes.threadTurnItems.threadIdSuffix, "b0153f06");
+    assert.equal(payload.probes.threadTurnItems.turnIdSuffix, "turn1111");
+    assert.equal(blockedCalls.length, 0);
+  } finally {
+    await closeServer(blockedServer.server);
+  }
+
+  const calls = [];
+  const { server, url } = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    threadTurnItemsEnabled: true,
+    threadTurnItemsProbeFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-06-29T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/private-home",
+          userAgent: "mock/0.0.0",
+        },
+        probes: {
+          threadTurnItems: {
+            method: "thread/turns/items/list",
+            threadIdSuffix: "b0153f06",
+            turnIdSuffix: "turn1111",
+            threadId: "private-full-thread-id-b0153f06",
+            turnId: "private-full-turn-id-turn1111",
+            count: 2,
+            returnedItemCount: 2,
+            hasNextCursor: true,
+            hasBackwardsCursor: true,
+            nextCursor: "private-cursor",
+            backwardsCursor: "private-backwards-cursor",
+            sortDirection: "asc",
+            items: [
+              {
+                idSuffix: "item1111",
+                id: "private-full-item-id-item1111",
+                type: "commandExecution",
+                status: "completed",
+                phase: "final",
+                text: "Sensitive message text",
+                command: "cat /tmp/default-workspace/secret.txt",
+                aggregatedOutput: "private stdout secret",
+                path: "/tmp/default-workspace/secret.txt",
+                patch: "diff --git a/secret.txt b/secret.txt",
+                hasText: true,
+                textLength: 123,
+                contentTypes: ["input_text", "privateContentType"],
+                changeCount: 7,
+                unsafeFieldsOmitted: true,
+              },
+              {
+                idSuffix: "item2222",
+                type: "agentMessage",
+                status: "completed",
+                phase: "stream",
+                content: ["secret content"],
+                hasText: true,
+                textLength: 45,
+                contentTypes: ["output_text"],
+                changeCount: 0,
+                unsafeFieldsOmitted: false,
+              },
+            ],
+            cursorValuesReturned: true,
+            fullIdsReturned: true,
+            timestampsReturned: true,
+            textReturned: true,
+            commandReturned: true,
+            outputReturned: true,
+            pathsReturned: true,
+            patchReturned: true,
+            rawPayloadReturned: true,
+          },
+        },
+        notifications: {
+          "thread/item/updated": 1,
+        },
+      };
+    },
+  });
+
+  try {
+    const response = await fetch(`${url}/api/thread-turn-items?thread=b0153f06&turn=turn1111`, {
+      headers: apiHeaders(server),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(calls[0].threadIdSuffix, "b0153f06");
+    assert.equal(calls[0].turnIdSuffix, "turn1111");
+    assert.equal(calls[0].cwd, "/tmp/default-workspace");
+    assert.equal(payload.appServer.touched, true);
+    assert.deepEqual(payload.appServer.auditedMethods, [
+      "thread/list",
+      "thread/turns/list",
+      "thread/turns/items/list",
+    ]);
+    assert.equal(payload.policy.turnItemsReadEnabled, true);
+    assert.equal(payload.policy.textReturned, false);
+    assert.equal(payload.policy.commandReturned, false);
+    assert.equal(payload.policy.outputReturned, false);
+    assert.equal(payload.policy.pathsReturned, false);
+    assert.equal(payload.policy.patchReturned, false);
+    assert.equal(payload.probes.threadTurnItems.returnedItemCount, 2);
+    assert.equal(payload.probes.threadTurnItems.hasNextCursor, true);
+    assert.equal(payload.probes.threadTurnItems.hasBackwardsCursor, true);
+    assert.equal(payload.probes.threadTurnItems.items[0].idSuffix, "item1111");
+    assert.equal(payload.probes.threadTurnItems.items[0].type, "commandExecution");
+    assert.equal(payload.probes.threadTurnItems.items[0].hasText, true);
+    assert.equal(payload.probes.threadTurnItems.items[0].textLength, 123);
+    assert.equal(payload.probes.threadTurnItems.items[0].changeCount, 7);
+    assert.equal(payload.probes.threadTurnItems.items[0].unsafeFieldsOmitted, true);
+    assert.equal(payload.probes.threadTurnItems.cursorValuesReturned, false);
+    assert.equal(payload.probes.threadTurnItems.fullIdsReturned, false);
+    assert.equal(payload.probes.threadTurnItems.timestampsReturned, false);
+    assert.equal(payload.probes.threadTurnItems.textReturned, false);
+    assert.equal(payload.probes.threadTurnItems.commandReturned, false);
+    assert.equal(payload.probes.threadTurnItems.outputReturned, false);
+    assert.equal(payload.probes.threadTurnItems.pathsReturned, false);
+    assert.equal(payload.probes.threadTurnItems.patchReturned, false);
+    assert.equal(payload.probes.threadTurnItems.rawPayloadReturned, false);
+    for (const marker of [
+      "Sensitive message text",
+      "cat /tmp/default-workspace/secret.txt",
+      "private stdout secret",
+      "privateContentType",
+      "diff --git",
+      "secret content",
+      "private-cursor",
+      "private-backwards-cursor",
+      "private-full-thread-id",
+      "private-full-turn-id",
+      "private-full-item-id",
+      "/tmp/default-workspace",
+      "/tmp/private-home",
       "userAgent",
     ]) {
       assert.equal(serialized.includes(marker), false, `leaked ${marker}`);

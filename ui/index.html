@@ -1242,6 +1242,9 @@
               <button id="thread-turns-button" class="secondary-button" type="button" disabled>
                 Turns Page
               </button>
+              <button id="thread-turn-items-button" class="secondary-button" type="button" disabled>
+                Items Page
+              </button>
               <span id="selected-thread-text" class="count-pill">None</span>
             </div>
           </div>
@@ -1288,6 +1291,10 @@
             <button id="thread-memory-mode-button" class="secondary-button" type="button" disabled>
               Set Memory
             </button>
+            <label class="search-control" for="thread-turn-items-input">
+              <span>Turn</span>
+              <input id="thread-turn-items-input" type="text" autocomplete="off" maxlength="8" disabled />
+            </label>
             <label class="search-control" for="thread-rename-input">
               <span>Name</span>
               <input id="thread-rename-input" type="text" autocomplete="off" maxlength="120" disabled />
@@ -1326,6 +1333,7 @@
           <p id="thread-goal-mutation-status" class="empty-state">Select a thread to update goal state.</p>
           <p id="thread-memory-mode-status" class="empty-state">Select a thread to update memory mode.</p>
           <p id="thread-turns-status" class="empty-state">Select a thread to inspect paged turn metadata.</p>
+          <p id="thread-turn-items-status" class="empty-state">Select a thread and turn to inspect paged item metadata.</p>
           <dl id="thread-detail-meta" class="agent-grid"></dl>
           <div id="turn-timeline" class="turn-timeline" role="list">
             <p class="empty-state">Select a thread to inspect sanitized turn metadata.</p>

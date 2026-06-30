@@ -17,6 +17,8 @@ The server binds to `127.0.0.1` by default and serves:
   previews for one thread
 - `/api/thread-search`: disabled-by-default server-side search with
   suffix/count-only results when explicitly enabled
+- `/api/thread-turn-items`: disabled-by-default paged turn-item metadata with
+  text, commands, output, patches, paths, cursors, and full ids omitted
 - `/api/git-worktree`: sanitized read-only Git metadata for the selected
   workspace
 - `/api/git-branch-preflight`: validates a branch-switch target from the
@@ -390,6 +392,18 @@ through `thread/list` and calls only `thread/turns/list` with
 cursor-presence booleans, and redaction flags. It does not receive item
 content, cursor values, full ids, exact turn timestamps, cwd/path values, raw
 thread payloads, or raw app-server payloads.
+
+`/api/thread-turn-items` is the separate paged item metadata surface for a
+selected thread and turn. It is disabled unless
+`CODEX_APP_PORT_ALLOW_THREAD_TURN_ITEMS=1` is set before server startup. When
+enabled, it resolves the thread suffix through `thread/list`, resolves the turn
+suffix through `thread/turns/list` with `itemsView:notLoaded`, and calls only
+`thread/turns/items/list` with a capped page size. The browser receives item
+suffixes, types, status/phase labels, text-length/count metadata, content type
+labels, change counts, cursor-presence booleans, and redaction flags. It does
+not receive message text, user prompts, command text, stdout/stderr or
+aggregated output, patches, file paths, cursor values, full ids, timestamps,
+raw item payloads, raw thread payloads, or raw app-server payloads.
 
 Every `/api/*` route also requires a per-process session token. The server
 injects this token into the served HTML and the browser sends it back in the

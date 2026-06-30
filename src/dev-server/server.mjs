@@ -52,6 +52,7 @@ import {
   runThreadSearchProbe,
   runThreadStartProbe,
   runThreadTranscriptProbe,
+  runThreadTurnItemsProbe,
   runThreadTurnsProbe,
   runTurnStartProbe,
 } from "../app-server/probe.mjs";
@@ -10324,6 +10325,7 @@ export function createDevServer({
   accountLogoutFn = runAccountLogoutProbe,
   accountResetCreditConsumeFn = runAccountRateLimitResetCreditConsumeProbe,
   threadTranscriptProbeFn = runThreadTranscriptProbe,
+  threadTurnItemsProbeFn = runThreadTurnItemsProbe,
   threadTurnsProbeFn = runThreadTurnsProbe,
   threadChangesProbeFn = runThreadChangesProbe,
   turnStartFn = runTurnStartProbe,
@@ -10371,6 +10373,7 @@ export function createDevServer({
   threadGoalSetEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_GOAL_SET === "1",
   threadMemoryModeSetEnabled =
     process.env.CODEX_APP_PORT_ALLOW_THREAD_MEMORY_MODE_SET === "1",
+  threadTurnItemsEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_TURN_ITEMS === "1",
   threadTurnsEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_TURNS === "1",
   threadRenameEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_RENAME === "1",
   threadRollbackEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_ROLLBACK === "1",
@@ -10518,6 +10521,7 @@ export function createDevServer({
       accountLogoutFn,
       accountResetCreditConsumeFn,
       threadTranscriptProbeFn,
+      threadTurnItemsProbeFn,
       threadTurnsProbeFn,
       threadChangesProbeFn,
       turnStartFn,
@@ -10563,6 +10567,7 @@ export function createDevServer({
       threadGoalClearEnabled,
       threadGoalSetEnabled,
       threadMemoryModeSetEnabled,
+      threadTurnItemsEnabled,
       threadTurnsEnabled,
       threadRenameEnabled,
       threadRollbackEnabled,
@@ -16232,6 +16237,51 @@ export async function handleRequest(request, response, options) {
     return;
   }
 
+  if (url.pathname === "/api/thread-turn-items") {
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        url.searchParams.get("workspace"),
+      );
+      const threadIdSuffix = validateThreadSuffix(url.searchParams.get("thread"));
+      const turnIdSuffix = validateTurnSuffix(url.searchParams.get("turn"));
+      if (!options.threadTurnItemsEnabled) {
+        sendJson(
+          response,
+          200,
+          buildThreadTurnItemsBlockedPayload({ workspace, threadIdSuffix, turnIdSuffix }),
+        );
+        return;
+      }
+      const payload = await options.threadTurnItemsProbeFn({
+        codexBin: options.codexBin,
+        cwd: workspace.cwd,
+        timeoutMs: options.timeoutMs,
+        threadIdSuffix,
+        turnIdSuffix,
+      });
+      sendJson(
+        response,
+        200,
+        sanitizeThreadTurnItemsPayload(payload, {
+          workspace,
+          enabled: true,
+        }),
+      );
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 502, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Thread turn items request failed",
+      });
+    }
+    return;
+  }
+
   if (url.pathname === "/api/thread-transcript") {
     if (!hasValidApiToken(request, options.sessionToken)) {
       sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
@@ -18327,6 +18377,28 @@ function threadTurnsPolicy({ enabled = false, appServerTraffic = false } = {}) {
   };
 }
 
+function threadTurnItemsPolicy({ enabled = false, appServerTraffic = false } = {}) {
+  return {
+    readOnly: true,
+    appServerTraffic: Boolean(appServerTraffic),
+    modelTraffic: false,
+    commandTraffic: false,
+    turnItemsReadEnabled: Boolean(enabled),
+    requiresExplicitEnablement: true,
+    textReturned: false,
+    commandReturned: false,
+    outputReturned: false,
+    cursorValuesReturned: false,
+    fullIdsReturned: false,
+    timestampsReturned: false,
+    pathsReturned: false,
+    patchReturned: false,
+    rawPayloadReturned: false,
+    browserMethodCallsAccepted: Boolean(enabled),
+    implemented: Boolean(enabled),
+  };
+}
+
 export function buildThreadTurnsBlockedPayload({ workspace = null, threadIdSuffix = null } = {}) {
   return {
     ok: true,
@@ -18360,6 +18432,47 @@ export function buildThreadTurnsBlockedPayload({ workspace = null, threadIdSuffi
   };
 }
 
+export function buildThreadTurnItemsBlockedPayload({
+  workspace = null,
+  threadIdSuffix = null,
+  turnIdSuffix = null,
+} = {}) {
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["thread/list", "thread/turns/list", "thread/turns/items/list"],
+    },
+    probes: {
+      threadTurnItems: sanitizeThreadTurnItemsSummary({
+        method: "thread/turns/items/list",
+        threadIdSuffix,
+        turnIdSuffix,
+        count: 0,
+        returnedItemCount: 0,
+        hasNextCursor: false,
+        hasBackwardsCursor: false,
+        sortDirection: "asc",
+        items: [],
+        cursorValuesReturned: false,
+        fullIdsReturned: false,
+        timestampsReturned: false,
+        textReturned: false,
+        commandReturned: false,
+        outputReturned: false,
+        pathsReturned: false,
+        patchReturned: false,
+        rawPayloadReturned: false,
+      }),
+    },
+    policy: threadTurnItemsPolicy({ enabled: false, appServerTraffic: false }),
+  };
+}
+
 export function sanitizeThreadTurnsPayload(
   payload,
   { workspace = null, enabled = false } = {},
@@ -18384,6 +18497,33 @@ export function sanitizeThreadTurnsPayload(
     },
     notifications: sanitizeNotificationCounts(payload?.notifications),
     policy: threadTurnsPolicy({ enabled, appServerTraffic: true }),
+  };
+}
+
+export function sanitizeThreadTurnItemsPayload(
+  payload,
+  { workspace = null, enabled = false } = {},
+) {
+  return {
+    ok: Boolean(payload?.ok),
+    generatedAt: payload?.generatedAt ?? new Date().toISOString(),
+    transport: cleanDisplayText(payload?.transport, 80),
+    protocol: cleanDisplayText(payload?.protocol, 80),
+    initialize: sanitizeInitialize(payload?.initialize),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: true,
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["thread/list", "thread/turns/list", "thread/turns/items/list"],
+    },
+    probes: {
+      threadTurnItems: payload?.probes?.threadTurnItems
+        ? sanitizeThreadTurnItemsSummary(payload.probes.threadTurnItems)
+        : null,
+    },
+    notifications: sanitizeNotificationCounts(payload?.notifications),
+    policy: threadTurnItemsPolicy({ enabled, appServerTraffic: true }),
   };
 }
 
@@ -36534,6 +36674,45 @@ function sanitizeThreadTurnsSummary(page) {
   };
 }
 
+function sanitizeThreadTurnItemsSummary(page) {
+  const items = Array.isArray(page?.items) ? page.items : [];
+  return {
+    method: cleanDisplayText(page?.method, 80) ?? "thread/turns/items/list",
+    threadIdSuffix: cleanDisplayText(page?.threadIdSuffix, 16),
+    turnIdSuffix: cleanDisplayText(page?.turnIdSuffix, 16),
+    count: safeCount(page?.count),
+    returnedItemCount: safeCount(page?.returnedItemCount),
+    hasNextCursor: Boolean(page?.hasNextCursor),
+    hasBackwardsCursor: Boolean(page?.hasBackwardsCursor),
+    sortDirection: page?.sortDirection === "desc" ? "desc" : "asc",
+    items: items.map(sanitizeThreadTurnPageItemMetadata),
+    cursorValuesReturned: false,
+    fullIdsReturned: false,
+    timestampsReturned: false,
+    textReturned: false,
+    commandReturned: false,
+    outputReturned: false,
+    pathsReturned: false,
+    patchReturned: false,
+    rawPayloadReturned: false,
+  };
+}
+
+function sanitizeThreadTurnPageItemMetadata(item) {
+  const contentTypes = Array.isArray(item?.contentTypes) ? item.contentTypes : [];
+  return {
+    idSuffix: cleanDisplayText(item?.idSuffix, 16),
+    type: cleanDisplayText(item?.type, 80) ?? "unknown",
+    status: statusLabel(item?.status),
+    phase: cleanDisplayText(item?.phase, 60),
+    hasText: Boolean(item?.hasText),
+    textLength: safeCount(item?.textLength),
+    contentTypes: sanitizeThreadItemContentTypes(contentTypes),
+    changeCount: safeCount(item?.changeCount),
+    unsafeFieldsOmitted: Boolean(item?.unsafeFieldsOmitted),
+  };
+}
+
 function sanitizeThreadTurnPageItem(turn) {
   return {
     idSuffix: cleanDisplayText(turn?.idSuffix, 16),
@@ -36592,9 +36771,28 @@ function sanitizeThreadItem(item) {
     phase: cleanDisplayText(item.phase, 60),
     hasText: Boolean(item.hasText),
     textLength: safeCount(item.textLength),
-    contentTypes: contentTypes.map((type) => cleanDisplayText(type, 80)).filter(Boolean),
+    contentTypes: sanitizeThreadItemContentTypes(contentTypes),
     changeCount: safeCount(item.changeCount),
   };
+}
+
+const SAFE_THREAD_ITEM_CONTENT_TYPES = new Set([
+  "text",
+  "inputText",
+  "input_text",
+  "outputText",
+  "output_text",
+  "inputImage",
+  "input_image",
+  "localImage",
+  "local_image",
+  "image",
+]);
+
+function sanitizeThreadItemContentTypes(contentTypes) {
+  return contentTypes
+    .map((type) => cleanDisplayText(type, 80))
+    .filter((type) => SAFE_THREAD_ITEM_CONTENT_TYPES.has(type));
 }
 
 function sanitizeThreadTranscript(transcript) {

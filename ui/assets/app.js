@@ -330,6 +330,9 @@ const elements = {
   threadGoalStatus: document.querySelector("#thread-goal-status"),
   threadTurnsButton: document.querySelector("#thread-turns-button"),
   threadTurnsStatus: document.querySelector("#thread-turns-status"),
+  threadTurnItemsInput: document.querySelector("#thread-turn-items-input"),
+  threadTurnItemsButton: document.querySelector("#thread-turn-items-button"),
+  threadTurnItemsStatus: document.querySelector("#thread-turn-items-status"),
   threadDetailMeta: document.querySelector("#thread-detail-meta"),
   turnTimeline: document.querySelector("#turn-timeline"),
   transcriptButton: document.querySelector("#transcript-button"),
@@ -1022,6 +1025,10 @@ elements.threadGoalButton.addEventListener("click", () => {
 
 elements.threadTurnsButton.addEventListener("click", () => {
   loadThreadTurns();
+});
+
+elements.threadTurnItemsButton.addEventListener("click", () => {
+  loadThreadTurnItems();
 });
 
 elements.turnForm.addEventListener("submit", (event) => {
@@ -5127,6 +5134,10 @@ async function loadThreadDetail(threadIdSuffix, { archived = false } = {}) {
   elements.threadMemoryModeStatus.textContent = "Memory mode requires preflight.";
   elements.threadTurnsButton.disabled = false;
   elements.threadTurnsStatus.textContent = "Turns page not loaded.";
+  elements.threadTurnItemsInput.value = "";
+  elements.threadTurnItemsInput.disabled = false;
+  elements.threadTurnItemsButton.disabled = false;
+  elements.threadTurnItemsStatus.textContent = "Turn items page not loaded.";
   updateThreadArchiveState();
   updateThreadForkState();
   updateThreadRenameState();
@@ -5233,6 +5244,47 @@ async function loadThreadTurns() {
     renderError(error);
   } finally {
     elements.threadTurnsButton.disabled = !selectedThreadIdSuffix;
+  }
+}
+
+async function loadThreadTurnItems() {
+  if (!selectedThreadIdSuffix) {
+    elements.threadTurnItemsStatus.textContent = "Select thread";
+    return;
+  }
+  const turnIdSuffix = elements.threadTurnItemsInput.value.trim();
+  if (!/^[A-Za-z0-9_-]{8}$/.test(turnIdSuffix)) {
+    elements.threadTurnItemsStatus.textContent = "Enter 8-character turn suffix";
+    return;
+  }
+
+  elements.threadTurnItemsButton.disabled = true;
+  elements.threadTurnItemsStatus.textContent = "Loading turn items page.";
+  hideError();
+
+  try {
+    const params = new URLSearchParams();
+    params.set("thread", selectedThreadIdSuffix);
+    params.set("turn", turnIdSuffix);
+    if (selectedWorkspaceId) {
+      params.set("workspace", selectedWorkspaceId);
+    }
+
+    const response = await fetch(`/api/thread-turn-items?${params.toString()}`, {
+      method: "GET",
+      headers: apiHeaders(),
+      cache: "no-store",
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderThreadTurnItems(payload.probes?.threadTurnItems ?? null, payload.policy ?? null);
+  } catch (error) {
+    elements.threadTurnItemsStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    elements.threadTurnItemsButton.disabled = !selectedThreadIdSuffix;
   }
 }
 
@@ -7393,6 +7445,35 @@ function renderThreadTurns(page, policy) {
   ]);
 }
 
+function renderThreadTurnItems(page, policy) {
+  if (!page) {
+    elements.threadTurnItemsStatus.textContent = "No turn item page metadata returned.";
+    return;
+  }
+  const enabled = policy?.turnItemsReadEnabled === true;
+  if (!enabled) {
+    elements.threadTurnItemsStatus.textContent = "Turn items page read blocked.";
+    return;
+  }
+  const typeCounts = new Map();
+  for (const item of Array.isArray(page.items) ? page.items : []) {
+    const type = item?.type || "unknown";
+    typeCounts.set(type, (typeCounts.get(type) ?? 0) + 1);
+  }
+  const topTypes = [...typeCounts.entries()]
+    .slice(0, 4)
+    .map(([type, count]) => `${type} ${count}`)
+    .join(", ");
+  elements.threadTurnItemsStatus.textContent = joinParts([
+    `${page.returnedItemCount ?? 0} items`,
+    page.hasNextCursor ? "next page" : null,
+    page.hasBackwardsCursor ? "previous page" : null,
+    topTypes || null,
+    page.textReturned === false ? "text hidden" : null,
+    page.commandReturned === false ? "commands hidden" : null,
+  ]);
+}
+
 function clearThreadDetail() {
   selectedThreadArchived = false;
   lastLiveSessionControlPreflight = null;
@@ -7418,6 +7499,9 @@ function clearThreadDetail() {
   elements.threadGoalBudgetInput.disabled = true;
   elements.threadMemoryModeSelect.value = "enabled";
   elements.threadMemoryModeSelect.disabled = true;
+  elements.threadTurnItemsInput.value = "";
+  elements.threadTurnItemsInput.disabled = true;
+  elements.threadTurnItemsButton.disabled = true;
   elements.threadRollbackTurnsInput.value = "1";
   elements.threadRollbackTurnsInput.disabled = true;
   elements.selectedThreadText.textContent = "None";
@@ -7434,6 +7518,7 @@ function clearThreadDetail() {
   elements.threadMemoryModeStatus.textContent = "Select a thread to update memory mode.";
   elements.threadTurnsStatus.textContent = "Select a thread to inspect paged turn metadata.";
   elements.threadTurnsButton.disabled = true;
+  elements.threadTurnItemsStatus.textContent = "Select a thread and turn to inspect paged item metadata.";
   elements.threadDetailMeta.replaceChildren();
   elements.turnTimeline.replaceChildren(emptyState("Select a thread to inspect sanitized turn metadata."));
   clearTranscript();

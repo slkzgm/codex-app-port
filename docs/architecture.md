@@ -76,6 +76,13 @@ route behind `CODEX_APP_PORT_ALLOW_THREAD_TURNS=1`; it resolves the target by
 suffix through `thread/list`, requests `itemsView:notLoaded`, and returns only
 turn status/count/cursor-presence metadata, never item content, cursor values,
 full ids, timestamps, paths, or raw payloads.
+`thread/turns/items/list` is promoted separately through a disabled-by-default
+GET route behind `CODEX_APP_PORT_ALLOW_THREAD_TURN_ITEMS=1`; it resolves the
+thread suffix through `thread/list`, resolves the turn suffix through
+`thread/turns/list` with `itemsView:notLoaded`, requests a capped item page,
+and returns only item suffix/type/status/count metadata and redaction flags,
+never message text, prompts, commands, output, patches, paths, cursor values,
+full ids, timestamps, or raw payloads.
 `thread/delete` is promoted through a separate disabled-by-default destructive
 POST route behind `CODEX_APP_PORT_ALLOW_THREAD_DELETE=1`; it requires a
 matching one-time preflight token, resolves targets by suffix through

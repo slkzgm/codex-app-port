@@ -66,6 +66,7 @@ async function main() {
   await checkThreadDetailApi();
   await checkThreadGoalApi();
   await checkThreadTurnsApi();
+  await checkThreadTurnItemsApi();
   await checkThreadTranscriptApi();
   await checkThreadChangesApi();
   await checkEventStreamApi();
@@ -11751,6 +11752,107 @@ async function checkThreadTurnsApi() {
     await closeServer(server);
   }
   pass("dev server thread turns API returns item-free metadata");
+}
+
+async function checkThreadTurnItemsApi() {
+  const server = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    threadTurnItemsEnabled: true,
+    probeFn: async () => ({
+      ok: true,
+      initialize: {
+        platformOs: "linux",
+        platformFamily: "unix",
+      },
+      probes: {
+        threads: {
+          count: 1,
+          items: [
+            {
+              idSuffix: "abcd1234",
+              hasName: true,
+              hasPreview: true,
+              cwdBasename: "codex-app-port-verify",
+            },
+          ],
+        },
+      },
+      notifications: {},
+    }),
+    threadTurnItemsProbeFn: async () => ({
+      ok: true,
+      generatedAt: "2026-06-29T00:00:00.000Z",
+      transport: "stdio-jsonl",
+      protocol: "json-rpc-2.0-without-jsonrpc-field",
+      initialize: {
+        platformOs: "linux",
+        platformFamily: "unix",
+        userAgent: "verify-sensitive-agent",
+        codexHome: "/tmp/verify-private-home",
+      },
+      probes: {
+        threadTurnItems: {
+          method: "thread/turns/items/list",
+          threadIdSuffix: "abcd1234",
+          turnIdSuffix: "turn1234",
+          threadId: "private-full-thread-id-abcd1234",
+          turnId: "private-full-turn-id-turn1234",
+          count: 1,
+          returnedItemCount: 1,
+          hasNextCursor: true,
+          hasBackwardsCursor: true,
+          nextCursor: "private-cursor",
+          backwardsCursor: "private-backwards-cursor",
+          sortDirection: "asc",
+          items: [
+            {
+              idSuffix: "item1234",
+              id: "private-full-item-id-item1234",
+              type: "commandExecution",
+              status: "completed",
+              phase: "final",
+              text: "Sensitive item text references /tmp/codex-app-port-verify/secret.txt",
+              command: "cat /tmp/codex-app-port-verify/secret.txt",
+              aggregatedOutput: "private command output",
+              path: "/tmp/codex-app-port-verify/secret.txt",
+              patch: "diff --git a/secret.txt b/secret.txt",
+              hasText: true,
+              textLength: 77,
+              contentTypes: ["input_text"],
+              changeCount: 2,
+              unsafeFieldsOmitted: true,
+            },
+          ],
+          cursorValuesReturned: true,
+          fullIdsReturned: true,
+          timestampsReturned: true,
+          textReturned: true,
+          commandReturned: true,
+          outputReturned: true,
+          pathsReturned: true,
+          patchReturned: true,
+          rawPayloadReturned: true,
+        },
+      },
+      notifications: {},
+    }),
+  });
+  const port = await listenWithFallback(server, { host: "127.0.0.1", port: 0 });
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  try {
+    const token = await readUiSessionToken(baseUrl);
+    const response = await fetch(`${baseUrl}/api/thread-turn-items?thread=abcd1234&turn=turn1234`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`thread turn items API returned HTTP ${response.status}`);
+    }
+    assertSanitizedThreadTurnItems(await response.json());
+  } finally {
+    await closeServer(server);
+  }
+  pass("dev server thread turn items API returns sensitive-field-free metadata");
 }
 
 async function checkThreadTranscriptApi() {
@@ -37239,6 +37341,120 @@ function assertSanitizedThreadTurns(payload) {
     payload.policy?.rawPayloadReturned !== false
   ) {
     throw new Error("thread turns policy did not preserve redaction flags");
+  }
+}
+
+function assertSanitizedThreadTurnItems(payload) {
+  if (!payload.ok) {
+    throw new Error("thread turn items payload is not ok");
+  }
+  const serialized = JSON.stringify(payload);
+  for (const marker of [
+    "Sensitive item text",
+    "secret.txt",
+    "cat /tmp/codex-app-port-verify",
+    "private command output",
+    "diff --git",
+    "private-cursor",
+    "private-backwards-cursor",
+    "private-full-thread-id",
+    "private-full-turn-id",
+    "private-full-item-id",
+    "verify-sensitive-agent",
+    "codexHome",
+    "userAgent",
+    "/tmp/codex-app-port-verify",
+    "/tmp/verify-private-home",
+  ]) {
+    if (serialized.includes(marker)) {
+      throw new Error(`thread turn items payload leaked ${marker}`);
+    }
+  }
+  const page = payload.probes?.threadTurnItems;
+  if (!page) {
+    throw new Error("thread turn items payload is missing page metadata");
+  }
+  if (
+    page.method !== "thread/turns/items/list" ||
+    page.threadIdSuffix !== "abcd1234" ||
+    page.turnIdSuffix !== "turn1234" ||
+    page.count !== 1 ||
+    page.returnedItemCount !== 1 ||
+    page.hasNextCursor !== true ||
+    page.hasBackwardsCursor !== true ||
+    page.cursorValuesReturned !== false ||
+    page.fullIdsReturned !== false ||
+    page.timestampsReturned !== false ||
+    page.textReturned !== false ||
+    page.commandReturned !== false ||
+    page.outputReturned !== false ||
+    page.pathsReturned !== false ||
+    page.patchReturned !== false ||
+    page.rawPayloadReturned !== false
+  ) {
+    throw new Error("thread turn items payload did not preserve sanitized page metadata");
+  }
+  for (const forbidden of [
+    "id",
+    "threadId",
+    "turnId",
+    "nextCursor",
+    "backwardsCursor",
+    "cursor",
+    "text",
+    "command",
+    "aggregatedOutput",
+    "path",
+    "patch",
+  ]) {
+    if (Object.hasOwn(page, forbidden)) {
+      throw new Error(`thread turn items page leaked ${forbidden}`);
+    }
+  }
+  const item = page.items?.[0];
+  if (
+    !item ||
+    item.idSuffix !== "item1234" ||
+    item.type !== "commandExecution" ||
+    item.status !== "completed" ||
+    item.phase !== "final" ||
+    item.hasText !== true ||
+    item.textLength !== 77 ||
+    item.contentTypes?.[0] !== "input_text" ||
+    item.changeCount !== 2 ||
+    item.unsafeFieldsOmitted !== true
+  ) {
+    throw new Error("thread turn items payload did not preserve sanitized item metadata");
+  }
+  for (const forbidden of [
+    "id",
+    "text",
+    "content",
+    "command",
+    "aggregatedOutput",
+    "stdout",
+    "stderr",
+    "path",
+    "patch",
+    "changes",
+  ]) {
+    if (Object.hasOwn(item, forbidden)) {
+      throw new Error(`thread turn item metadata leaked ${forbidden}`);
+    }
+  }
+  if (
+    payload.policy?.turnItemsReadEnabled !== true ||
+    payload.policy?.textReturned !== false ||
+    payload.policy?.commandReturned !== false ||
+    payload.policy?.outputReturned !== false ||
+    payload.policy?.cursorValuesReturned !== false ||
+    payload.policy?.fullIdsReturned !== false ||
+    payload.policy?.timestampsReturned !== false ||
+    payload.policy?.pathsReturned !== false ||
+    payload.policy?.patchReturned !== false ||
+    payload.policy?.rawPayloadReturned !== false
+  ) {
+    throw new Error("thread turn items policy did not preserve redaction flags");
   }
 }
 

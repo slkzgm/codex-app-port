@@ -30,6 +30,7 @@ export const DEFAULT_THREAD_DETAIL_SCAN_LIMIT = 100;
 export const DEFAULT_THREAD_DETAIL_TURN_LIMIT = 12;
 export const DEFAULT_THREAD_DETAIL_ITEM_LIMIT = 80;
 export const DEFAULT_THREAD_TURNS_PAGE_LIMIT = 25;
+export const DEFAULT_THREAD_TURN_ITEMS_PAGE_LIMIT = 50;
 export const DEFAULT_TRANSCRIPT_TURN_LIMIT = 20;
 export const DEFAULT_TRANSCRIPT_ITEM_LIMIT = 120;
 export const DEFAULT_TRANSCRIPT_ITEM_TEXT_LIMIT = 2_000;
@@ -280,6 +281,62 @@ export function summarizeThreadTurnsPage(response, { threadIdSuffix = null, limi
     itemContentReturned: false,
     pathsReturned: false,
     rawPayloadReturned: false,
+  };
+}
+
+export function summarizeThreadTurnItemsPage(
+  response,
+  {
+    threadIdSuffix = null,
+    turnIdSuffix = null,
+    limit = DEFAULT_THREAD_TURN_ITEMS_PAGE_LIMIT,
+  } = {},
+) {
+  const data = Array.isArray(response?.data) ? response.data : [];
+  const safeLimit = Math.max(
+    0,
+    Math.min(
+      DEFAULT_THREAD_TURN_ITEMS_PAGE_LIMIT,
+      Number.isFinite(limit) ? Math.trunc(limit) : DEFAULT_THREAD_TURN_ITEMS_PAGE_LIMIT,
+    ),
+  );
+  return {
+    method: APP_SERVER_METHODS.threadTurnsItemsList,
+    threadIdSuffix: isValidSuffix(threadIdSuffix) ? threadIdSuffix : null,
+    turnIdSuffix: isValidSuffix(turnIdSuffix) ? turnIdSuffix : null,
+    count: data.length,
+    returnedItemCount: Math.min(data.length, safeLimit),
+    hasNextCursor: Boolean(response?.nextCursor),
+    hasBackwardsCursor: Boolean(response?.backwardsCursor),
+    sortDirection: "asc",
+    items: data.slice(0, safeLimit).map(summarizeThreadTurnPageItem),
+    cursorValuesReturned: false,
+    fullIdsReturned: false,
+    timestampsReturned: false,
+    textReturned: false,
+    commandReturned: false,
+    outputReturned: false,
+    pathsReturned: false,
+    patchReturned: false,
+    rawPayloadReturned: false,
+  };
+}
+
+function summarizeThreadTurnPageItem(item) {
+  return {
+    idSuffix: suffix(item?.id),
+    type: typeof item?.type === "string" ? item.type : "unknown",
+    status: statusLabel(item?.status),
+    phase: typeof item?.phase === "string" ? item.phase : null,
+    hasText:
+      typeof item?.text === "string" ||
+      typeof item?.content === "string" ||
+      Array.isArray(item?.content) ||
+      Array.isArray(item?.contentItems),
+    textLength: textLength(item),
+    contentTypes: contentTypes(item),
+    changeCount: Array.isArray(item?.changes) ? item.changes.length : 0,
+    unsafeFieldsOmitted: hasUnsafeFields(item),
   };
 }
 
@@ -1605,6 +1662,109 @@ export async function runThreadTurnsProbe({
       initialize: summarizeInitialize(initialize),
       probes: {
         threadTurns: summarizeThreadTurnsPage(turns, { threadIdSuffix, limit: safeLimit }),
+      },
+      notifications: notificationCounts(notifications),
+    };
+  } finally {
+    await client.close();
+  }
+}
+
+export async function runThreadTurnItemsProbe({
+  codexBin = process.env.CODEX_BIN || "codex",
+  codexArgs = ["app-server", "--listen", "stdio://"],
+  cwd = process.cwd(),
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+  threadIdSuffix,
+  turnIdSuffix,
+  threadScanLimit = DEFAULT_THREAD_DETAIL_SCAN_LIMIT,
+  turnScanLimit = DEFAULT_THREAD_TURNS_PAGE_LIMIT,
+  limit = DEFAULT_THREAD_TURN_ITEMS_PAGE_LIMIT,
+  onNotification = null,
+} = {}) {
+  if (process.env.CODEX_APP_PORT_ALLOW_THREAD_TURN_ITEMS !== "1") {
+    throw new Error(
+      "thread/turns/items/list requires CODEX_APP_PORT_ALLOW_THREAD_TURN_ITEMS=1 because items can contain persisted conversation, command, patch, and path data",
+    );
+  }
+  if (!isValidSuffix(threadIdSuffix)) {
+    throwRequestError("Thread selector must be an 8-character id suffix", 400);
+  }
+  if (!isValidSuffix(turnIdSuffix)) {
+    throwRequestError("Turn selector must be an 8-character id suffix", 400);
+  }
+
+  const notifications = [];
+  const client = new JsonlRpcClient({
+    command: codexBin,
+    args: codexArgs,
+    cwd,
+    timeoutMs,
+    onNotification(notification) {
+      notifications.push({
+        method: notification.method,
+      });
+      onNotification?.(notification);
+    },
+  });
+
+  await client.start();
+
+  try {
+    const initialize = normalizeInitializeResponse(
+      await client.request("initialize", {
+        clientInfo: {
+          name: "codex_app_port",
+          title: "Codex App Port",
+          version: "0.1.0",
+        },
+        capabilities: {
+          experimentalApi: false,
+          requestAttestation: false,
+        },
+      }),
+    );
+
+    client.notify("initialized");
+
+    const thread = await selectThreadBySuffixFromLists(client, {
+      threadIdSuffix,
+      threadScanLimit,
+    });
+    const safeTurnScanLimit = Number.isFinite(turnScanLimit)
+      ? Math.max(1, Math.min(DEFAULT_THREAD_TURNS_PAGE_LIMIT, Math.trunc(turnScanLimit)))
+      : DEFAULT_THREAD_TURNS_PAGE_LIMIT;
+    const turns = await client.request(APP_SERVER_METHODS.threadTurnsList, {
+      threadId: thread.id,
+      limit: safeTurnScanLimit,
+      itemsView: "notLoaded",
+      sortDirection: "desc",
+      cursor: null,
+    });
+    const turnId = selectTurnIdBySuffix(turns?.data, turnIdSuffix);
+    const safeLimit = Number.isFinite(limit)
+      ? Math.max(0, Math.min(DEFAULT_THREAD_TURN_ITEMS_PAGE_LIMIT, Math.trunc(limit)))
+      : DEFAULT_THREAD_TURN_ITEMS_PAGE_LIMIT;
+    const items = await client.request(APP_SERVER_METHODS.threadTurnsItemsList, {
+      threadId: thread.id,
+      turnId,
+      limit: safeLimit,
+      sortDirection: "asc",
+      cursor: null,
+    });
+
+    return {
+      ok: true,
+      generatedAt: new Date().toISOString(),
+      transport: "stdio-jsonl",
+      protocol: "json-rpc-2.0-without-jsonrpc-field",
+      initialize: summarizeInitialize(initialize),
+      probes: {
+        threadTurnItems: summarizeThreadTurnItemsPage(items, {
+          threadIdSuffix,
+          turnIdSuffix,
+          limit: safeLimit,
+        }),
       },
       notifications: notificationCounts(notifications),
     };
