@@ -32690,10 +32690,10 @@ function assertSanitizedSettingsIntegrations(payload) {
   }
   assertSettingsServerBoundaries(payload);
   assertCodexAppSettingsParity(payload, {
-    availableSectionCount: 10,
-    partialSectionCount: 9,
+    availableSectionCount: 11,
+    partialSectionCount: 10,
     preflightOnlySectionCount: 1,
-    blockedSectionCount: 5,
+    blockedSectionCount: 4,
     profileState: "blocked",
   });
   if (
@@ -33141,9 +33141,10 @@ function assertCodexAppSettingsParity(
       "partial" ||
     summary.sections?.find((section) => section.key === "appearance")?.state !==
       "partial" ||
+    summary.sections?.find((section) => section.key === "browser")?.state !==
+      "partial" ||
     summary.sections?.find((section) => section.key === "personalization")?.state !==
       "partial" ||
-    summary.sections?.find((section) => section.key === "browser")?.state !== "blocked" ||
     summary.sections?.find((section) => section.key === "computerUse")?.state !== "blocked" ||
     summary.sections?.find((section) => section.key === "memories")?.state !== "preflight-only"
   ) {
@@ -33248,6 +33249,60 @@ function assertCodexAppSettingsParity(
         setting.fontNameReturned === false &&
         setting.customThemeReturned === false &&
         setting.sharingUrlReturned === false &&
+        setting.pathsReturned === false &&
+        setting.urlsReturned === false &&
+        setting.secretsReturned === false &&
+        setting.rawPayloadsReturned === false &&
+        setting.appServerTraffic === false,
+    ) ||
+    summary.browser?.returned !== true ||
+    summary.browser.state !== "partial" ||
+    summary.browser.settingCount !== 7 ||
+    summary.browser.officialSettingCount !== 7 ||
+    summary.browser.catalogOnlySettingCount !== 6 ||
+    summary.browser.blockedSettingCount !== 1 ||
+    summary.browser.enabledSettingCount !== 0 ||
+    summary.browser.browserControlsReturned !== true ||
+    summary.browser.browserPluginStateReturned !== false ||
+    summary.browser.chromeExtensionStateReturned !== false ||
+    summary.browser.websiteListsReturned !== false ||
+    summary.browser.websiteOriginsReturned !== false ||
+    summary.browser.websitePermissionValuesReturned !== false ||
+    summary.browser.askBeforeUseValueReturned !== false ||
+    summary.browser.cdpAccessStateReturned !== false ||
+    summary.browser.organizationPolicyReturned !== false ||
+    summary.browser.browserLaunched !== false ||
+    summary.browser.chromeProfileTouched !== false ||
+    summary.browser.browserNetworkTraffic !== false ||
+    summary.browser.settingValuesReturned !== false ||
+    summary.browser.localSettingValuesReturned !== false ||
+    summary.browser.mutationEnabled !== false ||
+    summary.browser.pathsReturned !== false ||
+    summary.browser.urlsReturned !== false ||
+    summary.browser.secretsReturned !== false ||
+    summary.browser.rawPayloadsReturned !== false ||
+    summary.browser.appServerTraffic !== false ||
+    JSON.stringify((summary.browser.settings ?? []).map((setting) => setting.key)) !==
+      JSON.stringify([
+        "bundledBrowserPlugin",
+        "chromeExtensionSetup",
+        "allowedWebsites",
+        "blockedWebsites",
+        "askBeforeWebsiteUse",
+        "developerModeFullCdpAccess",
+        "organizationCdpPolicy",
+      ]) ||
+    !summary.browser.settings?.every(
+      (setting) =>
+        setting.settingValueReturned === false &&
+        setting.browserPluginStateReturned === false &&
+        setting.chromeExtensionStateReturned === false &&
+        setting.websiteListsReturned === false &&
+        setting.websiteOriginsReturned === false &&
+        setting.cdpAccessStateReturned === false &&
+        setting.organizationPolicyReturned === false &&
+        setting.browserLaunched === false &&
+        setting.chromeProfileTouched === false &&
         setting.pathsReturned === false &&
         setting.urlsReturned === false &&
         setting.secretsReturned === false &&
@@ -33372,6 +33427,13 @@ function assertCodexAppSettingsParity(
     payload.policy?.codexAppAppearanceCustomThemeReturned !== false ||
     payload.policy?.codexAppAppearanceSharingUrlsReturned !== false ||
     payload.policy?.codexAppAppearanceMutationsEnabled !== false ||
+    payload.policy?.codexAppBrowserSettingsReturned !== true ||
+    payload.policy?.codexAppBrowserValuesReturned !== false ||
+    payload.policy?.codexAppBrowserWebsiteListsReturned !== false ||
+    payload.policy?.codexAppBrowserExtensionStateReturned !== false ||
+    payload.policy?.codexAppBrowserCdpStateReturned !== false ||
+    payload.policy?.codexAppBrowserLaunched !== false ||
+    payload.policy?.codexAppBrowserMutationsEnabled !== false ||
     payload.policy?.codexAppNotificationSettingsReturned !== true ||
     payload.policy?.codexAppNotificationSettingValuesReturned !== false ||
     payload.policy?.codexAppNotificationPermissionStateReturned !== false ||
@@ -35027,10 +35089,10 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
   }
   assertSettingsServerBoundaries(payload);
   assertCodexAppSettingsParity(payload, {
-    availableSectionCount: 11,
-    partialSectionCount: 10,
+    availableSectionCount: 12,
+    partialSectionCount: 11,
     preflightOnlySectionCount: 1,
-    blockedSectionCount: 4,
+    blockedSectionCount: 3,
     profileState: "partial",
   });
   if (

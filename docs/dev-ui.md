@@ -711,8 +711,8 @@ The same response now includes a read-only `codexAppSettings` parity summary
 for the current official Codex app Settings sections. It returns only static
 section keys, section states, and counts, and keeps local setting values,
 profile names, paths, URLs, secrets, raw payloads, app-server payloads, browser
-handlers, and settings writes omitted. Unimplemented sections such as Browser,
-Computer Use, and Context-aware Suggestions are reported as blocked.
+handlers, and settings writes omitted. Unimplemented sections such as Computer
+Use and Context-aware Suggestions are reported as blocked.
 Within that summary, `keyboardShortcuts` exposes a static review-only shortcut
 catalog with official shortcut keys that still need Linux implementation plus
 local accessibility bindings that already exist in the UI. Custom binding
@@ -723,6 +723,14 @@ the official theme, color, font, and custom-theme sharing controls. The UI shows
 only setting keys, groups, state/source chips, catalog counts, and redaction
 chips; active theme values, color values, font names, custom theme payloads,
 sharing URLs, paths, raw payloads, mutations, and app-server traffic remain
+blocked.
+Within that same summary, `browser` exposes a static review-only catalog for
+the official Browser plugin, Chrome extension, site permission, ask-before-use,
+and full-CDP developer-mode controls. The UI shows only setting keys, groups,
+state/source chips, catalog counts, and redaction chips; plugin/extension
+state, allowed or blocked site lists, origins, website permission values, CDP
+state, organization policy, Chrome profile data, browser launch, network
+traffic, paths, URLs, raw payloads, mutations, and app-server traffic remain
 blocked.
 Within that same summary, `notifications` exposes a static review-only catalog
 for official turn-completion notification and permission-prompt settings plus

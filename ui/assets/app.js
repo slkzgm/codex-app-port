@@ -17,6 +17,8 @@ const elements = {
   appSettingsValuesText: document.querySelector("#app-settings-values-text"),
   appAppearanceText: document.querySelector("#app-appearance-text"),
   appAppearanceValuesText: document.querySelector("#app-appearance-values-text"),
+  appBrowserText: document.querySelector("#app-browser-text"),
+  appBrowserValuesText: document.querySelector("#app-browser-values-text"),
   appShortcutsText: document.querySelector("#app-shortcuts-text"),
   appShortcutsEditingText: document.querySelector("#app-shortcuts-editing-text"),
   appNotificationsText: document.querySelector("#app-notifications-text"),
@@ -361,6 +363,7 @@ const elements = {
   integrationsDetailList: document.querySelector("#integrations-detail-list"),
   appSettingsParityList: document.querySelector("#app-settings-parity-list"),
   appAppearanceList: document.querySelector("#app-appearance-list"),
+  appBrowserList: document.querySelector("#app-browser-list"),
   appKeyboardShortcutsList: document.querySelector("#app-keyboard-shortcuts-list"),
   appNotificationsList: document.querySelector("#app-notifications-list"),
   appPersonalizationList: document.querySelector("#app-personalization-list"),
@@ -10423,6 +10426,21 @@ function renderSettingsIntegrations(payload) {
     appearance.customThemeReturned
       ? "Returned"
       : "Hidden";
+  const browser = codexAppSettings.browser ?? {};
+  elements.appBrowserText.textContent = browser.returned
+    ? `${browser.catalogOnlySettingCount ?? 0} catalog / ${
+        browser.settingCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.appBrowserValuesText.textContent =
+    browser.browserPluginStateReturned ||
+    browser.chromeExtensionStateReturned ||
+    browser.websiteListsReturned ||
+    browser.websiteOriginsReturned ||
+    browser.cdpAccessStateReturned ||
+    browser.organizationPolicyReturned
+      ? "Returned"
+      : "Hidden";
   const keyboardShortcuts = codexAppSettings.keyboardShortcuts ?? {};
   elements.appShortcutsText.textContent = keyboardShortcuts.returned
     ? `${keyboardShortcuts.localShortcutCount ?? 0} local / ${
@@ -10596,6 +10614,7 @@ function renderSettingsIntegrations(payload) {
   renderIntegrationDetails(inventory);
   renderCodexAppSettingsParity(codexAppSettings);
   renderCodexAppAppearanceSettings(appearance);
+  renderCodexAppBrowserSettings(browser);
   renderCodexAppKeyboardShortcuts(keyboardShortcuts);
   renderCodexAppNotificationSettings(notifications);
   renderCodexAppPersonalizationSettings(personalization);
@@ -12202,6 +12221,57 @@ function renderCodexAppAppearanceSettings(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.appAppearanceList.append(row);
+  }
+}
+
+function renderCodexAppBrowserSettings(summary) {
+  elements.appBrowserList.replaceChildren();
+  const settings = Array.isArray(summary?.settings) ? summary.settings : [];
+  if (settings.length === 0) {
+    elements.appBrowserList.append(emptyState("No browser settings catalog returned."));
+    return;
+  }
+  for (const setting of settings) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = setting.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = setting.group ?? "browser";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      setting.state ?? "blocked",
+      setting.source ?? null,
+      setting.settingValueReturned ? "value returned" : "value hidden",
+      setting.browserPluginStateReturned ? "plugin state returned" : "plugin state hidden",
+      setting.chromeExtensionStateReturned ? "extension state returned" : "extension hidden",
+      setting.websiteListsReturned ? "site lists returned" : "site lists hidden",
+      setting.websiteOriginsReturned ? "site origins returned" : "site origins hidden",
+      setting.cdpAccessStateReturned ? "CDP state returned" : "CDP state hidden",
+      setting.organizationPolicyReturned ? "org policy returned" : "org policy hidden",
+      setting.browserLaunched ? "browser launched" : "browser not launched",
+      setting.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.appBrowserList.append(row);
   }
 }
 

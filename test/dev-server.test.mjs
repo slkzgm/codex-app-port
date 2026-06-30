@@ -20489,10 +20489,10 @@ test("dev server exposes settings and integration boundary without app-server tr
     );
     assertSettingsServerBoundaries(payload);
     assertCodexAppSettingsParity(payload, {
-      availableSectionCount: 10,
-      partialSectionCount: 9,
+      availableSectionCount: 11,
+      partialSectionCount: 10,
       preflightOnlySectionCount: 1,
-      blockedSectionCount: 5,
+      blockedSectionCount: 4,
       profileState: "blocked",
     });
     assert.equal(payload.surfaces.settings.state, "partial");
@@ -22761,10 +22761,10 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
     );
     assertSettingsServerBoundaries(payload);
     assertCodexAppSettingsParity(payload, {
-      availableSectionCount: 11,
-      partialSectionCount: 10,
+      availableSectionCount: 12,
+      partialSectionCount: 11,
       preflightOnlySectionCount: 1,
-      blockedSectionCount: 4,
+      blockedSectionCount: 3,
       profileState: "partial",
     });
     assert.equal(payload.appServer.auditedReadMethods.includes("configRequirements/read"), true);
@@ -34977,11 +34977,11 @@ function assertCodexAppSettingsParity(
     summary.sections.find((section) => section.key === "appearance")?.state,
     "partial",
   );
+  assert.equal(summary.sections.find((section) => section.key === "browser")?.state, "partial");
   assert.equal(
     summary.sections.find((section) => section.key === "personalization")?.state,
     "partial",
   );
-  assert.equal(summary.sections.find((section) => section.key === "browser")?.state, "blocked");
   assert.equal(
     summary.sections.find((section) => section.key === "computerUse")?.state,
     "blocked",
@@ -35096,6 +35096,65 @@ function assertCodexAppSettingsParity(
         setting.fontNameReturned === false &&
         setting.customThemeReturned === false &&
         setting.sharingUrlReturned === false &&
+        setting.pathsReturned === false &&
+        setting.urlsReturned === false &&
+        setting.secretsReturned === false &&
+        setting.rawPayloadsReturned === false &&
+        setting.appServerTraffic === false,
+    ),
+    true,
+  );
+  assert.equal(summary.browser?.returned, true);
+  assert.equal(summary.browser.state, "partial");
+  assert.equal(summary.browser.settingCount, 7);
+  assert.equal(summary.browser.officialSettingCount, 7);
+  assert.equal(summary.browser.catalogOnlySettingCount, 6);
+  assert.equal(summary.browser.blockedSettingCount, 1);
+  assert.equal(summary.browser.enabledSettingCount, 0);
+  assert.equal(summary.browser.browserControlsReturned, true);
+  assert.equal(summary.browser.browserPluginStateReturned, false);
+  assert.equal(summary.browser.chromeExtensionStateReturned, false);
+  assert.equal(summary.browser.websiteListsReturned, false);
+  assert.equal(summary.browser.websiteOriginsReturned, false);
+  assert.equal(summary.browser.websitePermissionValuesReturned, false);
+  assert.equal(summary.browser.askBeforeUseValueReturned, false);
+  assert.equal(summary.browser.cdpAccessStateReturned, false);
+  assert.equal(summary.browser.organizationPolicyReturned, false);
+  assert.equal(summary.browser.browserLaunched, false);
+  assert.equal(summary.browser.chromeProfileTouched, false);
+  assert.equal(summary.browser.browserNetworkTraffic, false);
+  assert.equal(summary.browser.settingValuesReturned, false);
+  assert.equal(summary.browser.localSettingValuesReturned, false);
+  assert.equal(summary.browser.mutationEnabled, false);
+  assert.equal(summary.browser.pathsReturned, false);
+  assert.equal(summary.browser.urlsReturned, false);
+  assert.equal(summary.browser.secretsReturned, false);
+  assert.equal(summary.browser.rawPayloadsReturned, false);
+  assert.equal(summary.browser.appServerTraffic, false);
+  assert.deepEqual(
+    summary.browser.settings.map((setting) => setting.key),
+    [
+      "bundledBrowserPlugin",
+      "chromeExtensionSetup",
+      "allowedWebsites",
+      "blockedWebsites",
+      "askBeforeWebsiteUse",
+      "developerModeFullCdpAccess",
+      "organizationCdpPolicy",
+    ],
+  );
+  assert.equal(
+    summary.browser.settings.every(
+      (setting) =>
+        setting.settingValueReturned === false &&
+        setting.browserPluginStateReturned === false &&
+        setting.chromeExtensionStateReturned === false &&
+        setting.websiteListsReturned === false &&
+        setting.websiteOriginsReturned === false &&
+        setting.cdpAccessStateReturned === false &&
+        setting.organizationPolicyReturned === false &&
+        setting.browserLaunched === false &&
+        setting.chromeProfileTouched === false &&
         setting.pathsReturned === false &&
         setting.urlsReturned === false &&
         setting.secretsReturned === false &&
@@ -35237,6 +35296,13 @@ function assertCodexAppSettingsParity(
   assert.equal(payload.policy?.codexAppAppearanceCustomThemeReturned, false);
   assert.equal(payload.policy?.codexAppAppearanceSharingUrlsReturned, false);
   assert.equal(payload.policy?.codexAppAppearanceMutationsEnabled, false);
+  assert.equal(payload.policy?.codexAppBrowserSettingsReturned, true);
+  assert.equal(payload.policy?.codexAppBrowserValuesReturned, false);
+  assert.equal(payload.policy?.codexAppBrowserWebsiteListsReturned, false);
+  assert.equal(payload.policy?.codexAppBrowserExtensionStateReturned, false);
+  assert.equal(payload.policy?.codexAppBrowserCdpStateReturned, false);
+  assert.equal(payload.policy?.codexAppBrowserLaunched, false);
+  assert.equal(payload.policy?.codexAppBrowserMutationsEnabled, false);
   assert.equal(payload.policy?.codexAppNotificationSettingsReturned, true);
   assert.equal(payload.policy?.codexAppNotificationSettingValuesReturned, false);
   assert.equal(payload.policy?.codexAppNotificationPermissionStateReturned, false);

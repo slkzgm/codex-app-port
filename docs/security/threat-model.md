@@ -407,6 +407,12 @@
   states, sources, and counts; it must not return active theme values, color
   values, font names, custom theme payloads, sharing URLs, paths, secrets, raw
   payloads, app-server payloads, or appearance mutations. Its
+  Browser settings catalog may expose only static setting keys, groups, states,
+  sources, and counts; it must not return Browser plugin or Chrome extension
+  state, allowed or blocked site lists, origins, website permission values, CDP
+  state, organization policy, Chrome profile data, browser launches, network
+  traffic, paths, URLs, secrets, raw payloads, app-server payloads, or Browser
+  mutations. Its
   Notifications settings catalog may expose only static setting keys, groups,
   states, sources, and counts plus local server-notification boundary counts;
   it must not return notification setting values, browser permission state,

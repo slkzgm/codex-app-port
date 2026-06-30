@@ -33292,6 +33292,108 @@ function buildCodexAppAppearanceSettingsSummary() {
   };
 }
 
+const CODEX_APP_BROWSER_SETTINGS = Object.freeze([
+  {
+    key: "bundledBrowserPlugin",
+    group: "plugin",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "chromeExtensionSetup",
+    group: "chrome-extension",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "allowedWebsites",
+    group: "site-permissions",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "blockedWebsites",
+    group: "site-permissions",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "askBeforeWebsiteUse",
+    group: "site-permissions",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "developerModeFullCdpAccess",
+    group: "developer-mode",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "organizationCdpPolicy",
+    group: "developer-mode",
+    state: "blocked",
+    source: "official-codex-app-docs",
+  },
+]);
+
+function buildCodexAppBrowserSettingsSummary() {
+  const settings = CODEX_APP_BROWSER_SETTINGS.map((setting) => ({
+    ...setting,
+    settingValueReturned: false,
+    browserPluginStateReturned: false,
+    chromeExtensionStateReturned: false,
+    websiteListsReturned: false,
+    websiteOriginsReturned: false,
+    cdpAccessStateReturned: false,
+    organizationPolicyReturned: false,
+    browserLaunched: false,
+    chromeProfileTouched: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+    rawPayloadsReturned: false,
+    appServerTraffic: false,
+  }));
+  const catalogOnlySettingCount = settings.filter(
+    (setting) => setting.state === "catalog-only",
+  ).length;
+  const blockedSettingCount = settings.filter((setting) => setting.state === "blocked").length;
+
+  return {
+    returned: true,
+    state: catalogOnlySettingCount > 0 ? "partial" : "blocked",
+    settingCount: settings.length,
+    officialSettingCount: settings.filter(
+      (setting) => setting.source === "official-codex-app-docs",
+    ).length,
+    catalogOnlySettingCount,
+    blockedSettingCount,
+    enabledSettingCount: 0,
+    settings,
+    browserControlsReturned: true,
+    browserPluginStateReturned: false,
+    chromeExtensionStateReturned: false,
+    websiteListsReturned: false,
+    websiteOriginsReturned: false,
+    websitePermissionValuesReturned: false,
+    askBeforeUseValueReturned: false,
+    cdpAccessStateReturned: false,
+    organizationPolicyReturned: false,
+    browserLaunched: false,
+    chromeProfileTouched: false,
+    browserNetworkTraffic: false,
+    settingValuesReturned: false,
+    localSettingValuesReturned: false,
+    mutationEnabled: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+    rawPayloadsReturned: false,
+    appServerTraffic: false,
+  };
+}
+
 const CODEX_APP_NOTIFICATION_SETTINGS = Object.freeze([
   {
     key: "turnCompletionNotifications",
@@ -33482,6 +33584,7 @@ function buildCodexAppSettingsParity(payload = {}) {
   const integrationScope = payload.integrationScope ?? {};
   const keyboardShortcuts = buildCodexAppKeyboardShortcutsSummary();
   const appearance = buildCodexAppAppearanceSettingsSummary();
+  const browser = buildCodexAppBrowserSettingsSummary();
   const notifications = buildCodexAppNotificationSettingsSummary(payload);
   const personalization = buildCodexAppPersonalizationSettingsSummary();
   const hasOptInAuthAction = Boolean(
@@ -33541,7 +33644,12 @@ function buildCodexAppSettingsParity(payload = {}) {
         : "blocked",
       "settings-integrations-boundary",
     ),
-    codexAppSettingsSection("browser", "runtime", "blocked", "not-implemented"),
+    codexAppSettingsSection(
+      "browser",
+      "runtime",
+      browser.state,
+      "browser-settings-catalog",
+    ),
     codexAppSettingsSection("computerUse", "runtime", "blocked", "not-implemented"),
     codexAppSettingsSection(
       "personalization",
@@ -33586,6 +33694,7 @@ function buildCodexAppSettingsParity(payload = {}) {
     sections,
     keyboardShortcuts,
     appearance,
+    browser,
     notifications,
     personalization,
     sectionKeysReturned: true,
@@ -33990,6 +34099,13 @@ export function sanitizeSettingsIntegrationsPayload(
       codexAppAppearanceCustomThemeReturned: false,
       codexAppAppearanceSharingUrlsReturned: false,
       codexAppAppearanceMutationsEnabled: false,
+      codexAppBrowserSettingsReturned: true,
+      codexAppBrowserValuesReturned: false,
+      codexAppBrowserWebsiteListsReturned: false,
+      codexAppBrowserExtensionStateReturned: false,
+      codexAppBrowserCdpStateReturned: false,
+      codexAppBrowserLaunched: false,
+      codexAppBrowserMutationsEnabled: false,
       codexAppNotificationSettingsReturned: true,
       codexAppNotificationSettingValuesReturned: false,
       codexAppNotificationPermissionStateReturned: false,
@@ -41531,6 +41647,13 @@ export function buildSettingsIntegrations({
       codexAppAppearanceCustomThemeReturned: false,
       codexAppAppearanceSharingUrlsReturned: false,
       codexAppAppearanceMutationsEnabled: false,
+      codexAppBrowserSettingsReturned: true,
+      codexAppBrowserValuesReturned: false,
+      codexAppBrowserWebsiteListsReturned: false,
+      codexAppBrowserExtensionStateReturned: false,
+      codexAppBrowserCdpStateReturned: false,
+      codexAppBrowserLaunched: false,
+      codexAppBrowserMutationsEnabled: false,
       codexAppNotificationSettingsReturned: true,
       codexAppNotificationSettingValuesReturned: false,
       codexAppNotificationPermissionStateReturned: false,
