@@ -4,6 +4,12 @@ export const SERVER_REQUEST_METHODS = Object.freeze({
   commandApproval: "item/commandExecution/requestApproval",
   fileChangeApproval: "item/fileChange/requestApproval",
   permissionsApproval: "item/permissions/requestApproval",
+  toolRequestUserInput: "item/tool/requestUserInput",
+  mcpServerElicitationRequest: "mcpServer/elicitation/request",
+  dynamicToolCall: "item/tool/call",
+  chatgptAuthTokensRefresh: "account/chatgptAuthTokens/refresh",
+  attestationGenerate: "attestation/generate",
+  currentTimeRead: "currentTime/read",
   legacyExecCommandApproval: "execCommandApproval",
   legacyApplyPatchApproval: "applyPatchApproval",
 });
@@ -90,6 +96,66 @@ export function summarizeApprovalRequest(message) {
         safeApproveDecisions: [],
         safeDenyDecisions: ["denied", "abort"],
       };
+    case SERVER_REQUEST_METHODS.toolRequestUserInput:
+      return summarizeUnsupportedServerRequest(base, params, {
+        kind: "tool-user-input",
+        questionCount: safeArray(params.questions).length,
+        autoResolutionMsPresent: params.autoResolutionMs !== undefined && params.autoResolutionMs !== null,
+        promptTextReturned: false,
+        questionsReturned: false,
+        responseAccepted: false,
+      });
+    case SERVER_REQUEST_METHODS.mcpServerElicitationRequest:
+      return summarizeUnsupportedServerRequest(base, params, {
+        kind: "mcp-elicitation",
+        mode: safeElicitationMode(params.mode),
+        hasServerName: typeof params.serverName === "string" && params.serverName.length > 0,
+        hasRequestedSchema: params.requestedSchema !== undefined && params.requestedSchema !== null,
+        hasUrl: typeof params.url === "string" && params.url.length > 0,
+        hasElicitationId: typeof params.elicitationId === "string" && params.elicitationId.length > 0,
+        serverNameReturned: false,
+        messageReturned: false,
+        requestedSchemaReturned: false,
+        urlReturned: false,
+        responseAccepted: false,
+      });
+    case SERVER_REQUEST_METHODS.dynamicToolCall:
+      return summarizeUnsupportedServerRequest(base, params, {
+        kind: "dynamic-tool-call",
+        hasCallId: typeof params.callId === "string" && params.callId.length > 0,
+        hasTool: typeof params.tool === "string" && params.tool.length > 0,
+        hasNamespace: typeof params.namespace === "string" && params.namespace.length > 0,
+        hasArguments: params.arguments !== undefined && params.arguments !== null,
+        argumentKeyCount: countPlainObjectKeys(params.arguments),
+        callIdReturned: false,
+        toolNameReturned: false,
+        namespaceReturned: false,
+        argumentsReturned: false,
+        executed: false,
+      });
+    case SERVER_REQUEST_METHODS.chatgptAuthTokensRefresh:
+      return summarizeUnsupportedServerRequest(base, params, {
+        kind: "auth-token-refresh",
+        hasPreviousAccountId:
+          typeof params.previousAccountId === "string" && params.previousAccountId.length > 0,
+        reason: params.reason === "unauthorized" ? "unauthorized" : "unknown",
+        previousAccountIdReturned: false,
+        authTokensReturned: false,
+        responseAccepted: false,
+      });
+    case SERVER_REQUEST_METHODS.attestationGenerate:
+      return summarizeUnsupportedServerRequest(base, params, {
+        kind: "attestation",
+        parameterKeyCount: countPlainObjectKeys(params),
+        attestationReturned: false,
+        responseAccepted: false,
+      });
+    case SERVER_REQUEST_METHODS.currentTimeRead:
+      return summarizeUnsupportedServerRequest(base, params, {
+        kind: "current-time",
+        currentTimeReturned: false,
+        responseAccepted: false,
+      });
     default:
       return {
         ...base,
@@ -147,6 +213,21 @@ export function buildApprovalDecisionResponse(message, { decision }) {
     response: null,
     accepted: false,
     reason: "unsupported-approval-decision",
+  };
+}
+
+function summarizeUnsupportedServerRequest(base, params, extra) {
+  return {
+    ...base,
+    ...extra,
+    threadIdSuffix: idSuffix(params.threadId) ?? base.threadIdSuffix,
+    turnIdSuffix: idSuffix(params.turnId) ?? base.turnIdSuffix,
+    itemIdSuffix: idSuffix(params.itemId) ?? base.itemIdSuffix,
+    safeApproveDecisions: [],
+    safeDenyDecisions: [],
+    unsupported: true,
+    rawParamsReturned: false,
+    rawPayloadReturned: false,
   };
 }
 
@@ -443,6 +524,14 @@ function safeBasename(value) {
 
 function safeArray(value) {
   return Array.isArray(value) ? value : [];
+}
+
+function countPlainObjectKeys(value) {
+  return Object.keys(objectOrEmpty(value)).length;
+}
+
+function safeElicitationMode(value) {
+  return ["form", "openai/form", "url"].includes(value) ? value : "unknown";
 }
 
 function includesDecision(value, decision) {

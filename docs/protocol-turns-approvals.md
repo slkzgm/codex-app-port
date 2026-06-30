@@ -56,9 +56,9 @@ methods to stable methods.
 
 The local official schema snapshot moved from `codex-cli 0.130.0` to
 `codex-cli 0.142.4`: 286 JSON Schema files became 335. Compared with the
-previous packaged snapshot, app-server added 22 client request methods, 2
-server request methods, and 5 server notifications without removing existing
-top-level methods.
+previous packaged snapshot, app-server added 22 client request methods,
+server request methods/request-shape changes, and 5 server notifications
+without removing existing top-level methods.
 
 New client request methods:
 
@@ -213,15 +213,20 @@ other refreshed 0.142 client methods are now classified in local policy as
 blocked; `/api/settings-integrations` exposes only method names/counts and no
 browser route executes them until separately audited.
 
-New server request methods and request-shape changes:
+Server request methods and request-shape changes tracked by the local audit:
 
+- `item/tool/requestUserInput`
+- `mcpServer/elicitation/request` can carry the `openai/form` mode when clients
+  opt into OpenAI form elicitation.
+- `item/tool/call`
+- `account/chatgptAuthTokens/refresh`
 - `attestation/generate`
 - `currentTime/read`
-- `mcpServer/elicitation/request` can now carry the `openai/form` mode when
-  clients opt into OpenAI form elicitation.
 
-Local status: `attestation/generate` and `currentTime/read` are explicitly
-listed in the server-request audit and the browser port does not service them.
+Local status: all non-approval top-level server requests are explicitly listed
+in the server-request audit. The browser port does not service tool input,
+dynamic tool calls, MCP elicitation, ChatGPT auth-token refresh, attestation, or
+external time reads.
 
 New server notifications:
 
@@ -247,9 +252,9 @@ transport, audio, moderation, or import payloads.
 Implication for this port: keep all new mutation/control-plane methods blocked
 until each has a dedicated route, preflight, allowlist, audit record, and
 sanitized response contract. Treat new server requests as fail-closed until a
-dedicated response policy exists; in particular, do not enable OpenAI form
-elicitation, attestation, or external time reads from the browser path without a
-separate audit.
+dedicated response policy exists; in particular, do not enable tool input,
+dynamic tool calls, OpenAI form elicitation, auth-token refresh, attestation, or
+external time reads from the browser path without a separate audit.
 
 ## Methods Found
 
@@ -339,9 +344,9 @@ Implemented local policy:
   decisions: `denied` or `abort`.
 - Permissions approval requests can be answered only with `decline`; no browser
   approve, cancel, session scope, file-system grant, or network grant is
-  accepted. Tool input, MCP elicitation, and auth-token refresh requests are
-  unsupported and must block the real turn path until an explicit handler
-  exists.
+  accepted. Tool input, dynamic tool calls, MCP elicitation, auth-token refresh,
+  attestation, and current-time reads are unsupported and must block the real
+  turn path until an explicit handler exists.
 - MCP OAuth login is not handled inside a turn or approval callback path. The
   only browser route that may start it is the separate
   `/api/mcp-oauth-login` integration route, which is disabled by default,

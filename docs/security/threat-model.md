@@ -348,6 +348,13 @@
   available safe decisions, token-required requests, grant-root presence, and
   redacted preview availability; permissions summaries may expose only
   permission-presence booleans, never the requested permission profile. They
+  must keep tool user-input requests, dynamic tool calls, MCP elicitation,
+  ChatGPT auth-token refresh, attestation generation, and current-time reads
+  unsupported until each has a dedicated response policy. Their summaries may
+  expose only sanitized kind/count/flag metadata and must not return prompts,
+  form schemas, server names, tool names, tool arguments, account ids, auth
+  tokens, attestation tokens, timestamps, URLs, paths, raw params, or raw
+  app-server payloads.
   must not expose decision tokens, request keys, session identifiers, raw
   approval details, paths, patches, file contents, permission paths, or network
   grant details. Browser-side approval queue filters must operate only on the

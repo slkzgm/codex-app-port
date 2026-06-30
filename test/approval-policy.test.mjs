@@ -110,6 +110,161 @@ test("summarizeApprovalRequest exposes permissions requests as deny-only without
   }
 });
 
+test("summarizeApprovalRequest classifies unsupported server requests without leaking payloads", () => {
+  const requests = [
+    {
+      message: {
+        id: "request-tool-input-1234567890abcdef",
+        method: SERVER_REQUEST_METHODS.toolRequestUserInput,
+        params: {
+          threadId: "thread-sensitive-1234567890",
+          turnId: "turn-sensitive-1234567890",
+          itemId: "item-sensitive-1234567890",
+          questions: [
+            {
+              id: "private-question-id",
+              header: "Secret",
+              question: "Enter token sk-proj-secretvalue",
+            },
+          ],
+          autoResolutionMs: 120000,
+        },
+      },
+      kind: "tool-user-input",
+      assertions: (summary) => {
+        assert.equal(summary.questionCount, 1);
+        assert.equal(summary.autoResolutionMsPresent, true);
+        assert.equal(summary.questionsReturned, false);
+        assert.equal(summary.promptTextReturned, false);
+      },
+      forbidden: ["private-question-id", "sk-proj-secretvalue", "Enter token"],
+    },
+    {
+      message: {
+        id: "request-elicitation-1234567890abcdef",
+        method: SERVER_REQUEST_METHODS.mcpServerElicitationRequest,
+        params: {
+          threadId: "thread-sensitive-1234567890",
+          turnId: "turn-sensitive-1234567890",
+          serverName: "private-mcp-server",
+          mode: "openai/form",
+          message: "Authorize https://private.example.test",
+          requestedSchema: {
+            properties: {
+              token: { type: "string", description: "sk-proj-secretvalue" },
+            },
+          },
+        },
+      },
+      kind: "mcp-elicitation",
+      assertions: (summary) => {
+        assert.equal(summary.mode, "openai/form");
+        assert.equal(summary.hasServerName, true);
+        assert.equal(summary.hasRequestedSchema, true);
+        assert.equal(summary.serverNameReturned, false);
+        assert.equal(summary.messageReturned, false);
+        assert.equal(summary.requestedSchemaReturned, false);
+      },
+      forbidden: ["private-mcp-server", "private.example.test", "sk-proj-secretvalue"],
+    },
+    {
+      message: {
+        id: "request-dynamic-tool-1234567890abcdef",
+        method: SERVER_REQUEST_METHODS.dynamicToolCall,
+        params: {
+          threadId: "thread-sensitive-1234567890",
+          turnId: "turn-sensitive-1234567890",
+          callId: "private-call-id",
+          namespace: "private-namespace",
+          tool: "private-tool",
+          arguments: {
+            path: "/tmp/private-workspace/secret.txt",
+            token: "sk-proj-secretvalue",
+          },
+        },
+      },
+      kind: "dynamic-tool-call",
+      assertions: (summary) => {
+        assert.equal(summary.hasCallId, true);
+        assert.equal(summary.hasTool, true);
+        assert.equal(summary.hasNamespace, true);
+        assert.equal(summary.argumentKeyCount, 2);
+        assert.equal(summary.toolNameReturned, false);
+        assert.equal(summary.argumentsReturned, false);
+        assert.equal(summary.executed, false);
+      },
+      forbidden: [
+        "private-call-id",
+        "private-namespace",
+        "private-tool",
+        "/tmp/private-workspace",
+        "secret.txt",
+        "sk-proj-secretvalue",
+      ],
+    },
+    {
+      message: {
+        id: "request-auth-refresh-1234567890abcdef",
+        method: SERVER_REQUEST_METHODS.chatgptAuthTokensRefresh,
+        params: {
+          previousAccountId: "private-account-id",
+          reason: "unauthorized",
+        },
+      },
+      kind: "auth-token-refresh",
+      assertions: (summary) => {
+        assert.equal(summary.hasPreviousAccountId, true);
+        assert.equal(summary.reason, "unauthorized");
+        assert.equal(summary.previousAccountIdReturned, false);
+        assert.equal(summary.authTokensReturned, false);
+      },
+      forbidden: ["private-account-id"],
+    },
+    {
+      message: {
+        id: "request-attestation-1234567890abcdef",
+        method: SERVER_REQUEST_METHODS.attestationGenerate,
+        params: { nonce: "private-attestation-nonce" },
+      },
+      kind: "attestation",
+      assertions: (summary) => {
+        assert.equal(summary.parameterKeyCount, 1);
+        assert.equal(summary.attestationReturned, false);
+      },
+      forbidden: ["private-attestation-nonce"],
+    },
+    {
+      message: {
+        id: "request-current-time-1234567890abcdef",
+        method: SERVER_REQUEST_METHODS.currentTimeRead,
+        params: {
+          threadId: "thread-sensitive-1234567890",
+        },
+      },
+      kind: "current-time",
+      assertions: (summary) => {
+        assert.equal(summary.currentTimeReturned, false);
+      },
+      forbidden: ["thread-sensitive-1234567890"],
+    },
+  ];
+
+  for (const { message, kind, assertions, forbidden } of requests) {
+    const summary = summarizeApprovalRequest(message);
+    const serialized = JSON.stringify(summary);
+    assert.equal(summary.kind, kind);
+    assert.equal(summary.unsupported, true);
+    assert.deepEqual(summary.safeApproveDecisions, []);
+    assert.deepEqual(summary.safeDenyDecisions, []);
+    assert.equal(summary.rawParamsReturned, false);
+    assert.equal(summary.rawPayloadReturned, false);
+    assertions(summary);
+    for (const marker of forbidden) {
+      assert.equal(serialized.includes(marker), false, `${kind} leaked ${marker}`);
+    }
+  }
+});
+
 test("summarizeApprovalRequestDetail returns redacted command preview only", () => {
   const detail = summarizeApprovalRequestDetail({
     method: SERVER_REQUEST_METHODS.commandApproval,
@@ -276,12 +431,22 @@ test("buildDenyOnlyApprovalResponse denies command, file-change, and permissions
 });
 
 test("buildDenyOnlyApprovalResponse refuses unsupported approval requests", () => {
-  const response = buildDenyOnlyApprovalResponse({
-    method: "item/tool/requestUserInput",
-    params: {},
-  });
+  for (const method of [
+    SERVER_REQUEST_METHODS.toolRequestUserInput,
+    SERVER_REQUEST_METHODS.mcpServerElicitationRequest,
+    SERVER_REQUEST_METHODS.dynamicToolCall,
+    SERVER_REQUEST_METHODS.chatgptAuthTokensRefresh,
+    SERVER_REQUEST_METHODS.attestationGenerate,
+    SERVER_REQUEST_METHODS.currentTimeRead,
+  ]) {
+    const response = buildDenyOnlyApprovalResponse({
+      method,
+      params: {},
+    });
 
-  assert.equal(response.handled, false);
-  assert.equal(response.response, null);
-  assert.equal(response.reason, "unsupported-approval-request");
+    assert.equal(response.handled, false);
+    assert.equal(response.method, method);
+    assert.equal(response.response, null);
+    assert.equal(response.reason, "unsupported-approval-request");
+  }
 });

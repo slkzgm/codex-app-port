@@ -157,6 +157,38 @@ test("server request and notification policy names only generated server methods
   }
 });
 
+test("server request audit covers every non-approval top-level server request", async () => {
+  const serverRequests = await readJson(join(JSON_ROOT, "ServerRequest.json"));
+  const approvalServerRequests = new Set([
+    "item/commandExecution/requestApproval",
+    "item/fileChange/requestApproval",
+    "item/permissions/requestApproval",
+    "applyPatchApproval",
+    "execCommandApproval",
+  ]);
+  const auditedServerRequests = new Set(serverRequestMethodNames());
+  for (const method of [
+    "item/tool/requestUserInput",
+    "mcpServer/elicitation/request",
+    "item/tool/call",
+    "account/chatgptAuthTokens/refresh",
+    "attestation/generate",
+    "currentTime/read",
+  ]) {
+    assert.equal(auditedServerRequests.has(method), true, `missing audited server request ${method}`);
+  }
+  for (const method of topLevelMethodValues(serverRequests)) {
+    if (approvalServerRequests.has(method)) {
+      continue;
+    }
+    assert.equal(
+      auditedServerRequests.has(method),
+      true,
+      `server request method lacks local audit ${method}`,
+    );
+  }
+});
+
 test("Codex 0.142 added client methods are classified by local policy", async () => {
   const clientMethods = enumValues(await readJson(join(JSON_ROOT, "ClientRequest.json")));
   const classifiedMethods = new Set([...integrationMethodNames(), ...terminalActionMethodNames()]);
@@ -282,4 +314,15 @@ function enumValues(value, output = new Set()) {
     enumValues(item, output);
   }
   return output;
+}
+
+function topLevelMethodValues(schema) {
+  const values = [];
+  for (const branch of Array.isArray(schema.oneOf) ? schema.oneOf : []) {
+    const method = branch?.properties?.method?.enum?.[0];
+    if (typeof method === "string") {
+      values.push(method);
+    }
+  }
+  return values;
 }

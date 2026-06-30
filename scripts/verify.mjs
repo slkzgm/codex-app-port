@@ -437,6 +437,7 @@ async function checkProtocolContracts() {
     join(ROOT, "src", "app-server", "generated-schemas", "json", "ServerRequest.json"),
     "utf8",
   );
+  const serverRequestSchema = JSON.parse(serverRequest);
   for (const marker of [
     "turn/start",
     "thread/loaded/list",
@@ -457,6 +458,22 @@ async function checkProtocolContracts() {
       throw new Error(`generated server protocol schema missing ${marker}`);
     }
   }
+  const auditedServerRequests = new Set(serverRequestMethodNames());
+  const approvalServerRequests = new Set([
+    "item/commandExecution/requestApproval",
+    "item/fileChange/requestApproval",
+    "item/permissions/requestApproval",
+    "applyPatchApproval",
+    "execCommandApproval",
+  ]);
+  for (const method of topLevelSchemaMethods(serverRequestSchema)) {
+    if (approvalServerRequests.has(method)) {
+      continue;
+    }
+    if (!auditedServerRequests.has(method)) {
+      throw new Error(`generated server request schema has unaudited method ${method}`);
+    }
+  }
   const serverNotification = await readFile(
     join(ROOT, "src", "app-server", "generated-schemas", "json", "ServerNotification.json"),
     "utf8",
@@ -467,6 +484,17 @@ async function checkProtocolContracts() {
     }
   }
   pass("app-server protocol contracts include generated schema snapshot");
+}
+
+function topLevelSchemaMethods(schema) {
+  const methods = [];
+  for (const branch of Array.isArray(schema?.oneOf) ? schema.oneOf : []) {
+    const method = branch?.properties?.method?.enum?.[0];
+    if (typeof method === "string") {
+      methods.push(method);
+    }
+  }
+  return methods;
 }
 
 async function checkPackageManifest() {

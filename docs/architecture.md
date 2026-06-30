@@ -99,7 +99,8 @@ raw payloads.
 Remote-control mutations and pairing/client lists, environment add, plugin checkout/install, skills extra roots,
 thread settings, thread goal/memory/metadata, realtime audio/text/speech,
 review/feedback, filesystem read/watch, fuzzy file search, Windows sandbox,
-background terminal termination, attestation, current-time requests, import
+background terminal termination, tool input, dynamic tool-call, MCP
+elicitation, auth-token refresh, attestation, current-time requests, import
 progress, model safety, and moderation notifications are classified in local
 fail-closed policies and must not be implicitly inherited from the updated
 schema.

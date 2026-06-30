@@ -458,6 +458,30 @@ export const INTEGRATION_METHOD_AUDIT = Object.freeze([
 
 export const SERVER_REQUEST_METHOD_AUDIT = Object.freeze([
   integrationMethod(
+    "item/tool/requestUserInput",
+    "server-request",
+    "Requests free-form user input for a tool call; browser handling would expose prompt/schema content and decision state.",
+    "blocked",
+  ),
+  integrationMethod(
+    "mcpServer/elicitation/request",
+    "server-request",
+    "Requests MCP elicitation input, including OpenAI form mode; browser handling would expose server names, forms, schemas, URLs, or user responses.",
+    "blocked",
+  ),
+  integrationMethod(
+    "item/tool/call",
+    "server-request",
+    "Asks the client to execute a dynamic tool call with caller-supplied arguments.",
+    "blocked",
+  ),
+  integrationMethod(
+    "account/chatgptAuthTokens/refresh",
+    "server-request",
+    "Requests refreshed ChatGPT auth tokens; the browser port must never service or proxy this token flow.",
+    "blocked",
+  ),
+  integrationMethod(
     "attestation/generate",
     "server-request",
     "Generates an opaque upstream attestation token; the browser port must not service it.",
