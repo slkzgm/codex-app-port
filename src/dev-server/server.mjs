@@ -33783,6 +33783,134 @@ function buildCodexAppGitSettingsSummary() {
   };
 }
 
+const CODEX_APP_INTEGRATIONS_MCP_SETTINGS = Object.freeze([
+  {
+    key: "externalToolMcpConnections",
+    group: "connections",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "recommendedMcpServers",
+    group: "recommended-servers",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "customMcpServers",
+    group: "custom-servers",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "mcpOauthAuthentication",
+    group: "oauth",
+    state: "blocked",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "sharedCliIdeMcpConfigToml",
+    group: "config-toml",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "pluginProvidedMcpServers",
+    group: "plugin-mcp",
+    state: "catalog-only",
+    source: "official-codex-mcp-docs",
+  },
+]);
+
+function buildCodexAppIntegrationsMcpSettingsSummary(integrationScope = {}) {
+  const mcpOauthBoundaryAvailable = integrationScope.mcpOauthLoginEnabled === true;
+  const settings = CODEX_APP_INTEGRATIONS_MCP_SETTINGS.map((setting) => ({
+    ...setting,
+    state:
+      setting.key === "mcpOauthAuthentication" && mcpOauthBoundaryAvailable
+        ? "preflight-only"
+        : setting.state,
+    settingValueReturned: false,
+    serverListingReturned: false,
+    serverNameReturned: false,
+    recommendedServerNameReturned: false,
+    customServerNameReturned: false,
+    serverUrlReturned: false,
+    commandDetailsReturned: false,
+    envVarsReturned: false,
+    bearerTokenEnvVarReturned: false,
+    oauthUrlReturned: false,
+    oauthTokenReturned: false,
+    configTomlContentReturned: false,
+    configTomlPathReturned: false,
+    toolNameReturned: false,
+    toolAllowlistReturned: false,
+    serverInstructionsReturned: false,
+    pluginIdReturned: false,
+    oauthLoginStarted: false,
+    configWriteEnabled: false,
+    mutationEnabled: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+    rawPayloadsReturned: false,
+    appServerTraffic: false,
+  }));
+  const catalogOnlySettingCount = settings.filter(
+    (setting) => setting.state === "catalog-only",
+  ).length;
+  const preflightOnlySettingCount = settings.filter(
+    (setting) => setting.state === "preflight-only",
+  ).length;
+  const blockedSettingCount = settings.filter((setting) => setting.state === "blocked").length;
+
+  return {
+    returned: true,
+    state: catalogOnlySettingCount > 0 ? "partial" : "blocked",
+    settingCount: settings.length,
+    officialSettingCount: settings.length,
+    catalogOnlySettingCount,
+    preflightOnlySettingCount,
+    blockedSettingCount,
+    enabledSettingCount: 0,
+    settings,
+    integrationMcpControlsReturned: true,
+    externalToolConnectionsReturned: true,
+    recommendedServerControlsReturned: true,
+    customServerControlsReturned: true,
+    mcpOauthControlsReturned: true,
+    mcpOauthBoundaryAvailable,
+    sharedConfigTomlControlsReturned: true,
+    pluginMcpControlsReturned: true,
+    serverListingsReturned: false,
+    serverNamesReturned: false,
+    recommendedServerNamesReturned: false,
+    customServerNamesReturned: false,
+    serverUrlsReturned: false,
+    commandDetailsReturned: false,
+    environmentVariablesReturned: false,
+    bearerTokenEnvVarsReturned: false,
+    oauthUrlsReturned: false,
+    oauthTokensReturned: false,
+    oauthLoginStarted: false,
+    configTomlContentReturned: false,
+    configTomlPathsReturned: false,
+    toolNamesReturned: false,
+    toolAllowlistsReturned: false,
+    serverInstructionsReturned: false,
+    pluginIdsReturned: false,
+    settingValuesReturned: false,
+    localSettingValuesReturned: false,
+    configWriteEnabled: false,
+    mutationEnabled: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+    rawPayloadsReturned: false,
+    appServerTraffic: false,
+  };
+}
+
 const CODEX_APP_BROWSER_SETTINGS = Object.freeze([
   {
     key: "bundledBrowserPlugin",
@@ -34514,12 +34642,6 @@ function codexAppSettingsSection(key, group, state, source) {
 }
 
 function buildCodexAppSettingsParity(payload = {}) {
-  const surfaces = payload.surfaces ?? {};
-  const apps = surfaces.apps ?? {};
-  const externalAgentConfig = surfaces.externalAgentConfig ?? {};
-  const mcp = surfaces.mcp ?? {};
-  const skills = surfaces.skills ?? {};
-  const plugins = surfaces.plugins ?? {};
   const integrationScope = payload.integrationScope ?? {};
   const general = buildCodexAppGeneralSettingsSummary();
   const agentConfiguration = buildCodexAppAgentConfigurationSettingsSummary();
@@ -34528,6 +34650,7 @@ function buildCodexAppSettingsParity(payload = {}) {
   const appearance = buildCodexAppAppearanceSettingsSummary();
   const codexPets = buildCodexAppPetSettingsSummary();
   const git = buildCodexAppGitSettingsSummary();
+  const integrationsMcp = buildCodexAppIntegrationsMcpSettingsSummary(integrationScope);
   const browser = buildCodexAppBrowserSettingsSummary();
   const computerUse = buildCodexAppComputerUseSettingsSummary();
   const contextAwareSuggestions = buildCodexAppContextAwareSuggestionsSettingsSummary();
@@ -34535,9 +34658,6 @@ function buildCodexAppSettingsParity(payload = {}) {
   const personalization = buildCodexAppPersonalizationSettingsSummary();
   const memories = buildCodexAppMemoriesSettingsSummary(integrationScope);
   const archivedThreads = buildCodexAppArchivedThreadsSettingsSummary();
-  const integrationsVisible = [apps, externalAgentConfig, mcp, skills, plugins].some(
-    (surface) => surface.state === "partial",
-  );
   const sections = [
     codexAppSettingsSection(
       "general",
@@ -34580,10 +34700,8 @@ function buildCodexAppSettingsParity(payload = {}) {
     codexAppSettingsSection(
       "integrationsMcp",
       "integrations",
-      integrationsVisible || safeCount(integrationScope.enabledLocalGateCount) > 0
-        ? "partial"
-        : "blocked",
-      "settings-integrations-boundary",
+      integrationsMcp.state,
+      "integrations-mcp-settings-catalog",
     ),
     codexAppSettingsSection(
       "browser",
@@ -34645,6 +34763,7 @@ function buildCodexAppSettingsParity(payload = {}) {
     appearance,
     codexPets,
     git,
+    integrationsMcp,
     browser,
     computerUse,
     contextAwareSuggestions,
@@ -35090,6 +35209,29 @@ export function sanitizeSettingsIntegrationsPayload(
       codexAppGitRepositoryMetadataReturned: false,
       codexAppGitRemoteUrlsReturned: false,
       codexAppGitMutationsEnabled: false,
+      codexAppIntegrationsMcpSettingsReturned: true,
+      codexAppIntegrationsMcpValuesReturned: false,
+      codexAppIntegrationsMcpServerListingsReturned: false,
+      codexAppIntegrationsMcpServerNamesReturned: false,
+      codexAppIntegrationsMcpRecommendedServerNamesReturned: false,
+      codexAppIntegrationsMcpCustomServerNamesReturned: false,
+      codexAppIntegrationsMcpServerUrlsReturned: false,
+      codexAppIntegrationsMcpCommandDetailsReturned: false,
+      codexAppIntegrationsMcpEnvVarsReturned: false,
+      codexAppIntegrationsMcpBearerTokenEnvVarsReturned: false,
+      codexAppIntegrationsMcpOauthUrlsReturned: false,
+      codexAppIntegrationsMcpOauthTokensReturned: false,
+      codexAppIntegrationsMcpConfigTomlReturned: false,
+      codexAppIntegrationsMcpToolNamesReturned: false,
+      codexAppIntegrationsMcpToolAllowlistsReturned: false,
+      codexAppIntegrationsMcpServerInstructionsReturned: false,
+      codexAppIntegrationsMcpPluginIdsReturned: false,
+      codexAppIntegrationsMcpPathsReturned: false,
+      codexAppIntegrationsMcpUrlsReturned: false,
+      codexAppIntegrationsMcpSecretsReturned: false,
+      codexAppIntegrationsMcpRawPayloadsReturned: false,
+      codexAppIntegrationsMcpAppServerTraffic: false,
+      codexAppIntegrationsMcpMutationsEnabled: false,
       codexAppBrowserSettingsReturned: true,
       codexAppBrowserValuesReturned: false,
       codexAppBrowserWebsiteListsReturned: false,
@@ -42706,6 +42848,29 @@ export function buildSettingsIntegrations({
       codexAppGitRepositoryMetadataReturned: false,
       codexAppGitRemoteUrlsReturned: false,
       codexAppGitMutationsEnabled: false,
+      codexAppIntegrationsMcpSettingsReturned: true,
+      codexAppIntegrationsMcpValuesReturned: false,
+      codexAppIntegrationsMcpServerListingsReturned: false,
+      codexAppIntegrationsMcpServerNamesReturned: false,
+      codexAppIntegrationsMcpRecommendedServerNamesReturned: false,
+      codexAppIntegrationsMcpCustomServerNamesReturned: false,
+      codexAppIntegrationsMcpServerUrlsReturned: false,
+      codexAppIntegrationsMcpCommandDetailsReturned: false,
+      codexAppIntegrationsMcpEnvVarsReturned: false,
+      codexAppIntegrationsMcpBearerTokenEnvVarsReturned: false,
+      codexAppIntegrationsMcpOauthUrlsReturned: false,
+      codexAppIntegrationsMcpOauthTokensReturned: false,
+      codexAppIntegrationsMcpConfigTomlReturned: false,
+      codexAppIntegrationsMcpToolNamesReturned: false,
+      codexAppIntegrationsMcpToolAllowlistsReturned: false,
+      codexAppIntegrationsMcpServerInstructionsReturned: false,
+      codexAppIntegrationsMcpPluginIdsReturned: false,
+      codexAppIntegrationsMcpPathsReturned: false,
+      codexAppIntegrationsMcpUrlsReturned: false,
+      codexAppIntegrationsMcpSecretsReturned: false,
+      codexAppIntegrationsMcpRawPayloadsReturned: false,
+      codexAppIntegrationsMcpAppServerTraffic: false,
+      codexAppIntegrationsMcpMutationsEnabled: false,
       codexAppBrowserSettingsReturned: true,
       codexAppBrowserValuesReturned: false,
       codexAppBrowserWebsiteListsReturned: false,

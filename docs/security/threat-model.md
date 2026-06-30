@@ -433,7 +433,15 @@
   not return branch naming values, force-push preferences, prompt text, generated
   commit or pull-request text, repository names, repository paths, remote URLs,
   paths, URLs, secrets, raw payloads, app-server payloads, or Git settings
-  mutations. Its Browser settings catalog may expose only static setting keys,
+  mutations. Its Integrations & MCP settings catalog may expose only static
+  setting keys, groups, states, sources, counts, and redaction flags; it must
+  not return MCP server listings, server names, recommended/custom server names,
+  server URLs, commands, environment variables, bearer-token environment
+  variables, OAuth URLs or tokens, `config.toml` content or paths, tool names,
+  tool allowlists, server instructions, plugin ids, setting values, config
+  writes, mutations, paths, URLs, secrets, raw payloads, app-server payloads, or
+  start OAuth/app-server traffic. Its Browser settings catalog may expose only
+  static setting keys,
   groups, states, sources, and counts; it must not return Browser plugin or
   Chrome extension state, allowed or blocked site lists, origins, website
   permission values, CDP state, organization policy, Chrome profile data,

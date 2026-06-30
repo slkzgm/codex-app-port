@@ -117,6 +117,16 @@ Target parity with the Codex desktop workflow:
   generated commit or pull-request text, repository names, repository paths,
   remote URLs, paths, URLs, secrets, raw payloads, mutations, and app-server
   traffic remain blocked.
+- The same summary now includes a read-only Integrations & MCP settings catalog
+  for the official external-tool MCP connections, recommended servers, custom
+  servers, OAuth authentication, shared CLI/IDE `config.toml`, and
+  plugin-provided MCP server surfaces. It returns only keys, groups, states,
+  sources, counts, and redaction flags; server listings, server names,
+  recommended or custom server names, server URLs, command details, environment
+  variables, bearer-token environment variables, OAuth URLs or tokens,
+  `config.toml` content or paths, tool names, tool allowlists, server
+  instructions, plugin ids, setting values, config writes, mutations, paths,
+  URLs, secrets, raw payloads, and app-server traffic remain blocked.
 - The same summary now includes a read-only Browser settings catalog for the
   official Browser plugin, Chrome extension, site permission, ask-before-use,
   and full-CDP developer-mode controls. It returns only keys, groups, states,

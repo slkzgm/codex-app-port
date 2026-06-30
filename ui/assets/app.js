@@ -27,6 +27,8 @@ const elements = {
   appPetsValuesText: document.querySelector("#app-pets-values-text"),
   appGitText: document.querySelector("#app-git-text"),
   appGitValuesText: document.querySelector("#app-git-values-text"),
+  appIntegrationsMcpText: document.querySelector("#app-integrations-mcp-text"),
+  appIntegrationsMcpValuesText: document.querySelector("#app-integrations-mcp-values-text"),
   appBrowserText: document.querySelector("#app-browser-text"),
   appBrowserValuesText: document.querySelector("#app-browser-values-text"),
   appComputerUseText: document.querySelector("#app-computer-use-text"),
@@ -388,6 +390,7 @@ const elements = {
   appAppearanceList: document.querySelector("#app-appearance-list"),
   appPetsList: document.querySelector("#app-pets-list"),
   appGitList: document.querySelector("#app-git-list"),
+  appIntegrationsMcpList: document.querySelector("#app-integrations-mcp-list"),
   appBrowserList: document.querySelector("#app-browser-list"),
   appComputerUseList: document.querySelector("#app-computer-use-list"),
   appContextSuggestionsList: document.querySelector("#app-context-suggestions-list"),
@@ -10534,6 +10537,36 @@ function renderSettingsIntegrations(payload) {
     gitSettings.gitRemoteUrlsReturned
       ? "Returned"
       : "Hidden";
+  const integrationsMcp = codexAppSettings.integrationsMcp ?? {};
+  elements.appIntegrationsMcpText.textContent = integrationsMcp.returned
+    ? `${integrationsMcp.catalogOnlySettingCount ?? 0} catalog / ${
+        integrationsMcp.settingCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.appIntegrationsMcpValuesText.textContent =
+    integrationsMcp.serverNamesReturned ||
+    integrationsMcp.recommendedServerNamesReturned ||
+    integrationsMcp.customServerNamesReturned ||
+    integrationsMcp.serverUrlsReturned ||
+    integrationsMcp.commandDetailsReturned ||
+    integrationsMcp.environmentVariablesReturned ||
+    integrationsMcp.bearerTokenEnvVarsReturned ||
+    integrationsMcp.oauthUrlsReturned ||
+    integrationsMcp.oauthTokensReturned ||
+    integrationsMcp.configTomlContentReturned ||
+    integrationsMcp.configTomlPathsReturned ||
+    integrationsMcp.toolNamesReturned ||
+    integrationsMcp.toolAllowlistsReturned ||
+    integrationsMcp.serverInstructionsReturned ||
+    integrationsMcp.pluginIdsReturned ||
+    integrationsMcp.settingValuesReturned ||
+    integrationsMcp.pathsReturned ||
+    integrationsMcp.urlsReturned ||
+    integrationsMcp.secretsReturned ||
+    integrationsMcp.rawPayloadsReturned ||
+    integrationsMcp.appServerTraffic
+      ? "Returned"
+      : "Hidden";
   const browser = codexAppSettings.browser ?? {};
   elements.appBrowserText.textContent = browser.returned
     ? `${browser.catalogOnlySettingCount ?? 0} catalog / ${
@@ -10796,6 +10829,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexAppAppearanceSettings(appearance);
   renderCodexAppPetSettings(codexPets);
   renderCodexAppGitSettings(gitSettings);
+  renderCodexAppIntegrationsMcpSettings(integrationsMcp);
   renderCodexAppBrowserSettings(browser);
   renderCodexAppComputerUseSettings(computerUse);
   renderCodexAppContextAwareSuggestionsSettings(contextAwareSuggestions);
@@ -12666,6 +12700,79 @@ function renderCodexAppGitSettings(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.appGitList.append(row);
+  }
+}
+
+function renderCodexAppIntegrationsMcpSettings(summary) {
+  elements.appIntegrationsMcpList.replaceChildren();
+  const settings = Array.isArray(summary?.settings) ? summary.settings : [];
+  if (settings.length === 0) {
+    elements.appIntegrationsMcpList.append(
+      emptyState("No Integrations & MCP settings catalog returned."),
+    );
+    return;
+  }
+  for (const setting of settings) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = setting.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = setting.group ?? "integrations-mcp";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      setting.state ?? "blocked",
+      setting.source ?? null,
+      setting.settingValueReturned ? "value returned" : "value hidden",
+      setting.serverListingReturned ? "server list returned" : "server list hidden",
+      setting.serverNameReturned ? "server names returned" : "server names hidden",
+      setting.recommendedServerNameReturned
+        ? "recommended names returned"
+        : "recommended names hidden",
+      setting.customServerNameReturned ? "custom names returned" : "custom names hidden",
+      setting.serverUrlReturned ? "server URLs returned" : "server URLs hidden",
+      setting.commandDetailsReturned ? "commands returned" : "commands hidden",
+      setting.envVarsReturned ? "env vars returned" : "env vars hidden",
+      setting.bearerTokenEnvVarReturned
+        ? "bearer-token env returned"
+        : "bearer-token env hidden",
+      setting.oauthUrlReturned ? "OAuth URL returned" : "OAuth URL hidden",
+      setting.oauthTokenReturned ? "OAuth token returned" : "OAuth token hidden",
+      setting.configTomlContentReturned ? "config.toml returned" : "config.toml hidden",
+      setting.configTomlPathReturned ? "config path returned" : "config path hidden",
+      setting.toolNameReturned ? "tool names returned" : "tool names hidden",
+      setting.toolAllowlistReturned ? "tool allowlists returned" : "tool allowlists hidden",
+      setting.serverInstructionsReturned ? "instructions returned" : "instructions hidden",
+      setting.pluginIdReturned ? "plugin ids returned" : "plugin ids hidden",
+      setting.oauthLoginStarted ? "OAuth started" : "OAuth blocked",
+      setting.configWriteEnabled ? "config writes enabled" : "config writes blocked",
+      setting.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      setting.pathsReturned ? "paths returned" : "paths hidden",
+      setting.urlsReturned ? "URLs returned" : "URLs hidden",
+      setting.secretsReturned ? "secrets returned" : "secrets hidden",
+      setting.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      setting.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.appIntegrationsMcpList.append(row);
   }
 }
 

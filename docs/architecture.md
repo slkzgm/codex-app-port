@@ -524,6 +524,15 @@ Current M1 status:
   values, force-push preferences, prompt text, generated commit or pull-request
   text, repository names, repository paths, remote URLs, paths, URLs, secrets,
   raw payloads, mutations, and app-server traffic blocked
+- done: read-only Integrations & MCP settings catalog inside the settings
+  parity summary, exposing only static external-tool MCP connection,
+  recommended-server, custom-server, OAuth, shared `config.toml`, and
+  plugin-provided MCP server keys/groups/states/counts, with server listings,
+  server names, server URLs, commands, environment variables, bearer-token
+  variables, OAuth URLs/tokens, `config.toml` content or paths, tool names,
+  tool allowlists, server instructions, plugin ids, setting values, config
+  writes, mutations, paths, URLs, secrets, raw payloads, and app-server traffic
+  blocked
 - done: read-only Browser settings catalog inside the settings parity summary,
   exposing only static Browser plugin, Chrome extension, site permission,
   ask-before-use, and full-CDP developer-mode control keys/groups/states/counts,

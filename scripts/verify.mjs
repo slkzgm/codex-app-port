@@ -33147,6 +33147,8 @@ function assertCodexAppSettingsParity(
       "partial" ||
     summary.sections?.find((section) => section.key === "codexPets")?.state !== "partial" ||
     summary.sections?.find((section) => section.key === "git")?.state !== "partial" ||
+    summary.sections?.find((section) => section.key === "integrationsMcp")?.state !==
+      "partial" ||
     summary.sections?.find((section) => section.key === "browser")?.state !==
       "partial" ||
     summary.sections?.find((section) => section.key === "personalization")?.state !==
@@ -33529,6 +33531,85 @@ function assertCodexAppSettingsParity(
         setting.repositoryNameReturned === false &&
         setting.repositoryPathReturned === false &&
         setting.remoteUrlReturned === false &&
+        setting.mutationEnabled === false &&
+        setting.pathsReturned === false &&
+        setting.urlsReturned === false &&
+        setting.secretsReturned === false &&
+        setting.rawPayloadsReturned === false &&
+        setting.appServerTraffic === false,
+    ) ||
+    summary.integrationsMcp?.returned !== true ||
+    summary.integrationsMcp.state !== "partial" ||
+    summary.integrationsMcp.settingCount !== 6 ||
+    summary.integrationsMcp.officialSettingCount !== 6 ||
+    summary.integrationsMcp.catalogOnlySettingCount !== 5 ||
+    summary.integrationsMcp.preflightOnlySettingCount !== 0 ||
+    summary.integrationsMcp.blockedSettingCount !== 1 ||
+    summary.integrationsMcp.enabledSettingCount !== 0 ||
+    summary.integrationsMcp.integrationMcpControlsReturned !== true ||
+    summary.integrationsMcp.externalToolConnectionsReturned !== true ||
+    summary.integrationsMcp.recommendedServerControlsReturned !== true ||
+    summary.integrationsMcp.customServerControlsReturned !== true ||
+    summary.integrationsMcp.mcpOauthControlsReturned !== true ||
+    summary.integrationsMcp.mcpOauthBoundaryAvailable !== false ||
+    summary.integrationsMcp.sharedConfigTomlControlsReturned !== true ||
+    summary.integrationsMcp.pluginMcpControlsReturned !== true ||
+    summary.integrationsMcp.serverListingsReturned !== false ||
+    summary.integrationsMcp.serverNamesReturned !== false ||
+    summary.integrationsMcp.recommendedServerNamesReturned !== false ||
+    summary.integrationsMcp.customServerNamesReturned !== false ||
+    summary.integrationsMcp.serverUrlsReturned !== false ||
+    summary.integrationsMcp.commandDetailsReturned !== false ||
+    summary.integrationsMcp.environmentVariablesReturned !== false ||
+    summary.integrationsMcp.bearerTokenEnvVarsReturned !== false ||
+    summary.integrationsMcp.oauthUrlsReturned !== false ||
+    summary.integrationsMcp.oauthTokensReturned !== false ||
+    summary.integrationsMcp.oauthLoginStarted !== false ||
+    summary.integrationsMcp.configTomlContentReturned !== false ||
+    summary.integrationsMcp.configTomlPathsReturned !== false ||
+    summary.integrationsMcp.toolNamesReturned !== false ||
+    summary.integrationsMcp.toolAllowlistsReturned !== false ||
+    summary.integrationsMcp.serverInstructionsReturned !== false ||
+    summary.integrationsMcp.pluginIdsReturned !== false ||
+    summary.integrationsMcp.settingValuesReturned !== false ||
+    summary.integrationsMcp.localSettingValuesReturned !== false ||
+    summary.integrationsMcp.configWriteEnabled !== false ||
+    summary.integrationsMcp.mutationEnabled !== false ||
+    summary.integrationsMcp.pathsReturned !== false ||
+    summary.integrationsMcp.urlsReturned !== false ||
+    summary.integrationsMcp.secretsReturned !== false ||
+    summary.integrationsMcp.rawPayloadsReturned !== false ||
+    summary.integrationsMcp.appServerTraffic !== false ||
+    JSON.stringify((summary.integrationsMcp.settings ?? []).map((setting) => setting.key)) !==
+      JSON.stringify([
+        "externalToolMcpConnections",
+        "recommendedMcpServers",
+        "customMcpServers",
+        "mcpOauthAuthentication",
+        "sharedCliIdeMcpConfigToml",
+        "pluginProvidedMcpServers",
+      ]) ||
+    !summary.integrationsMcp.settings?.every(
+      (setting) =>
+        setting.settingValueReturned === false &&
+        setting.serverListingReturned === false &&
+        setting.serverNameReturned === false &&
+        setting.recommendedServerNameReturned === false &&
+        setting.customServerNameReturned === false &&
+        setting.serverUrlReturned === false &&
+        setting.commandDetailsReturned === false &&
+        setting.envVarsReturned === false &&
+        setting.bearerTokenEnvVarReturned === false &&
+        setting.oauthUrlReturned === false &&
+        setting.oauthTokenReturned === false &&
+        setting.configTomlContentReturned === false &&
+        setting.configTomlPathReturned === false &&
+        setting.toolNameReturned === false &&
+        setting.toolAllowlistReturned === false &&
+        setting.serverInstructionsReturned === false &&
+        setting.pluginIdReturned === false &&
+        setting.oauthLoginStarted === false &&
+        setting.configWriteEnabled === false &&
         setting.mutationEnabled === false &&
         setting.pathsReturned === false &&
         setting.urlsReturned === false &&
@@ -33980,6 +34061,29 @@ function assertCodexAppSettingsParity(
     payload.policy?.codexAppGitRepositoryMetadataReturned !== false ||
     payload.policy?.codexAppGitRemoteUrlsReturned !== false ||
     payload.policy?.codexAppGitMutationsEnabled !== false ||
+    payload.policy?.codexAppIntegrationsMcpSettingsReturned !== true ||
+    payload.policy?.codexAppIntegrationsMcpValuesReturned !== false ||
+    payload.policy?.codexAppIntegrationsMcpServerListingsReturned !== false ||
+    payload.policy?.codexAppIntegrationsMcpServerNamesReturned !== false ||
+    payload.policy?.codexAppIntegrationsMcpRecommendedServerNamesReturned !== false ||
+    payload.policy?.codexAppIntegrationsMcpCustomServerNamesReturned !== false ||
+    payload.policy?.codexAppIntegrationsMcpServerUrlsReturned !== false ||
+    payload.policy?.codexAppIntegrationsMcpCommandDetailsReturned !== false ||
+    payload.policy?.codexAppIntegrationsMcpEnvVarsReturned !== false ||
+    payload.policy?.codexAppIntegrationsMcpBearerTokenEnvVarsReturned !== false ||
+    payload.policy?.codexAppIntegrationsMcpOauthUrlsReturned !== false ||
+    payload.policy?.codexAppIntegrationsMcpOauthTokensReturned !== false ||
+    payload.policy?.codexAppIntegrationsMcpConfigTomlReturned !== false ||
+    payload.policy?.codexAppIntegrationsMcpToolNamesReturned !== false ||
+    payload.policy?.codexAppIntegrationsMcpToolAllowlistsReturned !== false ||
+    payload.policy?.codexAppIntegrationsMcpServerInstructionsReturned !== false ||
+    payload.policy?.codexAppIntegrationsMcpPluginIdsReturned !== false ||
+    payload.policy?.codexAppIntegrationsMcpPathsReturned !== false ||
+    payload.policy?.codexAppIntegrationsMcpUrlsReturned !== false ||
+    payload.policy?.codexAppIntegrationsMcpSecretsReturned !== false ||
+    payload.policy?.codexAppIntegrationsMcpRawPayloadsReturned !== false ||
+    payload.policy?.codexAppIntegrationsMcpAppServerTraffic !== false ||
+    payload.policy?.codexAppIntegrationsMcpMutationsEnabled !== false ||
     payload.policy?.codexAppBrowserSettingsReturned !== true ||
     payload.policy?.codexAppBrowserValuesReturned !== false ||
     payload.policy?.codexAppBrowserWebsiteListsReturned !== false ||

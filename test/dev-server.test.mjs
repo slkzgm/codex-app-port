@@ -34985,6 +34985,10 @@ function assertCodexAppSettingsParity(
   );
   assert.equal(summary.sections.find((section) => section.key === "codexPets")?.state, "partial");
   assert.equal(summary.sections.find((section) => section.key === "git")?.state, "partial");
+  assert.equal(
+    summary.sections.find((section) => section.key === "integrationsMcp")?.state,
+    "partial",
+  );
   assert.equal(summary.sections.find((section) => section.key === "browser")?.state, "partial");
   assert.equal(
     summary.sections.find((section) => section.key === "personalization")?.state,
@@ -35407,6 +35411,90 @@ function assertCodexAppSettingsParity(
         setting.repositoryNameReturned === false &&
         setting.repositoryPathReturned === false &&
         setting.remoteUrlReturned === false &&
+        setting.mutationEnabled === false &&
+        setting.pathsReturned === false &&
+        setting.urlsReturned === false &&
+        setting.secretsReturned === false &&
+        setting.rawPayloadsReturned === false &&
+        setting.appServerTraffic === false,
+    ),
+    true,
+  );
+  assert.equal(summary.integrationsMcp?.returned, true);
+  assert.equal(summary.integrationsMcp.state, "partial");
+  assert.equal(summary.integrationsMcp.settingCount, 6);
+  assert.equal(summary.integrationsMcp.officialSettingCount, 6);
+  assert.equal(summary.integrationsMcp.catalogOnlySettingCount, 5);
+  assert.equal(summary.integrationsMcp.preflightOnlySettingCount, 0);
+  assert.equal(summary.integrationsMcp.blockedSettingCount, 1);
+  assert.equal(summary.integrationsMcp.enabledSettingCount, 0);
+  assert.equal(summary.integrationsMcp.integrationMcpControlsReturned, true);
+  assert.equal(summary.integrationsMcp.externalToolConnectionsReturned, true);
+  assert.equal(summary.integrationsMcp.recommendedServerControlsReturned, true);
+  assert.equal(summary.integrationsMcp.customServerControlsReturned, true);
+  assert.equal(summary.integrationsMcp.mcpOauthControlsReturned, true);
+  assert.equal(summary.integrationsMcp.mcpOauthBoundaryAvailable, false);
+  assert.equal(summary.integrationsMcp.sharedConfigTomlControlsReturned, true);
+  assert.equal(summary.integrationsMcp.pluginMcpControlsReturned, true);
+  assert.equal(summary.integrationsMcp.serverListingsReturned, false);
+  assert.equal(summary.integrationsMcp.serverNamesReturned, false);
+  assert.equal(summary.integrationsMcp.recommendedServerNamesReturned, false);
+  assert.equal(summary.integrationsMcp.customServerNamesReturned, false);
+  assert.equal(summary.integrationsMcp.serverUrlsReturned, false);
+  assert.equal(summary.integrationsMcp.commandDetailsReturned, false);
+  assert.equal(summary.integrationsMcp.environmentVariablesReturned, false);
+  assert.equal(summary.integrationsMcp.bearerTokenEnvVarsReturned, false);
+  assert.equal(summary.integrationsMcp.oauthUrlsReturned, false);
+  assert.equal(summary.integrationsMcp.oauthTokensReturned, false);
+  assert.equal(summary.integrationsMcp.oauthLoginStarted, false);
+  assert.equal(summary.integrationsMcp.configTomlContentReturned, false);
+  assert.equal(summary.integrationsMcp.configTomlPathsReturned, false);
+  assert.equal(summary.integrationsMcp.toolNamesReturned, false);
+  assert.equal(summary.integrationsMcp.toolAllowlistsReturned, false);
+  assert.equal(summary.integrationsMcp.serverInstructionsReturned, false);
+  assert.equal(summary.integrationsMcp.pluginIdsReturned, false);
+  assert.equal(summary.integrationsMcp.settingValuesReturned, false);
+  assert.equal(summary.integrationsMcp.localSettingValuesReturned, false);
+  assert.equal(summary.integrationsMcp.configWriteEnabled, false);
+  assert.equal(summary.integrationsMcp.mutationEnabled, false);
+  assert.equal(summary.integrationsMcp.pathsReturned, false);
+  assert.equal(summary.integrationsMcp.urlsReturned, false);
+  assert.equal(summary.integrationsMcp.secretsReturned, false);
+  assert.equal(summary.integrationsMcp.rawPayloadsReturned, false);
+  assert.equal(summary.integrationsMcp.appServerTraffic, false);
+  assert.deepEqual(
+    summary.integrationsMcp.settings.map((setting) => setting.key),
+    [
+      "externalToolMcpConnections",
+      "recommendedMcpServers",
+      "customMcpServers",
+      "mcpOauthAuthentication",
+      "sharedCliIdeMcpConfigToml",
+      "pluginProvidedMcpServers",
+    ],
+  );
+  assert.equal(
+    summary.integrationsMcp.settings.every(
+      (setting) =>
+        setting.settingValueReturned === false &&
+        setting.serverListingReturned === false &&
+        setting.serverNameReturned === false &&
+        setting.recommendedServerNameReturned === false &&
+        setting.customServerNameReturned === false &&
+        setting.serverUrlReturned === false &&
+        setting.commandDetailsReturned === false &&
+        setting.envVarsReturned === false &&
+        setting.bearerTokenEnvVarReturned === false &&
+        setting.oauthUrlReturned === false &&
+        setting.oauthTokenReturned === false &&
+        setting.configTomlContentReturned === false &&
+        setting.configTomlPathReturned === false &&
+        setting.toolNameReturned === false &&
+        setting.toolAllowlistReturned === false &&
+        setting.serverInstructionsReturned === false &&
+        setting.pluginIdReturned === false &&
+        setting.oauthLoginStarted === false &&
+        setting.configWriteEnabled === false &&
         setting.mutationEnabled === false &&
         setting.pathsReturned === false &&
         setting.urlsReturned === false &&
@@ -35898,6 +35986,29 @@ function assertCodexAppSettingsParity(
   assert.equal(payload.policy?.codexAppGitRepositoryMetadataReturned, false);
   assert.equal(payload.policy?.codexAppGitRemoteUrlsReturned, false);
   assert.equal(payload.policy?.codexAppGitMutationsEnabled, false);
+  assert.equal(payload.policy?.codexAppIntegrationsMcpSettingsReturned, true);
+  assert.equal(payload.policy?.codexAppIntegrationsMcpValuesReturned, false);
+  assert.equal(payload.policy?.codexAppIntegrationsMcpServerListingsReturned, false);
+  assert.equal(payload.policy?.codexAppIntegrationsMcpServerNamesReturned, false);
+  assert.equal(payload.policy?.codexAppIntegrationsMcpRecommendedServerNamesReturned, false);
+  assert.equal(payload.policy?.codexAppIntegrationsMcpCustomServerNamesReturned, false);
+  assert.equal(payload.policy?.codexAppIntegrationsMcpServerUrlsReturned, false);
+  assert.equal(payload.policy?.codexAppIntegrationsMcpCommandDetailsReturned, false);
+  assert.equal(payload.policy?.codexAppIntegrationsMcpEnvVarsReturned, false);
+  assert.equal(payload.policy?.codexAppIntegrationsMcpBearerTokenEnvVarsReturned, false);
+  assert.equal(payload.policy?.codexAppIntegrationsMcpOauthUrlsReturned, false);
+  assert.equal(payload.policy?.codexAppIntegrationsMcpOauthTokensReturned, false);
+  assert.equal(payload.policy?.codexAppIntegrationsMcpConfigTomlReturned, false);
+  assert.equal(payload.policy?.codexAppIntegrationsMcpToolNamesReturned, false);
+  assert.equal(payload.policy?.codexAppIntegrationsMcpToolAllowlistsReturned, false);
+  assert.equal(payload.policy?.codexAppIntegrationsMcpServerInstructionsReturned, false);
+  assert.equal(payload.policy?.codexAppIntegrationsMcpPluginIdsReturned, false);
+  assert.equal(payload.policy?.codexAppIntegrationsMcpPathsReturned, false);
+  assert.equal(payload.policy?.codexAppIntegrationsMcpUrlsReturned, false);
+  assert.equal(payload.policy?.codexAppIntegrationsMcpSecretsReturned, false);
+  assert.equal(payload.policy?.codexAppIntegrationsMcpRawPayloadsReturned, false);
+  assert.equal(payload.policy?.codexAppIntegrationsMcpAppServerTraffic, false);
+  assert.equal(payload.policy?.codexAppIntegrationsMcpMutationsEnabled, false);
   assert.equal(payload.policy?.codexAppBrowserSettingsReturned, true);
   assert.equal(payload.policy?.codexAppBrowserValuesReturned, false);
   assert.equal(payload.policy?.codexAppBrowserWebsiteListsReturned, false);

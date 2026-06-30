@@ -761,6 +761,16 @@ groups, state/source chips, catalog counts, and redaction chips; branch naming
 values, force-push preferences, prompt text, generated commit or pull-request
 text, repository names, repository paths, remote URLs, paths, URLs, raw payloads,
 mutations, and app-server traffic remain blocked.
+Within that same summary, `integrationsMcp` exposes a static review-only
+catalog for official external-tool MCP connections, recommended servers, custom
+servers, MCP OAuth authentication, shared CLI/IDE `config.toml`, and
+plugin-provided MCP servers. The UI shows only setting keys, groups,
+state/source chips, catalog counts, and redaction chips; server listings,
+server names, recommended or custom server names, server URLs, command details,
+environment variables, bearer-token environment variables, OAuth URLs or
+tokens, `config.toml` content or paths, tool names, tool allowlists, server
+instructions, plugin ids, setting values, config writes, mutations, paths,
+URLs, raw payloads, and app-server traffic remain blocked.
 Within that same summary, `browser` exposes a static review-only catalog for
 the official Browser plugin, Chrome extension, site permission, ask-before-use,
 and full-CDP developer-mode controls. The UI shows only setting keys, groups,
@@ -2026,6 +2036,10 @@ Current UI scope:
 - opt-in allowlisted MCP OAuth login behind one-time preflight tokens, returning
   a protected immediate HTTPS authorization URL while histories and audit logs
   omit URLs, server names, tokens, paths, and raw payloads
+- read-only Codex app Integrations & MCP settings catalog with static
+  keys/groups/states/counts only, and no server names, server URLs, commands,
+  environment variables, OAuth URLs/tokens, `config.toml` content/paths, tool
+  names, plugin ids, config writes, mutations, or app-server traffic
 - MCP resource-read preflight without names, URI echo, content, schemas, or
   app-server traffic, plus opt-in one-time-token MCP resource reads returning
   count-only content metadata
