@@ -15,6 +15,8 @@ const elements = {
   appSettingsParityText: document.querySelector("#app-settings-parity-text"),
   appSettingsBlockedText: document.querySelector("#app-settings-blocked-text"),
   appSettingsValuesText: document.querySelector("#app-settings-values-text"),
+  appProfileText: document.querySelector("#app-profile-text"),
+  appProfileValuesText: document.querySelector("#app-profile-values-text"),
   appAppearanceText: document.querySelector("#app-appearance-text"),
   appAppearanceValuesText: document.querySelector("#app-appearance-values-text"),
   appPetsText: document.querySelector("#app-pets-text"),
@@ -372,6 +374,7 @@ const elements = {
   upstreamDriftList: document.querySelector("#upstream-drift-list"),
   integrationsDetailList: document.querySelector("#integrations-detail-list"),
   appSettingsParityList: document.querySelector("#app-settings-parity-list"),
+  appProfileList: document.querySelector("#app-profile-list"),
   appAppearanceList: document.querySelector("#app-appearance-list"),
   appPetsList: document.querySelector("#app-pets-list"),
   appBrowserList: document.querySelector("#app-browser-list"),
@@ -10427,6 +10430,24 @@ function renderSettingsIntegrations(payload) {
     codexAppSettings.localSettingValuesReturned || codexAppSettings.settingValuesReturned
       ? "Returned"
       : "Hidden";
+  const profile = codexAppSettings.profile ?? {};
+  elements.appProfileText.textContent = profile.returned
+    ? `${profile.catalogOnlySettingCount ?? 0} catalog / ${
+        profile.settingCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.appProfileValuesText.textContent =
+    profile.activityMetricsReturned ||
+    profile.tokenValuesReturned ||
+    profile.profileDetailsReturned ||
+    profile.profilePicturesReturned ||
+    profile.displayNamesReturned ||
+    profile.usernamesReturned ||
+    profile.profileCardsReturned ||
+    profile.invitationEligibilityReturned ||
+    profile.invitationLinksReturned
+      ? "Returned"
+      : "Hidden";
   const appearance = codexAppSettings.appearance ?? {};
   elements.appAppearanceText.textContent = appearance.returned
     ? `${appearance.catalogOnlySettingCount ?? 0} catalog / ${
@@ -10695,6 +10716,7 @@ function renderSettingsIntegrations(payload) {
   renderIntegrationConfirmationHistory(payload.preflightConfirmationHistory);
   renderIntegrationDetails(inventory);
   renderCodexAppSettingsParity(codexAppSettings);
+  renderCodexAppProfileSettings(profile);
   renderCodexAppAppearanceSettings(appearance);
   renderCodexAppPetSettings(codexPets);
   renderCodexAppBrowserSettings(browser);
@@ -12258,6 +12280,59 @@ function renderCodexAppSettingsParity(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.appSettingsParityList.append(row);
+  }
+}
+
+function renderCodexAppProfileSettings(summary) {
+  elements.appProfileList.replaceChildren();
+  const settings = Array.isArray(summary?.settings) ? summary.settings : [];
+  if (settings.length === 0) {
+    elements.appProfileList.append(emptyState("No profile settings catalog returned."));
+    return;
+  }
+  for (const setting of settings) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = setting.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = setting.group ?? "profile";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      setting.state ?? "blocked",
+      setting.source ?? null,
+      setting.settingValueReturned ? "value returned" : "value hidden",
+      setting.activityMetricReturned ? "metric returned" : "metric hidden",
+      setting.tokenValueReturned ? "token value returned" : "token value hidden",
+      setting.profileDetailReturned ? "profile detail returned" : "profile detail hidden",
+      setting.profilePictureReturned ? "picture returned" : "picture hidden",
+      setting.displayNameReturned ? "display name returned" : "display name hidden",
+      setting.usernameReturned ? "username returned" : "username hidden",
+      setting.profileCardReturned ? "profile card returned" : "profile card hidden",
+      setting.invitationEligibilityReturned ? "eligibility returned" : "eligibility hidden",
+      setting.invitationSent ? "invitation sent" : "invitation blocked",
+      setting.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.appProfileList.append(row);
   }
 }
 

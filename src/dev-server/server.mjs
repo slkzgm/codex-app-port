@@ -33198,6 +33198,137 @@ function buildCodexAppKeyboardShortcutsSummary() {
   };
 }
 
+const CODEX_APP_PROFILE_SETTINGS = Object.freeze([
+  {
+    key: "activityInsights",
+    group: "usage",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "lifetimeTokens",
+    group: "usage",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "peakTokens",
+    group: "usage",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "streaks",
+    group: "usage",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "longestTask",
+    group: "usage",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "tokenActivity",
+    group: "usage",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "profilePicture",
+    group: "profile-details",
+    state: "blocked",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "displayName",
+    group: "profile-details",
+    state: "blocked",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "username",
+    group: "profile-details",
+    state: "blocked",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "profileCard",
+    group: "sharing",
+    state: "blocked",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "profileInvitations",
+    group: "invitations",
+    state: "blocked",
+    source: "official-codex-app-docs",
+  },
+]);
+
+function buildCodexAppProfileSettingsSummary() {
+  const settings = CODEX_APP_PROFILE_SETTINGS.map((setting) => ({
+    ...setting,
+    settingValueReturned: false,
+    activityMetricReturned: false,
+    tokenValueReturned: false,
+    profileDetailReturned: false,
+    profilePictureReturned: false,
+    displayNameReturned: false,
+    usernameReturned: false,
+    profileCardReturned: false,
+    profileCardImageReturned: false,
+    sharingUrlReturned: false,
+    invitationEligibilityReturned: false,
+    invitationLinkReturned: false,
+    invitationSent: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+    rawPayloadsReturned: false,
+    appServerTraffic: false,
+  }));
+  const catalogOnlySettingCount = settings.filter(
+    (setting) => setting.state === "catalog-only",
+  ).length;
+  const blockedSettingCount = settings.filter((setting) => setting.state === "blocked").length;
+
+  return {
+    returned: true,
+    state: catalogOnlySettingCount > 0 ? "partial" : "blocked",
+    settingCount: settings.length,
+    officialSettingCount: settings.filter(
+      (setting) => setting.source === "official-codex-app-docs",
+    ).length,
+    catalogOnlySettingCount,
+    blockedSettingCount,
+    enabledSettingCount: 0,
+    settings,
+    profileControlsReturned: true,
+    activityMetricsReturned: false,
+    tokenValuesReturned: false,
+    profileDetailsReturned: false,
+    profilePicturesReturned: false,
+    displayNamesReturned: false,
+    usernamesReturned: false,
+    profileCardsReturned: false,
+    profileCardImagesReturned: false,
+    profileCardSharingUrlsReturned: false,
+    invitationEligibilityReturned: false,
+    invitationLinksReturned: false,
+    invitationSendEnabled: false,
+    settingValuesReturned: false,
+    localSettingValuesReturned: false,
+    mutationEnabled: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+    rawPayloadsReturned: false,
+    appServerTraffic: false,
+  };
+}
+
 const CODEX_APP_APPEARANCE_SETTINGS = Object.freeze([
   {
     key: "baseTheme",
@@ -34043,7 +34174,6 @@ function codexAppSettingsSection(key, group, state, source) {
 function buildCodexAppSettingsParity(payload = {}) {
   const surfaces = payload.surfaces ?? {};
   const settings = surfaces.settings ?? {};
-  const auth = surfaces.auth ?? {};
   const apps = surfaces.apps ?? {};
   const externalAgentConfig = surfaces.externalAgentConfig ?? {};
   const mcp = surfaces.mcp ?? {};
@@ -34051,6 +34181,7 @@ function buildCodexAppSettingsParity(payload = {}) {
   const plugins = surfaces.plugins ?? {};
   const integrationScope = payload.integrationScope ?? {};
   const keyboardShortcuts = buildCodexAppKeyboardShortcutsSummary();
+  const profile = buildCodexAppProfileSettingsSummary();
   const appearance = buildCodexAppAppearanceSettingsSummary();
   const codexPets = buildCodexAppPetSettingsSummary();
   const browser = buildCodexAppBrowserSettingsSummary();
@@ -34059,13 +34190,6 @@ function buildCodexAppSettingsParity(payload = {}) {
   const notifications = buildCodexAppNotificationSettingsSummary(payload);
   const personalization = buildCodexAppPersonalizationSettingsSummary();
   const memories = buildCodexAppMemoriesSettingsSummary(integrationScope);
-  const hasOptInAuthAction = Boolean(
-    auth.loginEnabled ||
-      auth.loginCancelEnabled ||
-      auth.creditsNudgeEnabled ||
-      auth.resetCreditConsumeEnabled ||
-      auth.logoutEnabled,
-  );
   const integrationsVisible = [apps, externalAgentConfig, mcp, skills, plugins].some(
     (surface) => surface.state === "partial",
   );
@@ -34079,8 +34203,8 @@ function buildCodexAppSettingsParity(payload = {}) {
     codexAppSettingsSection(
       "profile",
       "account",
-      auth.state === "partial" ? "partial" : hasOptInAuthAction ? "preflight-only" : "blocked",
-      "auth-boundary",
+      profile.state,
+      "profile-settings-catalog",
     ),
     codexAppSettingsSection(
       "keyboardShortcuts",
@@ -34169,6 +34293,7 @@ function buildCodexAppSettingsParity(payload = {}) {
     preflightOnlySectionCount,
     blockedSectionCount,
     sections,
+    profile,
     keyboardShortcuts,
     appearance,
     codexPets,
@@ -34568,6 +34693,14 @@ export function sanitizeSettingsIntegrationsPayload(
       codexAppSettingsPathsReturned: false,
       codexAppSettingsUrlsReturned: false,
       codexAppSettingsRawPayloadsReturned: false,
+      codexAppProfileSettingsReturned: true,
+      codexAppProfileValuesReturned: false,
+      codexAppProfileActivityMetricsReturned: false,
+      codexAppProfileTokenValuesReturned: false,
+      codexAppProfileDetailsReturned: false,
+      codexAppProfileCardsReturned: false,
+      codexAppProfileInvitationsReturned: false,
+      codexAppProfileMutationsEnabled: false,
       codexAppKeyboardShortcutsReturned: true,
       codexAppKeyboardShortcutBindingsReturned: true,
       codexAppKeyboardShortcutCommandLabelsReturned: false,
@@ -42150,6 +42283,14 @@ export function buildSettingsIntegrations({
       codexAppSettingsPathsReturned: false,
       codexAppSettingsUrlsReturned: false,
       codexAppSettingsRawPayloadsReturned: false,
+      codexAppProfileSettingsReturned: true,
+      codexAppProfileValuesReturned: false,
+      codexAppProfileActivityMetricsReturned: false,
+      codexAppProfileTokenValuesReturned: false,
+      codexAppProfileDetailsReturned: false,
+      codexAppProfileCardsReturned: false,
+      codexAppProfileInvitationsReturned: false,
+      codexAppProfileMutationsEnabled: false,
       codexAppKeyboardShortcutsReturned: true,
       codexAppKeyboardShortcutBindingsReturned: true,
       codexAppKeyboardShortcutCommandLabelsReturned: false,

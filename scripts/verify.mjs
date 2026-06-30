@@ -32690,11 +32690,11 @@ function assertSanitizedSettingsIntegrations(payload) {
   }
   assertSettingsServerBoundaries(payload);
   assertCodexAppSettingsParity(payload, {
-    availableSectionCount: 14,
-    partialSectionCount: 14,
+    availableSectionCount: 15,
+    partialSectionCount: 15,
     preflightOnlySectionCount: 0,
-    blockedSectionCount: 1,
-    profileState: "blocked",
+    blockedSectionCount: 0,
+    profileState: "partial",
   });
   if (
     payload.surfaces?.settings?.state !== "partial" ||
@@ -33170,6 +33170,69 @@ function assertCodexAppSettingsParity(
     summary.mutationsEnabled !== false ||
     summary.browserHandlersEnabled !== false ||
     summary.settingsWritesEnabled !== false ||
+    summary.profile?.returned !== true ||
+    summary.profile.state !== "partial" ||
+    summary.profile.settingCount !== 11 ||
+    summary.profile.officialSettingCount !== 11 ||
+    summary.profile.catalogOnlySettingCount !== 6 ||
+    summary.profile.blockedSettingCount !== 5 ||
+    summary.profile.enabledSettingCount !== 0 ||
+    summary.profile.profileControlsReturned !== true ||
+    summary.profile.activityMetricsReturned !== false ||
+    summary.profile.tokenValuesReturned !== false ||
+    summary.profile.profileDetailsReturned !== false ||
+    summary.profile.profilePicturesReturned !== false ||
+    summary.profile.displayNamesReturned !== false ||
+    summary.profile.usernamesReturned !== false ||
+    summary.profile.profileCardsReturned !== false ||
+    summary.profile.profileCardImagesReturned !== false ||
+    summary.profile.profileCardSharingUrlsReturned !== false ||
+    summary.profile.invitationEligibilityReturned !== false ||
+    summary.profile.invitationLinksReturned !== false ||
+    summary.profile.invitationSendEnabled !== false ||
+    summary.profile.settingValuesReturned !== false ||
+    summary.profile.localSettingValuesReturned !== false ||
+    summary.profile.mutationEnabled !== false ||
+    summary.profile.pathsReturned !== false ||
+    summary.profile.urlsReturned !== false ||
+    summary.profile.secretsReturned !== false ||
+    summary.profile.rawPayloadsReturned !== false ||
+    summary.profile.appServerTraffic !== false ||
+    JSON.stringify((summary.profile.settings ?? []).map((setting) => setting.key)) !==
+      JSON.stringify([
+        "activityInsights",
+        "lifetimeTokens",
+        "peakTokens",
+        "streaks",
+        "longestTask",
+        "tokenActivity",
+        "profilePicture",
+        "displayName",
+        "username",
+        "profileCard",
+        "profileInvitations",
+      ]) ||
+    !summary.profile.settings?.every(
+      (setting) =>
+        setting.settingValueReturned === false &&
+        setting.activityMetricReturned === false &&
+        setting.tokenValueReturned === false &&
+        setting.profileDetailReturned === false &&
+        setting.profilePictureReturned === false &&
+        setting.displayNameReturned === false &&
+        setting.usernameReturned === false &&
+        setting.profileCardReturned === false &&
+        setting.profileCardImageReturned === false &&
+        setting.sharingUrlReturned === false &&
+        setting.invitationEligibilityReturned === false &&
+        setting.invitationLinkReturned === false &&
+        setting.invitationSent === false &&
+        setting.pathsReturned === false &&
+        setting.urlsReturned === false &&
+        setting.secretsReturned === false &&
+        setting.rawPayloadsReturned === false &&
+        setting.appServerTraffic === false,
+    ) ||
     summary.keyboardShortcuts?.returned !== true ||
     summary.keyboardShortcuts.state !== "partial" ||
     summary.keyboardShortcuts.shortcutCount !== 7 ||
@@ -33663,6 +33726,14 @@ function assertCodexAppSettingsParity(
     payload.policy?.codexAppSettingsPathsReturned !== false ||
     payload.policy?.codexAppSettingsUrlsReturned !== false ||
     payload.policy?.codexAppSettingsRawPayloadsReturned !== false ||
+    payload.policy?.codexAppProfileSettingsReturned !== true ||
+    payload.policy?.codexAppProfileValuesReturned !== false ||
+    payload.policy?.codexAppProfileActivityMetricsReturned !== false ||
+    payload.policy?.codexAppProfileTokenValuesReturned !== false ||
+    payload.policy?.codexAppProfileDetailsReturned !== false ||
+    payload.policy?.codexAppProfileCardsReturned !== false ||
+    payload.policy?.codexAppProfileInvitationsReturned !== false ||
+    payload.policy?.codexAppProfileMutationsEnabled !== false ||
     payload.policy?.codexAppKeyboardShortcutsReturned !== true ||
     payload.policy?.codexAppKeyboardShortcutBindingsReturned !== true ||
     payload.policy?.codexAppKeyboardShortcutCommandLabelsReturned !== false ||

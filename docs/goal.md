@@ -71,6 +71,13 @@ Target parity with the Codex desktop workflow:
   static section keys/states/counts only and no local setting values, profile
   names, paths, URLs, secrets, raw payloads, app-server payloads, browser
   handlers, or settings writes.
+- The same summary now includes a read-only Profile settings catalog for the
+  official activity insights, token metrics, profile detail update surfaces,
+  profile-card sharing, and invitation controls. It returns only keys, groups,
+  states, sources, and counts; activity metrics, token values, profile pictures,
+  display names, usernames, profile cards, profile-card sharing URLs,
+  invitation eligibility or links, paths, URLs, secrets, raw payloads,
+  mutations, and app-server traffic remain blocked.
 - The same settings parity summary now includes a read-only keyboard-shortcuts
   catalog with static official/local shortcut keys, bindings, states, sources,
   and counts only; custom/user bindings, command labels, keystroke search,

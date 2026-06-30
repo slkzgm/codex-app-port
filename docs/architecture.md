@@ -482,6 +482,12 @@ Current M1 status:
   values, profile names, paths, URLs, secrets, raw payloads, app-server payloads,
   browser handlers, and settings writes omitted; unimplemented sections stay
   explicitly blocked
+- done: read-only Profile settings catalog inside that settings parity summary,
+  exposing only static activity insight, token metric, profile detail,
+  profile-card, and invitation keys/groups/states/counts, with activity
+  metrics, token values, profile pictures, display names, usernames, profile
+  cards, sharing URLs, invitation eligibility or links, paths, URLs, secrets,
+  raw payloads, mutations, and app-server traffic blocked
 - done: read-only keyboard-shortcuts catalog inside that settings parity summary,
   exposing only static shortcut keys/bindings/counts for official tracked
   shortcuts and local accessibility shortcuts, with command labels, custom/user

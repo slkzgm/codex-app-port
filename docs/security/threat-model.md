@@ -399,7 +399,12 @@
   Its Codex app settings parity summary may expose only static official section
   keys, states, and counts; it must not return local setting values, profile
   names, paths, URLs, secrets, raw payloads, app-server payloads, browser
-  handlers, or settings writes. Its keyboard-shortcuts catalog may expose only
+  handlers, or settings writes. Its Profile settings catalog may expose only
+  static setting keys, groups, states, sources, and counts; it must not return
+  activity metrics, token values, profile pictures, display names, usernames,
+  profile cards, profile-card sharing URLs, invitation eligibility, invitation
+  links, paths, URLs, secrets, raw payloads, app-server payloads, or profile
+  mutations. Its keyboard-shortcuts catalog may expose only
   static shortcut keys, groups, bindings, states, sources, and counts; it must
   not expose command labels, custom or user bindings, paths, URLs, secrets, raw
   payloads, app-server payloads, or shortcut editing/reset mutations. Its

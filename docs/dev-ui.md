@@ -724,6 +724,14 @@ only setting keys, groups, state/source chips, catalog counts, and redaction
 chips; active theme values, color values, font names, custom theme payloads,
 sharing URLs, paths, raw payloads, mutations, and app-server traffic remain
 blocked.
+Within that same summary, `profile` exposes a static review-only catalog for
+activity insights, lifetime and peak token metrics, streaks, longest task,
+token activity, profile detail update surfaces, profile-card sharing, and
+invitation controls. The UI shows only setting keys, groups, state/source
+chips, catalog counts, and redaction chips; activity metrics, token values,
+profile pictures, display names, usernames, profile cards, profile-card
+sharing URLs, invitation eligibility or links, paths, URLs, raw payloads,
+mutations, and app-server traffic remain blocked.
 Within that same summary, `codexPets` exposes a static review-only catalog for
 the official pet picker, `/pet`, Wake Pet, Tuck Away Pet, custom-pet refresh,
 and `hatch-pet` install surfaces. The UI shows only setting keys, groups,

@@ -20489,11 +20489,11 @@ test("dev server exposes settings and integration boundary without app-server tr
     );
     assertSettingsServerBoundaries(payload);
     assertCodexAppSettingsParity(payload, {
-      availableSectionCount: 14,
-      partialSectionCount: 14,
+      availableSectionCount: 15,
+      partialSectionCount: 15,
       preflightOnlySectionCount: 0,
-      blockedSectionCount: 1,
-      profileState: "blocked",
+      blockedSectionCount: 0,
+      profileState: "partial",
     });
     assert.equal(payload.surfaces.settings.state, "partial");
     assert.equal(payload.surfaces.settings.readOnlySummaryAvailable, true);
@@ -35011,6 +35011,74 @@ function assertCodexAppSettingsParity(
   assert.equal(summary.mutationsEnabled, false);
   assert.equal(summary.browserHandlersEnabled, false);
   assert.equal(summary.settingsWritesEnabled, false);
+  assert.equal(summary.profile?.returned, true);
+  assert.equal(summary.profile.state, "partial");
+  assert.equal(summary.profile.settingCount, 11);
+  assert.equal(summary.profile.officialSettingCount, 11);
+  assert.equal(summary.profile.catalogOnlySettingCount, 6);
+  assert.equal(summary.profile.blockedSettingCount, 5);
+  assert.equal(summary.profile.enabledSettingCount, 0);
+  assert.equal(summary.profile.profileControlsReturned, true);
+  assert.equal(summary.profile.activityMetricsReturned, false);
+  assert.equal(summary.profile.tokenValuesReturned, false);
+  assert.equal(summary.profile.profileDetailsReturned, false);
+  assert.equal(summary.profile.profilePicturesReturned, false);
+  assert.equal(summary.profile.displayNamesReturned, false);
+  assert.equal(summary.profile.usernamesReturned, false);
+  assert.equal(summary.profile.profileCardsReturned, false);
+  assert.equal(summary.profile.profileCardImagesReturned, false);
+  assert.equal(summary.profile.profileCardSharingUrlsReturned, false);
+  assert.equal(summary.profile.invitationEligibilityReturned, false);
+  assert.equal(summary.profile.invitationLinksReturned, false);
+  assert.equal(summary.profile.invitationSendEnabled, false);
+  assert.equal(summary.profile.settingValuesReturned, false);
+  assert.equal(summary.profile.localSettingValuesReturned, false);
+  assert.equal(summary.profile.mutationEnabled, false);
+  assert.equal(summary.profile.pathsReturned, false);
+  assert.equal(summary.profile.urlsReturned, false);
+  assert.equal(summary.profile.secretsReturned, false);
+  assert.equal(summary.profile.rawPayloadsReturned, false);
+  assert.equal(summary.profile.appServerTraffic, false);
+  assert.deepEqual(
+    summary.profile.settings.map((setting) => setting.key),
+    [
+      "activityInsights",
+      "lifetimeTokens",
+      "peakTokens",
+      "streaks",
+      "longestTask",
+      "tokenActivity",
+      "profilePicture",
+      "displayName",
+      "username",
+      "profileCard",
+      "profileInvitations",
+    ],
+  );
+  assert.equal(
+    summary.profile.settings.every(
+      (setting) =>
+        setting.settingValueReturned === false &&
+        setting.activityMetricReturned === false &&
+        setting.tokenValueReturned === false &&
+        setting.profileDetailReturned === false &&
+        setting.profilePictureReturned === false &&
+        setting.displayNameReturned === false &&
+        setting.usernameReturned === false &&
+        setting.profileCardReturned === false &&
+        setting.profileCardImageReturned === false &&
+        setting.sharingUrlReturned === false &&
+        setting.invitationEligibilityReturned === false &&
+        setting.invitationLinkReturned === false &&
+        setting.invitationSent === false &&
+        setting.pathsReturned === false &&
+        setting.urlsReturned === false &&
+        setting.secretsReturned === false &&
+        setting.rawPayloadsReturned === false &&
+        setting.appServerTraffic === false,
+    ),
+    true,
+  );
   assert.equal(summary.keyboardShortcuts?.returned, true);
   assert.equal(summary.keyboardShortcuts.state, "partial");
   assert.equal(summary.keyboardShortcuts.shortcutCount, 7);
@@ -35552,6 +35620,14 @@ function assertCodexAppSettingsParity(
   assert.equal(payload.policy?.codexAppSettingsPathsReturned, false);
   assert.equal(payload.policy?.codexAppSettingsUrlsReturned, false);
   assert.equal(payload.policy?.codexAppSettingsRawPayloadsReturned, false);
+  assert.equal(payload.policy?.codexAppProfileSettingsReturned, true);
+  assert.equal(payload.policy?.codexAppProfileValuesReturned, false);
+  assert.equal(payload.policy?.codexAppProfileActivityMetricsReturned, false);
+  assert.equal(payload.policy?.codexAppProfileTokenValuesReturned, false);
+  assert.equal(payload.policy?.codexAppProfileDetailsReturned, false);
+  assert.equal(payload.policy?.codexAppProfileCardsReturned, false);
+  assert.equal(payload.policy?.codexAppProfileInvitationsReturned, false);
+  assert.equal(payload.policy?.codexAppProfileMutationsEnabled, false);
   assert.equal(payload.policy?.codexAppKeyboardShortcutsReturned, true);
   assert.equal(payload.policy?.codexAppKeyboardShortcutBindingsReturned, true);
   assert.equal(payload.policy?.codexAppKeyboardShortcutCommandLabelsReturned, false);
