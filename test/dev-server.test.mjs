@@ -191,6 +191,9 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /fs-watch-form/);
     assert.match(html, /fs-watch-status/);
     assert.match(html, /fs-watch-notifications/);
+    assert.match(html, /fuzzy-file-search-form/);
+    assert.match(html, /fuzzy-file-search-status/);
+    assert.match(html, /fuzzy-file-search-results/);
     const appResponse = await fetch(`${url}/assets/app.js`);
     assert.equal(appResponse.status, 200);
     const appScript = await appResponse.text();
@@ -206,6 +209,8 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(appScript, /setApprovalRefreshState/);
     assert.match(appScript, /runFsWatchPreflight/);
     assert.match(appScript, /renderFsWatchPreflight/);
+    assert.match(appScript, /runFuzzyFileSearchPreflight/);
+    assert.match(appScript, /renderFuzzyFileSearchPreflight/);
     assert.match(html, /approval-authority-contract/);
     assert.match(html, /approval-interaction-contract/);
     assert.match(appScript, /approvalAuthorityContractText/);
@@ -474,6 +479,7 @@ test("browser POST body contracts are centralized and immutable", () => {
     "/api/file-action-preflight",
     "/api/fs-read-file-preflight",
     "/api/fs-watch-preflight",
+    "/api/fuzzy-file-search-preflight",
     "/api/file-action",
     "/api/mcp-tool-preflight",
     "/api/mcp-tool-call",
@@ -708,6 +714,13 @@ test("browser POST body contracts are centralized and immutable", () => {
     "method",
     "path",
     "watchId",
+  ]);
+  assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/fuzzy-file-search-preflight"].allowedFields], [
+    "workspace",
+    "method",
+    "roots",
+    "query",
+    "sessionId",
   ]);
   assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/mcp-tool-preflight"].allowedFields], [
     "workspace",
@@ -1815,6 +1828,27 @@ test("browser POST response contracts block unsafe response values", () => {
   assert.equal(fsWatchPreflightContract.nestedKeySchemas.policy.includes("fsWatchPreflightEnabled"), true);
   assert.equal(fsWatchPreflightContract.nestedKeySchemas.policy.includes("watchIdsReturned"), true);
   assert.equal(fsWatchPreflightContract.nestedKeySchemas.policy.includes("unexpected"), false);
+  const fuzzyFileSearchPreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/fuzzy-file-search-preflight"];
+  assert.equal(fuzzyFileSearchPreflightContract.usesRouteSpecificNestedKeySchemas, true);
+  assert.equal(fuzzyFileSearchPreflightContract.nestedKeySchemas.request.includes("rootCount"), true);
+  assert.equal(fuzzyFileSearchPreflightContract.nestedKeySchemas.request.includes("queryCharCount"), true);
+  assert.equal(fuzzyFileSearchPreflightContract.nestedKeySchemas.results.includes("fileNamesReturned"), true);
+  assert.equal(fuzzyFileSearchPreflightContract.nestedKeySchemas.results.includes("pathsReturned"), true);
+  assert.equal(
+    fuzzyFileSearchPreflightContract.nestedKeySchemas.results.includes(
+      "sessionUpdatedNotificationsReturned",
+    ),
+    true,
+  );
+  assert.equal(
+    fuzzyFileSearchPreflightContract.nestedKeySchemas.policy.includes(
+      "fuzzyFileSearchPreflightEnabled",
+    ),
+    true,
+  );
+  assert.equal(fuzzyFileSearchPreflightContract.nestedKeySchemas.policy.includes("sessionIdsReturned"), true);
+  assert.equal(fuzzyFileSearchPreflightContract.nestedKeySchemas.policy.includes("unexpected"), false);
   const threadRollbackPreflightContract =
     BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-rollback-preflight"];
   assert.equal(threadRollbackPreflightContract.usesRouteSpecificNestedKeySchemas, true);
@@ -20126,6 +20160,236 @@ test("dev server preflights fs watch without starting watchers or leaking identi
     const actionText = await action.text();
     assert.equal(actionText.includes("src/private.txt"), false);
     assert.equal(actionText.includes("watch-alpha-1"), false);
+    assert.equal(probeCalled, false);
+  } finally {
+    await closeServer(server);
+  }
+});
+
+test("dev server preflights fuzzy file search without sessions, results, or leaks", async () => {
+  let probeCalled = false;
+  const { server, url } = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    probeFn: async () => {
+      probeCalled = true;
+      return { ok: true };
+    },
+  });
+
+  try {
+    const getResponse = await fetch(`${url}/api/fuzzy-file-search-preflight`, {
+      headers: apiHeaders(server),
+    });
+    assert.equal(getResponse.status, 405);
+
+    const extraField = await fetch(`${url}/api/fuzzy-file-search-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "fuzzyFileSearch/sessionStart",
+        roots: ["src", "packages/app"],
+        sessionId: "fuzzy-alpha-1",
+        content: "secret search content",
+      }),
+    });
+    assert.equal(extraField.status, 400);
+    const extraFieldText = await extraField.text();
+    assert.equal(extraFieldText.includes("packages/app"), false);
+    assert.equal(extraFieldText.includes("fuzzy-alpha-1"), false);
+    assert.equal(extraFieldText.includes("secret search content"), false);
+
+    const invalidRoot = await fetch(`${url}/api/fuzzy-file-search-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "fuzzyFileSearch/sessionStart",
+        roots: ["/tmp/default-workspace/src"],
+        sessionId: "fuzzy-alpha-1",
+      }),
+    });
+    assert.equal(invalidRoot.status, 400);
+    assert.equal((await invalidRoot.text()).includes("/tmp/default-workspace"), false);
+
+    const invalidSession = await fetch(`${url}/api/fuzzy-file-search-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "fuzzyFileSearch/sessionStart",
+        roots: ["src"],
+        sessionId: "fuzzy/private",
+      }),
+    });
+    assert.equal(invalidSession.status, 400);
+    assert.equal((await invalidSession.text()).includes("fuzzy/private"), false);
+
+    const startResponse = await fetch(`${url}/api/fuzzy-file-search-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "fuzzyFileSearch/sessionStart",
+        roots: ["src", "packages/app"],
+        query: null,
+        sessionId: "fuzzy-alpha-1",
+      }),
+    });
+    assert.equal(startResponse.status, 200);
+    const startPayload = await startResponse.json();
+    const startSerialized = JSON.stringify(startPayload);
+    assert.equal(startPayload.ok, true);
+    assert.equal(startPayload.appServer.touched, false);
+    assert.equal(startPayload.appServer.filesystemTraffic, false);
+    assert.equal(startPayload.action.type, "fuzzy-file-search-preflight");
+    assert.equal(startPayload.action.method, "fuzzyFileSearch/sessionStart");
+    assert.equal(startPayload.action.execution, "blocked");
+    assert.equal(startPayload.action.wouldStartSession, true);
+    assert.equal(startPayload.action.wouldUpdateSession, false);
+    assert.equal(startPayload.action.wouldStopSession, false);
+    assert.equal(startPayload.action.sessionStarted, false);
+    assert.equal(startPayload.action.filesystemSearch, false);
+    assert.equal(startPayload.request.rootsRequired, true);
+    assert.equal(startPayload.request.rootsAccepted, true);
+    assert.equal(startPayload.request.rootCount, 2);
+    assert.equal(startPayload.request.rootCharCount, 15);
+    assert.equal(startPayload.request.queryRequired, false);
+    assert.equal(startPayload.request.queryAccepted, false);
+    assert.equal(startPayload.request.queryCharCount, 0);
+    assert.equal(startPayload.request.sessionIdAccepted, true);
+    assert.equal(startPayload.request.sessionIdCharCount, 13);
+    assert.equal(startPayload.request.rawValuesReturned, false);
+    assert.equal(startPayload.results.resultsReturned, false);
+    assert.equal(startPayload.results.fileNamesReturned, false);
+    assert.equal(startPayload.results.pathsReturned, false);
+    assert.equal(startPayload.results.rootsReturned, false);
+    assert.equal(startPayload.results.sessionUpdatedNotificationsReturned, false);
+    assert.equal(startPayload.results.sessionCompletedNotificationsReturned, false);
+    assert.equal(startPayload.policy.fuzzyFileSearchPreflightEnabled, true);
+    assert.equal(startPayload.policy.fuzzyFileSearchEnabled, false);
+    assert.equal(startPayload.policy.fuzzyFileSearchSessionStartEnabled, false);
+    assert.equal(startPayload.policy.queriesReturned, false);
+    assert.equal(startPayload.policy.sessionIdsReturned, false);
+    assert.equal(startPayload.policy.rootsReturned, false);
+    assert.equal(startPayload.policy.fileNamesReturned, false);
+    assert.equal(startPayload.policy.pathsReturned, false);
+    assert.equal(startPayload.policy.notificationsReturned, false);
+    assertActionPreflight(startPayload, "fuzzy-file-search-preflight", "default");
+    for (const marker of [
+      "packages/app",
+      "fuzzy-alpha-1",
+      "/tmp/default-workspace",
+      "secret search content",
+      "codexHome",
+      "userAgent",
+      "\"fileNamesReturned\":true",
+      "\"pathsReturned\":true",
+      "\"sessionIdsReturned\":true",
+    ]) {
+      assert.equal(startSerialized.includes(marker), false, `leaked ${marker}`);
+    }
+
+    const confirm = await fetch(`${url}/api/action-preflight-confirm`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        actionType: "fuzzy-file-search-preflight",
+        preflightToken: startPayload.preflight.token,
+        method: "fuzzyFileSearch/sessionStart",
+        roots: ["src", "packages/app"],
+        query: null,
+        sessionId: "fuzzy-alpha-1",
+      }),
+    });
+    assert.equal(confirm.status, 200);
+    const confirmPayload = await confirm.json();
+    const confirmSerialized = JSON.stringify(confirmPayload);
+    assertActionPreflightConfirmation(confirmPayload, "fuzzy-file-search-preflight", "default");
+    assert.equal(confirmSerialized.includes("packages/app"), false);
+    assert.equal(confirmSerialized.includes("fuzzy-alpha-1"), false);
+    assert.equal(confirmSerialized.includes(startPayload.preflight.token), false);
+
+    const updateResponse = await fetch(`${url}/api/fuzzy-file-search-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "fuzzyFileSearch/sessionUpdate",
+        roots: null,
+        query: "private",
+        sessionId: "fuzzy-alpha-1",
+      }),
+    });
+    assert.equal(updateResponse.status, 200);
+    const updatePayload = await updateResponse.json();
+    const updateSerialized = JSON.stringify(updatePayload);
+    assert.equal(updatePayload.action.method, "fuzzyFileSearch/sessionUpdate");
+    assert.equal(updatePayload.action.wouldStartSession, false);
+    assert.equal(updatePayload.action.wouldUpdateSession, true);
+    assert.equal(updatePayload.request.rootCount, 0);
+    assert.equal(updatePayload.request.queryRequired, true);
+    assert.equal(updatePayload.request.queryAccepted, true);
+    assert.equal(updatePayload.request.queryCharCount, 7);
+    assert.equal(updatePayload.request.sessionIdCharCount, 13);
+    assert.equal(updatePayload.results.resultsReturned, false);
+    assertActionPreflight(updatePayload, "fuzzy-file-search-preflight", "default");
+    assert.equal(updateSerialized.includes("private"), false);
+    assert.equal(updateSerialized.includes("fuzzy-alpha-1"), false);
+
+    const stopResponse = await fetch(`${url}/api/fuzzy-file-search-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "fuzzyFileSearch/sessionStop",
+        roots: null,
+        query: null,
+        sessionId: "fuzzy-alpha-1",
+      }),
+    });
+    assert.equal(stopResponse.status, 200);
+    const stopPayload = await stopResponse.json();
+    const stopSerialized = JSON.stringify(stopPayload);
+    assert.equal(stopPayload.action.method, "fuzzyFileSearch/sessionStop");
+    assert.equal(stopPayload.action.wouldStopSession, true);
+    assert.equal(stopPayload.request.rootCount, 0);
+    assert.equal(stopPayload.request.queryCharCount, 0);
+    assert.equal(stopPayload.request.sessionIdCharCount, 13);
+    assert.equal(stopPayload.results.sessionCompletedNotificationsReturned, false);
+    assertActionPreflight(stopPayload, "fuzzy-file-search-preflight", "default");
+    assert.equal(stopSerialized.includes("fuzzy-alpha-1"), false);
+
+    const rejectedQuery = await fetch(`${url}/api/fuzzy-file-search-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "fuzzyFileSearch/sessionStart",
+        roots: ["src"],
+        query: "private",
+        sessionId: "fuzzy-alpha-1",
+      }),
+    });
+    assert.equal(rejectedQuery.status, 400);
+    assert.equal((await rejectedQuery.text()).includes("private"), false);
+
+    const action = await fetch(`${url}/api/fuzzy-file-search`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "fuzzyFileSearch/sessionStart",
+        roots: ["src", "packages/app"],
+        sessionId: "fuzzy-alpha-1",
+        preflightToken: startPayload.preflight.token,
+      }),
+    });
+    assert.equal(action.status, 405);
+    const actionText = await action.text();
+    assert.equal(actionText.includes("packages/app"), false);
+    assert.equal(actionText.includes("fuzzy-alpha-1"), false);
     assert.equal(probeCalled, false);
   } finally {
     await closeServer(server);

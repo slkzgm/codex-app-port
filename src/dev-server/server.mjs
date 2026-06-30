@@ -220,6 +220,21 @@ export const BROWSER_POST_FIELD_POLICIES = Object.freeze({
     returnedRawValue: false,
     sensitivity: "user-authored-text",
   }),
+  query: bodyFieldPolicy(["string", "null"], {
+    maxChars: 240,
+    returnedRawValue: false,
+    sensitivity: "filesystem-search-query",
+  }),
+  roots: bodyFieldPolicy(["array", "null"], {
+    maxSerializedChars: 8_000,
+    returnedRawValue: false,
+    sensitivity: "filesystem-search-roots",
+  }),
+  sessionId: bodyFieldPolicy(["string", "null"], {
+    maxChars: 128,
+    returnedRawValue: false,
+    sensitivity: "filesystem-search-session-selector",
+  }),
   name: bodyFieldPolicy(["string"], {
     maxChars: MAX_THREAD_RENAME_CHARS,
     returnedRawValue: false,
@@ -513,6 +528,15 @@ export const ACTION_PREFLIGHT_CONFIRMATION_FIELD_CONTRACTS = Object.freeze({
     "method",
     "path",
     "watchId",
+  ),
+  "fuzzy-file-search-preflight": bodyFields(
+    "workspace",
+    "actionType",
+    "preflightToken",
+    "method",
+    "roots",
+    "query",
+    "sessionId",
   ),
   "thread-rollback-preflight": bodyFields(
     "workspace",
@@ -964,6 +988,13 @@ export const BROWSER_POST_BODY_CONTRACTS = Object.freeze({
     kind: "preflight",
     appServerTraffic: false,
   }),
+  "/api/fuzzy-file-search-preflight": bodyContract(
+    ["workspace", "method", "roots", "query", "sessionId"],
+    {
+      kind: "preflight",
+      appServerTraffic: false,
+    },
+  ),
   "/api/thread-rollback-preflight": bodyContract(["workspace", "thread", "numTurns"], {
     kind: "preflight",
     appServerTraffic: false,
@@ -4191,6 +4222,97 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
       "fsWatchPreflightEnabled",
       "fsWatchEnabled",
       "fsUnwatchEnabled",
+      "executionRouteImplemented",
+      "dedicatedExecutionRouteImplemented",
+      "executionGateEnabled",
+      "requiresApprovalPipeline",
+      "requiresExplicitEnablement",
+      "browserMethodCallsAccepted",
+      "implemented",
+    ],
+    preflight: [
+      "token",
+      "tokenIssued",
+      "issuedAt",
+      "expiresAt",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseRequiredForMutation",
+      "consumed",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+  }),
+  "/api/fuzzy-file-search-preflight": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    appServer: ["touched", "modelTraffic", "commandTraffic", "filesystemTraffic"],
+    action: [
+      "type",
+      "method",
+      "execution",
+      "wouldStartSession",
+      "wouldUpdateSession",
+      "wouldStopSession",
+      "sessionStarted",
+      "sessionUpdated",
+      "sessionStopped",
+      "appServerTouched",
+      "filesystemSearch",
+      "reason",
+    ],
+    request: [
+      "rootsRequired",
+      "rootsAccepted",
+      "rootCount",
+      "rootCharCount",
+      "queryRequired",
+      "queryAccepted",
+      "queryCharCount",
+      "sessionIdRequired",
+      "sessionIdAccepted",
+      "sessionIdCharCount",
+      "rawValuesReturned",
+    ],
+    results: [
+      "resultsReturned",
+      "fileNamesReturned",
+      "pathsReturned",
+      "rootsReturned",
+      "scoresReturned",
+      "matchIndicesReturned",
+      "sessionUpdatedNotificationsReturned",
+      "sessionCompletedNotificationsReturned",
+      "rawPayloadReturned",
+    ],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "modelTraffic",
+      "commandTraffic",
+      "filesystemTraffic",
+      "filesystemSearch",
+      "workspaceRelativeOnly",
+      "hiddenRootsRejected",
+      "absoluteRootsRejected",
+      "parentTraversalRejected",
+      "lockRootsRejected",
+      "gitRootsRejected",
+      "symlinksAllowed",
+      "queriesReturned",
+      "sessionIdsReturned",
+      "rootsReturned",
+      "fileNamesReturned",
+      "pathsReturned",
+      "scoresReturned",
+      "matchIndicesReturned",
+      "notificationsReturned",
+      "rawPayloadReturned",
+      "fuzzyFileSearchPreflightEnabled",
+      "fuzzyFileSearchEnabled",
+      "fuzzyFileSearchSessionStartEnabled",
+      "fuzzyFileSearchSessionUpdateEnabled",
+      "fuzzyFileSearchSessionStopEnabled",
       "executionRouteImplemented",
       "dedicatedExecutionRouteImplemented",
       "executionGateEnabled",
@@ -11039,6 +11161,11 @@ const BROWSER_POST_RESPONSE_ROUTE_TOP_LEVEL_KEYS = Object.freeze({
     "target",
     "watch",
   ),
+  "/api/fuzzy-file-search-preflight": routeResponseTopLevelKeys(
+    ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
+    "request",
+    "results",
+  ),
   "/api/thread-rollback-preflight": routeResponseTopLevelKeys(
     ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
     "thread",
@@ -15195,6 +15322,40 @@ export async function handleRequest(request, response, options) {
     return;
   }
 
+  if (url.pathname === "/api/fuzzy-file-search-preflight") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, [
+        "workspace",
+        "method",
+        "roots",
+        "query",
+        "sessionId",
+      ]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const payload = buildFuzzyFileSearchPreflight(body, { workspace });
+      sendJson(response, 200, attachActionPreflight(payload, { body, workspace, options }));
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid fuzzy file search preflight request",
+      });
+    }
+    return;
+  }
+
   if (url.pathname === "/api/file-action") {
     if (request.method !== "POST") {
       sendJson(response, 405, { ok: false, error: "Method not allowed" });
@@ -18413,6 +18574,8 @@ async function buildConfirmableActionPreflightPayload(actionType, body, { worksp
       return buildFsReadFilePreflight(body, { workspace });
     case "fs-watch-preflight":
       return buildFsWatchPreflight(body, { workspace });
+    case "fuzzy-file-search-preflight":
+      return buildFuzzyFileSearchPreflight(body, { workspace });
     case "live-session-control-preflight":
       return buildLiveSessionControlPreflight(body, {
         workspace,
@@ -24509,6 +24672,111 @@ function fsWatchPolicy() {
     fsWatchPreflightEnabled: true,
     fsWatchEnabled: false,
     fsUnwatchEnabled: false,
+    executionRouteImplemented: false,
+    dedicatedExecutionRouteImplemented: false,
+    executionGateEnabled: false,
+    requiresApprovalPipeline: true,
+    requiresExplicitEnablement: true,
+    browserMethodCallsAccepted: false,
+    implemented: true,
+  };
+}
+
+export function buildFuzzyFileSearchPreflight(body, { workspace } = {}) {
+  const method = validateFuzzyFileSearchMethod(body?.method);
+  const session = validateFuzzyFileSearchSessionId(body?.sessionId);
+  const roots =
+    method === "fuzzyFileSearch/sessionStart"
+      ? validateFuzzyFileSearchRoots(body?.roots)
+      : validateNoFuzzyFileSearchRoots(body?.roots);
+  const query =
+    method === "fuzzyFileSearch/sessionUpdate"
+      ? validateFuzzyFileSearchQuery(body?.query)
+      : validateNoFuzzyFileSearchQuery(body?.query);
+  const isStart = method === "fuzzyFileSearch/sessionStart";
+  const isUpdate = method === "fuzzyFileSearch/sessionUpdate";
+  const isStop = method === "fuzzyFileSearch/sessionStop";
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: publicWorkspaces([workspace])[0],
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      filesystemTraffic: false,
+    },
+    action: {
+      type: "fuzzy-file-search-preflight",
+      method,
+      execution: "blocked",
+      wouldStartSession: isStart,
+      wouldUpdateSession: isUpdate,
+      wouldStopSession: isStop,
+      sessionStarted: false,
+      sessionUpdated: false,
+      sessionStopped: false,
+      appServerTouched: false,
+      filesystemSearch: false,
+      reason: "fuzzy-file-search-execution-not-implemented",
+    },
+    request: {
+      rootsRequired: isStart,
+      rootsAccepted: isStart,
+      rootCount: roots.count,
+      rootCharCount: roots.charCount,
+      queryRequired: isUpdate,
+      queryAccepted: isUpdate,
+      queryCharCount: query.charCount,
+      sessionIdRequired: true,
+      sessionIdAccepted: true,
+      sessionIdCharCount: session.charCount,
+      rawValuesReturned: false,
+    },
+    results: {
+      resultsReturned: false,
+      fileNamesReturned: false,
+      pathsReturned: false,
+      rootsReturned: false,
+      scoresReturned: false,
+      matchIndicesReturned: false,
+      sessionUpdatedNotificationsReturned: false,
+      sessionCompletedNotificationsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: fuzzyFileSearchPolicy(),
+  };
+}
+
+function fuzzyFileSearchPolicy() {
+  return {
+    readOnly: true,
+    appServerTraffic: false,
+    modelTraffic: false,
+    commandTraffic: false,
+    filesystemTraffic: false,
+    filesystemSearch: false,
+    workspaceRelativeOnly: true,
+    hiddenRootsRejected: true,
+    absoluteRootsRejected: true,
+    parentTraversalRejected: true,
+    lockRootsRejected: true,
+    gitRootsRejected: true,
+    symlinksAllowed: false,
+    queriesReturned: false,
+    sessionIdsReturned: false,
+    rootsReturned: false,
+    fileNamesReturned: false,
+    pathsReturned: false,
+    scoresReturned: false,
+    matchIndicesReturned: false,
+    notificationsReturned: false,
+    rawPayloadReturned: false,
+    fuzzyFileSearchPreflightEnabled: true,
+    fuzzyFileSearchEnabled: false,
+    fuzzyFileSearchSessionStartEnabled: false,
+    fuzzyFileSearchSessionUpdateEnabled: false,
+    fuzzyFileSearchSessionStopEnabled: false,
     executionRouteImplemented: false,
     dedicatedExecutionRouteImplemented: false,
     executionGateEnabled: false,
@@ -43634,6 +43902,136 @@ function validateFsUnwatchBrowserPath(value) {
   return {
     charCount: 0,
     depth: 0,
+  };
+}
+
+function validateFuzzyFileSearchMethod(value) {
+  if (
+    value !== "fuzzyFileSearch/sessionStart" &&
+    value !== "fuzzyFileSearch/sessionUpdate" &&
+    value !== "fuzzyFileSearch/sessionStop"
+  ) {
+    throwRequestError("Fuzzy file search method is invalid", 400);
+  }
+  return value;
+}
+
+function validateFuzzyFileSearchSessionId(value) {
+  if (typeof value !== "string") {
+    throwRequestError("Fuzzy file search session id must be a string", 400);
+  }
+  const clean = value.trim();
+  if (clean.length === 0) {
+    throwRequestError("Fuzzy file search session id is required", 400);
+  }
+  if (clean.length > 128 || !/^[A-Za-z0-9._:-]+$/.test(clean)) {
+    throwRequestError("Fuzzy file search session id is invalid", 400);
+  }
+  return {
+    charCount: clean.length,
+  };
+}
+
+function validateFuzzyFileSearchRoots(value) {
+  if (!Array.isArray(value)) {
+    throwRequestError("Fuzzy file search roots must be an array", 400);
+  }
+  if (value.length === 0 || value.length > 8) {
+    throwRequestError("Fuzzy file search roots are invalid", 400);
+  }
+  let charCount = 0;
+  for (const root of value) {
+    const clean = validateFuzzyFileSearchRoot(root);
+    charCount += clean.length;
+  }
+  return {
+    count: value.length,
+    charCount,
+  };
+}
+
+function validateNoFuzzyFileSearchRoots(value) {
+  if (value == null) {
+    return {
+      count: 0,
+      charCount: 0,
+    };
+  }
+  if (!Array.isArray(value) || value.length > 0) {
+    throwRequestError("Fuzzy file search roots are not accepted for this method", 400);
+  }
+  return {
+    count: 0,
+    charCount: 0,
+  };
+}
+
+function validateFuzzyFileSearchRoot(value) {
+  if (typeof value !== "string") {
+    throwRequestError("Fuzzy file search root must be a string", 400);
+  }
+  const clean = value.trim().replace(/\\/g, "/");
+  if (clean.length === 0) {
+    throwRequestError("Fuzzy file search root is required", 400);
+  }
+  if (clean.length > MAX_FILE_ACTION_PATH_CHARS) {
+    throwRequestError(
+      `Fuzzy file search root must be ${MAX_FILE_ACTION_PATH_CHARS} characters or fewer`,
+      400,
+    );
+  }
+  if (
+    clean.startsWith("/") ||
+    /^[A-Za-z]:\//.test(clean) ||
+    clean.includes("\0") ||
+    clean.includes("//") ||
+    clean.includes("..")
+  ) {
+    throwRequestError("Fuzzy file search root is invalid", 400);
+  }
+  const parts = clean.split("/").filter(Boolean);
+  if (
+    parts.length === 0 ||
+    parts.some(
+      (part) =>
+        part === "." ||
+        part.startsWith(".") ||
+        part === ".git" ||
+        part.startsWith(".git") ||
+        part.endsWith(".lock"),
+    )
+  ) {
+    throwRequestError("Fuzzy file search root is invalid", 400);
+  }
+  if (!safeBasename(parts.at(-1))) {
+    throwRequestError("Fuzzy file search root is invalid", 400);
+  }
+  return clean;
+}
+
+function validateFuzzyFileSearchQuery(value) {
+  if (typeof value !== "string") {
+    throwRequestError("Fuzzy file search query must be a string", 400);
+  }
+  if (value.length > 240 || value.includes("\0")) {
+    throwRequestError("Fuzzy file search query is invalid", 400);
+  }
+  return {
+    charCount: value.length,
+  };
+}
+
+function validateNoFuzzyFileSearchQuery(value) {
+  if (value == null || value === "") {
+    return {
+      charCount: 0,
+    };
+  }
+  if (typeof value !== "string" || value.trim().length > 0) {
+    throwRequestError("Fuzzy file search query is not accepted for this method", 400);
+  }
+  return {
+    charCount: 0,
   };
 }
 

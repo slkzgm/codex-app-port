@@ -174,6 +174,13 @@ visible path shape for watch plus bounded safe watch-id shape for both methods,
 but there is no execution route, watcher creation/removal, `fs/changed`
 subscription, app-server traffic, path/canonical-path/basename disclosure,
 watch-id disclosure, watcher handle, notification output, or raw payload.
+`fuzzyFileSearch/sessionStart`, `fuzzyFileSearch/sessionUpdate`, and
+`fuzzyFileSearch/sessionStop` have only a local
+`POST /api/fuzzy-file-search-preflight` guard for now. It validates
+workspace-relative visible roots, query length, and bounded safe session-id
+shape, but there is no execution route, search session start/update/stop,
+app-server traffic, returned roots, query text, session ids, file names, paths,
+scores, match indices, notification output, or raw payload.
 `thread/delete` also has a
 separate disabled-by-default destructive path:
 `POST /api/thread-delete-preflight` validates only suffix and archived-state

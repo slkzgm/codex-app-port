@@ -659,6 +659,17 @@ const elements = {
   fsWatchIdState: document.querySelector("#fs-watch-id-state"),
   fsWatchNotifications: document.querySelector("#fs-watch-notifications"),
   fsWatchTraffic: document.querySelector("#fs-watch-traffic"),
+  fuzzyFileSearchForm: document.querySelector("#fuzzy-file-search-form"),
+  fuzzyFileSearchMethod: document.querySelector("#fuzzy-file-search-method"),
+  fuzzyFileSearchRoots: document.querySelector("#fuzzy-file-search-roots"),
+  fuzzyFileSearchQuery: document.querySelector("#fuzzy-file-search-query"),
+  fuzzyFileSearchSession: document.querySelector("#fuzzy-file-search-session"),
+  fuzzyFileSearchButton: document.querySelector("#fuzzy-file-search-button"),
+  fuzzyFileSearchStatus: document.querySelector("#fuzzy-file-search-status"),
+  fuzzyFileSearchRootCount: document.querySelector("#fuzzy-file-search-root-count"),
+  fuzzyFileSearchQueryChars: document.querySelector("#fuzzy-file-search-query-chars"),
+  fuzzyFileSearchSessionState: document.querySelector("#fuzzy-file-search-session-state"),
+  fuzzyFileSearchResults: document.querySelector("#fuzzy-file-search-results"),
   fileActionForm: document.querySelector("#file-action-form"),
   fileActionSelect: document.querySelector("#file-action-select"),
   fileActionPath: document.querySelector("#file-action-path"),
@@ -750,6 +761,7 @@ let lastGitCommitPreflight = null;
 let lastGitWorktreePreflight = null;
 let lastFsReadFilePreflight = null;
 let lastFsWatchPreflight = null;
+let lastFuzzyFileSearchPreflight = null;
 let lastFileActionPreflight = null;
 let lastLiveSessionControlPreflight = null;
 let lastLiveSessionBulkPreflight = null;
@@ -880,6 +892,12 @@ elements.workspaceSelect.addEventListener("change", () => {
   elements.fsWatchIdState.textContent = "Hidden";
   elements.fsWatchNotifications.textContent = "Off";
   elements.fsWatchTraffic.textContent = "None";
+  lastFuzzyFileSearchPreflight = null;
+  elements.fuzzyFileSearchStatus.textContent = "Blocked";
+  elements.fuzzyFileSearchRootCount.textContent = "0";
+  elements.fuzzyFileSearchQueryChars.textContent = "0";
+  elements.fuzzyFileSearchSessionState.textContent = "Hidden";
+  elements.fuzzyFileSearchResults.textContent = "Hidden";
   elements.fileActionButton.disabled = true;
   elements.liveSessionControlButton.disabled = true;
   elements.liveSessionBulkButton.disabled = true;
@@ -1337,6 +1355,11 @@ elements.fsWatchForm.addEventListener("submit", (event) => {
   runFsWatchPreflight();
 });
 
+elements.fuzzyFileSearchForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  runFuzzyFileSearchPreflight();
+});
+
 elements.fileActionForm.addEventListener("submit", (event) => {
   event.preventDefault();
   runFileActionPreflight();
@@ -1352,6 +1375,19 @@ for (const input of [elements.fsWatchMethod, elements.fsWatchPath, elements.fsWa
     lastFsWatchPreflight = null;
     elements.fsWatchStatus.textContent = "Blocked";
     elements.fsWatchNotifications.textContent = "Off";
+  });
+}
+
+for (const input of [
+  elements.fuzzyFileSearchMethod,
+  elements.fuzzyFileSearchRoots,
+  elements.fuzzyFileSearchQuery,
+  elements.fuzzyFileSearchSession,
+]) {
+  input.addEventListener("input", () => {
+    lastFuzzyFileSearchPreflight = null;
+    elements.fuzzyFileSearchStatus.textContent = "Blocked";
+    elements.fuzzyFileSearchResults.textContent = "Hidden";
   });
 }
 
@@ -2285,6 +2321,10 @@ function fsReadFilePreflightEndpoint() {
 
 function fsWatchPreflightEndpoint() {
   return "/api/fs-watch-preflight";
+}
+
+function fuzzyFileSearchPreflightEndpoint() {
+  return "/api/fuzzy-file-search-preflight";
 }
 
 function fileActionPreflightEndpoint() {
@@ -5141,6 +5181,63 @@ async function runFsWatchPreflight() {
   } finally {
     setFsWatchLoading(false);
   }
+}
+
+async function runFuzzyFileSearchPreflight() {
+  lastFuzzyFileSearchPreflight = null;
+  setFuzzyFileSearchLoading(true);
+  hideError();
+  const body = buildFuzzyFileSearchRequestBody();
+
+  try {
+    const response = await fetch(fuzzyFileSearchPreflightEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify(body),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    lastFuzzyFileSearchPreflight = {
+      body,
+      token: payload.preflight?.token ?? null,
+    };
+    renderFuzzyFileSearchPreflight(payload);
+  } catch (error) {
+    elements.fuzzyFileSearchStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    setFuzzyFileSearchLoading(false);
+  }
+}
+
+function buildFuzzyFileSearchRequestBody() {
+  const method = elements.fuzzyFileSearchMethod.value;
+  const body = {
+    workspace: selectedWorkspaceId,
+    method,
+    sessionId: elements.fuzzyFileSearchSession.value,
+  };
+  if (method === "fuzzyFileSearch/sessionStart") {
+    body.roots = parseFuzzyFileSearchRoots(elements.fuzzyFileSearchRoots.value);
+    body.query = null;
+  } else if (method === "fuzzyFileSearch/sessionUpdate") {
+    body.roots = null;
+    body.query = elements.fuzzyFileSearchQuery.value;
+  } else {
+    body.roots = null;
+    body.query = null;
+  }
+  return body;
+}
+
+function parseFuzzyFileSearchRoots(value) {
+  return value
+    .split(/[\n,]/)
+    .map((entry) => entry.trim())
+    .filter(Boolean);
 }
 
 async function runFileActionPreflight() {
@@ -12215,6 +12312,20 @@ function renderFsWatchPreflight(payload) {
   elements.fsWatchTraffic.textContent = payload.appServer?.touched ? "App-server" : "None";
 }
 
+function renderFuzzyFileSearchPreflight(payload) {
+  const request = payload.request ?? {};
+  const results = payload.results ?? {};
+  elements.fuzzyFileSearchStatus.textContent = payload.action?.execution ?? "blocked";
+  elements.fuzzyFileSearchRootCount.textContent = String(request.rootCount ?? 0);
+  elements.fuzzyFileSearchQueryChars.textContent = String(request.queryCharCount ?? 0);
+  elements.fuzzyFileSearchSessionState.textContent =
+    payload.policy?.sessionIdsReturned === false && request.sessionIdAccepted === true
+      ? "Hidden"
+      : "Unsafe";
+  elements.fuzzyFileSearchResults.textContent =
+    results.resultsReturned === false && results.pathsReturned === false ? "Hidden" : "Unsafe";
+}
+
 function renderTerminalBackgroundTerminatePreflight(payload) {
   elements.terminalBackgroundListStatus.textContent =
     payload.policy?.executionGateEnabled === true ? "Ready" : "Blocked";
@@ -13126,6 +13237,15 @@ function setFsWatchLoading(isLoading) {
   elements.fsWatchButton.textContent = isLoading ? "Checking" : "Watch Check";
   if (isLoading) {
     elements.fsWatchStatus.textContent = "Checking";
+  }
+}
+
+function setFuzzyFileSearchLoading(isLoading) {
+  elements.fuzzyFileSearchButton.disabled = isLoading;
+  elements.fuzzyFileSearchMethod.disabled = isLoading;
+  elements.fuzzyFileSearchButton.textContent = isLoading ? "Checking" : "Search Check";
+  if (isLoading) {
+    elements.fuzzyFileSearchStatus.textContent = "Checking";
   }
 }
 

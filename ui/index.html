@@ -2620,6 +2620,52 @@
               <dd id="fs-watch-traffic">None</dd>
             </div>
           </dl>
+          <form id="fuzzy-file-search-form" class="turn-form">
+            <div class="thread-tools">
+              <label class="workspace-control" for="fuzzy-file-search-method">
+                <span>Fuzzy files</span>
+                <select id="fuzzy-file-search-method">
+                  <option value="fuzzyFileSearch/sessionStart">Start</option>
+                  <option value="fuzzyFileSearch/sessionUpdate">Update</option>
+                  <option value="fuzzyFileSearch/sessionStop">Stop</option>
+                </select>
+              </label>
+              <label class="search-control" for="fuzzy-file-search-roots">
+                <span>Roots</span>
+                <input id="fuzzy-file-search-roots" type="text" autocomplete="off" />
+              </label>
+              <label class="search-control" for="fuzzy-file-search-query">
+                <span>Query</span>
+                <input id="fuzzy-file-search-query" type="text" autocomplete="off" />
+              </label>
+              <label class="search-control" for="fuzzy-file-search-session">
+                <span>Session</span>
+                <input id="fuzzy-file-search-session" type="text" autocomplete="off" />
+              </label>
+              <button id="fuzzy-file-search-button" class="secondary-button" type="submit">
+                Search Check
+              </button>
+              <span id="fuzzy-file-search-status" class="empty-state">Blocked</span>
+            </div>
+          </form>
+          <dl class="agent-grid">
+            <div>
+              <dt>Roots</dt>
+              <dd id="fuzzy-file-search-root-count">0</dd>
+            </div>
+            <div>
+              <dt>Query chars</dt>
+              <dd id="fuzzy-file-search-query-chars">0</dd>
+            </div>
+            <div>
+              <dt>Session</dt>
+              <dd id="fuzzy-file-search-session-state">Hidden</dd>
+            </div>
+            <div>
+              <dt>Results</dt>
+              <dd id="fuzzy-file-search-results">Hidden</dd>
+            </div>
+          </dl>
           <form id="file-action-form" class="turn-form">
             <div class="thread-tools">
               <label class="workspace-control" for="file-action-select">

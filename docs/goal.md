@@ -129,6 +129,13 @@ Target parity with the Codex desktop workflow:
   methods, and keeps execution blocked without watcher creation/removal,
   `fs/changed` subscriptions, app-server traffic, path/canonical-path/basename
   disclosure, watch-id disclosure, handles, notifications, or raw payloads.
+- `fuzzyFileSearch/sessionStart`, `fuzzyFileSearch/sessionUpdate`, and
+  `fuzzyFileSearch/sessionStop` have only a local
+  `POST /api/fuzzy-file-search-preflight` guard for now. It validates
+  workspace-relative visible roots, query length, and safe session-id shape,
+  and keeps execution blocked without search session lifecycle changes,
+  app-server traffic, returned roots, query text, session ids, file names,
+  paths, scores, match indices, notifications, or raw payloads.
 - `thread/delete` has a separate disabled-by-default destructive
   `POST /api/thread-delete-action` path behind
   `CODEX_APP_PORT_ALLOW_THREAD_DELETE=1`; it consumes a matching one-time

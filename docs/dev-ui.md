@@ -54,6 +54,10 @@ The server binds to `127.0.0.1` by default and serves:
 - `/api/fs-watch-preflight`: local-only blocked `fs/watch` / `fs/unwatch`
   preflight that validates path/watch-id shape without watchers, app-server
   traffic, canonical paths, watch ids, handles, or notifications
+- `/api/fuzzy-file-search-preflight`: local-only blocked
+  `fuzzyFileSearch/sessionStart|sessionUpdate|sessionStop` preflight that
+  validates roots/query/session-id shape without search sessions, results,
+  paths, file names, notifications, or app-server traffic
 - `/api/account-login-preflight` and `/api/account-login-start`: local auth
   login confirmation plus opt-in app-server `account/login/start` device-code
   flow behind `CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN=1` and a matching one-time
@@ -512,6 +516,18 @@ paths, check existence, follow symlinks, start or stop watchers, subscribe to
 `fs/changed`, call app-server, or return paths, canonical paths, basenames,
 watch ids, watcher handles, notifications, raw payloads, or any execution
 route.
+
+`/api/fuzzy-file-search-preflight` is the intentionally blocked fuzzy file
+search surface. The browser can submit method-specific draft params for
+`sessionStart`, `sessionUpdate`, or `sessionStop`; the server validates only
+workspace-relative visible roots, query length, and safe session-id shape. The
+route rejects absolute roots, traversal, hidden roots, `.git`, lock files,
+roots on update/stop, and query text on start/stop. It returns only root count,
+root character count, query character count, session-id length, blocked
+execution flags, and result/notification redaction booleans. It does not start,
+update, or stop fuzzy-search sessions, call app-server, or return roots,
+queries, session ids, file names, paths, scores, match indices, notifications,
+or raw payloads.
 
 Every `/api/*` route also requires a per-process session token. The server
 injects this token into the served HTML and the browser sends it back in the
@@ -1298,6 +1314,12 @@ The filesystem-watch preflight follows the same blocked pattern for
 `fs/watch` and `fs/unwatch`: the UI shows blocked status, path depth, hidden
 watch-id state, notifications off, and no-traffic state. It never shows the
 watch id, path, canonical path, or any `fs/changed` notification state.
+
+The fuzzy-file-search preflight follows the same blocked pattern for
+`fuzzyFileSearch/sessionStart`, `sessionUpdate`, and `sessionStop`: the UI shows
+blocked status, root count, query character count, hidden session-id state, and
+hidden results. It never shows roots, query text, session ids, file names,
+paths, scores, match indices, or fuzzy-search notifications.
 
 The turn preflight endpoint accepts draft text so the UI can validate the
 future turn-start shape, but it does not call `codex app-server`, start a turn,

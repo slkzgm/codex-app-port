@@ -888,6 +888,12 @@ Current M1 status:
   creation/removal, no `fs/changed` subscription, no app-server traffic, no path
   or canonical-path disclosure, no watch ids or handles returned, and no
   notification/raw payload output
+- done: local-only `/api/fuzzy-file-search-preflight` for official
+  `fuzzyFileSearch/sessionStart`, `fuzzyFileSearch/sessionUpdate`, and
+  `fuzzyFileSearch/sessionStop` shape validation, with no execution route, no
+  search session lifecycle mutation, no app-server traffic, no roots/query/
+  session-id/result disclosure, and no file names, paths, scores, match
+  indices, notifications, or raw payload output
 - done: fail-closed action-preflight confirmation route that consumes local
   tokens once against the same hashed intent and still blocks all mutations
 - done: strict browser JSON POST body validation for preflight, confirmation,

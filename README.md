@@ -279,6 +279,14 @@ The route creates a local preflight token but never starts or stops a watcher,
 subscribes to `fs/changed`, calls app-server, exposes `/api/fs-watch`
 execution, or returns paths, canonical paths, basenames, watch ids, watcher
 handles, notifications, raw payloads, or app-server data.
+`/api/fuzzy-file-search-preflight` is a local-only guard for
+`fuzzyFileSearch/sessionStart`, `fuzzyFileSearch/sessionUpdate`, and
+`fuzzyFileSearch/sessionStop`. It validates only workspace-relative visible
+roots, query/session-id shape, and method-specific parameters, then issues a
+local token while keeping execution blocked. It does not start, update, or stop
+a search session, subscribe to fuzzy-search notifications, call app-server, or
+return roots, queries, session ids, file names, paths, scores, match indices,
+notifications, raw payloads, or app-server data.
 `/api/terminal-command` is disabled unless
 `CODEX_APP_PORT_ALLOW_TERMINAL_COMMAND=1` and
 `CODEX_APP_PORT_TERMINAL_COMMAND_ALLOWLIST=cmd1,cmd2` are set before startup.
