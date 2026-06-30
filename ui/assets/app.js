@@ -192,6 +192,16 @@ const elements = {
   pluginShareCheckoutDetailsText: document.querySelector(
     "#plugin-share-checkout-details-text",
   ),
+  pluginShareActionForm: document.querySelector("#plugin-share-action-form"),
+  pluginShareActionMethodSelect: document.querySelector("#plugin-share-action-method-select"),
+  pluginShareActionTargetInput: document.querySelector("#plugin-share-action-target-input"),
+  pluginShareActionArgumentsInput: document.querySelector("#plugin-share-action-arguments-input"),
+  pluginShareActionButton: document.querySelector("#plugin-share-action-button"),
+  pluginShareActionStatus: document.querySelector("#plugin-share-action-status"),
+  pluginShareActionTargetChars: document.querySelector("#plugin-share-action-target-chars"),
+  pluginShareActionArgKeys: document.querySelector("#plugin-share-action-arg-keys"),
+  pluginShareActionText: document.querySelector("#plugin-share-action-text"),
+  pluginShareActionTargetsText: document.querySelector("#plugin-share-action-targets-text"),
   pluginContentForm: document.querySelector("#plugin-content-form"),
   pluginContentMethodSelect: document.querySelector("#plugin-content-method-select"),
   pluginContentTargetInput: document.querySelector("#plugin-content-target-input"),
@@ -1359,6 +1369,28 @@ elements.pluginShareCheckoutRunButton.addEventListener("click", () => {
   runPluginShareCheckout();
 });
 
+elements.pluginShareActionForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  runPluginShareActionPreflight();
+});
+
+for (const input of [
+  elements.pluginShareActionMethodSelect,
+  elements.pluginShareActionTargetInput,
+  elements.pluginShareActionArgumentsInput,
+]) {
+  input.addEventListener("input", () => {
+    elements.pluginShareActionStatus.textContent = "Blocked";
+    elements.pluginShareActionText.textContent = "Blocked";
+    elements.pluginShareActionTargetsText.textContent = "Hidden";
+  });
+  input.addEventListener("change", () => {
+    elements.pluginShareActionStatus.textContent = "Blocked";
+    elements.pluginShareActionText.textContent = "Blocked";
+    elements.pluginShareActionTargetsText.textContent = "Hidden";
+  });
+}
+
 elements.pluginContentForm.addEventListener("submit", (event) => {
   event.preventDefault();
   runPluginContentPreflight();
@@ -1831,6 +1863,10 @@ function pluginShareCheckoutPreflightEndpoint() {
 
 function pluginShareCheckoutEndpoint() {
   return "/api/plugin-share-checkout";
+}
+
+function pluginShareActionPreflightEndpoint() {
+  return "/api/plugin-share-action-preflight";
 }
 
 function pluginContentPreflightEndpoint() {
@@ -2940,6 +2976,37 @@ async function runPluginShareCheckout() {
     lastPluginShareCheckoutPreflight = null;
     elements.pluginShareCheckoutRunButton.disabled = true;
     setPluginShareCheckoutLoading(false);
+  }
+}
+
+async function runPluginShareActionPreflight() {
+  setPluginShareActionLoading(true);
+  hideError();
+
+  try {
+    const body = {
+      workspace: selectedWorkspaceId,
+      method: elements.pluginShareActionMethodSelect.value,
+      target: elements.pluginShareActionTargetInput.value,
+      arguments: elements.pluginShareActionArgumentsInput.value,
+    };
+    const response = await fetch(pluginShareActionPreflightEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify(body),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderPluginShareActionPreflight(payload);
+    await refreshSettingsIntegrations().catch(() => {});
+  } catch (error) {
+    elements.pluginShareActionStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    setPluginShareActionLoading(false);
   }
 }
 
@@ -9870,6 +9937,7 @@ function renderIntegrationPreflightHistory(history) {
       item.action?.type === "plugin-read-preflight" ||
       item.action?.type === "plugin-content-preflight" ||
       item.action?.type === "plugin-share-checkout-preflight" ||
+      item.action?.type === "plugin-share-action-preflight" ||
       item.action?.type === "plugin-uninstall-preflight"
     ) {
       detail.textContent = joinParts([
@@ -9988,6 +10056,7 @@ function renderIntegrationConfirmationHistory(history) {
       item.action?.type === "plugin-read-preflight" ||
       item.action?.type === "plugin-content-preflight" ||
       item.action?.type === "plugin-share-checkout-preflight" ||
+      item.action?.type === "plugin-share-action-preflight" ||
       item.action?.type === "plugin-uninstall-preflight"
     ) {
       detail.textContent = joinParts([
@@ -10302,6 +10371,21 @@ function renderPluginShareCheckout(payload) {
     ? "Checked out"
     : "Blocked";
   elements.pluginShareCheckoutDetailsText.textContent = "Omitted";
+}
+
+function renderPluginShareActionPreflight(payload) {
+  const shareAction = payload.pluginShareAction ?? {};
+  elements.pluginShareActionStatus.textContent = payload.action?.execution ?? "blocked";
+  elements.pluginShareActionTargetChars.textContent = String(shareAction.targetCharCount ?? 0);
+  elements.pluginShareActionArgKeys.textContent = String(
+    shareAction.argumentTopLevelKeyCount ?? 0,
+  );
+  elements.pluginShareActionText.textContent = payload.policy?.pluginSharingMutation
+    ? "Enabled"
+    : "Blocked";
+  elements.pluginShareActionTargetsText.textContent = shareAction.shareTargetsReturned
+    ? `${shareAction.shareTargetCount ?? 0} targets`
+    : "Hidden";
 }
 
 function renderPluginContentPreflight(payload) {
@@ -12442,6 +12526,14 @@ function setPluginShareCheckoutLoading(isLoading) {
   elements.pluginShareCheckoutButton.textContent = isLoading ? "Checking" : "Checkout Check";
   if (isLoading) {
     elements.pluginShareCheckoutStatus.textContent = "Checking";
+  }
+}
+
+function setPluginShareActionLoading(isLoading) {
+  elements.pluginShareActionButton.disabled = isLoading;
+  elements.pluginShareActionButton.textContent = isLoading ? "Checking" : "Share Check";
+  if (isLoading) {
+    elements.pluginShareActionStatus.textContent = "Checking";
   }
 }
 

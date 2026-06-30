@@ -947,6 +947,52 @@
               <dd id="plugin-share-checkout-details-text">Omitted</dd>
             </div>
           </dl>
+          <form id="plugin-share-action-form" class="turn-form">
+            <div class="thread-tools">
+              <label class="workspace-control" for="plugin-share-action-method-select">
+                <span>Share mutation</span>
+                <select id="plugin-share-action-method-select">
+                  <option value="plugin/share/save">plugin/share/save</option>
+                  <option value="plugin/share/updateTargets">plugin/share/updateTargets</option>
+                  <option value="plugin/share/delete">plugin/share/delete</option>
+                </select>
+              </label>
+              <label class="search-control" for="plugin-share-action-target-input">
+                <span>Target</span>
+                <input id="plugin-share-action-target-input" type="text" autocomplete="off" maxlength="500" />
+              </label>
+            </div>
+            <textarea
+              id="plugin-share-action-arguments-input"
+              maxlength="8000"
+              rows="3"
+              placeholder='{"shareTargets":[],"discoverability":null}'
+            ></textarea>
+            <div class="turn-actions">
+              <button id="plugin-share-action-button" class="secondary-button" type="submit">
+                Share Check
+              </button>
+              <span id="plugin-share-action-status" class="empty-state">Blocked</span>
+            </div>
+          </form>
+          <dl class="agent-grid">
+            <div>
+              <dt>Target chars</dt>
+              <dd id="plugin-share-action-target-chars">0</dd>
+            </div>
+            <div>
+              <dt>Arg keys</dt>
+              <dd id="plugin-share-action-arg-keys">0</dd>
+            </div>
+            <div>
+              <dt>Mutation</dt>
+              <dd id="plugin-share-action-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Targets</dt>
+              <dd id="plugin-share-action-targets-text">Hidden</dd>
+            </div>
+          </dl>
           <form id="plugin-content-form" class="turn-form">
             <div class="thread-tools">
               <label class="workspace-control" for="plugin-content-method-select">

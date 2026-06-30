@@ -377,7 +377,8 @@ installs/uninstalls/sharing, and marketplace mutations are blocked.
 `/api/settings-integrations` also returns a compact integration scope summary
 with active read methods, local preflight/login/login-cancel/logout gates, and
 blocked mutation method names/counts, including MCP reload, config-value,
-config-batch, plugin-install-preflight, plugin-uninstall, skills-config, remote environment add, and
+config-batch, plugin-install-preflight, marketplace-action-preflight,
+plugin-share-action-preflight, plugin-uninstall, skills-config, remote environment add, and
 experimental-feature gates when enabled; it never returns secrets, auth tokens,
 names unless the name gate is enabled, paths, URLs, hook commands, rate-limit
 details, or raw payloads.
@@ -541,6 +542,15 @@ calling `plugin/share/checkout` with only `{remotePluginId}`. Responses and
 action audit records return only target length, allowlist status, response
 shape, and field-presence booleans; remote plugin ids, marketplace/plugin
 names, paths, versions, tokens, and raw app-server payloads stay omitted.
+Plugin share mutations have a dedicated local-only
+`/api/plugin-share-action-preflight` route for `plugin/share/save`,
+`plugin/share/updateTargets`, and `plugin/share/delete`. It validates draft
+intent, returns target/argument counts plus share-target/principal counters and
+field-presence booleans only, records a short-lived preflight token for
+confirmation/history, and never saves, updates, deletes, exposes share targets,
+calls app-server, or returns plugin names, principal ids, principals, paths,
+URLs, secrets, targets, arguments, or raw payloads. There is no plugin-share
+mutation execution route.
 Plugin content preflight accepts only audited blocked `plugin/skill/read` and
 `plugin/share/list` intent and returns method plus target/argument counts. It
 does not echo skill text, sharing URLs, sharing principals, plugin names,
@@ -638,7 +648,7 @@ target/argument counts only, and does not echo targets, names, URLs, arguments,
 invoke tools, install or uninstall plugins, write settings, start auth callbacks, or touch
 app-server.
 `/api/settings-integrations` also includes a capped process-local history of
-successful MCP server-reload/OAuth/tool/resource, plugin-read/plugin-install/marketplace/plugin-uninstall/plugin-content,
+successful MCP server-reload/OAuth/tool/resource, plugin-read/plugin-install/marketplace/plugin-share-action/plugin-uninstall/plugin-content,
 skills-config, config-value, config-batch, experimental-feature, and integration mutation preflights from this server. It shows only action type,
 audited method/category,
 target/name/resource/argument counts, and redaction flags; it does not return

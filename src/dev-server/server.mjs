@@ -172,6 +172,11 @@ const MARKETPLACE_ACTION_METHODS = Object.freeze([
   "marketplace/remove",
   "marketplace/upgrade",
 ]);
+const PLUGIN_SHARE_ACTION_METHODS = Object.freeze([
+  "plugin/share/save",
+  "plugin/share/updateTargets",
+  "plugin/share/delete",
+]);
 const STATIC_ROOT = new URL("../../ui/", import.meta.url);
 const SESSION_TOKEN_PLACEHOLDER = "__CODEX_APP_PORT_SESSION_TOKEN__";
 const TERMINAL_COMMAND_ARGV = Symbol("terminalCommandArgv");
@@ -708,6 +713,14 @@ export const ACTION_PREFLIGHT_CONFIRMATION_FIELD_CONTRACTS = Object.freeze({
     "preflightToken",
     "target",
   ),
+  "plugin-share-action-preflight": bodyFields(
+    "workspace",
+    "actionType",
+    "preflightToken",
+    "method",
+    "target",
+    "arguments",
+  ),
   "plugin-share-checkout": bodyFields(
     "workspace",
     "target",
@@ -1175,6 +1188,13 @@ export const BROWSER_POST_BODY_CONTRACTS = Object.freeze({
     kind: "preflight",
     appServerTraffic: false,
   }),
+  "/api/plugin-share-action-preflight": bodyContract(
+    ["workspace", "method", "target", "arguments"],
+    {
+      kind: "preflight",
+      appServerTraffic: false,
+    },
+  ),
   "/api/plugin-share-checkout": bodyContract(["workspace", "target", "preflightToken"], {
     kind: "mutation",
     requiresPreflightToken: true,
@@ -7833,6 +7853,107 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
     ],
     "preflight.scope": ["kind", "workspaceId"],
   }),
+  "/api/plugin-share-action-preflight": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    appServer: ["touched", "modelTraffic", "commandTraffic", "pluginShareTraffic"],
+    action: [
+      "type",
+      "method",
+      "category",
+      "execution",
+      "wouldMutatePluginShare",
+      "wouldExposeShareTargets",
+      "appServerTouched",
+      "modelTraffic",
+      "reason",
+    ],
+    integrationAction: ["method", "category", "target", "arguments", "methodAllowedByAudit"],
+    "integrationAction.target": ["present", "charCount", "lineCount", "textReturned"],
+    "integrationAction.arguments": [
+      "present",
+      "charCount",
+      "lineCount",
+      "validJsonObject",
+      "topLevelKeyCount",
+      "textReturned",
+    ],
+    pluginShareAction: [
+      "method",
+      "targetPresent",
+      "targetCharCount",
+      "targetUrlLike",
+      "targetPathLike",
+      "argumentCharCount",
+      "argumentTopLevelKeyCount",
+      "argumentObjectAccepted",
+      "stringArgumentCount",
+      "urlLikeArgumentCount",
+      "pathLikeArgumentCount",
+      "secretLikeArgumentCount",
+      "sensitiveKeyCount",
+      "saveRequested",
+      "updateTargetsRequested",
+      "deleteRequested",
+      "pluginPathPresent",
+      "remotePluginIdPresent",
+      "discoverabilityPresent",
+      "shareTargetCount",
+      "userTargetCount",
+      "groupTargetCount",
+      "workspaceTargetCount",
+      "unknownPrincipalTypeCount",
+      "principalIdCount",
+      "mutationExecutionBlocked",
+      "appServerTraffic",
+      "pluginNamesReturned",
+      "shareTargetsReturned",
+      "principalIdsReturned",
+      "principalsReturned",
+      "pathsReturned",
+      "urlsReturned",
+      "secretsReturned",
+      "rawPayloadReturned",
+    ],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "pluginSharingMutation",
+      "pluginSharePreflightEnabled",
+      "pluginShareMutationEnabled",
+      "mutationExecutionBlocked",
+      "executionRouteImplemented",
+      "dedicatedExecutionRouteImplemented",
+      "executionGateEnabled",
+      "requiresApprovalPipeline",
+      "requiresIntegrationProvenance",
+      "requiresExplicitEnablement",
+      "browserMethodCallsAccepted",
+      "pluginNamesReturned",
+      "shareTargetsReturned",
+      "principalIdsReturned",
+      "principalsReturned",
+      "targetReturned",
+      "argumentTextReturned",
+      "pathsReturned",
+      "urlsReturned",
+      "secretsReturned",
+      "rawPayloadsReturned",
+      "implemented",
+    ],
+    preflight: [
+      "token",
+      "tokenIssued",
+      "issuedAt",
+      "expiresAt",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseRequiredForMutation",
+      "consumed",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+  }),
   "/api/plugin-share-checkout": responseNestedKeySchemas({
     workspace: ["id", "label", "isDefault"],
     initialize: ["platformFamily", "platformOs"],
@@ -10469,6 +10590,11 @@ const BROWSER_POST_RESPONSE_ROUTE_TOP_LEVEL_KEYS = Object.freeze({
     ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
     "integrationAction",
     "pluginShareCheckout",
+  ),
+  "/api/plugin-share-action-preflight": routeResponseTopLevelKeys(
+    ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
+    "integrationAction",
+    "pluginShareAction",
   ),
   "/api/plugin-share-checkout": routeResponseTopLevelKeys(
     ...RESPONSE_APP_SERVER_MUTATION_TOP_LEVEL_KEYS,
@@ -15183,6 +15309,41 @@ export async function handleRequest(request, response, options) {
     return;
   }
 
+  if (url.pathname === "/api/plugin-share-action-preflight") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, [
+        "workspace",
+        "method",
+        "target",
+        "arguments",
+      ]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const payload = buildPluginShareActionPreflight(body, { workspace });
+      const attached = attachActionPreflight(payload, { body, workspace, options });
+      options.integrationPreflightLedger?.record(attached);
+      sendJson(response, 200, attached);
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid plugin share preflight request",
+      });
+    }
+    return;
+  }
+
   if (url.pathname === "/api/plugin-share-checkout") {
     if (request.method !== "POST") {
       sendJson(response, 405, { ok: false, error: "Method not allowed" });
@@ -17185,6 +17346,10 @@ async function buildConfirmableActionPreflightPayload(actionType, body, { worksp
         pluginShareCheckoutEnabled: options.pluginShareCheckoutEnabled,
         pluginShareCheckoutAllowlist: options.pluginShareCheckoutAllowlist,
       });
+    case "plugin-share-action-preflight":
+      return buildPluginShareActionPreflight(body, {
+        workspace,
+      });
     case "plugin-content-preflight":
       return buildPluginContentPreflight(body, {
         workspace,
@@ -17295,6 +17460,7 @@ function isIntegrationPreflightActionType(actionType) {
     actionType === "marketplace-action-preflight" ||
     actionType === "plugin-uninstall-preflight" ||
     actionType === "plugin-share-checkout-preflight" ||
+    actionType === "plugin-share-action-preflight" ||
     actionType === "plugin-content-preflight" ||
     actionType === "skills-config-preflight" ||
     actionType === "skills-extra-roots-clear-preflight" ||
@@ -25968,6 +26134,115 @@ export function buildPluginShareCheckoutPreflight(
   };
 }
 
+export function buildPluginShareActionPreflight(body, { workspace } = {}) {
+  const methodAudit = integrationMethodAudit();
+  const method = validatePluginShareActionMethod(body?.method, methodAudit);
+  const auditEntry = methodAudit.find((entry) => entry.method === method);
+  const category = auditEntry?.category ?? "plugins-share";
+  const target = validateIntegrationTarget(body?.target);
+  const args = validateMcpArguments(body?.arguments);
+  const risk = summarizeBlockedIntegrationActionRisk({
+    method,
+    category,
+    target,
+    argumentsValue: body?.arguments,
+  });
+  const share = risk.pluginShare;
+  const targetText = typeof body?.target === "string" ? body.target.trim() : "";
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: publicWorkspaces([workspace])[0],
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      pluginShareTraffic: false,
+    },
+    action: {
+      type: "plugin-share-action-preflight",
+      method,
+      category,
+      execution: "blocked",
+      wouldMutatePluginShare: false,
+      wouldExposeShareTargets: false,
+      appServerTouched: false,
+      modelTraffic: false,
+      reason: "plugin-share-mutation-execution-not-implemented",
+    },
+    integrationAction: {
+      method,
+      category,
+      target,
+      arguments: args,
+      methodAllowedByAudit: auditEntry?.status === "blocked",
+    },
+    pluginShareAction: {
+      method,
+      targetPresent: target.present,
+      targetCharCount: target.charCount,
+      targetUrlLike: isUrlLikeArgument(targetText),
+      targetPathLike: isPathLikeArgument(targetText),
+      argumentCharCount: args.charCount,
+      argumentTopLevelKeyCount: args.topLevelKeyCount,
+      argumentObjectAccepted: risk.argumentObjectAccepted,
+      stringArgumentCount: risk.stringArgumentCount,
+      urlLikeArgumentCount: risk.urlLikeArgumentCount,
+      pathLikeArgumentCount: risk.pathLikeArgumentCount,
+      secretLikeArgumentCount: risk.secretLikeArgumentCount,
+      sensitiveKeyCount: risk.sensitiveKeyCount,
+      saveRequested: share.saveRequested,
+      updateTargetsRequested: share.updateTargetsRequested,
+      deleteRequested: share.deleteRequested,
+      pluginPathPresent: share.pluginPathPresent,
+      remotePluginIdPresent: share.remotePluginIdPresent,
+      discoverabilityPresent: share.discoverabilityPresent,
+      shareTargetCount: share.shareTargetCount,
+      userTargetCount: share.userTargetCount,
+      groupTargetCount: share.groupTargetCount,
+      workspaceTargetCount: share.workspaceTargetCount,
+      unknownPrincipalTypeCount: share.unknownPrincipalTypeCount,
+      principalIdCount: share.principalIdCount,
+      mutationExecutionBlocked: true,
+      appServerTraffic: false,
+      pluginNamesReturned: false,
+      shareTargetsReturned: false,
+      principalIdsReturned: false,
+      principalsReturned: false,
+      pathsReturned: false,
+      urlsReturned: false,
+      secretsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: false,
+      pluginSharingMutation: false,
+      pluginSharePreflightEnabled: true,
+      pluginShareMutationEnabled: false,
+      mutationExecutionBlocked: true,
+      executionRouteImplemented: false,
+      dedicatedExecutionRouteImplemented: false,
+      executionGateEnabled: false,
+      requiresApprovalPipeline: true,
+      requiresIntegrationProvenance: true,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: false,
+      pluginNamesReturned: false,
+      shareTargetsReturned: false,
+      principalIdsReturned: false,
+      principalsReturned: false,
+      targetReturned: false,
+      argumentTextReturned: false,
+      pathsReturned: false,
+      urlsReturned: false,
+      secretsReturned: false,
+      rawPayloadsReturned: false,
+      implemented: true,
+    },
+  };
+}
+
 function buildPluginShareCheckoutBlocked(preflightPayload) {
   const checkout = preflightPayload.pluginShareCheckout ?? {};
   return {
@@ -29123,6 +29398,7 @@ export function sanitizeSettingsIntegrationsPayload(
         detailReadEnabled: Boolean(pluginReadEnabled),
         installPreflightEnabled: true,
         marketplacePreflightEnabled: true,
+        sharePreflightEnabled: true,
         shareCheckoutEnabled: Boolean(pluginShareCheckoutEnabled),
         uninstallEnabled: Boolean(pluginUninstallEnabled),
         contentReadEnabled: Boolean(pluginContentReadEnabled),
@@ -29134,7 +29410,7 @@ export function sanitizeSettingsIntegrationsPayload(
           ? inventory.plugins.namesReturned
             ? "names-and-counts"
             : "counts-only"
-          : "plugin-install-and-marketplace-preflight-local-only",
+          : "plugin-install-marketplace-and-share-preflight-local-only",
       },
     },
     inventory,
@@ -35602,6 +35878,7 @@ export function buildSettingsIntegrations({
         detailReadEnabled: Boolean(pluginReadEnabled),
         installPreflightEnabled: true,
         marketplacePreflightEnabled: true,
+        sharePreflightEnabled: true,
         shareCheckoutEnabled: Boolean(pluginShareCheckoutEnabled),
         uninstallEnabled: Boolean(pluginUninstallEnabled),
         contentReadEnabled: Boolean(pluginContentReadEnabled),
@@ -35609,7 +35886,7 @@ export function buildSettingsIntegrations({
         installEnabled: false,
         executionEnabled: false,
         mutationEnabled: Boolean(pluginUninstallEnabled || pluginShareCheckoutEnabled),
-        reason: "plugin-install-and-marketplace-preflight-local-only",
+        reason: "plugin-install-marketplace-and-share-preflight-local-only",
       },
     },
     preflightHistory,
@@ -35745,6 +36022,7 @@ function buildIntegrationActionScope({
     "marketplace-action-preflight",
     "plugin-uninstall-preflight",
     "plugin-share-checkout-preflight",
+    "plugin-share-action-preflight",
     "plugin-content-preflight",
     "config-value-preflight",
     "config-batch-preflight",
@@ -35818,6 +36096,7 @@ function buildIntegrationActionScope({
     pluginReadEnabled: Boolean(pluginReadEnabled),
     pluginInstallPreflightEnabled: true,
     marketplacePreflightEnabled: true,
+    pluginSharePreflightEnabled: true,
     pluginShareCheckoutEnabled: Boolean(pluginShareCheckoutEnabled),
     pluginUninstallEnabled: Boolean(pluginUninstallEnabled),
     pluginInstallEnabled: false,
@@ -41496,6 +41775,17 @@ function validateMarketplaceActionMethod(value, methodAudit = integrationMethodA
   }
   if (!methodAudit.some((entry) => entry.method === method && entry.status === "blocked")) {
     throwRequestError("Marketplace method is not available", 400);
+  }
+  return method;
+}
+
+function validatePluginShareActionMethod(value, methodAudit = integrationMethodAudit()) {
+  const method = cleanDisplayText(value, 100);
+  if (!method || !PLUGIN_SHARE_ACTION_METHODS.includes(method)) {
+    throwRequestError("Plugin share method is unsupported", 400);
+  }
+  if (!methodAudit.some((entry) => entry.method === method && entry.status === "blocked")) {
+    throwRequestError("Plugin share method is not available", 400);
   }
   return method;
 }

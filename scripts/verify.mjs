@@ -1169,6 +1169,10 @@ async function checkStrictBrowserPostBodies() {
       ],
       ["/api/plugin-share-checkout-preflight", { target: "safe-remote-plugin" }],
       [
+        "/api/plugin-share-action-preflight",
+        { method: "plugin/share/save", target: "safe-share-target", arguments: "{}" },
+      ],
+      [
         "/api/plugin-share-checkout",
         {
           target: "safe-remote-plugin",
@@ -1880,6 +1884,24 @@ function assertBrowserPostBodyContracts(cases) {
     pluginShareCheckoutPreflightContract.nestedKeySchemas.policy?.includes("unexpected")
   ) {
     throw new Error("plugin-share-checkout-preflight response contract is missing nested schemas");
+  }
+  const pluginShareActionPreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/plugin-share-action-preflight"];
+  if (
+    pluginShareActionPreflightContract.usesRouteSpecificNestedKeySchemas !== true ||
+    !Object.isFrozen(pluginShareActionPreflightContract.nestedKeySchemas.policy) ||
+    !pluginShareActionPreflightContract.nestedKeySchemas.pluginShareAction?.includes(
+      "mutationExecutionBlocked",
+    ) ||
+    !pluginShareActionPreflightContract.nestedKeySchemas.pluginShareAction?.includes(
+      "principalIdCount",
+    ) ||
+    !pluginShareActionPreflightContract.nestedKeySchemas.policy?.includes(
+      "pluginSharePreflightEnabled",
+    ) ||
+    pluginShareActionPreflightContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("plugin-share-action-preflight response contract is missing nested schemas");
   }
   const pluginShareCheckoutContract =
     BROWSER_POST_RESPONSE_CONTRACTS["/api/plugin-share-checkout"];
@@ -2761,6 +2783,7 @@ function assertBrowserPostBodyContracts(cases) {
     "preflightToken",
     "command",
     "server",
+    "method",
     "arguments",
     "action",
     "loginRef",
@@ -24809,7 +24832,7 @@ function assertSanitizedAccountLoginHistory(payload, { token, workspaceId = "def
     partialSurfaceCount: 3,
     blockedSurfaceCount: 4,
     readMethodCount: 1,
-    localGateCount: 15,
+    localGateCount: 16,
     enabledMutationGateCount: 1,
     historyCount: 1,
     appServerTouched: false,
@@ -25300,7 +25323,7 @@ function assertSanitizedAccountLogoutHistory(payload, { token, workspaceId = "de
     partialSurfaceCount: 3,
     blockedSurfaceCount: 4,
     readMethodCount: 1,
-    localGateCount: 15,
+    localGateCount: 16,
     enabledMutationGateCount: 1,
     historyCount: 1,
     appServerTouched: false,
@@ -29634,6 +29657,7 @@ function assertSanitizedSettingsIntegrations(payload) {
     payload.surfaces?.mcp?.toolInvocationEnabled !== false ||
     payload.surfaces?.skills?.installEnabled !== false ||
     payload.surfaces?.plugins?.installEnabled !== false ||
+    payload.surfaces?.plugins?.sharePreflightEnabled !== true ||
     payload.surfaces?.plugins?.uninstallEnabled !== false
   ) {
     throw new Error("integration surfaces did not stay blocked");
@@ -29707,7 +29731,7 @@ function assertSanitizedSettingsIntegrations(payload) {
     payload.integrationScope?.enabledReadMethodCount !== 1 ||
     JSON.stringify(payload.integrationScope?.enabledReadMethods ?? []) !==
       JSON.stringify(["config/read"]) ||
-    payload.integrationScope?.enabledLocalGateCount !== 14 ||
+    payload.integrationScope?.enabledLocalGateCount !== 15 ||
     !payload.integrationScope?.enabledLocalGates?.includes("mcp-tool-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("mcp-oauth-login-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("mcp-resource-preflight") ||
@@ -29716,6 +29740,7 @@ function assertSanitizedSettingsIntegrations(payload) {
     !payload.integrationScope?.enabledLocalGates?.includes("marketplace-action-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("plugin-uninstall-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("plugin-share-checkout-preflight") ||
+    !payload.integrationScope?.enabledLocalGates?.includes("plugin-share-action-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("plugin-content-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("config-value-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("config-batch-preflight") ||
@@ -29768,7 +29793,7 @@ function assertSanitizedSettingsIntegrations(payload) {
     partialSurfaceCount: 2,
     blockedSurfaceCount: 5,
     readMethodCount: 1,
-    localGateCount: 14,
+    localGateCount: 15,
     enabledMutationGateCount: 0,
     historyCount: 0,
     appServerTouched: false,
@@ -31295,9 +31320,10 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
       ["config/read", ...optInIntegrationReadMethods()].length ||
     JSON.stringify(payload.integrationScope?.enabledReadMethods ?? []) !==
       JSON.stringify(["config/read", ...optInIntegrationReadMethods()]) ||
-    payload.integrationScope?.enabledLocalGateCount !== 14 ||
+    payload.integrationScope?.enabledLocalGateCount !== 15 ||
     !payload.integrationScope?.enabledLocalGates?.includes("plugin-install-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("marketplace-action-preflight") ||
+    !payload.integrationScope?.enabledLocalGates?.includes("plugin-share-action-preflight") ||
     payload.integrationScope?.blockedMutationMethodCount !==
       blockedIntegrationMutationMethods().length ||
     payload.integrationScope?.accountLoginEnabled !== false ||
@@ -31328,7 +31354,7 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
     partialSurfaceCount: 7,
     blockedSurfaceCount: 0,
     readMethodCount: ["config/read", ...optInIntegrationReadMethods()].length,
-    localGateCount: 14,
+    localGateCount: 15,
     enabledMutationGateCount: 0,
     historyCount: 0,
     appServerTouched: true,

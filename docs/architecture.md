@@ -657,6 +657,13 @@ Current M1 status:
   reduced to target length, allowlist status, response-shape counts, and
   field-presence booleans without remote plugin ids, marketplace/plugin names,
   paths, versions, tokens, or raw payloads
+- done: local-only `/api/plugin-share-action-preflight` for audited
+  `plugin/share/save`, `plugin/share/updateTargets`, and `plugin/share/delete`
+  intent, with route-specific nested response schemas, target/argument counts,
+  URL/path/secret-like counters, share-target/principal counters,
+  field-presence booleans, short-lived preflight confirmation/history, and no
+  share mutation route, app-server traffic, share-target/principal echo, plugin
+  names, principal ids, paths, URLs, secrets, or raw payloads
 - done: opt-in `/api/plugin-content-read` behind
   `CODEX_APP_PORT_ALLOW_PLUGIN_CONTENT_READ=1` for `plugin/skill/read` and
   `CODEX_APP_PORT_ALLOW_PLUGIN_SHARE_LIST=1` for `plugin/share/list`, with
@@ -862,7 +869,7 @@ Current M1 status:
   approval-decision, MCP tool-call preflight/execution, MCP resource-read
   execution, MCP OAuth-login preflight/execution, MCP server-reload
   preflight/execution, plugin-install preflight, plugin-share-checkout
-  preflight, marketplace-action preflight, plugin-uninstall
+  preflight, plugin-share-action preflight, marketplace-action preflight, plugin-uninstall
   preflight/execution, skills-config preflight/execution, config-value preflight/execution, config-batch
   preflight/execution, experimental-feature preflight/execution, and generic
   integration mutation preflight routes,

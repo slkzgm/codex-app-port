@@ -108,6 +108,12 @@ The server binds to `127.0.0.1` by default and serves:
   returns only allowlist/target/response-shape metadata, and omits remote
   plugin ids, marketplace/plugin names, paths, versions, tokens, and raw
   payloads
+- `/api/plugin-share-action-preflight`: local-only validation for
+  `plugin/share/save`, `plugin/share/updateTargets`, and `plugin/share/delete`;
+  it returns only target/argument counts, URL/path/secret-like counters,
+  share-target/principal counters, and field-presence booleans, with no
+  app-server traffic, no share mutation route, and no plugin names, principal
+  ids, principals, paths, URLs, secrets, target/argument text, or raw payloads
 - `/api/plugin-content-preflight`: local plugin skill/share-list validation
   with skill text, sharing state, plugin/marketplace text, and app-server reads
   blocked
@@ -862,6 +868,17 @@ only `{remotePluginId}` and reduces the app-server result to response-shape and
 field-presence metadata. It does not return or audit remote plugin ids,
 marketplace/plugin names, paths, versions, tokens, or raw payloads.
 
+The plugin-share-action-preflight endpoint accepts draft `plugin/share/save`,
+`plugin/share/updateTargets`, and `plugin/share/delete` intent for local
+validation behind a route-specific nested response schema. It returns only
+target length, argument length/key counts, URL/path/secret-like counters,
+share-target/principal counters, and field-presence booleans. It issues a
+short-lived local preflight token for confirmation and history, but there is no
+plugin-share mutation execution route. It does not save, update, delete, expose
+share targets, touch app-server, or return plugin names, share targets,
+principal ids, principals, paths, URLs, secrets, target text, argument text, or
+raw payloads.
+
 The plugin-content-preflight endpoint accepts only audited blocked
 `plugin/skill/read` and `plugin/share/list` intent for local validation behind a
 route-specific nested response schema. It returns method, target, and argument
@@ -968,7 +985,7 @@ auth-credential, and migration counts only. It does not return target text,
 argument text, names, URLs, schemas, paths, principals, setting keys or values,
 invoke tools, install or uninstall plugins, write settings, start auth flows, or
 touch `codex app-server`.
-Successful MCP server-reload/OAuth/tool/resource, plugin-read/plugin-install/plugin-uninstall/plugin-content,
+Successful MCP server-reload/OAuth/tool/resource, plugin-read/plugin-install/plugin-share-action/plugin-uninstall/plugin-content,
 skills-config, config-value, config-batch, experimental-feature, and integration mutation preflights are also recorded in a capped process-local
 history returned by `/api/settings-integrations`. That history keeps only
 action type, audited method/category, target/name/resource/
@@ -1854,6 +1871,9 @@ share context, tokens, or raw payloads, that schema-backed
 `/api/plugin-uninstall-preflight` and `/api/plugin-uninstall` can execute only
 as opt-in allowlisted count-only plugin mutation traffic without plugin
 ids/names, paths, URLs, tokens, or raw payloads, that
+schema-backed `/api/plugin-share-action-preflight` blocks plugin share mutations
+without share targets, principals, paths, URLs, secrets, target/argument echo,
+or app-server traffic, that
 schema-backed `/api/plugin-content-preflight` blocks plugin skill/share-list
 reads without skill text, sharing URLs/principals, plugin/marketplace/path
 echo, that schema-backed `/api/plugin-content-read` can execute only as
