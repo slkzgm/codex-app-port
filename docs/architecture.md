@@ -496,7 +496,7 @@ Current M1 status:
 - done: schema-backed Settings/Auth/Apps/MCP/Skills/Plugins method audit covering
   opt-in read inventory plus blocked auth callbacks, ungated MCP tool/resource
   calls, ungated MCP server reloads, settings writes, ungated skill config
-  writes, ungated experimental feature writes, plugin installs/uninstalls/sharing, and
+  writes, ungated experimental feature writes, plugin installs/uninstalls/enablement/sharing, and
   marketplace mutations
 - done: browser-facing `/api/settings-integrations` integration scope summary
   exposes only active read method names, local preflight/login/login-cancel/
@@ -656,6 +656,15 @@ Current M1 status:
   validation by default, route-specific nested response schemas, and responses
   plus action audit records reduced to target length and response-shape counts
   without plugin ids/names, paths, URLs, tokens, or raw payloads
+- done: opt-in `/api/plugin-enablement-set` behind
+  `CODEX_APP_PORT_ALLOW_PLUGIN_ENABLEMENT_SET=1`, exact
+  `CODEX_APP_PORT_PLUGIN_ENABLEMENT_ALLOWLIST` plugin-id match, safe plugin-id
+  validation, and a matching one-time preflight token, with preflight-only
+  validation by default, a server-constructed `plugins."<plugin-id>".enabled`
+  key path, forced `upsert`, boolean values only, route-specific nested
+  response schemas, and responses plus action audit records reduced to
+  plugin-id length, requested state, and response-shape counts without plugin
+  ids, key paths, values, config paths, tokens, or raw payloads
 - done: opt-in `/api/plugin-share-checkout` behind
   `CODEX_APP_PORT_ALLOW_PLUGIN_SHARE_CHECKOUT=1`, exact
   `CODEX_APP_PORT_PLUGIN_SHARE_CHECKOUT_ALLOWLIST` remote-plugin-id match, safe
@@ -927,7 +936,7 @@ Current M1 status:
   execution, MCP OAuth-login preflight/execution, MCP server-reload
   preflight/execution, plugin-install preflight, plugin-share-checkout
   preflight, plugin-share-action preflight, marketplace-action preflight, plugin-uninstall
-  preflight/execution, skills-config preflight/execution, config-value preflight/execution, config-batch
+  preflight/execution, plugin-enablement preflight/execution, skills-config preflight/execution, config-value preflight/execution, config-batch
   preflight/execution, experimental-feature preflight/execution, and generic
   integration mutation preflight routes,
   fail-closing unexpected keys inside

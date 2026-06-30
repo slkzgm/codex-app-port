@@ -28,6 +28,7 @@ import {
   runMcpToolCallProbe,
   runMcpResourceReadProbe,
   runPluginContentReadProbe,
+  runPluginEnablementSetProbe,
   runPluginReadProbe,
   runPluginShareCheckoutProbe,
   runPluginUninstallProbe,
@@ -710,6 +711,19 @@ export const ACTION_PREFLIGHT_CONFIRMATION_FIELD_CONTRACTS = Object.freeze({
     "enabled",
     "preflightToken",
   ),
+  "plugin-enablement-preflight": bodyFields(
+    "workspace",
+    "actionType",
+    "preflightToken",
+    "target",
+    "enabled",
+  ),
+  "plugin-enablement-set": bodyFields(
+    "workspace",
+    "target",
+    "enabled",
+    "preflightToken",
+  ),
   "mcp-resource-preflight": bodyFields(
     "workspace",
     "actionType",
@@ -1256,6 +1270,14 @@ export const BROWSER_POST_BODY_CONTRACTS = Object.freeze({
       requiresPreflightToken: true,
     },
   ),
+  "/api/plugin-enablement-preflight": bodyContract(["workspace", "target", "enabled"], {
+    kind: "preflight",
+    appServerTraffic: false,
+  }),
+  "/api/plugin-enablement-set": bodyContract(["workspace", "target", "enabled", "preflightToken"], {
+    kind: "mutation",
+    requiresPreflightToken: true,
+  }),
   "/api/mcp-resource-preflight": bodyContract(["workspace", "server", "resource"], {
     kind: "preflight",
     appServerTraffic: false,
@@ -10690,6 +10712,182 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
       "implemented",
     ],
   }),
+  "/api/plugin-enablement-preflight": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    appServer: ["touched", "modelTraffic", "commandTraffic", "settingsTraffic"],
+    action: [
+      "type",
+      "method",
+      "category",
+      "execution",
+      "wouldSetPluginEnablement",
+      "pluginEnablementMutated",
+      "appServerTouched",
+      "modelTraffic",
+      "reason",
+    ],
+    integrationAction: ["method", "category", "target", "arguments", "methodAllowedByAudit"],
+    "integrationAction.target": ["present", "charCount", "lineCount", "textReturned"],
+    "integrationAction.arguments": [
+      "present",
+      "charCount",
+      "lineCount",
+      "validJsonObject",
+      "topLevelKeyCount",
+      "enabledValueCount",
+      "textReturned",
+    ],
+    pluginEnablement: [
+      "method",
+      "pluginIdCharCount",
+      "requestedEnabled",
+      "allowlistMatched",
+      "allowlistEntryCount",
+      "keyPathConstructedServerSide",
+      "mergeStrategy",
+      "pluginIdReturned",
+      "keyPathReturned",
+      "valueReturned",
+      "pathsReturned",
+      "rawPayloadReturned",
+    ],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "settingsWrite",
+      "pluginEnablementSet",
+      "pluginEnablementSetEnabled",
+      "executionRouteImplemented",
+      "executionGateEnabled",
+      "allowlistRequired",
+      "allowlistMatched",
+      "keyPathConstructedServerSide",
+      "mergeStrategyForced",
+      "pluginIdReturned",
+      "keyPathReturned",
+      "valueReturned",
+      "targetReturned",
+      "argumentTextReturned",
+      "pathsReturned",
+      "rawPayloadsReturned",
+      "requiresApprovalPipeline",
+      "requiresIntegrationProvenance",
+      "requiresExplicitEnablement",
+      "browserMethodCallsAccepted",
+      "implemented",
+    ],
+    preflight: [
+      "token",
+      "tokenIssued",
+      "issuedAt",
+      "expiresAt",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseRequiredForMutation",
+      "consumed",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+  }),
+  "/api/plugin-enablement-set": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    initialize: ["platformFamily", "platformOs"],
+    appServer: [
+      "touched",
+      "modelTraffic",
+      "commandTraffic",
+      "settingsTraffic",
+      "auditedMethods",
+    ],
+    action: [
+      "type",
+      "method",
+      "execution",
+      "settingsWrite",
+      "pluginEnablementSet",
+      "appServerTouched",
+      "modelTraffic",
+      "reason",
+    ],
+    target: [
+      "pluginIdCharCount",
+      "requestedEnabled",
+      "pluginIdReturned",
+      "keyPathReturned",
+      "valueReturned",
+      "pathsReturned",
+      "rawPayloadReturned",
+    ],
+    pluginEnablement: [
+      "status",
+      "method",
+      "pluginIdCharCount",
+      "requestedEnabled",
+      "responseObject",
+      "responseTopLevelKeyCount",
+      "responseReturned",
+      "keyPathConstructedServerSide",
+      "mergeStrategy",
+      "pluginIdReturned",
+      "keyPathReturned",
+      "valueReturned",
+      "pathsReturned",
+      "rawPayloadReturned",
+    ],
+    result: [
+      "status",
+      "responseObject",
+      "responseTopLevelKeyCount",
+      "responseReturned",
+      "pluginIdReturned",
+      "keyPathReturned",
+      "valueReturned",
+      "pathsReturned",
+      "rawPayloadReturned",
+      "fullIdsReturned",
+      "threadContentReturned",
+    ],
+    preflight: [
+      "tokenConsumed",
+      "tokenReturned",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseEnforced",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "modelTraffic",
+      "commandTraffic",
+      "settingsWrite",
+      "pluginEnablementSet",
+      "pluginEnablementSetEnabled",
+      "executionRouteImplemented",
+      "executionGateEnabled",
+      "allowlistRequired",
+      "allowlistMatched",
+      "keyPathConstructedServerSide",
+      "mergeStrategyForced",
+      "pluginIdReturned",
+      "keyPathReturned",
+      "valueReturned",
+      "pathsReturned",
+      "rawPayloadsReturned",
+      "preflightTokenReturned",
+      "preflightTokenRequired",
+      "auditLogPersistent",
+      "auditLogPathReturned",
+      "auditLogWritableChecked",
+      "auditLogWritten",
+      "requiresExplicitEnablement",
+      "browserMethodCallsAccepted",
+      "implemented",
+    ],
+  }),
   "/api/mcp-oauth-login-preflight": responseNestedKeySchemas({
     workspace: ["id", "label", "isDefault"],
     appServer: ["touched", "modelTraffic", "commandTraffic", "authTraffic"],
@@ -11527,6 +11725,17 @@ const BROWSER_POST_RESPONSE_ROUTE_TOP_LEVEL_KEYS = Object.freeze({
     "experimentalFeatureSet",
     "result",
   ),
+  "/api/plugin-enablement-preflight": routeResponseTopLevelKeys(
+    ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
+    "integrationAction",
+    "pluginEnablement",
+  ),
+  "/api/plugin-enablement-set": routeResponseTopLevelKeys(
+    ...RESPONSE_APP_SERVER_MUTATION_TOP_LEVEL_KEYS,
+    "target",
+    "pluginEnablement",
+    "result",
+  ),
   "/api/mcp-resource-preflight": routeResponseTopLevelKeys(
     ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
     "server",
@@ -11851,6 +12060,7 @@ export function createDevServer({
   mcpToolCallFn = runMcpToolCallProbe,
   mcpResourceReadFn = runMcpResourceReadProbe,
   pluginContentReadFn = runPluginContentReadProbe,
+  pluginEnablementSetFn = runPluginEnablementSetProbe,
   pluginReadFn = runPluginReadProbe,
   pluginShareCheckoutFn = runPluginShareCheckoutProbe,
   pluginUninstallFn = runPluginUninstallProbe,
@@ -11941,6 +12151,11 @@ export function createDevServer({
   pluginUninstallEnabled = process.env.CODEX_APP_PORT_ALLOW_PLUGIN_UNINSTALL === "1",
   pluginUninstallAllowlist = parsePluginUninstallAllowlist(
     process.env.CODEX_APP_PORT_PLUGIN_UNINSTALL_ALLOWLIST,
+  ),
+  pluginEnablementSetEnabled =
+    process.env.CODEX_APP_PORT_ALLOW_PLUGIN_ENABLEMENT_SET === "1",
+  pluginEnablementAllowlist = parsePluginEnablementAllowlist(
+    process.env.CODEX_APP_PORT_PLUGIN_ENABLEMENT_ALLOWLIST,
   ),
   pluginShareListEnabled = process.env.CODEX_APP_PORT_ALLOW_PLUGIN_SHARE_LIST === "1",
   skillsConfigWriteEnabled = process.env.CODEX_APP_PORT_ALLOW_SKILLS_CONFIG_WRITE === "1",
@@ -12053,6 +12268,7 @@ export function createDevServer({
       mcpToolCallFn,
       mcpResourceReadFn,
       pluginContentReadFn,
+      pluginEnablementSetFn,
       pluginReadFn,
       pluginShareCheckoutFn,
       pluginUninstallFn,
@@ -12124,6 +12340,8 @@ export function createDevServer({
       pluginShareCheckoutAllowlist,
       pluginUninstallEnabled,
       pluginUninstallAllowlist,
+      pluginEnablementSetEnabled,
+      pluginEnablementAllowlist,
       pluginShareListEnabled,
       skillsConfigWriteEnabled,
       skillsExtraRootsClearEnabled,
@@ -16036,6 +16254,109 @@ export async function handleRequest(request, response, options) {
     return;
   }
 
+  if (url.pathname === "/api/plugin-enablement-preflight") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, ["workspace", "target", "enabled"]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const payload = buildPluginEnablementPreflight(body, {
+        workspace,
+        pluginEnablementSetEnabled: options.pluginEnablementSetEnabled,
+        pluginEnablementAllowlist: options.pluginEnablementAllowlist,
+      });
+      const attached = attachActionPreflight(payload, { body, workspace, options });
+      options.integrationPreflightLedger?.record(attached);
+      sendJson(response, 200, attached);
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid plugin enablement preflight request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/plugin-enablement-set") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, [
+        "workspace",
+        "target",
+        "enabled",
+        "preflightToken",
+      ]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const preflightBody = stripActionPreflightControlFields(body);
+      const preflightPayload = buildPluginEnablementPreflight(preflightBody, {
+        workspace,
+        pluginEnablementSetEnabled: options.pluginEnablementSetEnabled,
+        pluginEnablementAllowlist: options.pluginEnablementAllowlist,
+      });
+      if (!preflightPayload.policy.executionGateEnabled) {
+        sendJson(response, 403, buildPluginEnablementSetBlocked(preflightPayload));
+        return;
+      }
+      const pluginEnablementParams = validatePluginEnablementSetExecutionParams(
+        preflightBody.target,
+        preflightBody.enabled,
+        options.pluginEnablementAllowlist,
+      );
+      const consumedPreflight = options.preflightRegistry.consume({
+        token: validateActionPreflightToken(body.preflightToken),
+        kind: preflightPayload.action.type,
+        workspace,
+        intent: actionPreflightIntent(preflightBody, preflightPayload),
+      });
+      const auditLogWritableChecked = ensureActionAuditLogWritable(options.actionAuditLog);
+      const payload = await options.pluginEnablementSetFn({
+        codexBin: options.codexBin,
+        cwd: workspace.cwd,
+        timeoutMs: options.timeoutMs,
+        keyPath: pluginEnablementParams.keyPath,
+        enabled: pluginEnablementParams.enabled,
+      });
+      const sanitized = sanitizePluginEnablementSetPayload(payload, {
+        workspace,
+        preflightPayload,
+        consumedPreflight,
+        actionAuditLog: options.actionAuditLog,
+        auditLogWritableChecked,
+      });
+      sanitized.policy.auditLogWritten = writeActionAuditLog(options.actionAuditLog, sanitized);
+      sendJson(response, 200, sanitized);
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid plugin enablement set request",
+      });
+    }
+    return;
+  }
+
   if (url.pathname === "/api/mcp-resource-preflight") {
     if (request.method !== "POST") {
       sendJson(response, 405, { ok: false, error: "Method not allowed" });
@@ -17889,6 +18210,7 @@ export async function handleRequest(request, response, options) {
             pluginReadEnabled: options.pluginReadEnabled,
             pluginShareCheckoutEnabled: options.pluginShareCheckoutEnabled,
             pluginUninstallEnabled: options.pluginUninstallEnabled,
+            pluginEnablementSetEnabled: options.pluginEnablementSetEnabled,
             pluginShareListEnabled: options.pluginShareListEnabled,
             skillsConfigWriteEnabled: options.skillsConfigWriteEnabled,
             skillsExtraRootsClearEnabled: options.skillsExtraRootsClearEnabled,
@@ -17926,6 +18248,7 @@ export async function handleRequest(request, response, options) {
           pluginReadEnabled: options.pluginReadEnabled,
           pluginShareCheckoutEnabled: options.pluginShareCheckoutEnabled,
           pluginUninstallEnabled: options.pluginUninstallEnabled,
+          pluginEnablementSetEnabled: options.pluginEnablementSetEnabled,
           pluginShareListEnabled: options.pluginShareListEnabled,
           skillsConfigWriteEnabled: options.skillsConfigWriteEnabled,
           skillsExtraRootsClearEnabled: options.skillsExtraRootsClearEnabled,
@@ -18623,6 +18946,12 @@ async function buildConfirmableActionPreflightPayload(actionType, body, { worksp
         experimentalFeatureSetEnabled: options.experimentalFeatureSetEnabled,
         experimentalFeatureAllowlist: options.experimentalFeatureAllowlist,
       });
+    case "plugin-enablement-preflight":
+      return buildPluginEnablementPreflight(body, {
+        workspace,
+        pluginEnablementSetEnabled: options.pluginEnablementSetEnabled,
+        pluginEnablementAllowlist: options.pluginEnablementAllowlist,
+      });
     case "mcp-resource-preflight":
       return buildMcpResourcePreflight(body, {
         workspace,
@@ -18781,6 +19110,7 @@ function isIntegrationPreflightActionType(actionType) {
     actionType === "config-value-preflight" ||
     actionType === "config-batch-preflight" ||
     actionType === "experimental-feature-preflight" ||
+    actionType === "plugin-enablement-preflight" ||
     actionType === "mcp-resource-preflight" ||
     actionType === "plugin-read-preflight" ||
     actionType === "plugin-install-preflight" ||
@@ -18866,6 +19196,8 @@ function actionAuditEvent(record) {
       return "config-batch-write-recorded";
     case "experimental-feature-set":
       return "experimental-feature-set-recorded";
+    case "plugin-enablement-set":
+      return "plugin-enablement-set-recorded";
     case "mcp-resource-read":
       return "mcp-resource-read-recorded";
     case "plugin-read":
@@ -19670,6 +20002,20 @@ export function parseExperimentalFeatureAllowlist(value) {
 }
 
 export function parsePluginUninstallAllowlist(value) {
+  if (!value) {
+    return [];
+  }
+  return Array.from(
+    new Set(
+      value
+        .split(",")
+        .map((entry) => entry.trim())
+        .filter(isSafePluginName),
+    ),
+  ).slice(0, 100);
+}
+
+export function parsePluginEnablementAllowlist(value) {
   if (!value) {
     return [];
   }
@@ -26387,6 +26733,296 @@ function summarizeExperimentalFeatureSetResult(value) {
   };
 }
 
+export function buildPluginEnablementPreflight(
+  body,
+  {
+    workspace,
+    pluginEnablementSetEnabled = false,
+    pluginEnablementAllowlist = [],
+  } = {},
+) {
+  const methodAudit = integrationMethodAudit();
+  const auditEntry = methodAudit.find((entry) => entry.method === "config/value/write");
+  const pluginId = validatePluginReadName(body?.target, "Plugin");
+  const enabled = validatePluginEnablementValue(body?.enabled);
+  const allowlisted = isPluginEnablementAllowed(pluginId, pluginEnablementAllowlist);
+  const executionGateEnabled = Boolean(pluginEnablementSetEnabled && allowlisted);
+  const target = {
+    present: true,
+    charCount: pluginId.length,
+    lineCount: 1,
+    textReturned: false,
+  };
+  const args = {
+    present: true,
+    charCount: String(enabled).length,
+    lineCount: 1,
+    validJsonObject: true,
+    topLevelKeyCount: 1,
+    enabledValueCount: 1,
+    textReturned: false,
+  };
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: publicWorkspaces([workspace])[0],
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      settingsTraffic: false,
+    },
+    action: {
+      type: "plugin-enablement-preflight",
+      method: "config/value/write",
+      category: auditEntry?.category ?? "settings-write",
+      execution: executionGateEnabled ? "requires-confirmation" : "blocked",
+      wouldSetPluginEnablement: false,
+      pluginEnablementMutated: false,
+      appServerTouched: false,
+      modelTraffic: false,
+      reason: executionGateEnabled
+        ? "plugin-enablement-set-requires-preflight-token"
+        : pluginEnablementSetEnabled
+          ? "plugin-enablement-not-allowlisted"
+          : "plugin-enablement-set-disabled",
+    },
+    integrationAction: {
+      method: "config/value/write",
+      category: auditEntry?.category ?? "settings-write",
+      target,
+      arguments: args,
+      methodAllowedByAudit: auditEntry?.status === "blocked",
+    },
+    pluginEnablement: {
+      method: "config/value/write",
+      pluginIdCharCount: pluginId.length,
+      requestedEnabled: enabled,
+      allowlistMatched: allowlisted,
+      allowlistEntryCount: sanitizePluginEnablementAllowlist(pluginEnablementAllowlist).length,
+      keyPathConstructedServerSide: true,
+      mergeStrategy: "upsert",
+      pluginIdReturned: false,
+      keyPathReturned: false,
+      valueReturned: false,
+      pathsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: false,
+      settingsWrite: false,
+      pluginEnablementSet: false,
+      pluginEnablementSetEnabled: Boolean(pluginEnablementSetEnabled),
+      executionRouteImplemented: true,
+      executionGateEnabled,
+      allowlistRequired: true,
+      allowlistMatched: allowlisted,
+      keyPathConstructedServerSide: true,
+      mergeStrategyForced: true,
+      pluginIdReturned: false,
+      keyPathReturned: false,
+      valueReturned: false,
+      targetReturned: false,
+      argumentTextReturned: false,
+      pathsReturned: false,
+      rawPayloadsReturned: false,
+      requiresApprovalPipeline: true,
+      requiresIntegrationProvenance: true,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: executionGateEnabled,
+      implemented: true,
+    },
+  };
+}
+
+function buildPluginEnablementSetBlocked(preflightPayload) {
+  const plugin = preflightPayload.pluginEnablement ?? {};
+  return {
+    ok: false,
+    generatedAt: new Date().toISOString(),
+    workspace: preflightPayload.workspace,
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      settingsTraffic: false,
+    },
+    action: {
+      type: "plugin-enablement-set",
+      method: "config/value/write",
+      execution: "blocked",
+      settingsWrite: false,
+      pluginEnablementSet: false,
+      appServerTouched: false,
+      modelTraffic: false,
+      reason: preflightPayload.policy?.pluginEnablementSetEnabled
+        ? "plugin-enablement-not-allowlisted"
+        : "plugin-enablement-set-disabled",
+    },
+    target: {
+      pluginIdCharCount: safeCount(plugin.pluginIdCharCount),
+      requestedEnabled: Boolean(plugin.requestedEnabled),
+      pluginIdReturned: false,
+      keyPathReturned: false,
+      valueReturned: false,
+      pathsReturned: false,
+      rawPayloadReturned: false,
+    },
+    pluginEnablement: {
+      status: "blocked",
+      method: "config/value/write",
+      pluginIdCharCount: safeCount(plugin.pluginIdCharCount),
+      requestedEnabled: Boolean(plugin.requestedEnabled),
+      responseTopLevelKeyCount: 0,
+      responseReturned: false,
+      keyPathConstructedServerSide: true,
+      mergeStrategy: "upsert",
+      pluginIdReturned: false,
+      keyPathReturned: false,
+      valueReturned: false,
+      pathsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: false,
+      settingsWrite: false,
+      pluginEnablementSet: false,
+      pluginEnablementSetEnabled: Boolean(preflightPayload.policy?.pluginEnablementSetEnabled),
+      executionRouteImplemented: true,
+      executionGateEnabled: false,
+      allowlistRequired: true,
+      allowlistMatched: Boolean(plugin.allowlistMatched),
+      keyPathConstructedServerSide: true,
+      mergeStrategyForced: true,
+      pluginIdReturned: false,
+      keyPathReturned: false,
+      valueReturned: false,
+      pathsReturned: false,
+      rawPayloadsReturned: false,
+      requiresExplicitEnablement: true,
+      preflightTokenRequired: true,
+      implemented: true,
+    },
+  };
+}
+
+function sanitizePluginEnablementSetPayload(
+  payload,
+  {
+    workspace,
+    preflightPayload = null,
+    consumedPreflight = null,
+    actionAuditLog = null,
+    auditLogWritableChecked = false,
+  } = {},
+) {
+  const summary = summarizePluginEnablementSetResult(payload?.probes?.pluginEnablementSet);
+  const plugin = preflightPayload?.pluginEnablement ?? {};
+  return {
+    ok: Boolean(payload?.ok),
+    generatedAt: payload?.generatedAt ?? new Date().toISOString(),
+    transport: cleanDisplayText(payload?.transport, 80),
+    protocol: cleanDisplayText(payload?.protocol, 80),
+    initialize: sanitizeInitialize(payload?.initialize),
+    workspace: publicWorkspaces([workspace])[0],
+    appServer: {
+      touched: true,
+      modelTraffic: false,
+      commandTraffic: false,
+      settingsTraffic: true,
+      auditedMethods: ["config/value/write"],
+    },
+    action: {
+      type: "plugin-enablement-set",
+      method: "config/value/write",
+      execution: "completed",
+      settingsWrite: true,
+      pluginEnablementSet: true,
+      appServerTouched: true,
+      modelTraffic: false,
+      reason: "plugin-enablement-set-completed",
+    },
+    target: {
+      pluginIdCharCount: safeCount(plugin.pluginIdCharCount),
+      requestedEnabled: Boolean(plugin.requestedEnabled),
+      pluginIdReturned: false,
+      keyPathReturned: false,
+      valueReturned: false,
+      pathsReturned: false,
+      rawPayloadReturned: false,
+    },
+    pluginEnablement: {
+      status: "completed",
+      method: "config/value/write",
+      pluginIdCharCount: safeCount(plugin.pluginIdCharCount),
+      requestedEnabled: Boolean(plugin.requestedEnabled),
+      responseObject: summary.responseObject,
+      responseTopLevelKeyCount: summary.responseTopLevelKeyCount,
+      responseReturned: false,
+      keyPathConstructedServerSide: true,
+      mergeStrategy: "upsert",
+      pluginIdReturned: false,
+      keyPathReturned: false,
+      valueReturned: false,
+      pathsReturned: false,
+      rawPayloadReturned: false,
+    },
+    result: {
+      status: "completed",
+      responseObject: summary.responseObject,
+      responseTopLevelKeyCount: summary.responseTopLevelKeyCount,
+      responseReturned: false,
+      pluginIdReturned: false,
+      keyPathReturned: false,
+      valueReturned: false,
+      pathsReturned: false,
+      rawPayloadReturned: false,
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    },
+    preflight: buildConsumedPreflightSummary(consumedPreflight),
+    policy: {
+      readOnly: false,
+      appServerTraffic: true,
+      modelTraffic: false,
+      commandTraffic: false,
+      settingsWrite: true,
+      pluginEnablementSet: true,
+      pluginEnablementSetEnabled: true,
+      executionRouteImplemented: true,
+      executionGateEnabled: true,
+      allowlistRequired: true,
+      allowlistMatched: true,
+      keyPathConstructedServerSide: true,
+      mergeStrategyForced: true,
+      pluginIdReturned: false,
+      keyPathReturned: false,
+      valueReturned: false,
+      pathsReturned: false,
+      rawPayloadsReturned: false,
+      preflightTokenReturned: false,
+      auditLogPersistent: Boolean(actionAuditLog?.persistent),
+      auditLogPathReturned: false,
+      auditLogWritableChecked: Boolean(auditLogWritableChecked),
+      auditLogWritten: false,
+      requiresExplicitEnablement: true,
+      preflightTokenRequired: true,
+      browserMethodCallsAccepted: true,
+      implemented: true,
+    },
+    notifications: sanitizeNotificationCounts(payload?.notifications),
+  };
+}
+
+function summarizePluginEnablementSetResult(value) {
+  return {
+    responseObject: Boolean(value?.responseObject),
+    responseTopLevelKeyCount: safeCount(value?.responseTopLevelKeyCount),
+  };
+}
+
 export function buildMcpToolPreflight(
   body,
   { workspace, mcpToolCallEnabled = false, mcpToolCallAllowlist = [] } = {},
@@ -31331,6 +31967,7 @@ export function sanitizeSettingsIntegrationsPayload(
     pluginReadEnabled = false,
     pluginShareCheckoutEnabled = false,
     pluginUninstallEnabled = false,
+    pluginEnablementSetEnabled = false,
     pluginShareListEnabled = false,
     skillsConfigWriteEnabled = false,
     skillsExtraRootsClearEnabled = false,
@@ -31396,6 +32033,7 @@ export function sanitizeSettingsIntegrationsPayload(
     pluginReadEnabled,
     pluginShareCheckoutEnabled,
     pluginUninstallEnabled,
+    pluginEnablementSetEnabled,
     pluginShareListEnabled,
     skillsConfigWriteEnabled,
     skillsExtraRootsClearEnabled,
@@ -31442,10 +32080,12 @@ export function sanitizeSettingsIntegrationsPayload(
         externalAgentConfigDetectionAvailable: inventory.externalAgentConfig.ok,
         experimentalFeatureListingAvailable: inventory.experimentalFeatures.ok,
         configBatchWriteEnabled: Boolean(configBatchWriteEnabled),
+        pluginEnablementSetEnabled: Boolean(pluginEnablementSetEnabled),
         experimentalFeatureSetEnabled: Boolean(experimentalFeatureSetEnabled),
         mutationEnabled: Boolean(
           configBatchWriteEnabled ||
             configValueWriteEnabled ||
+            pluginEnablementSetEnabled ||
             experimentalFeatureSetEnabled ||
             remoteControlDisableEnabled ||
             environmentAddEnabled,
@@ -31456,6 +32096,8 @@ export function sanitizeSettingsIntegrationsPayload(
           ? "config-batch-write-opt-in-only"
           : configValueWriteEnabled
             ? "config-value-write-opt-in-only"
+            : pluginEnablementSetEnabled
+            ? "plugin-enablement-set-opt-in-only"
             : experimentalFeatureSetEnabled
               ? "experimental-feature-set-opt-in-only"
               : remoteControlDisableEnabled
@@ -31596,11 +32238,14 @@ export function sanitizeSettingsIntegrationsPayload(
         sharePreflightEnabled: true,
         shareCheckoutEnabled: Boolean(pluginShareCheckoutEnabled),
         uninstallEnabled: Boolean(pluginUninstallEnabled),
+        enablementSetEnabled: Boolean(pluginEnablementSetEnabled),
         contentReadEnabled: Boolean(pluginContentReadEnabled),
         shareListEnabled: Boolean(pluginShareListEnabled),
         installEnabled: false,
         executionEnabled: false,
-        mutationEnabled: Boolean(pluginUninstallEnabled || pluginShareCheckoutEnabled),
+        mutationEnabled: Boolean(
+          pluginUninstallEnabled || pluginShareCheckoutEnabled || pluginEnablementSetEnabled,
+        ),
         reason: inventory.plugins.ok
           ? inventory.plugins.namesReturned
             ? "names-and-counts"
@@ -37998,6 +38643,7 @@ export function buildSettingsIntegrations({
   pluginReadEnabled = false,
   pluginShareCheckoutEnabled = false,
   pluginUninstallEnabled = false,
+  pluginEnablementSetEnabled = false,
   pluginShareListEnabled = false,
   skillsConfigWriteEnabled = false,
   skillsExtraRootsClearEnabled = false,
@@ -38048,6 +38694,7 @@ export function buildSettingsIntegrations({
     pluginReadEnabled,
     pluginShareCheckoutEnabled,
     pluginUninstallEnabled,
+    pluginEnablementSetEnabled,
     pluginShareListEnabled,
     skillsConfigWriteEnabled,
     skillsExtraRootsClearEnabled,
@@ -38085,10 +38732,12 @@ export function buildSettingsIntegrations({
         remoteControlDisableEnabled: Boolean(remoteControlDisableEnabled),
         environmentAddEnabled: Boolean(environmentAddEnabled),
         configBatchWriteEnabled: Boolean(configBatchWriteEnabled),
+        pluginEnablementSetEnabled: Boolean(pluginEnablementSetEnabled),
         experimentalFeatureSetEnabled: Boolean(experimentalFeatureSetEnabled),
         mutationEnabled: Boolean(
           configBatchWriteEnabled ||
             configValueWriteEnabled ||
+            pluginEnablementSetEnabled ||
             experimentalFeatureSetEnabled ||
             remoteControlDisableEnabled ||
             environmentAddEnabled,
@@ -38099,6 +38748,8 @@ export function buildSettingsIntegrations({
           ? "config-batch-write-opt-in-only"
           : configValueWriteEnabled
             ? "config-value-write-opt-in-only"
+            : pluginEnablementSetEnabled
+            ? "plugin-enablement-set-opt-in-only"
             : experimentalFeatureSetEnabled
               ? "experimental-feature-set-opt-in-only"
               : remoteControlDisableEnabled
@@ -38208,11 +38859,14 @@ export function buildSettingsIntegrations({
         sharePreflightEnabled: true,
         shareCheckoutEnabled: Boolean(pluginShareCheckoutEnabled),
         uninstallEnabled: Boolean(pluginUninstallEnabled),
+        enablementSetEnabled: Boolean(pluginEnablementSetEnabled),
         contentReadEnabled: Boolean(pluginContentReadEnabled),
         shareListEnabled: Boolean(pluginShareListEnabled),
         installEnabled: false,
         executionEnabled: false,
-        mutationEnabled: Boolean(pluginUninstallEnabled || pluginShareCheckoutEnabled),
+        mutationEnabled: Boolean(
+          pluginUninstallEnabled || pluginShareCheckoutEnabled || pluginEnablementSetEnabled,
+        ),
         reason: "plugin-install-marketplace-and-share-preflight-local-only",
       },
     },
@@ -38330,6 +38984,7 @@ function buildIntegrationActionScope({
   pluginReadEnabled = false,
   pluginShareCheckoutEnabled = false,
   pluginUninstallEnabled = false,
+  pluginEnablementSetEnabled = false,
   pluginShareListEnabled = false,
   skillsConfigWriteEnabled = false,
   skillsExtraRootsClearEnabled = false,
@@ -38348,6 +39003,7 @@ function buildIntegrationActionScope({
     "plugin-install-preflight",
     "marketplace-action-preflight",
     "plugin-uninstall-preflight",
+    "plugin-enablement-preflight",
     "plugin-share-checkout-preflight",
     "plugin-share-action-preflight",
     "external-config-import-preflight",
@@ -38368,6 +39024,7 @@ function buildIntegrationActionScope({
     accountLogoutEnabled ? "account/logout" : null,
     configBatchWriteEnabled ? "config/batchWrite" : null,
     configValueWriteEnabled ? "config/value/write" : null,
+    pluginEnablementSetEnabled ? "plugin/enablement/set" : null,
     experimentalFeatureSetEnabled ? "experimentalFeature/enablement/set" : null,
     mcpServerReloadEnabled ? "config/mcpServer/reload" : null,
     mcpOauthLoginEnabled ? "mcpServer/oauth/login" : null,
@@ -38407,6 +39064,7 @@ function buildIntegrationActionScope({
     settingsWriteEnabled: Boolean(
       configBatchWriteEnabled ||
         configValueWriteEnabled ||
+        pluginEnablementSetEnabled ||
         experimentalFeatureSetEnabled ||
         environmentAddEnabled,
     ),
@@ -38443,6 +39101,7 @@ function buildIntegrationActionScope({
     pluginSharePreflightEnabled: true,
     pluginShareCheckoutEnabled: Boolean(pluginShareCheckoutEnabled),
     pluginUninstallEnabled: Boolean(pluginUninstallEnabled),
+    pluginEnablementSetEnabled: Boolean(pluginEnablementSetEnabled),
     pluginInstallEnabled: false,
     pluginShareEnabled: false,
     pluginContentReadEnabled: Boolean(pluginContentReadEnabled),
@@ -38651,6 +39310,7 @@ function summarizeIntegrationLifecycle(payload = {}) {
       integrationScope.pluginReadEnabled ||
         integrationScope.pluginShareCheckoutEnabled ||
         integrationScope.pluginUninstallEnabled ||
+        integrationScope.pluginEnablementSetEnabled ||
         integrationScope.pluginContentReadEnabled ||
         integrationScope.pluginShareListEnabled,
     ),
@@ -38844,6 +39504,7 @@ function summarizeIntegrationExternalCodeContract({
     pluginContentReadEnabled: Boolean(integrationScope.pluginContentReadEnabled),
     pluginShareListEnabled: Boolean(integrationScope.pluginShareListEnabled),
     pluginUninstallEnabled: Boolean(integrationScope.pluginUninstallEnabled),
+    pluginEnablementSetEnabled: Boolean(integrationScope.pluginEnablementSetEnabled),
     skillsConfigWriteEnabled: Boolean(integrationScope.skillsConfigWriteEnabled),
     appServerInventoryVisible,
     historyCount: safeCount(integrationManagement.historyCount),
@@ -39308,6 +39969,7 @@ function summarizeIntegrationActions({
     integrationScope.pluginReadEnabled,
     integrationScope.pluginShareCheckoutEnabled,
     integrationScope.pluginUninstallEnabled,
+    integrationScope.pluginEnablementSetEnabled,
     integrationScope.pluginContentReadEnabled,
     integrationScope.pluginShareListEnabled,
   ].filter(Boolean).length;
@@ -39552,6 +40214,7 @@ function countEnabledIntegrationMutationGates(integrationScope = {}) {
     integrationScope.pluginReadEnabled,
     integrationScope.pluginShareCheckoutEnabled,
     integrationScope.pluginUninstallEnabled,
+    integrationScope.pluginEnablementSetEnabled,
     integrationScope.pluginContentReadEnabled,
     integrationScope.pluginShareListEnabled,
   ].filter(Boolean).length;
@@ -43508,6 +44171,16 @@ function sanitizePluginUninstallAllowlist(allowlist) {
     .slice(0, 100);
 }
 
+function sanitizePluginEnablementAllowlist(allowlist) {
+  if (!Array.isArray(allowlist)) {
+    return [];
+  }
+  return allowlist
+    .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
+    .filter(isSafePluginName)
+    .slice(0, 100);
+}
+
 function sanitizePluginShareCheckoutAllowlist(allowlist) {
   if (!Array.isArray(allowlist)) {
     return [];
@@ -43561,6 +44234,10 @@ function isExperimentalFeatureAllowed(feature, allowlist = []) {
 
 function isPluginUninstallAllowed(pluginId, allowlist = []) {
   return sanitizePluginUninstallAllowlist(allowlist).includes(pluginId);
+}
+
+function isPluginEnablementAllowed(pluginId, allowlist = []) {
+  return sanitizePluginEnablementAllowlist(allowlist).includes(pluginId);
 }
 
 function isPluginShareCheckoutAllowed(remotePluginId, allowlist = []) {
@@ -44394,6 +45071,23 @@ function validateExperimentalFeatureSetExecutionParams(featureValue, enabledValu
   };
 }
 
+function validatePluginEnablementValue(value) {
+  if (typeof value === "boolean") {
+    return value;
+  }
+  if (typeof value !== "string") {
+    throwRequestError("Plugin enablement must be a boolean", 400);
+  }
+  const clean = value.trim().toLowerCase();
+  if (clean === "true") {
+    return true;
+  }
+  if (clean === "false") {
+    return false;
+  }
+  throwRequestError("Plugin enablement must be true or false", 400);
+}
+
 function validateIntegrationMutationMethod(value, methodAudit = integrationMethodAudit()) {
   const method = cleanDisplayText(value, 100);
   if (!method || !blockedIntegrationMutationMethods().includes(method)) {
@@ -44513,6 +45207,18 @@ function validatePluginUninstallExecutionParams(targetValue, allowlist = []) {
   }
   return {
     pluginId,
+  };
+}
+
+function validatePluginEnablementSetExecutionParams(targetValue, enabledValue, allowlist = []) {
+  const pluginId = validatePluginReadName(targetValue, "Plugin");
+  if (!isPluginEnablementAllowed(pluginId, allowlist)) {
+    throwRequestError("Plugin enablement target is not allowlisted", 403);
+  }
+  return {
+    pluginId,
+    keyPath: `plugins."${pluginId}".enabled`,
+    enabled: validatePluginEnablementValue(enabledValue),
   };
 }
 

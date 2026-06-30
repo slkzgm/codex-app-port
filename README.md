@@ -393,10 +393,10 @@ experimental feature names, display text, descriptions, announcements, and curso
 linking/installs,
 external config import mutations, ungated MCP tool/resource calls and server reloads,
 plugin detail reads, config writes, ungated config-value writes, ungated
-config-batch writes, ungated
+config-batch writes, ungated plugin enablement writes, ungated
 experimental feature writes, ungated skill writes, plugin skill reads, plugin
 share-list reads, hook commands, remote environment adds, plugin
-installs/uninstalls/sharing, and marketplace mutations are blocked.
+installs/uninstalls/enablement/sharing, and marketplace mutations are blocked.
 `/api/settings-integrations` also returns a compact integration scope summary
 with active read methods, local preflight/login/login-cancel/logout gates, and
 blocked mutation method names/counts, including MCP reload, config-value,
@@ -404,7 +404,8 @@ config-batch, plugin-install-preflight, marketplace-action-preflight,
 plugin-share-action-preflight, external-config-import-preflight,
 review-feedback-preflight, memory-reset-preflight, remote-control-enable-preflight,
 remote-control-pairing-preflight, plugin-uninstall, skills-config, remote
-environment add, and experimental-feature gates when enabled; it never returns secrets, auth tokens,
+remote-control-pairing-preflight, plugin-uninstall, plugin-enablement,
+skills-config, remote environment add, and experimental-feature gates when enabled; it never returns secrets, auth tokens,
 names unless the name gate is enabled, paths, URLs, hook commands, rate-limit
 details, or raw payloads.
 Its lifecycle response also includes sanitized integration management and
@@ -558,6 +559,16 @@ must consume a matching one-time `/api/plugin-uninstall-preflight` token before
 calling `plugin/uninstall`; responses and action audit records return only
 target length and response-shape counts, with plugin ids/names, paths, URLs,
 tokens, and raw app-server payloads omitted.
+Plugin enablement is also a dedicated settings-write path for the official
+plugin disable/enable config shape. `/api/plugin-enablement-set` is disabled
+unless `CODEX_APP_PORT_ALLOW_PLUGIN_ENABLEMENT_SET=1` is set and the plugin id
+exactly matches `CODEX_APP_PORT_PLUGIN_ENABLEMENT_ALLOWLIST`. It consumes a
+matching one-time `/api/plugin-enablement-preflight` token, constructs
+`plugins."<plugin-id>".enabled` server-side, forces `mergeStrategy: "upsert"`,
+and calls `config/value/write` with only the boolean enablement value.
+Responses and action audit records return only plugin-id length,
+requested-enable state, and response-shape counts; plugin ids, key paths,
+values, config paths, tokens, and raw app-server payloads stay omitted.
 Shared plugin checkout is also a separate mutation path because it can
 materialize external code. `/api/plugin-share-checkout` is disabled unless
 `CODEX_APP_PORT_ALLOW_PLUGIN_SHARE_CHECKOUT=1` is set and the remote plugin id
@@ -705,14 +716,14 @@ one-time token is supplied. Responses and action audit records return only
 updated/enabled/disabled counts plus response shape metadata; feature names,
 enablement values, config paths, tokens, and raw payloads stay omitted.
 Integration action preflight covers audited settings/auth/MCP/skills/plugins
-mutation methods such as config writes, auth flows, plugin installs/uninstalls,
+mutation methods such as config writes, auth flows, plugin installs/uninstalls/enablement,
 shared-plugin checkout, generic sharing, and marketplace actions. It accepts
 only allowlisted blocked methods, returns
 target/argument counts only, and does not echo targets, names, URLs, arguments,
 invoke tools, install or uninstall plugins, write settings, start auth callbacks, or touch
 app-server.
 `/api/settings-integrations` also includes a capped process-local history of
-successful MCP server-reload/OAuth/tool/resource, plugin-read/plugin-install/marketplace/plugin-share-action/plugin-uninstall/plugin-content,
+successful MCP server-reload/OAuth/tool/resource, plugin-read/plugin-install/marketplace/plugin-share-action/plugin-uninstall/plugin-enablement/plugin-content,
 skills-config, config-value, config-batch, experimental-feature, review/feedback, memory-reset, and integration mutation preflights from this server. It shows only action type,
 audited method/category,
 target/name/resource/argument counts, and redaction flags; it does not return

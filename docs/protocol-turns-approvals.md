@@ -576,6 +576,17 @@ route requires `CODEX_APP_PORT_ALLOW_PLUGIN_UNINSTALL=1`, an exact
 validation, and a matching one-time preflight token, and returns only target
 length plus response-shape counts without plugin ids/names, paths, URLs,
 tokens, or raw payloads.
+Plugin enablement uses its own settings-write pair,
+`/api/plugin-enablement-preflight` and `/api/plugin-enablement-set`, for the
+official `plugins."<plugin-id>".enabled` config shape. The mutation route
+requires `CODEX_APP_PORT_ALLOW_PLUGIN_ENABLEMENT_SET=1`, an exact
+`CODEX_APP_PORT_PLUGIN_ENABLEMENT_ALLOWLIST` plugin-id match, safe plugin-id
+validation, and a matching one-time preflight token. The browser never supplies
+the key path or merge strategy; the server constructs the key path, forces
+`upsert`, and calls `config/value/write` with only the requested boolean.
+Responses and action audit records return only plugin-id length, requested
+enablement state, and response-shape counts without plugin ids, key paths,
+values, config paths, tokens, or raw payloads.
 `plugin/share/checkout` is exposed through its own
 `/api/plugin-share-checkout-preflight` and `/api/plugin-share-checkout` pair,
 not through generic plugin sharing. The execution route requires

@@ -31,6 +31,7 @@ const ACTION_AUDIT_EVENTS = new Set([
   "mcp-tool-call-recorded",
   "mcp-resource-read-recorded",
   "plugin-content-read-recorded",
+  "plugin-enablement-set-recorded",
   "plugin-read-recorded",
   "plugin-share-checkout-recorded",
   "plugin-uninstall-recorded",
@@ -129,6 +130,7 @@ export function sanitizeActionAuditRecord(record, { generatedAt = null } = {}) {
         actionType === "config-batch-write" ||
         actionType === "config-value-write" ||
         actionType === "experimental-feature-set" ||
+        actionType === "plugin-enablement-set" ||
         actionType === "environment-add" ||
         actionType === "thread-safety-lock"
           ? Boolean(appServer.settingsTraffic)
@@ -226,6 +228,8 @@ function actionAuditEvent(actionType) {
       return "config-batch-write-recorded";
     case "experimental-feature-set":
       return "experimental-feature-set-recorded";
+    case "plugin-enablement-set":
+      return "plugin-enablement-set-recorded";
     case "environment-add":
       return "environment-add-recorded";
     case "file-action":
@@ -456,6 +460,17 @@ function sanitizeAction(action, actionType, { appServer }) {
       method: "experimentalFeature/enablement/set",
       execution: safeString(action.execution, 40) ?? "completed",
       settingsWrite: Boolean(action.settingsWrite),
+      appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
+      modelTraffic: false,
+    };
+  }
+  if (actionType === "plugin-enablement-set") {
+    return {
+      type: "plugin-enablement-set",
+      method: "config/value/write",
+      execution: safeString(action.execution, 40) ?? "completed",
+      settingsWrite: Boolean(action.settingsWrite),
+      pluginEnablementSet: Boolean(action.pluginEnablementSet),
       appServerTouched: Boolean(action.appServerTouched ?? appServer.touched),
       modelTraffic: false,
     };
@@ -910,6 +925,17 @@ function sanitizeTarget(target, actionType) {
       enabledValueCount: safeCount(target.enabledValueCount),
       featureNameReturned: false,
       enablementValuesReturned: false,
+      pathsReturned: false,
+      rawPayloadReturned: false,
+    };
+  }
+  if (actionType === "plugin-enablement-set") {
+    return {
+      pluginIdCharCount: safeCount(target.pluginIdCharCount),
+      requestedEnabled: Boolean(target.requestedEnabled),
+      pluginIdReturned: false,
+      keyPathReturned: false,
+      valueReturned: false,
       pathsReturned: false,
       rawPayloadReturned: false,
     };
@@ -1379,6 +1405,21 @@ function sanitizeResult(result, actionType) {
       threadContentReturned: false,
     };
   }
+  if (actionType === "plugin-enablement-set") {
+    return {
+      status: safeString(result.status, 80) ?? "completed",
+      responseObject: Boolean(result.responseObject),
+      responseTopLevelKeyCount: safeCount(result.responseTopLevelKeyCount),
+      responseReturned: false,
+      pluginIdReturned: false,
+      keyPathReturned: false,
+      valueReturned: false,
+      pathsReturned: false,
+      rawPayloadReturned: false,
+      fullIdsReturned: false,
+      threadContentReturned: false,
+    };
+  }
   if (actionType === "plugin-read") {
     return {
       status: safeString(result.status, 80) ?? "completed",
@@ -1809,6 +1850,7 @@ function sanitizeActionType(value) {
     "config-value-write",
     "environment-add",
     "experimental-feature-set",
+    "plugin-enablement-set",
     "file-action",
     "live-session-bulk-control",
     "live-session-control",

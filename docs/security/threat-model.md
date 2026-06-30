@@ -496,6 +496,16 @@
   Responses and action audit records may expose only key/value counts and
   response-shape metadata; they must not expose key paths, values, config paths,
   preflight tokens, or raw app-server payloads.
+- Browser-facing plugin enablement writes must be blocked by default and
+  opt-in only. When `CODEX_APP_PORT_ALLOW_PLUGIN_ENABLEMENT_SET=1` is enabled,
+  `/api/plugin-enablement-set` must require an exact
+  `CODEX_APP_PORT_PLUGIN_ENABLEMENT_ALLOWLIST` plugin-id match, consume a
+  matching one-time preflight token, construct
+  `plugins."<plugin-id>".enabled` server-side, force `upsert`, and accept only a
+  boolean enablement value. Responses and action audit records may expose only
+  plugin-id length, requested state, and response-shape metadata; they must not
+  expose plugin ids, key paths, values, config paths, preflight tokens, or raw
+  app-server payloads.
 - Browser-facing `config/batchWrite` must be blocked by default and opt-in
   only. When `CODEX_APP_PORT_ALLOW_CONFIG_BATCH_WRITE=1` is enabled,
   `/api/config-batch-write` must require every edit key to match
@@ -682,7 +692,7 @@
   app-server payloads.
 - Browser-facing integration routes must not call auth callback, ungated MCP
   OAuth/tool/resource/reload, settings write, ungated config-value write, ungated
-  config-batch write, ungated
+  plugin enablement write, ungated config-batch write, ungated
   experimental feature writes, ungated
   skill config write, plugin install/uninstall/share, or marketplace mutation methods until callback provenance,
   install provenance, replay protection, and secret/path redaction are

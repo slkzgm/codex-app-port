@@ -95,6 +95,7 @@ async function main() {
   await checkPluginReadPreflightApi();
   await checkPluginReadApi();
   await checkPluginUninstallApi();
+  await checkPluginEnablementSetApi();
   await checkPluginShareCheckoutApi();
   await checkPluginContentPreflightApi();
   await checkPluginContentReadApi();
@@ -1184,6 +1185,15 @@ async function checkStrictBrowserPostBodies() {
           preflightToken: "preflight-1234567890abcdef",
         },
       ],
+      ["/api/plugin-enablement-preflight", { target: "safe-plugin", enabled: false }],
+      [
+        "/api/plugin-enablement-set",
+        {
+          target: "safe-plugin",
+          enabled: false,
+          preflightToken: "preflight-1234567890abcdef",
+        },
+      ],
       ["/api/mcp-resource-preflight", { server: "safe-server", resource: "resource://safe" }],
       [
         "/api/mcp-resource-read",
@@ -1844,6 +1854,35 @@ function assertBrowserPostBodyContracts(cases) {
     experimentalFeatureSetContract.nestedKeySchemas.policy?.includes("unexpected")
   ) {
     throw new Error("experimental-feature-set response contract is missing nested schemas");
+  }
+  const pluginEnablementPreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/plugin-enablement-preflight"];
+  if (
+    pluginEnablementPreflightContract.usesRouteSpecificNestedKeySchemas !== true ||
+    !Object.isFrozen(pluginEnablementPreflightContract.nestedKeySchemas.policy) ||
+    !pluginEnablementPreflightContract.nestedKeySchemas.pluginEnablement?.includes(
+      "keyPathConstructedServerSide",
+    ) ||
+    !pluginEnablementPreflightContract.nestedKeySchemas.policy?.includes(
+      "pluginEnablementSet",
+    ) ||
+    pluginEnablementPreflightContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("plugin-enablement-preflight response contract is missing nested schemas");
+  }
+  const pluginEnablementSetContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/plugin-enablement-set"];
+  if (
+    pluginEnablementSetContract.usesRouteSpecificNestedKeySchemas !== true ||
+    !Object.isFrozen(pluginEnablementSetContract.nestedKeySchemas.policy) ||
+    !pluginEnablementSetContract.nestedKeySchemas.pluginEnablement?.includes(
+      "responseObject",
+    ) ||
+    !pluginEnablementSetContract.nestedKeySchemas.result?.includes("keyPathReturned") ||
+    !pluginEnablementSetContract.nestedKeySchemas.policy?.includes("settingsWrite") ||
+    pluginEnablementSetContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("plugin-enablement-set response contract is missing nested schemas");
   }
   const mcpToolCallContract = BROWSER_POST_RESPONSE_CONTRACTS["/api/mcp-tool-call"];
   if (
@@ -3999,6 +4038,186 @@ function assertBrowserPostBodyContracts(cases) {
   });
   if (allowedNestedExperimentalFeatureSetShape.statusCode !== 200) {
     throw new Error("browser POST response contract rejected an allowed nested experimental-feature set shape");
+  }
+  const allowedNestedPluginEnablementPreflightShape = applyBrowserPostResponseContract({
+    method: "POST",
+    pathname: "/api/plugin-enablement-preflight",
+    statusCode: 200,
+    payload: {
+      ok: true,
+      appServer: {
+        touched: false,
+        modelTraffic: false,
+        commandTraffic: false,
+        settingsTraffic: false,
+      },
+      action: {
+        type: "plugin-enablement-preflight",
+        method: "config/value/write",
+        category: "settings-write",
+        execution: "requires-confirmation",
+        wouldSetPluginEnablement: false,
+        pluginEnablementMutated: false,
+        appServerTouched: false,
+        modelTraffic: false,
+      },
+      integrationAction: {
+        method: "config/value/write",
+        category: "settings-write",
+        target: {
+          present: true,
+          charCount: 11,
+          lineCount: 1,
+          textReturned: false,
+        },
+        arguments: {
+          present: true,
+          charCount: 5,
+          lineCount: 1,
+          validJsonObject: true,
+          topLevelKeyCount: 1,
+          enabledValueCount: 1,
+          textReturned: false,
+        },
+        methodAllowedByAudit: true,
+      },
+      pluginEnablement: {
+        method: "config/value/write",
+        pluginIdCharCount: 11,
+        requestedEnabled: false,
+        allowlistMatched: true,
+        allowlistEntryCount: 1,
+        keyPathConstructedServerSide: true,
+        mergeStrategy: "upsert",
+        pluginIdReturned: false,
+        keyPathReturned: false,
+        valueReturned: false,
+        pathsReturned: false,
+        rawPayloadReturned: false,
+      },
+      preflight: {
+        token: "preflight-1234567890abcdef",
+        tokenIssued: true,
+        scope: {
+          kind: "plugin-enablement-preflight",
+          workspaceId: "default",
+        },
+      },
+      policy: {
+        readOnly: true,
+        appServerTraffic: false,
+        settingsWrite: false,
+        pluginEnablementSet: false,
+        pluginEnablementSetEnabled: true,
+        executionGateEnabled: true,
+        allowlistRequired: true,
+        allowlistMatched: true,
+        keyPathConstructedServerSide: true,
+        mergeStrategyForced: true,
+        pluginIdReturned: false,
+        keyPathReturned: false,
+        valueReturned: false,
+        pathsReturned: false,
+        rawPayloadsReturned: false,
+        implemented: true,
+      },
+    },
+  });
+  if (allowedNestedPluginEnablementPreflightShape.statusCode !== 200) {
+    throw new Error(
+      "browser POST response contract rejected an allowed nested plugin-enablement preflight shape",
+    );
+  }
+  const allowedNestedPluginEnablementSetShape = applyBrowserPostResponseContract({
+    method: "POST",
+    pathname: "/api/plugin-enablement-set",
+    statusCode: 200,
+    payload: {
+      ok: true,
+      appServer: {
+        touched: true,
+        modelTraffic: false,
+        commandTraffic: false,
+        settingsTraffic: true,
+        auditedMethods: ["config/value/write"],
+      },
+      action: {
+        type: "plugin-enablement-set",
+        method: "config/value/write",
+        execution: "completed",
+        settingsWrite: true,
+        pluginEnablementSet: true,
+        appServerTouched: true,
+        modelTraffic: false,
+      },
+      target: {
+        pluginIdCharCount: 11,
+        requestedEnabled: false,
+        pluginIdReturned: false,
+        keyPathReturned: false,
+        valueReturned: false,
+        pathsReturned: false,
+        rawPayloadReturned: false,
+      },
+      pluginEnablement: {
+        status: "completed",
+        method: "config/value/write",
+        pluginIdCharCount: 11,
+        requestedEnabled: false,
+        responseObject: true,
+        responseTopLevelKeyCount: 3,
+        responseReturned: false,
+        keyPathConstructedServerSide: true,
+        mergeStrategy: "upsert",
+        pluginIdReturned: false,
+        keyPathReturned: false,
+        valueReturned: false,
+        pathsReturned: false,
+        rawPayloadReturned: false,
+      },
+      result: {
+        status: "completed",
+        responseObject: true,
+        responseTopLevelKeyCount: 3,
+        responseReturned: false,
+        pluginIdReturned: false,
+        keyPathReturned: false,
+        valueReturned: false,
+        pathsReturned: false,
+        rawPayloadReturned: false,
+      },
+      preflight: {
+        tokenConsumed: true,
+        tokenReturned: false,
+        scope: {
+          kind: "plugin-enablement-preflight",
+          workspaceId: "default",
+        },
+      },
+      policy: {
+        readOnly: false,
+        appServerTraffic: true,
+        settingsWrite: true,
+        pluginEnablementSet: true,
+        pluginEnablementSetEnabled: true,
+        executionGateEnabled: true,
+        allowlistRequired: true,
+        allowlistMatched: true,
+        keyPathConstructedServerSide: true,
+        mergeStrategyForced: true,
+        pluginIdReturned: false,
+        keyPathReturned: false,
+        valueReturned: false,
+        pathsReturned: false,
+        rawPayloadsReturned: false,
+        implemented: true,
+      },
+    },
+  });
+  if (allowedNestedPluginEnablementSetShape.statusCode !== 200) {
+    throw new Error(
+      "browser POST response contract rejected an allowed nested plugin-enablement set shape",
+    );
   }
   const allowedNestedMcpToolCallShape = applyBrowserPostResponseContract({
     method: "POST",
@@ -19294,6 +19513,213 @@ async function checkPluginUninstallApi() {
   pass("dev server plugin uninstall is opt-in, allowlisted, preflighted, and sanitized");
 }
 
+async function checkPluginEnablementSetApi() {
+  const auditDir = await mkdtemp(join(tmpdir(), "codex-app-port-verify-plugin-enablement-"));
+  const auditLogPath = join(auditDir, "actions.jsonl");
+  const calls = [];
+  const target = "verify-safe-enable-plugin";
+  const keyPath = `plugins."${target}".enabled`;
+  const pluginEnablementSetFn = async (options) => {
+    calls.push(options);
+    return {
+      ok: true,
+      generatedAt: "2026-05-17T00:00:00.000Z",
+      transport: "stdio-jsonl",
+      protocol: "json-rpc-2.0-without-jsonrpc-field",
+      initialize: { platformOs: "linux", platformFamily: "unix" },
+      probes: {
+        pluginEnablementSet: {
+          responseObject: true,
+          responseTopLevelKeyCount: 3,
+          keyPath: options.keyPath,
+          value: options.enabled,
+          path: "/tmp/codex-app-port-verify-extra/config.toml",
+          privateToken: "sk-proj-verifyenablement",
+        },
+      },
+      notifications: { "config/value/write/private": 1 },
+    };
+  };
+
+  const disabled = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    workspaceInputs: ["/tmp/codex-app-port-verify-extra"],
+    pluginEnablementSetFn,
+  });
+  const disabledPort = await listenWithFallback(disabled, { host: "127.0.0.1", port: 0 });
+  const disabledBaseUrl = `http://127.0.0.1:${disabledPort}`;
+
+  try {
+    const token = await readUiSessionToken(disabledBaseUrl);
+    const preflight = await fetch(`${disabledBaseUrl}/api/plugin-enablement-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        target,
+        enabled: false,
+      }),
+    });
+    if (!preflight.ok) {
+      throw new Error(`disabled plugin enablement preflight returned HTTP ${preflight.status}`);
+    }
+    const preflightPayload = await preflight.json();
+    assertSanitizedPluginEnablementPreflight(preflightPayload, {
+      targetLength: target.length,
+      gateEnabled: false,
+    });
+    const blocked = await fetch(`${disabledBaseUrl}/api/plugin-enablement-set`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        target,
+        enabled: false,
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    if (blocked.status !== 403) {
+      throw new Error(`disabled plugin enablement returned HTTP ${blocked.status}`);
+    }
+    if (calls.length !== 0) {
+      throw new Error("disabled plugin enablement called the app-server probe");
+    }
+  } finally {
+    await closeServer(disabled);
+  }
+
+  const server = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    workspaceInputs: ["/tmp/codex-app-port-verify-extra"],
+    pluginEnablementSetEnabled: true,
+    pluginEnablementAllowlist: [target],
+    pluginEnablementSetFn,
+    actionAuditLog: createActionAuditLog({ path: auditLogPath }),
+  });
+  const port = await listenWithFallback(server, { host: "127.0.0.1", port: 0 });
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  try {
+    const token = await readUiSessionToken(baseUrl);
+    const preflight = await fetch(`${baseUrl}/api/plugin-enablement-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        target,
+        enabled: false,
+      }),
+    });
+    if (!preflight.ok) {
+      throw new Error(`plugin enablement preflight returned HTTP ${preflight.status}`);
+    }
+    const preflightPayload = await preflight.json();
+    assertSanitizedPluginEnablementPreflight(preflightPayload, {
+      targetLength: target.length,
+      gateEnabled: true,
+    });
+
+    const historyResponse = await fetch(`${baseUrl}/api/settings-integrations?workspace=workspace-2`, {
+      headers: apiHeaders(token),
+    });
+    if (!historyResponse.ok) {
+      throw new Error(`plugin enablement preflight history returned HTTP ${historyResponse.status}`);
+    }
+    assertSanitizedIntegrationPreflightHistory(await historyResponse.json(), {
+      type: "plugin-enablement-preflight",
+      method: "config/value/write",
+      category: "settings-write",
+      token: preflightPayload.preflight.token,
+      targetLength: target.length,
+      argsLength: 5,
+      argKeys: 1,
+    });
+
+    const missingToken = await fetch(`${baseUrl}/api/plugin-enablement-set`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        target,
+        enabled: false,
+      }),
+    });
+    if (missingToken.status !== 400) {
+      throw new Error(`plugin enablement without token returned HTTP ${missingToken.status}`);
+    }
+
+    const rejectedTarget = await fetch(`${baseUrl}/api/plugin-enablement-set`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        target: "not-allowlisted",
+        enabled: false,
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    if (rejectedTarget.status !== 403) {
+      throw new Error(`plugin enablement with unallowlisted target returned HTTP ${rejectedTarget.status}`);
+    }
+    if (calls.length !== 0) {
+      throw new Error("rejected plugin enablement called the app-server probe");
+    }
+
+    const response = await fetch(`${baseUrl}/api/plugin-enablement-set`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        target,
+        enabled: false,
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(`plugin enablement returned HTTP ${response.status}`);
+    }
+    assertSanitizedPluginEnablementSet(await response.json(), {
+      token: preflightPayload.preflight.token,
+      targetLength: target.length,
+    });
+    if (
+      calls.length !== 1 ||
+      calls[0].cwd !== "/tmp/codex-app-port-verify-extra" ||
+      calls[0].keyPath !== keyPath ||
+      calls[0].enabled !== false
+    ) {
+      throw new Error("plugin enablement did not call the app-server probe with expected parameters");
+    }
+
+    const replay = await fetch(`${baseUrl}/api/plugin-enablement-set`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        target,
+        enabled: false,
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    if (replay.status !== 409 || calls.length !== 1) {
+      throw new Error("plugin enablement preflight token replay was not rejected before app-server traffic");
+    }
+
+    const records = (await readFile(auditLogPath, "utf8"))
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    assertSanitizedPluginEnablementAudit(records, {
+      token: preflightPayload.preflight.token,
+      targetLength: target.length,
+    });
+  } finally {
+    await closeServer(server);
+    await rm(auditDir, { recursive: true, force: true });
+  }
+  pass("dev server plugin enablement is opt-in, allowlisted, preflighted, and sanitized");
+}
+
 async function checkPluginShareCheckoutApi() {
   const auditDir = await mkdtemp(join(tmpdir(), "codex-app-port-verify-plugin-share-checkout-"));
   const auditLogPath = join(auditDir, "actions.jsonl");
@@ -25510,7 +25936,7 @@ function assertSanitizedAccountLoginHistory(payload, { token, workspaceId = "def
     partialSurfaceCount: 4,
     blockedSurfaceCount: 3,
     readMethodCount: 1,
-    localGateCount: 21,
+    localGateCount: 22,
     enabledMutationGateCount: 1,
     historyCount: 1,
     appServerTouched: false,
@@ -26001,7 +26427,7 @@ function assertSanitizedAccountLogoutHistory(payload, { token, workspaceId = "de
     partialSurfaceCount: 4,
     blockedSurfaceCount: 3,
     readMethodCount: 1,
-    localGateCount: 21,
+    localGateCount: 22,
     enabledMutationGateCount: 1,
     historyCount: 1,
     appServerTouched: false,
@@ -30409,7 +30835,7 @@ function assertSanitizedSettingsIntegrations(payload) {
     payload.integrationScope?.enabledReadMethodCount !== 1 ||
     JSON.stringify(payload.integrationScope?.enabledReadMethods ?? []) !==
       JSON.stringify(["config/read"]) ||
-    payload.integrationScope?.enabledLocalGateCount !== 20 ||
+    payload.integrationScope?.enabledLocalGateCount !== 21 ||
     !payload.integrationScope?.enabledLocalGates?.includes("mcp-tool-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("mcp-oauth-login-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("mcp-resource-preflight") ||
@@ -30417,6 +30843,7 @@ function assertSanitizedSettingsIntegrations(payload) {
     !payload.integrationScope?.enabledLocalGates?.includes("plugin-install-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("marketplace-action-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("plugin-uninstall-preflight") ||
+    !payload.integrationScope?.enabledLocalGates?.includes("plugin-enablement-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("plugin-share-checkout-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("plugin-share-action-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("external-config-import-preflight") ||
@@ -30465,6 +30892,7 @@ function assertSanitizedSettingsIntegrations(payload) {
     payload.integrationScope?.skillsConfigWriteEnabled !== false ||
     payload.integrationScope?.pluginInstallEnabled !== false ||
     payload.integrationScope?.pluginUninstallEnabled !== false ||
+    payload.integrationScope?.pluginEnablementSetEnabled !== false ||
     payload.integrationScope?.pluginShareEnabled !== false ||
     payload.integrationScope?.pluginContentReadEnabled !== false ||
     payload.integrationScope?.pluginShareListEnabled !== false ||
@@ -30488,7 +30916,7 @@ function assertSanitizedSettingsIntegrations(payload) {
     partialSurfaceCount: 3,
     blockedSurfaceCount: 4,
     readMethodCount: 1,
-    localGateCount: 20,
+    localGateCount: 21,
     enabledMutationGateCount: 0,
     historyCount: 0,
     appServerTouched: false,
@@ -30602,6 +31030,7 @@ function assertSanitizedIntegrationLifecycle(
     "verify-safe-mcp",
     "verify-safe-tool",
     "verify-private-plugin",
+    "verify-safe-enable-plugin",
     "verify-private-plugin-skill",
     "verify-private-marketplace",
     "verify-safe-skill",
@@ -30815,6 +31244,7 @@ function assertSanitizedIntegrationActions(
     scope.pluginReadEnabled,
     scope.pluginShareCheckoutEnabled,
     scope.pluginUninstallEnabled,
+    scope.pluginEnablementSetEnabled,
     scope.pluginContentReadEnabled,
     scope.pluginShareListEnabled,
   ].filter(Boolean).length;
@@ -31769,6 +32199,7 @@ function assertSanitizedIntegrationLifecycleMatchesPayload(payload, { latestActi
     payload.integrationScope?.skillsConfigWriteEnabled,
     payload.integrationScope?.pluginReadEnabled,
     payload.integrationScope?.pluginUninstallEnabled,
+    payload.integrationScope?.pluginEnablementSetEnabled,
     payload.integrationScope?.pluginContentReadEnabled,
     payload.integrationScope?.pluginShareListEnabled,
   ].filter(Boolean).length;
@@ -32220,9 +32651,10 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
       ["config/read", ...optInIntegrationReadMethods()].length ||
     JSON.stringify(payload.integrationScope?.enabledReadMethods ?? []) !==
       JSON.stringify(["config/read", ...optInIntegrationReadMethods()]) ||
-    payload.integrationScope?.enabledLocalGateCount !== 20 ||
+    payload.integrationScope?.enabledLocalGateCount !== 21 ||
     !payload.integrationScope?.enabledLocalGates?.includes("plugin-install-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("marketplace-action-preflight") ||
+    !payload.integrationScope?.enabledLocalGates?.includes("plugin-enablement-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("plugin-share-action-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("external-config-import-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("review-feedback-preflight") ||
@@ -32254,6 +32686,7 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
     payload.integrationScope?.remoteControlPairingStartEnabled !== false ||
     payload.integrationScope?.remoteControlPairingStatusEnabled !== false ||
     payload.integrationScope?.pluginUninstallEnabled !== false ||
+    payload.integrationScope?.pluginEnablementSetEnabled !== false ||
     payload.integrationScope?.pluginContentReadEnabled !== false ||
     payload.integrationScope?.pluginShareListEnabled !== false ||
     payload.integrationScope?.marketplaceMutationEnabled !== false ||
@@ -32271,7 +32704,7 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
     partialSurfaceCount: 7,
     blockedSurfaceCount: 0,
     readMethodCount: ["config/read", ...optInIntegrationReadMethods()].length,
-    localGateCount: 20,
+    localGateCount: 21,
     enabledMutationGateCount: 0,
     historyCount: 0,
     appServerTouched: true,
@@ -33240,6 +33673,7 @@ function assertSanitizedConfigValuePreflight(payload, { keyPath, value, gateEnab
     "/tmp/codex-app-port-verify",
     "/tmp/codex-app-port-verify-extra",
     "config.toml",
+    "plugins.\"verify-safe-enable-plugin\".enabled",
     "sk-proj-verifysecret",
     "codexHome",
     "userAgent",
@@ -34529,6 +34963,234 @@ function assertSanitizedPluginUninstallAudit(records, { token, targetLength }) {
   ]) {
     if (serialized.includes(marker)) {
       throw new Error(`plugin uninstall audit leaked ${marker}`);
+    }
+  }
+}
+
+function assertSanitizedPluginEnablementPreflight(payload, { targetLength, gateEnabled }) {
+  if (!payload.ok) {
+    throw new Error("plugin enablement preflight payload is not ok");
+  }
+  const serialized = JSON.stringify(payload);
+  for (const marker of [
+    "verify-safe-enable-plugin",
+    "plugins.\"verify-safe-enable-plugin\".enabled",
+    "/tmp/codex-app-port-verify",
+    "/tmp/codex-app-port-verify-extra",
+    "config.toml",
+    "sk-proj-verifyenablement",
+  ]) {
+    if (serialized.includes(marker)) {
+      throw new Error(`plugin enablement preflight payload leaked ${marker}`);
+    }
+  }
+  if (
+    payload.appServer?.touched !== false ||
+    payload.appServer?.modelTraffic !== false ||
+    payload.appServer?.settingsTraffic !== false
+  ) {
+    throw new Error("plugin enablement preflight unexpectedly touched app-server");
+  }
+  if (
+    payload.action?.type !== "plugin-enablement-preflight" ||
+    payload.action?.method !== "config/value/write" ||
+    payload.action?.category !== "settings-write" ||
+    payload.action?.execution !== (gateEnabled ? "requires-confirmation" : "blocked") ||
+    payload.action?.wouldSetPluginEnablement !== false ||
+    payload.action?.pluginEnablementMutated !== false ||
+    payload.action?.appServerTouched !== false
+  ) {
+    throw new Error("plugin enablement preflight did not preserve action metadata");
+  }
+  assertActionPreflight(payload, "plugin-enablement-preflight", "workspace-2");
+  if (
+    payload.integrationAction?.method !== "config/value/write" ||
+    payload.integrationAction?.category !== "settings-write" ||
+    payload.integrationAction?.methodAllowedByAudit !== true ||
+    payload.integrationAction?.target?.charCount !== targetLength ||
+    payload.integrationAction?.target?.textReturned !== false ||
+    payload.integrationAction?.arguments?.charCount !== 5 ||
+    payload.integrationAction?.arguments?.topLevelKeyCount !== 1 ||
+    payload.integrationAction?.arguments?.enabledValueCount !== 1 ||
+    payload.integrationAction?.arguments?.textReturned !== false
+  ) {
+    throw new Error("plugin enablement preflight did not preserve safe count metadata");
+  }
+  if (
+    payload.pluginEnablement?.method !== "config/value/write" ||
+    payload.pluginEnablement?.pluginIdCharCount !== targetLength ||
+    payload.pluginEnablement?.requestedEnabled !== false ||
+    payload.pluginEnablement?.allowlistMatched !== gateEnabled ||
+    payload.pluginEnablement?.keyPathConstructedServerSide !== true ||
+    payload.pluginEnablement?.mergeStrategy !== "upsert" ||
+    payload.pluginEnablement?.pluginIdReturned !== false ||
+    payload.pluginEnablement?.keyPathReturned !== false ||
+    payload.pluginEnablement?.valueReturned !== false ||
+    payload.pluginEnablement?.pathsReturned !== false ||
+    payload.pluginEnablement?.rawPayloadReturned !== false
+  ) {
+    throw new Error("plugin enablement preflight did not preserve count-only metadata");
+  }
+  if (
+    payload.policy?.readOnly !== true ||
+    payload.policy?.appServerTraffic !== false ||
+    payload.policy?.settingsWrite !== false ||
+    payload.policy?.pluginEnablementSet !== false ||
+    payload.policy?.pluginEnablementSetEnabled !== gateEnabled ||
+    payload.policy?.executionRouteImplemented !== true ||
+    payload.policy?.executionGateEnabled !== gateEnabled ||
+    payload.policy?.allowlistRequired !== true ||
+    payload.policy?.allowlistMatched !== gateEnabled ||
+    payload.policy?.keyPathConstructedServerSide !== true ||
+    payload.policy?.mergeStrategyForced !== true ||
+    payload.policy?.pluginIdReturned !== false ||
+    payload.policy?.keyPathReturned !== false ||
+    payload.policy?.valueReturned !== false ||
+    payload.policy?.pathsReturned !== false ||
+    payload.policy?.rawPayloadsReturned !== false ||
+    payload.policy?.requiresApprovalPipeline !== true ||
+    payload.policy?.requiresIntegrationProvenance !== true ||
+    payload.policy?.requiresExplicitEnablement !== true ||
+    payload.policy?.browserMethodCallsAccepted !== gateEnabled ||
+    payload.policy?.implemented !== true
+  ) {
+    throw new Error("plugin enablement preflight policy did not preserve execution guardrails");
+  }
+}
+
+function assertSanitizedPluginEnablementSet(payload, { token, targetLength }) {
+  if (!payload.ok) {
+    throw new Error("plugin enablement payload is not ok");
+  }
+  const serialized = JSON.stringify(payload);
+  for (const marker of [
+    token,
+    "verify-safe-enable-plugin",
+    "plugins.\"verify-safe-enable-plugin\".enabled",
+    "/tmp/codex-app-port-verify",
+    "/tmp/codex-app-port-verify-extra",
+    "config.toml",
+    "sk-proj-verifyenablement",
+  ]) {
+    if (serialized.includes(marker)) {
+      throw new Error(`plugin enablement payload leaked ${marker}`);
+    }
+  }
+  if (
+    payload.appServer?.touched !== true ||
+    payload.appServer?.modelTraffic !== false ||
+    payload.appServer?.settingsTraffic !== true ||
+    JSON.stringify(payload.appServer?.auditedMethods ?? []) !== JSON.stringify(["config/value/write"])
+  ) {
+    throw new Error("plugin enablement payload did not record sanitized app-server traffic");
+  }
+  if (
+    payload.action?.type !== "plugin-enablement-set" ||
+    payload.action?.method !== "config/value/write" ||
+    payload.action?.execution !== "completed" ||
+    payload.action?.settingsWrite !== true ||
+    payload.action?.pluginEnablementSet !== true ||
+    payload.action?.modelTraffic !== false
+  ) {
+    throw new Error("plugin enablement payload did not expose expected action metadata");
+  }
+  if (
+    payload.target?.pluginIdCharCount !== targetLength ||
+    payload.target?.requestedEnabled !== false ||
+    payload.target?.pluginIdReturned !== false ||
+    payload.target?.keyPathReturned !== false ||
+    payload.target?.valueReturned !== false ||
+    payload.target?.pathsReturned !== false ||
+    payload.pluginEnablement?.status !== "completed" ||
+    payload.pluginEnablement?.method !== "config/value/write" ||
+    payload.pluginEnablement?.pluginIdCharCount !== targetLength ||
+    payload.pluginEnablement?.requestedEnabled !== false ||
+    payload.pluginEnablement?.responseObject !== true ||
+    payload.pluginEnablement?.responseTopLevelKeyCount !== 3 ||
+    payload.pluginEnablement?.responseReturned !== false ||
+    payload.pluginEnablement?.pluginIdReturned !== false ||
+    payload.pluginEnablement?.keyPathReturned !== false ||
+    payload.pluginEnablement?.valueReturned !== false ||
+    payload.pluginEnablement?.pathsReturned !== false ||
+    payload.pluginEnablement?.rawPayloadReturned !== false
+  ) {
+    throw new Error("plugin enablement payload did not preserve count-only metadata");
+  }
+  if (
+    payload.result?.status !== "completed" ||
+    payload.result?.responseObject !== true ||
+    payload.result?.responseTopLevelKeyCount !== 3 ||
+    payload.result?.responseReturned !== false ||
+    payload.result?.pluginIdReturned !== false ||
+    payload.result?.keyPathReturned !== false ||
+    payload.result?.valueReturned !== false ||
+    payload.result?.pathsReturned !== false ||
+    payload.result?.rawPayloadReturned !== false
+  ) {
+    throw new Error("plugin enablement result did not preserve sanitized metadata");
+  }
+  if (
+    payload.preflight?.tokenConsumed !== true ||
+    payload.preflight?.tokenReturned !== false ||
+    payload.policy?.readOnly !== false ||
+    payload.policy?.appServerTraffic !== true ||
+    payload.policy?.settingsWrite !== true ||
+    payload.policy?.pluginEnablementSet !== true ||
+    payload.policy?.pluginEnablementSetEnabled !== true ||
+    payload.policy?.allowlistRequired !== true ||
+    payload.policy?.allowlistMatched !== true ||
+    payload.policy?.keyPathConstructedServerSide !== true ||
+    payload.policy?.mergeStrategyForced !== true ||
+    payload.policy?.pluginIdReturned !== false ||
+    payload.policy?.keyPathReturned !== false ||
+    payload.policy?.valueReturned !== false ||
+    payload.policy?.pathsReturned !== false ||
+    payload.policy?.rawPayloadsReturned !== false ||
+    payload.policy?.preflightTokenReturned !== false ||
+    payload.policy?.auditLogWritten !== true ||
+    payload.policy?.executionGateEnabled !== true ||
+    payload.policy?.implemented !== true
+  ) {
+    throw new Error("plugin enablement policy did not preserve execution guardrails");
+  }
+}
+
+function assertSanitizedPluginEnablementAudit(records, { token, targetLength }) {
+  if (
+    records.length !== 1 ||
+    records[0]?.event !== "plugin-enablement-set-recorded" ||
+    records[0]?.action?.type !== "plugin-enablement-set" ||
+    records[0]?.action?.method !== "config/value/write" ||
+    records[0]?.action?.settingsWrite !== true ||
+    records[0]?.action?.pluginEnablementSet !== true ||
+    records[0]?.appServer?.settingsTraffic !== true ||
+    records[0]?.target?.pluginIdCharCount !== targetLength ||
+    records[0]?.target?.pluginIdReturned !== false ||
+    records[0]?.target?.keyPathReturned !== false ||
+    records[0]?.result?.status !== "completed" ||
+    records[0]?.result?.responseObject !== true ||
+    records[0]?.result?.responseTopLevelKeyCount !== 3 ||
+    records[0]?.result?.responseReturned !== false ||
+    records[0]?.result?.pluginIdReturned !== false ||
+    records[0]?.result?.keyPathReturned !== false ||
+    records[0]?.result?.valueReturned !== false ||
+    records[0]?.preflight?.tokenConsumed !== true ||
+    records[0]?.preflight?.tokenReturned !== false
+  ) {
+    throw new Error("plugin enablement audit record was not sanitized as expected");
+  }
+  const serialized = JSON.stringify(records);
+  for (const marker of [
+    token,
+    "verify-safe-enable-plugin",
+    "plugins.\"verify-safe-enable-plugin\".enabled",
+    "/tmp/codex-app-port-verify",
+    "/tmp/codex-app-port-verify-extra",
+    "config.toml",
+    "sk-proj-verifyenablement",
+  ]) {
+    if (serialized.includes(marker)) {
+      throw new Error(`plugin enablement audit leaked ${marker}`);
     }
   }
 }

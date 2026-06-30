@@ -683,7 +683,7 @@ does not read auth state, tokens, app/connectors, MCP servers, skills, or
 plugins. It returns a local method audit for settings/auth/apps/MCP/skills/
 plugins methods and keeps browser calls blocked for auth callbacks, app
 linking/installs, ungated MCP tool/resource calls, ungated MCP server reloads,
-config writes, ungated config-value writes, ungated config-batch writes, ungated skill config writes, plugin
+config writes, ungated config-value writes, ungated config-batch writes, ungated plugin enablement writes, ungated skill config writes, plugin
 installs/uninstalls/sharing, and marketplace mutations. It performs no filesystem reads, no app-server
 traffic, no installs, no callbacks, and no tool invocation.
 The Settings & Integrations panel has a dedicated manual refresh control and
@@ -938,6 +938,16 @@ same preflight, consumes a matching token once, calls `plugin/uninstall`, and
 reduces the result to target length and response-shape counts only behind its
 own nested response schema. It does not return or audit plugin ids/names, paths,
 URLs, tokens, or raw payloads.
+The plugin-enablement-preflight endpoint accepts only plugin enablement intent
+for local validation behind a route-specific nested response schema. It returns
+plugin-id length, requested state, allowlist state, and server-side key-path
+construction metadata only. The matching `/api/plugin-enablement-set` route is
+fail-closed unless `CODEX_APP_PORT_ALLOW_PLUGIN_ENABLEMENT_SET=1` is set and
+the plugin id exactly matches `CODEX_APP_PORT_PLUGIN_ENABLEMENT_ALLOWLIST`. It
+rebuilds the same preflight, consumes a matching token once, constructs
+`plugins."<plugin-id>".enabled` on the server, forces `upsert`, and calls
+`config/value/write` with only the boolean value. It does not return or audit
+plugin ids, key paths, values, config paths, tokens, or raw payloads.
 
 The plugin-share-checkout-preflight endpoint accepts only a safe remote plugin
 id and validates whether the dedicated checkout gate and exact allowlist match
@@ -1104,7 +1114,7 @@ payloads.
 The integration-action-preflight endpoint accepts draft mutation intent only
 for methods that are already in the audited blocked mutation allowlist:
 settings writes, auth callbacks/mutations, MCP auth/tool calls, skill writes,
-plugin install/uninstall/share actions, marketplace mutations, and external
+plugin install/uninstall/enablement/share actions, marketplace mutations, and external
 config imports. The UI selector lists that full blocked mutation allowlist. It
 returns the audited method/category plus target and argument counts, and adds a
 sanitized risk summary for auth callbacks/mutations, MCP OAuth/tool calls,
@@ -1115,7 +1125,7 @@ auth-credential, and migration counts only. It does not return target text,
 argument text, names, URLs, schemas, paths, principals, setting keys or values,
 invoke tools, install or uninstall plugins, write settings, start auth flows, or
 touch `codex app-server`.
-Successful MCP server-reload/OAuth/tool/resource, plugin-read/plugin-install/plugin-share-action/plugin-uninstall/plugin-content,
+Successful MCP server-reload/OAuth/tool/resource, plugin-read/plugin-install/plugin-share-action/plugin-uninstall/plugin-enablement/plugin-content,
 skills-config, config-value, config-batch, experimental-feature, review/feedback, memory-reset, and integration mutation preflights are also recorded in a capped process-local
 history returned by `/api/settings-integrations`. That history keeps only
 action type, audited method/category, target/name/resource/
@@ -2078,6 +2088,11 @@ tokens, notifications, or raw payloads, that
 `config/value/write` traffic with JSON-text values, one-time tokens, and
 `filePath`/`expectedVersion` forced to `null`, returning only count/shape
 metadata without key paths, values, config paths, tokens, or raw payloads, that
+`/api/plugin-enablement-set` can execute only as opt-in allowlisted plugin
+enablement settings traffic with a server-constructed key path, forced `upsert`,
+one-time tokens, and boolean values only, returning only plugin-id length,
+requested state, and response-shape counts without plugin ids, key paths,
+values, config paths, tokens, or raw payloads, that
 `/api/config-batch-write` can execute only as opt-in allowlisted
 `config/batchWrite` traffic with JSON-text edit arrays, one-time tokens, forced
 `filePath`/`expectedVersion` `null`, and reload disabled, returning only

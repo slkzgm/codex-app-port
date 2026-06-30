@@ -869,6 +869,21 @@ function summarizeConfigValueWrite(response) {
   };
 }
 
+function summarizePluginEnablementSet(response) {
+  const objectResponse = response && typeof response === "object" && !Array.isArray(response);
+  return {
+    method: APP_SERVER_METHODS.configValueWrite,
+    responseObject: objectResponse,
+    responseTopLevelKeyCount: objectResponse ? Object.keys(response).length : 0,
+    responseReturned: false,
+    pluginIdReturned: false,
+    keyPathReturned: false,
+    valueReturned: false,
+    pathsReturned: false,
+    rawPayloadReturned: false,
+  };
+}
+
 function summarizeConfigBatchWrite(response) {
   const objectResponse = response && typeof response === "object" && !Array.isArray(response);
   return {
@@ -2959,6 +2974,78 @@ export async function runConfigValueWriteProbe({
       initialize: summarizeInitialize(initialize),
       probes: {
         configValueWrite: summarizeConfigValueWrite(configValueWrite),
+      },
+      notifications: notificationCounts(notifications),
+    };
+  } finally {
+    await client.close();
+  }
+}
+
+export async function runPluginEnablementSetProbe({
+  codexBin = process.env.CODEX_BIN || "codex",
+  codexArgs = ["app-server", "--listen", "stdio://"],
+  cwd = process.cwd(),
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+  keyPath,
+  enabled,
+  onNotification = null,
+} = {}) {
+  if (process.env.CODEX_APP_PORT_ALLOW_PLUGIN_ENABLEMENT_SET !== "1") {
+    throw new Error(
+      "plugin enablement writes require CODEX_APP_PORT_ALLOW_PLUGIN_ENABLEMENT_SET=1 because they mutate local Codex configuration",
+    );
+  }
+
+  const notifications = [];
+  const client = new JsonlRpcClient({
+    command: codexBin,
+    args: codexArgs,
+    cwd,
+    timeoutMs,
+    onNotification(notification) {
+      notifications.push({
+        method: notification.method,
+      });
+      onNotification?.(notification);
+    },
+  });
+
+  await client.start();
+
+  try {
+    const initialize = normalizeInitializeResponse(
+      await client.request(APP_SERVER_METHODS.initialize, {
+        clientInfo: {
+          name: "codex_app_port",
+          title: "Codex App Port",
+          version: "0.1.0",
+        },
+        capabilities: {
+          experimentalApi: false,
+          requestAttestation: false,
+        },
+      }),
+    );
+
+    client.notify(APP_SERVER_METHODS.initialized);
+
+    const pluginEnablementSet = await client.request(APP_SERVER_METHODS.configValueWrite, {
+      keyPath,
+      value: enabled,
+      mergeStrategy: "upsert",
+      expectedVersion: null,
+      filePath: null,
+    });
+
+    return {
+      ok: true,
+      generatedAt: new Date().toISOString(),
+      transport: "stdio-jsonl",
+      protocol: "json-rpc-2.0-without-jsonrpc-field",
+      initialize: summarizeInitialize(initialize),
+      probes: {
+        pluginEnablementSet: summarizePluginEnablementSet(pluginEnablementSet),
       },
       notifications: notificationCounts(notifications),
     };
