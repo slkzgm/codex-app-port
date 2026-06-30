@@ -482,6 +482,12 @@ Current M1 status:
   values, profile names, paths, URLs, secrets, raw payloads, app-server payloads,
   browser handlers, and settings writes omitted; unimplemented sections stay
   explicitly blocked
+- done: read-only General settings catalog inside that settings parity summary,
+  exposing only static file-opening, command-output, terminal-tab,
+  multiline-prompt, and prevent-sleep keys/groups/states/counts, with current
+  values, local file-open targets, command-output preferences, terminal
+  preferences, sleep-prevention state, paths, URLs, secrets, raw payloads,
+  mutations, and app-server traffic blocked
 - done: read-only Profile settings catalog inside that settings parity summary,
   exposing only static activity insight, token metric, profile detail,
   profile-card, and invitation keys/groups/states/counts, with activity

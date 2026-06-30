@@ -399,7 +399,12 @@
   Its Codex app settings parity summary may expose only static official section
   keys, states, and counts; it must not return local setting values, profile
   names, paths, URLs, secrets, raw payloads, app-server payloads, browser
-  handlers, or settings writes. Its Profile settings catalog may expose only
+  handlers, or settings writes. Its General settings catalog may expose only
+  static setting keys, groups, states, sources, and counts; it must not return
+  current file-opening locations, command-output preferences, terminal tab
+  preferences, multiline prompt values, sleep-prevention state, paths, URLs,
+  secrets, raw payloads, app-server payloads, or General settings mutations.
+  Its Profile settings catalog may expose only
   static setting keys, groups, states, sources, and counts; it must not return
   activity metrics, token values, profile pictures, display names, usernames,
   profile cards, profile-card sharing URLs, invitation eligibility, invitation

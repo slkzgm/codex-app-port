@@ -33135,6 +33135,7 @@ function assertCodexAppSettingsParity(
   if (
     JSON.stringify((summary.sections ?? []).map((section) => section.key)) !==
       JSON.stringify(sectionKeys) ||
+    summary.sections?.find((section) => section.key === "general")?.state !== "partial" ||
     summary.sections?.find((section) => section.key === "profile")?.state !== profileState ||
     summary.sections?.find((section) => section.key === "keyboardShortcuts")?.state !==
       "partial" ||
@@ -33170,6 +33171,49 @@ function assertCodexAppSettingsParity(
     summary.mutationsEnabled !== false ||
     summary.browserHandlersEnabled !== false ||
     summary.settingsWritesEnabled !== false ||
+    summary.general?.returned !== true ||
+    summary.general.state !== "partial" ||
+    summary.general.settingCount !== 5 ||
+    summary.general.officialSettingCount !== 5 ||
+    summary.general.catalogOnlySettingCount !== 5 ||
+    summary.general.blockedSettingCount !== 0 ||
+    summary.general.enabledSettingCount !== 0 ||
+    summary.general.generalControlsReturned !== true ||
+    summary.general.fileOpenLocationsReturned !== false ||
+    summary.general.commandOutputSettingsReturned !== false ||
+    summary.general.terminalTabPreferencesReturned !== false ||
+    summary.general.multilinePromptValuesReturned !== false ||
+    summary.general.sleepPreventionValuesReturned !== false ||
+    summary.general.settingValuesReturned !== false ||
+    summary.general.localSettingValuesReturned !== false ||
+    summary.general.mutationEnabled !== false ||
+    summary.general.pathsReturned !== false ||
+    summary.general.urlsReturned !== false ||
+    summary.general.secretsReturned !== false ||
+    summary.general.rawPayloadsReturned !== false ||
+    summary.general.appServerTraffic !== false ||
+    JSON.stringify((summary.general.settings ?? []).map((setting) => setting.key)) !==
+      JSON.stringify([
+        "fileOpenLocation",
+        "commandOutputDisplay",
+        "terminalTabDefaultLocation",
+        "multilinePromptCmdEnter",
+        "preventSleepWhileThreadRuns",
+      ]) ||
+    !summary.general.settings?.every(
+      (setting) =>
+        setting.settingValueReturned === false &&
+        setting.fileOpenLocationReturned === false &&
+        setting.commandOutputSettingReturned === false &&
+        setting.terminalTabPreferenceReturned === false &&
+        setting.multilinePromptValueReturned === false &&
+        setting.sleepPreventionValueReturned === false &&
+        setting.pathsReturned === false &&
+        setting.urlsReturned === false &&
+        setting.secretsReturned === false &&
+        setting.rawPayloadsReturned === false &&
+        setting.appServerTraffic === false,
+    ) ||
     summary.profile?.returned !== true ||
     summary.profile.state !== "partial" ||
     summary.profile.settingCount !== 11 ||
@@ -33726,6 +33770,13 @@ function assertCodexAppSettingsParity(
     payload.policy?.codexAppSettingsPathsReturned !== false ||
     payload.policy?.codexAppSettingsUrlsReturned !== false ||
     payload.policy?.codexAppSettingsRawPayloadsReturned !== false ||
+    payload.policy?.codexAppGeneralSettingsReturned !== true ||
+    payload.policy?.codexAppGeneralValuesReturned !== false ||
+    payload.policy?.codexAppGeneralFileOpenLocationReturned !== false ||
+    payload.policy?.codexAppGeneralCommandOutputSettingReturned !== false ||
+    payload.policy?.codexAppGeneralTerminalPreferenceReturned !== false ||
+    payload.policy?.codexAppGeneralSleepControlReturned !== false ||
+    payload.policy?.codexAppGeneralMutationsEnabled !== false ||
     payload.policy?.codexAppProfileSettingsReturned !== true ||
     payload.policy?.codexAppProfileValuesReturned !== false ||
     payload.policy?.codexAppProfileActivityMetricsReturned !== false ||

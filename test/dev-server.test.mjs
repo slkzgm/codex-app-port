@@ -34965,6 +34965,7 @@ function assertCodexAppSettingsParity(
       "archivedThreads",
     ],
   );
+  assert.equal(summary.sections.find((section) => section.key === "general")?.state, "partial");
   assert.equal(summary.sections.find((section) => section.key === "profile")?.state, profileState);
   assert.equal(
     summary.sections.find((section) => section.key === "keyboardShortcuts")?.state,
@@ -35011,6 +35012,54 @@ function assertCodexAppSettingsParity(
   assert.equal(summary.mutationsEnabled, false);
   assert.equal(summary.browserHandlersEnabled, false);
   assert.equal(summary.settingsWritesEnabled, false);
+  assert.equal(summary.general?.returned, true);
+  assert.equal(summary.general.state, "partial");
+  assert.equal(summary.general.settingCount, 5);
+  assert.equal(summary.general.officialSettingCount, 5);
+  assert.equal(summary.general.catalogOnlySettingCount, 5);
+  assert.equal(summary.general.blockedSettingCount, 0);
+  assert.equal(summary.general.enabledSettingCount, 0);
+  assert.equal(summary.general.generalControlsReturned, true);
+  assert.equal(summary.general.fileOpenLocationsReturned, false);
+  assert.equal(summary.general.commandOutputSettingsReturned, false);
+  assert.equal(summary.general.terminalTabPreferencesReturned, false);
+  assert.equal(summary.general.multilinePromptValuesReturned, false);
+  assert.equal(summary.general.sleepPreventionValuesReturned, false);
+  assert.equal(summary.general.settingValuesReturned, false);
+  assert.equal(summary.general.localSettingValuesReturned, false);
+  assert.equal(summary.general.mutationEnabled, false);
+  assert.equal(summary.general.pathsReturned, false);
+  assert.equal(summary.general.urlsReturned, false);
+  assert.equal(summary.general.secretsReturned, false);
+  assert.equal(summary.general.rawPayloadsReturned, false);
+  assert.equal(summary.general.appServerTraffic, false);
+  assert.deepEqual(
+    summary.general.settings.map((setting) => setting.key),
+    [
+      "fileOpenLocation",
+      "commandOutputDisplay",
+      "terminalTabDefaultLocation",
+      "multilinePromptCmdEnter",
+      "preventSleepWhileThreadRuns",
+    ],
+  );
+  assert.equal(
+    summary.general.settings.every(
+      (setting) =>
+        setting.settingValueReturned === false &&
+        setting.fileOpenLocationReturned === false &&
+        setting.commandOutputSettingReturned === false &&
+        setting.terminalTabPreferenceReturned === false &&
+        setting.multilinePromptValueReturned === false &&
+        setting.sleepPreventionValueReturned === false &&
+        setting.pathsReturned === false &&
+        setting.urlsReturned === false &&
+        setting.secretsReturned === false &&
+        setting.rawPayloadsReturned === false &&
+        setting.appServerTraffic === false,
+    ),
+    true,
+  );
   assert.equal(summary.profile?.returned, true);
   assert.equal(summary.profile.state, "partial");
   assert.equal(summary.profile.settingCount, 11);
@@ -35620,6 +35669,13 @@ function assertCodexAppSettingsParity(
   assert.equal(payload.policy?.codexAppSettingsPathsReturned, false);
   assert.equal(payload.policy?.codexAppSettingsUrlsReturned, false);
   assert.equal(payload.policy?.codexAppSettingsRawPayloadsReturned, false);
+  assert.equal(payload.policy?.codexAppGeneralSettingsReturned, true);
+  assert.equal(payload.policy?.codexAppGeneralValuesReturned, false);
+  assert.equal(payload.policy?.codexAppGeneralFileOpenLocationReturned, false);
+  assert.equal(payload.policy?.codexAppGeneralCommandOutputSettingReturned, false);
+  assert.equal(payload.policy?.codexAppGeneralTerminalPreferenceReturned, false);
+  assert.equal(payload.policy?.codexAppGeneralSleepControlReturned, false);
+  assert.equal(payload.policy?.codexAppGeneralMutationsEnabled, false);
   assert.equal(payload.policy?.codexAppProfileSettingsReturned, true);
   assert.equal(payload.policy?.codexAppProfileValuesReturned, false);
   assert.equal(payload.policy?.codexAppProfileActivityMetricsReturned, false);

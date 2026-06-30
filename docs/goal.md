@@ -71,6 +71,13 @@ Target parity with the Codex desktop workflow:
   static section keys/states/counts only and no local setting values, profile
   names, paths, URLs, secrets, raw payloads, app-server payloads, browser
   handlers, or settings writes.
+- The same summary now includes a read-only General settings catalog for the
+  official file-opening location, command-output display, terminal tab default,
+  multiline prompt submission, and prevent-sleep controls. It returns only
+  keys, groups, states, sources, and counts; current values, local file-open
+  targets, command-output preferences, terminal preferences, sleep-prevention
+  state, paths, URLs, secrets, raw payloads, mutations, and app-server traffic
+  remain blocked.
 - The same summary now includes a read-only Profile settings catalog for the
   official activity insights, token metrics, profile detail update surfaces,
   profile-card sharing, and invitation controls. It returns only keys, groups,

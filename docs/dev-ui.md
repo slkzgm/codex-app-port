@@ -724,6 +724,13 @@ only setting keys, groups, state/source chips, catalog counts, and redaction
 chips; active theme values, color values, font names, custom theme payloads,
 sharing URLs, paths, raw payloads, mutations, and app-server traffic remain
 blocked.
+Within that same summary, `general` exposes a static review-only catalog for
+file-opening location, command-output display, terminal tab default,
+multiline-prompt submission, and prevent-sleep controls. The UI shows only
+setting keys, groups, state/source chips, catalog counts, and redaction chips;
+current values, local file-open targets, command-output preferences, terminal
+preferences, sleep-prevention state, paths, URLs, raw payloads, mutations, and
+app-server traffic remain blocked.
 Within that same summary, `profile` exposes a static review-only catalog for
 activity insights, lifetime and peak token metrics, streaks, longest task,
 token activity, profile detail update surfaces, profile-card sharing, and

@@ -33096,6 +33096,87 @@ const CODEX_APP_SETTINGS_PARITY_SECTION_KEYS = Object.freeze([
   "archivedThreads",
 ]);
 
+const CODEX_APP_GENERAL_SETTINGS = Object.freeze([
+  {
+    key: "fileOpenLocation",
+    group: "file-opening",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "commandOutputDisplay",
+    group: "thread-output",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "terminalTabDefaultLocation",
+    group: "terminal-tabs",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "multilinePromptCmdEnter",
+    group: "composer",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "preventSleepWhileThreadRuns",
+    group: "system",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+]);
+
+function buildCodexAppGeneralSettingsSummary() {
+  const settings = CODEX_APP_GENERAL_SETTINGS.map((setting) => ({
+    ...setting,
+    settingValueReturned: false,
+    fileOpenLocationReturned: false,
+    commandOutputSettingReturned: false,
+    terminalTabPreferenceReturned: false,
+    multilinePromptValueReturned: false,
+    sleepPreventionValueReturned: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+    rawPayloadsReturned: false,
+    appServerTraffic: false,
+  }));
+  const catalogOnlySettingCount = settings.filter(
+    (setting) => setting.state === "catalog-only",
+  ).length;
+  const blockedSettingCount = settings.filter((setting) => setting.state === "blocked").length;
+
+  return {
+    returned: true,
+    state: catalogOnlySettingCount > 0 ? "partial" : "blocked",
+    settingCount: settings.length,
+    officialSettingCount: settings.filter(
+      (setting) => setting.source === "official-codex-app-docs",
+    ).length,
+    catalogOnlySettingCount,
+    blockedSettingCount,
+    enabledSettingCount: 0,
+    settings,
+    generalControlsReturned: true,
+    fileOpenLocationsReturned: false,
+    commandOutputSettingsReturned: false,
+    terminalTabPreferencesReturned: false,
+    multilinePromptValuesReturned: false,
+    sleepPreventionValuesReturned: false,
+    settingValuesReturned: false,
+    localSettingValuesReturned: false,
+    mutationEnabled: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+    rawPayloadsReturned: false,
+    appServerTraffic: false,
+  };
+}
+
 const CODEX_APP_KEYBOARD_SHORTCUTS = Object.freeze([
   {
     key: "openSettings",
@@ -34180,6 +34261,7 @@ function buildCodexAppSettingsParity(payload = {}) {
   const skills = surfaces.skills ?? {};
   const plugins = surfaces.plugins ?? {};
   const integrationScope = payload.integrationScope ?? {};
+  const general = buildCodexAppGeneralSettingsSummary();
   const keyboardShortcuts = buildCodexAppKeyboardShortcutsSummary();
   const profile = buildCodexAppProfileSettingsSummary();
   const appearance = buildCodexAppAppearanceSettingsSummary();
@@ -34197,8 +34279,8 @@ function buildCodexAppSettingsParity(payload = {}) {
     codexAppSettingsSection(
       "general",
       "core",
-      settings.readOnlySummaryAvailable ? "partial" : "blocked",
-      "settings-summary",
+      general.state,
+      "general-settings-catalog",
     ),
     codexAppSettingsSection(
       "profile",
@@ -34293,6 +34375,7 @@ function buildCodexAppSettingsParity(payload = {}) {
     preflightOnlySectionCount,
     blockedSectionCount,
     sections,
+    general,
     profile,
     keyboardShortcuts,
     appearance,
@@ -34693,6 +34776,13 @@ export function sanitizeSettingsIntegrationsPayload(
       codexAppSettingsPathsReturned: false,
       codexAppSettingsUrlsReturned: false,
       codexAppSettingsRawPayloadsReturned: false,
+      codexAppGeneralSettingsReturned: true,
+      codexAppGeneralValuesReturned: false,
+      codexAppGeneralFileOpenLocationReturned: false,
+      codexAppGeneralCommandOutputSettingReturned: false,
+      codexAppGeneralTerminalPreferenceReturned: false,
+      codexAppGeneralSleepControlReturned: false,
+      codexAppGeneralMutationsEnabled: false,
       codexAppProfileSettingsReturned: true,
       codexAppProfileValuesReturned: false,
       codexAppProfileActivityMetricsReturned: false,
@@ -42283,6 +42373,13 @@ export function buildSettingsIntegrations({
       codexAppSettingsPathsReturned: false,
       codexAppSettingsUrlsReturned: false,
       codexAppSettingsRawPayloadsReturned: false,
+      codexAppGeneralSettingsReturned: true,
+      codexAppGeneralValuesReturned: false,
+      codexAppGeneralFileOpenLocationReturned: false,
+      codexAppGeneralCommandOutputSettingReturned: false,
+      codexAppGeneralTerminalPreferenceReturned: false,
+      codexAppGeneralSleepControlReturned: false,
+      codexAppGeneralMutationsEnabled: false,
       codexAppProfileSettingsReturned: true,
       codexAppProfileValuesReturned: false,
       codexAppProfileActivityMetricsReturned: false,
