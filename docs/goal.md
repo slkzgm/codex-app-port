@@ -156,6 +156,24 @@ Target parity with the Codex desktop workflow:
   notification payloads, secrets, raw payloads, app-server traffic, filesystem
   access, network access, app control, unattended execution, schedule writes,
   run starts, run archives, worktree creation, or automation mutations.
+- `/api/settings-integrations` now also exposes a read-only Codex app Features
+  catalog aligned to the official Codex app Features documentation. It returns
+  only static keys, groups, states, sources, counts, and redaction flags for
+  multitasking across projects, skills, automations, Local/Worktree/Cloud
+  modes, built-in Git, worktrees, integrated terminal, local-environment
+  actions, Windows sandbox, voice dictation, pop-out windows, in-app browser,
+  Browser Use, Computer Use, non-code artifacts, task sidebar, IDE sync,
+  thread automations, approvals/sandboxing, MCP, web search, and image
+  generation plus local high-risk boundaries. It does not return project names,
+  thread ids or content, mode selections, workspace/worktree paths, cloud
+  environment names, diff content, terminal output, command text, local action
+  definitions, voice audio, transcripts, window state, browser URLs/content/
+  screenshots, desktop screenshots, app identifiers, artifact content or
+  paths, IDE file context/state, web-search queries/results, generated images,
+  image prompts, MCP server names, skill or automation names, setting values,
+  secrets, raw payloads, app-server traffic, model traffic, network access,
+  filesystem access, browser launch, desktop control, voice capture, web
+  search, image generation, or mutations.
 - The same summary now includes a read-only Browser settings catalog for the
   official Browser plugin, Chrome extension, site permission, ask-before-use,
   and full-CDP developer-mode controls. It returns only keys, groups, states,

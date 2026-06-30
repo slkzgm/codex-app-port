@@ -33617,6 +33617,222 @@ function assertAutomationsCatalog(payload) {
   }
 }
 
+function expectedCodexAppFeaturesEntries() {
+  return [
+    ["multitaskAcrossProjects", "project-workflows", "catalog-only", "official-codex-app-features-docs"],
+    ["skillsSupport", "skills", "catalog-only", "official-codex-app-features-docs"],
+    ["automationsSupport", "automations", "catalog-only", "official-codex-app-features-docs"],
+    ["localThreadMode", "thread-modes", "catalog-only", "official-codex-app-features-docs"],
+    ["worktreeThreadMode", "thread-modes", "catalog-only", "official-codex-app-features-docs"],
+    ["cloudThreadMode", "thread-modes", "catalog-only", "official-codex-app-features-docs"],
+    ["builtInGitTools", "git", "catalog-only", "official-codex-app-features-docs"],
+    ["worktreeSupport", "worktrees", "catalog-only", "official-codex-app-features-docs"],
+    ["integratedTerminal", "terminal", "catalog-only", "official-codex-app-features-docs"],
+    ["localEnvironmentActions", "local-environments", "catalog-only", "official-codex-app-features-docs"],
+    ["nativeWindowsSandbox", "platform", "catalog-only", "official-codex-app-features-docs"],
+    ["voiceDictation", "composer", "catalog-only", "official-codex-app-features-docs"],
+    ["floatingPopoutWindow", "windowing", "catalog-only", "official-codex-app-features-docs"],
+    ["inAppBrowser", "browser", "catalog-only", "official-codex-app-features-docs"],
+    ["browserUse", "browser", "catalog-only", "official-codex-app-features-docs"],
+    ["computerUse", "computer-use", "catalog-only", "official-codex-app-features-docs"],
+    ["nonCodeArtifacts", "artifacts", "catalog-only", "official-codex-app-features-docs"],
+    ["taskSidebar", "task-sidebar", "catalog-only", "official-codex-app-features-docs"],
+    ["ideExtensionSync", "ide-sync", "catalog-only", "official-codex-app-features-docs"],
+    ["ideAutoContext", "ide-sync", "catalog-only", "official-codex-app-features-docs"],
+    ["threadAutomations", "automations", "catalog-only", "official-codex-app-features-docs"],
+    ["approvalsAndSandboxing", "security", "catalog-only", "official-codex-app-features-docs"],
+    ["mcpSupport", "mcp", "catalog-only", "official-codex-app-features-docs"],
+    ["webSearch", "web-search", "catalog-only", "official-codex-app-features-docs"],
+    ["imageGeneration", "image-generation", "catalog-only", "official-codex-app-features-docs"],
+    ["cloudModeBoundary", "thread-modes", "blocked", "local-cloud-mode-boundary"],
+    ["localEnvironmentActionBoundary", "local-environments", "blocked", "local-environment-action-boundary"],
+    ["voiceDictationBoundary", "composer", "blocked", "local-voice-dictation-boundary"],
+    ["floatingPopoutWindowBoundary", "windowing", "blocked", "local-popout-window-boundary"],
+    ["inAppBrowserExecutionBoundary", "browser", "blocked", "local-in-app-browser-boundary"],
+    ["browserUseExecutionBoundary", "browser", "blocked", "local-browser-use-boundary"],
+    ["computerUseExecutionBoundary", "computer-use", "blocked", "local-computer-use-boundary"],
+    ["artifactPreviewBoundary", "artifacts", "blocked", "local-artifact-preview-boundary"],
+    ["ideSyncBoundary", "ide-sync", "blocked", "local-ide-sync-boundary"],
+    ["webSearchExecutionBoundary", "web-search", "blocked", "local-web-search-boundary"],
+    ["imageGenerationExecutionBoundary", "image-generation", "blocked", "local-image-generation-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexAppFeaturesCatalog(payload) {
+  const catalog = payload.codexAppFeatures;
+  const expectedEntries = expectedCodexAppFeaturesEntries();
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-app-features-docs");
+  assert.equal(catalog.featureCount, 36);
+  assert.equal(catalog.officialFeatureCount, 25);
+  assert.equal(catalog.localBoundaryFeatureCount, 11);
+  assert.equal(catalog.catalogOnlyFeatureCount, 25);
+  assert.equal(catalog.blockedFeatureCount, 11);
+  assert.equal(catalog.enabledFeatureCount, 0);
+  assert.deepEqual(
+    (catalog.features ?? []).map(({ key, group, state, source }) => ({
+      key,
+      group,
+      state,
+      source,
+    })),
+    expectedEntries,
+  );
+
+  const featureRedactionFlags = [
+    "featureValueReturned",
+    "projectNameReturned",
+    "threadIdReturned",
+    "threadContentReturned",
+    "modeSelectionReturned",
+    "workspacePathReturned",
+    "worktreePathReturned",
+    "cloudEnvironmentNameReturned",
+    "gitDiffContentReturned",
+    "terminalOutputReturned",
+    "commandTextReturned",
+    "localEnvironmentActionReturned",
+    "voiceAudioReturned",
+    "transcriptTextReturned",
+    "windowStateReturned",
+    "browserUrlReturned",
+    "browserContentReturned",
+    "browserScreenshotReturned",
+    "desktopScreenshotReturned",
+    "appIdentifierReturned",
+    "artifactContentReturned",
+    "artifactPathReturned",
+    "ideFileContextReturned",
+    "ideStateReturned",
+    "webSearchQueryReturned",
+    "webSearchResultsReturned",
+    "generatedImageReturned",
+    "imagePromptReturned",
+    "mcpServerNameReturned",
+    "skillNameReturned",
+    "automationNameReturned",
+    "settingValueReturned",
+    "browserLaunched",
+    "desktopControlStarted",
+    "voiceCaptureStarted",
+    "imageGenerationStarted",
+    "webSearchStarted",
+    "modelTraffic",
+    "networkAccess",
+    "filesystemRead",
+    "filesystemWrite",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.features.every((feature) =>
+      featureRedactionFlags.every((flag) => feature[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.appFeaturesCatalogReturned, true);
+  for (const flag of [
+    "featureValuesReturned",
+    "projectNamesReturned",
+    "threadIdsReturned",
+    "threadContentReturned",
+    "modeSelectionsReturned",
+    "workspacePathsReturned",
+    "worktreePathsReturned",
+    "cloudEnvironmentNamesReturned",
+    "gitDiffContentReturned",
+    "terminalOutputReturned",
+    "commandTextReturned",
+    "localEnvironmentActionsReturned",
+    "voiceAudioReturned",
+    "transcriptTextReturned",
+    "windowStateReturned",
+    "browserUrlsReturned",
+    "browserContentReturned",
+    "browserScreenshotsReturned",
+    "desktopScreenshotsReturned",
+    "appIdentifiersReturned",
+    "artifactContentReturned",
+    "artifactPathsReturned",
+    "ideFileContextReturned",
+    "ideStateReturned",
+    "webSearchQueriesReturned",
+    "webSearchResultsReturned",
+    "generatedImagesReturned",
+    "imagePromptsReturned",
+    "mcpServerNamesReturned",
+    "skillNamesReturned",
+    "automationNamesReturned",
+    "settingValuesReturned",
+    "browserLaunched",
+    "desktopControlStarted",
+    "voiceCaptureStarted",
+    "imageGenerationStarted",
+    "webSearchStarted",
+    "modelTraffic",
+    "networkAccess",
+    "filesystemReads",
+    "filesystemWrites",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexAppFeaturesReturned", true],
+    ["codexAppFeaturesValuesReturned", false],
+    ["codexAppFeaturesProjectNamesReturned", false],
+    ["codexAppFeaturesThreadIdsReturned", false],
+    ["codexAppFeaturesThreadContentReturned", false],
+    ["codexAppFeaturesModeSelectionsReturned", false],
+    ["codexAppFeaturesWorkspacePathsReturned", false],
+    ["codexAppFeaturesWorktreePathsReturned", false],
+    ["codexAppFeaturesCloudEnvironmentNamesReturned", false],
+    ["codexAppFeaturesGitDiffContentReturned", false],
+    ["codexAppFeaturesTerminalOutputReturned", false],
+    ["codexAppFeaturesCommandTextReturned", false],
+    ["codexAppFeaturesVoiceAudioReturned", false],
+    ["codexAppFeaturesTranscriptTextReturned", false],
+    ["codexAppFeaturesWindowStateReturned", false],
+    ["codexAppFeaturesBrowserContentReturned", false],
+    ["codexAppFeaturesDesktopScreenshotsReturned", false],
+    ["codexAppFeaturesArtifactContentReturned", false],
+    ["codexAppFeaturesIdeContextReturned", false],
+    ["codexAppFeaturesWebSearchReturned", false],
+    ["codexAppFeaturesImagesReturned", false],
+    ["codexAppFeaturesMcpNamesReturned", false],
+    ["codexAppFeaturesSkillNamesReturned", false],
+    ["codexAppFeaturesAutomationNamesReturned", false],
+    ["codexAppFeaturesSettingValuesReturned", false],
+    ["codexAppFeaturesBrowserLaunched", false],
+    ["codexAppFeaturesDesktopControlStarted", false],
+    ["codexAppFeaturesVoiceCaptureStarted", false],
+    ["codexAppFeaturesImageGenerationStarted", false],
+    ["codexAppFeaturesWebSearchStarted", false],
+    ["codexAppFeaturesModelTraffic", false],
+    ["codexAppFeaturesNetworkAccess", false],
+    ["codexAppFeaturesFilesystemAccess", false],
+    ["codexAppFeaturesMutationsEnabled", false],
+    ["codexAppFeaturesPathsReturned", false],
+    ["codexAppFeaturesUrlsReturned", false],
+    ["codexAppFeaturesRawPayloadsReturned", false],
+    ["codexAppFeaturesAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function assertCodexAppSettingsParity(
   payload,
   {
@@ -33691,6 +33907,7 @@ function assertCodexAppSettingsParity(
   }
   assertSkillsPluginsCatalog(payload);
   assertAutomationsCatalog(payload);
+  assertCodexAppFeaturesCatalog(payload);
   if (
     summary.sectionKeysReturned !== true ||
     summary.sectionLabelsReturned !== false ||

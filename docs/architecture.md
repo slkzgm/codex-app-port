@@ -559,6 +559,22 @@ Current M1 status:
   access, network access, app control, unattended execution, schedule writes,
   run starts/archives, worktree creation, mutations, secrets, raw payloads, and
   app-server traffic blocked
+- done: read-only Codex app Features catalog in `/api/settings-integrations`,
+  exposing only static official Features documentation keys plus local
+  boundary keys/groups/states/sources/counts/redaction flags for project
+  multitasking, skills, automations, Local/Worktree/Cloud modes, built-in Git,
+  worktrees, integrated terminal, local-environment actions, Windows sandbox,
+  voice dictation, pop-out windows, in-app browser, Browser Use, Computer Use,
+  non-code artifacts, task sidebar, IDE sync/context, thread automations,
+  approvals/sandboxing, MCP, web search, and image generation, with project
+  names, thread ids/content, mode selections, workspace/worktree paths, cloud
+  environment names, diff content, terminal output, command text, local action
+  definitions, voice audio/transcripts, window state, browser URLs/content/
+  screenshots, desktop screenshots, app identifiers, artifact content/paths,
+  IDE file context/state, web-search queries/results, generated images, image
+  prompts, MCP server names, skill/automation names, setting values, browser
+  launch, desktop control, voice capture, model/network/filesystem traffic,
+  mutations, paths, URLs, secrets, raw payloads, and app-server traffic blocked
 - done: read-only Browser settings catalog inside the settings parity summary,
   exposing only static Browser plugin, Chrome extension, site permission,
   ask-before-use, and full-CDP developer-mode control keys/groups/states/counts,

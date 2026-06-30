@@ -461,6 +461,19 @@
   materialize worktrees, read triage inbox contents, perform unattended
   execution, read or write files, access network, control apps, or mutate
   automation state. Its
+  Codex app Features catalog may expose only static official-documentation keys
+  plus local boundary keys, groups, states, sources, counts, and redaction
+  flags; it must not return project names, thread ids, thread content, mode
+  selections, workspace paths, worktree paths, cloud environment names, diff
+  content, terminal output, command text, local action definitions, voice audio,
+  transcripts, window state, browser URLs, browser content, browser
+  screenshots, desktop screenshots, app identifiers, artifact content, artifact
+  paths, IDE file context, IDE state, web-search queries or results, generated
+  images, image prompts, MCP server names, skill names, automation names,
+  setting values, secrets, raw payloads, app-server payloads, model traffic, or
+  app-server traffic, and must not launch browsers, start desktop control,
+  capture voice, run web search, generate images, read or write files, access
+  network, or mutate feature state. Its
   Browser settings catalog may expose only
   static setting keys,
   groups, states, sources, and counts; it must not return Browser plugin or

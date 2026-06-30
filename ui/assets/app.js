@@ -33,6 +33,8 @@ const elements = {
   skillsPluginsCatalogValuesText: document.querySelector("#skills-plugins-catalog-values-text"),
   automationsCatalogText: document.querySelector("#automations-catalog-text"),
   automationsCatalogValuesText: document.querySelector("#automations-catalog-values-text"),
+  codexAppFeaturesText: document.querySelector("#codex-app-features-text"),
+  codexAppFeaturesValuesText: document.querySelector("#codex-app-features-values-text"),
   appBrowserText: document.querySelector("#app-browser-text"),
   appBrowserValuesText: document.querySelector("#app-browser-values-text"),
   appComputerUseText: document.querySelector("#app-computer-use-text"),
@@ -397,6 +399,7 @@ const elements = {
   appIntegrationsMcpList: document.querySelector("#app-integrations-mcp-list"),
   skillsPluginsCatalogList: document.querySelector("#skills-plugins-catalog-list"),
   automationsCatalogList: document.querySelector("#automations-catalog-list"),
+  codexAppFeaturesList: document.querySelector("#codex-app-features-list"),
   appBrowserList: document.querySelector("#app-browser-list"),
   appComputerUseList: document.querySelector("#app-computer-use-list"),
   appContextSuggestionsList: document.querySelector("#app-context-suggestions-list"),
@@ -10438,6 +10441,7 @@ function renderSettingsIntegrations(payload) {
   const codexAppSettings = payload.codexAppSettings ?? {};
   const skillsPluginsCatalog = payload.skillsPluginsCatalog ?? {};
   const automationsCatalog = payload.automationsCatalog ?? {};
+  const codexAppFeatures = payload.codexAppFeatures ?? {};
 
   elements.settingsStateText.textContent = settings.state ?? "blocked";
   elements.settingsSourceText.textContent = payload.appServer?.touched ? "Inventory" : "Config summary";
@@ -10541,6 +10545,61 @@ function renderSettingsIntegrations(payload) {
     automationsCatalog.secretsReturned ||
     automationsCatalog.rawPayloadsReturned ||
     automationsCatalog.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexAppFeaturesText.textContent = codexAppFeatures.returned
+    ? `${codexAppFeatures.catalogOnlyFeatureCount ?? 0} catalog / ${
+        codexAppFeatures.featureCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexAppFeaturesValuesText.textContent =
+    codexAppFeatures.featureValuesReturned ||
+    codexAppFeatures.projectNamesReturned ||
+    codexAppFeatures.threadIdsReturned ||
+    codexAppFeatures.threadContentReturned ||
+    codexAppFeatures.modeSelectionsReturned ||
+    codexAppFeatures.workspacePathsReturned ||
+    codexAppFeatures.worktreePathsReturned ||
+    codexAppFeatures.cloudEnvironmentNamesReturned ||
+    codexAppFeatures.gitDiffContentReturned ||
+    codexAppFeatures.terminalOutputReturned ||
+    codexAppFeatures.commandTextReturned ||
+    codexAppFeatures.localEnvironmentActionsReturned ||
+    codexAppFeatures.voiceAudioReturned ||
+    codexAppFeatures.transcriptTextReturned ||
+    codexAppFeatures.windowStateReturned ||
+    codexAppFeatures.browserUrlsReturned ||
+    codexAppFeatures.browserContentReturned ||
+    codexAppFeatures.browserScreenshotsReturned ||
+    codexAppFeatures.desktopScreenshotsReturned ||
+    codexAppFeatures.appIdentifiersReturned ||
+    codexAppFeatures.artifactContentReturned ||
+    codexAppFeatures.artifactPathsReturned ||
+    codexAppFeatures.ideFileContextReturned ||
+    codexAppFeatures.ideStateReturned ||
+    codexAppFeatures.webSearchQueriesReturned ||
+    codexAppFeatures.webSearchResultsReturned ||
+    codexAppFeatures.generatedImagesReturned ||
+    codexAppFeatures.imagePromptsReturned ||
+    codexAppFeatures.mcpServerNamesReturned ||
+    codexAppFeatures.skillNamesReturned ||
+    codexAppFeatures.automationNamesReturned ||
+    codexAppFeatures.settingValuesReturned ||
+    codexAppFeatures.browserLaunched ||
+    codexAppFeatures.desktopControlStarted ||
+    codexAppFeatures.voiceCaptureStarted ||
+    codexAppFeatures.imageGenerationStarted ||
+    codexAppFeatures.webSearchStarted ||
+    codexAppFeatures.modelTraffic ||
+    codexAppFeatures.networkAccess ||
+    codexAppFeatures.filesystemReads ||
+    codexAppFeatures.filesystemWrites ||
+    codexAppFeatures.mutationEnabled ||
+    codexAppFeatures.pathsReturned ||
+    codexAppFeatures.urlsReturned ||
+    codexAppFeatures.secretsReturned ||
+    codexAppFeatures.rawPayloadsReturned ||
+    codexAppFeatures.appServerTraffic
       ? "Returned"
       : "Hidden";
   const general = codexAppSettings.general ?? {};
@@ -10923,6 +10982,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexAppSettingsParity(codexAppSettings);
   renderSkillsPluginsCatalog(skillsPluginsCatalog);
   renderAutomationsCatalog(automationsCatalog);
+  renderCodexAppFeaturesCatalog(codexAppFeatures);
   renderCodexAppGeneralSettings(general);
   renderCodexAppProfileSettings(profile);
   renderCodexAppAgentConfigurationSettings(agentConfiguration);
@@ -12621,6 +12681,98 @@ function renderAutomationsCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.automationsCatalogList.append(row);
+  }
+}
+
+function renderCodexAppFeaturesCatalog(summary) {
+  elements.codexAppFeaturesList.replaceChildren();
+  const features = Array.isArray(summary?.features) ? summary.features : [];
+  if (features.length === 0) {
+    elements.codexAppFeaturesList.append(emptyState("No Codex app features catalog returned."));
+    return;
+  }
+
+  for (const feature of features) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = feature.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = feature.group ?? "app-feature";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      feature.state ?? "blocked",
+      feature.source ?? null,
+      feature.featureValueReturned ? "feature values returned" : "feature values hidden",
+      feature.projectNameReturned ? "project names returned" : "project names hidden",
+      feature.threadIdReturned ? "thread ids returned" : "thread ids hidden",
+      feature.threadContentReturned ? "thread content returned" : "thread content hidden",
+      feature.modeSelectionReturned ? "mode selection returned" : "mode selection hidden",
+      feature.workspacePathReturned ? "workspace paths returned" : "workspace paths hidden",
+      feature.worktreePathReturned ? "worktree paths returned" : "worktree paths hidden",
+      feature.cloudEnvironmentNameReturned ? "cloud names returned" : "cloud names hidden",
+      feature.gitDiffContentReturned ? "diff content returned" : "diff content hidden",
+      feature.terminalOutputReturned ? "terminal output returned" : "terminal output hidden",
+      feature.commandTextReturned ? "command text returned" : "command text hidden",
+      feature.localEnvironmentActionReturned ? "local actions returned" : "local actions hidden",
+      feature.voiceAudioReturned ? "voice audio returned" : "voice audio hidden",
+      feature.transcriptTextReturned ? "transcript returned" : "transcript hidden",
+      feature.windowStateReturned ? "window state returned" : "window state hidden",
+      feature.browserUrlReturned ? "browser URLs returned" : "browser URLs hidden",
+      feature.browserContentReturned ? "browser content returned" : "browser content hidden",
+      feature.browserScreenshotReturned ? "browser screenshots returned" : "browser screenshots hidden",
+      feature.desktopScreenshotReturned ? "desktop screenshots returned" : "desktop screenshots hidden",
+      feature.appIdentifierReturned ? "app identifiers returned" : "app identifiers hidden",
+      feature.artifactContentReturned ? "artifact content returned" : "artifact content hidden",
+      feature.artifactPathReturned ? "artifact paths returned" : "artifact paths hidden",
+      feature.ideFileContextReturned ? "IDE context returned" : "IDE context hidden",
+      feature.ideStateReturned ? "IDE state returned" : "IDE state hidden",
+      feature.webSearchQueryReturned ? "web search queries returned" : "web search queries hidden",
+      feature.webSearchResultsReturned
+        ? "web search results returned"
+        : "web search results hidden",
+      feature.generatedImageReturned ? "generated images returned" : "generated images hidden",
+      feature.imagePromptReturned ? "image prompts returned" : "image prompts hidden",
+      feature.mcpServerNameReturned ? "MCP names returned" : "MCP names hidden",
+      feature.skillNameReturned ? "skill names returned" : "skill names hidden",
+      feature.automationNameReturned ? "automation names returned" : "automation names hidden",
+      feature.settingValueReturned ? "setting values returned" : "setting values hidden",
+      feature.browserLaunched ? "browser launched" : "browser launch blocked",
+      feature.desktopControlStarted ? "desktop control started" : "desktop control blocked",
+      feature.voiceCaptureStarted ? "voice capture started" : "voice capture blocked",
+      feature.imageGenerationStarted ? "image generation started" : "image generation blocked",
+      feature.webSearchStarted ? "web search started" : "web search blocked",
+      feature.modelTraffic ? "model traffic" : "model traffic blocked",
+      feature.networkAccess ? "network access" : "network blocked",
+      feature.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      feature.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      feature.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      feature.pathsReturned ? "paths returned" : "paths hidden",
+      feature.urlsReturned ? "URLs returned" : "URLs hidden",
+      feature.secretsReturned ? "secrets returned" : "secrets hidden",
+      feature.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      feature.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexAppFeaturesList.append(row);
   }
 }
 

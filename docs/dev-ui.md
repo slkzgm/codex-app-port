@@ -798,6 +798,22 @@ model or reasoning values, skill or plugin names, sandbox/admin policy values,
 app names, notification payloads, filesystem access, network access, app
 control, unattended execution, schedule writes, run starts, run archives,
 worktree creation, mutations, URLs, paths, raw payloads, or app-server traffic.
+The same response exposes `codexAppFeatures` as a static review-only catalog
+for official Codex app features. The UI shows only catalog counts, feature keys,
+groups, state/source chips, and redaction chips for project multitasking,
+skills, automations, Local/Worktree/Cloud modes, Git/worktree/terminal
+features, local environment actions, Windows sandbox, voice dictation, pop-out
+windows, in-app browser, Browser Use, Computer Use, non-code artifacts, task
+sidebar, IDE sync/context, thread automations, approvals/sandboxing, MCP, web
+search, and image generation plus local high-risk boundaries. It does not show
+project names, thread ids or content, mode selections, workspace/worktree
+paths, cloud environment names, diff content, terminal output, command text,
+local action definitions, voice audio, transcripts, window state, browser URLs,
+browser content, browser or desktop screenshots, app identifiers, artifact
+content or paths, IDE context/state, web-search queries or results, generated
+images, image prompts, MCP server names, skill or automation names, setting
+values, browser launch, desktop control, voice capture, model/network/
+filesystem traffic, mutations, URLs, paths, raw payloads, or app-server traffic.
 Within that same summary, `browser` exposes a static review-only catalog for
 the official Browser plugin, Chrome extension, site permission, ask-before-use,
 and full-CDP developer-mode controls. The UI shows only setting keys, groups,
