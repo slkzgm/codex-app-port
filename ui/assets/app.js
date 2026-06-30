@@ -31,6 +31,8 @@ const elements = {
   appIntegrationsMcpValuesText: document.querySelector("#app-integrations-mcp-values-text"),
   skillsPluginsCatalogText: document.querySelector("#skills-plugins-catalog-text"),
   skillsPluginsCatalogValuesText: document.querySelector("#skills-plugins-catalog-values-text"),
+  automationsCatalogText: document.querySelector("#automations-catalog-text"),
+  automationsCatalogValuesText: document.querySelector("#automations-catalog-values-text"),
   appBrowserText: document.querySelector("#app-browser-text"),
   appBrowserValuesText: document.querySelector("#app-browser-values-text"),
   appComputerUseText: document.querySelector("#app-computer-use-text"),
@@ -394,6 +396,7 @@ const elements = {
   appGitList: document.querySelector("#app-git-list"),
   appIntegrationsMcpList: document.querySelector("#app-integrations-mcp-list"),
   skillsPluginsCatalogList: document.querySelector("#skills-plugins-catalog-list"),
+  automationsCatalogList: document.querySelector("#automations-catalog-list"),
   appBrowserList: document.querySelector("#app-browser-list"),
   appComputerUseList: document.querySelector("#app-computer-use-list"),
   appContextSuggestionsList: document.querySelector("#app-context-suggestions-list"),
@@ -10434,6 +10437,7 @@ function renderSettingsIntegrations(payload) {
   const integrationLifecycle = payload.integrationLifecycle ?? {};
   const codexAppSettings = payload.codexAppSettings ?? {};
   const skillsPluginsCatalog = payload.skillsPluginsCatalog ?? {};
+  const automationsCatalog = payload.automationsCatalog ?? {};
 
   elements.settingsStateText.textContent = settings.state ?? "blocked";
   elements.settingsSourceText.textContent = payload.appServer?.touched ? "Inventory" : "Config summary";
@@ -10494,6 +10498,49 @@ function renderSettingsIntegrations(payload) {
     skillsPluginsCatalog.secretsReturned ||
     skillsPluginsCatalog.rawPayloadsReturned ||
     skillsPluginsCatalog.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.automationsCatalogText.textContent = automationsCatalog.returned
+    ? `${automationsCatalog.catalogOnlySettingCount ?? 0} catalog / ${
+        automationsCatalog.settingCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.automationsCatalogValuesText.textContent =
+    automationsCatalog.automationNamesReturned ||
+    automationsCatalog.runIdsReturned ||
+    automationsCatalog.runResultsReturned ||
+    automationsCatalog.triageItemsReturned ||
+    automationsCatalog.findingsReturned ||
+    automationsCatalog.promptTextReturned ||
+    automationsCatalog.scheduleValuesReturned ||
+    automationsCatalog.cronExpressionsReturned ||
+    automationsCatalog.projectNamesReturned ||
+    automationsCatalog.workspacePathsReturned ||
+    automationsCatalog.worktreePathsReturned ||
+    automationsCatalog.modelSettingsReturned ||
+    automationsCatalog.reasoningSettingsReturned ||
+    automationsCatalog.skillNamesReturned ||
+    automationsCatalog.pluginNamesReturned ||
+    automationsCatalog.sandboxSettingsReturned ||
+    automationsCatalog.adminPolicyReturned ||
+    automationsCatalog.appNamesReturned ||
+    automationsCatalog.notificationPayloadsReturned ||
+    automationsCatalog.createUpdateExecuted ||
+    automationsCatalog.schedulesWritten ||
+    automationsCatalog.runsStarted ||
+    automationsCatalog.runsArchived ||
+    automationsCatalog.worktreesCreated ||
+    automationsCatalog.filesystemReads ||
+    automationsCatalog.filesystemWrites ||
+    automationsCatalog.networkAccess ||
+    automationsCatalog.appControl ||
+    automationsCatalog.unattendedExecutionEnabled ||
+    automationsCatalog.mutationEnabled ||
+    automationsCatalog.pathsReturned ||
+    automationsCatalog.urlsReturned ||
+    automationsCatalog.secretsReturned ||
+    automationsCatalog.rawPayloadsReturned ||
+    automationsCatalog.appServerTraffic
       ? "Returned"
       : "Hidden";
   const general = codexAppSettings.general ?? {};
@@ -10875,6 +10922,7 @@ function renderSettingsIntegrations(payload) {
   renderIntegrationDetails(inventory);
   renderCodexAppSettingsParity(codexAppSettings);
   renderSkillsPluginsCatalog(skillsPluginsCatalog);
+  renderAutomationsCatalog(automationsCatalog);
   renderCodexAppGeneralSettings(general);
   renderCodexAppProfileSettings(profile);
   renderCodexAppAgentConfigurationSettings(agentConfiguration);
@@ -12491,6 +12539,88 @@ function renderSkillsPluginsCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.skillsPluginsCatalogList.append(row);
+  }
+}
+
+function renderAutomationsCatalog(summary) {
+  elements.automationsCatalogList.replaceChildren();
+  const settings = Array.isArray(summary?.settings) ? summary.settings : [];
+  if (settings.length === 0) {
+    elements.automationsCatalogList.append(emptyState("No Automations catalog returned."));
+    return;
+  }
+
+  for (const setting of settings) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = setting.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = setting.group ?? "automations";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      setting.state ?? "blocked",
+      setting.source ?? null,
+      setting.automationNameReturned ? "automation names returned" : "automation names hidden",
+      setting.runIdReturned ? "run ids returned" : "run ids hidden",
+      setting.runResultReturned ? "run results returned" : "run results hidden",
+      setting.triageItemReturned ? "triage items returned" : "triage items hidden",
+      setting.findingReturned ? "findings returned" : "findings hidden",
+      setting.promptTextReturned ? "prompt text returned" : "prompt text hidden",
+      setting.scheduleValueReturned ? "schedule values returned" : "schedule values hidden",
+      setting.cronExpressionReturned ? "cron returned" : "cron hidden",
+      setting.projectNameReturned ? "project names returned" : "project names hidden",
+      setting.workspacePathReturned ? "workspace paths returned" : "workspace paths hidden",
+      setting.worktreePathReturned ? "worktree paths returned" : "worktree paths hidden",
+      setting.modelSettingReturned ? "model settings returned" : "model settings hidden",
+      setting.reasoningSettingReturned ? "reasoning settings returned" : "reasoning settings hidden",
+      setting.skillNameReturned ? "skill names returned" : "skill names hidden",
+      setting.pluginNameReturned ? "plugin names returned" : "plugin names hidden",
+      setting.sandboxSettingReturned ? "sandbox settings returned" : "sandbox settings hidden",
+      setting.adminPolicyReturned ? "admin policy returned" : "admin policy hidden",
+      setting.appNameReturned ? "app names returned" : "app names hidden",
+      setting.notificationPayloadReturned
+        ? "notification payloads returned"
+        : "notification payloads hidden",
+      setting.createUpdateExecuted ? "create/update executed" : "create/update blocked",
+      setting.scheduleWritten ? "schedule written" : "schedule write blocked",
+      setting.runStarted ? "run started" : "run start blocked",
+      setting.runArchived ? "run archived" : "run archive blocked",
+      setting.worktreeCreated ? "worktree created" : "worktree creation blocked",
+      setting.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      setting.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      setting.networkAccess ? "network access" : "network blocked",
+      setting.appControl ? "app control" : "app control blocked",
+      setting.unattendedExecutionEnabled
+        ? "unattended execution enabled"
+        : "unattended execution blocked",
+      setting.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      setting.pathsReturned ? "paths returned" : "paths hidden",
+      setting.urlsReturned ? "URLs returned" : "URLs hidden",
+      setting.secretsReturned ? "secrets returned" : "secrets hidden",
+      setting.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      setting.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.automationsCatalogList.append(row);
   }
 }
 

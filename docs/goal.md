@@ -142,6 +142,20 @@ Target parity with the Codex desktop workflow:
   secrets, raw payloads, app-server traffic, external code, installs,
   uninstalls, enablement writes, config writes, extra-root writes, share
   mutations, or marketplace mutations.
+- `/api/settings-integrations` now also exposes a read-only Automations catalog
+  aligned to the official Codex app Automations documentation. It returns only
+  static keys, groups, states, sources, counts, and redaction flags for the
+  automations pane, Triage inbox concept, standalone/project/thread automation
+  modes, custom schedules, worktree/local run modes, model/reasoning defaults,
+  skills/plugins usage, prompt drafting, run review, worktree cleanup, sandbox
+  security, managed-requirement fallback, and local create/update/schedule/run/
+  triage/worktree boundaries. It does not return automation names, run ids,
+  run results, triage items, findings, prompt text, schedules, cron
+  expressions, project names, workspace or worktree paths, model or reasoning
+  values, skill or plugin names, sandbox/admin policy values, app names,
+  notification payloads, secrets, raw payloads, app-server traffic, filesystem
+  access, network access, app control, unattended execution, schedule writes,
+  run starts, run archives, worktree creation, or automation mutations.
 - The same summary now includes a read-only Browser settings catalog for the
   official Browser plugin, Chrome extension, site permission, ask-before-use,
   and full-CDP developer-mode controls. It returns only keys, groups, states,

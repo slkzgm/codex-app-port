@@ -785,6 +785,19 @@ commands, share links or principals, setting values, external code, paths,
 URLs, raw payloads, app-server traffic, installs, uninstalls, enablement writes,
 skill config writes, extra-root writes, share mutations, or marketplace
 mutations.
+The same response exposes `automationsCatalog` as a static review-only
+Automations catalog. The UI shows only catalog counts, keys, groups,
+state/source chips, and redaction chips for official automation pane, Triage,
+standalone/project/thread automation, custom schedule, worktree/local mode,
+model/reasoning default, skills/plugins usage, prompt drafting, run review,
+worktree cleanup, sandbox security, and managed requirement fallback concepts,
+plus local create/update/schedule/run/triage/worktree boundaries. It does not
+show automation names, run ids, run results, triage items, findings, prompt
+text, schedules, cron expressions, project names, workspace or worktree paths,
+model or reasoning values, skill or plugin names, sandbox/admin policy values,
+app names, notification payloads, filesystem access, network access, app
+control, unattended execution, schedule writes, run starts, run archives,
+worktree creation, mutations, URLs, paths, raw payloads, or app-server traffic.
 Within that same summary, `browser` exposes a static review-only catalog for
 the official Browser plugin, Chrome extension, site permission, ask-before-use,
 and full-CDP developer-mode controls. The UI shows only setting keys, groups,

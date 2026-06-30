@@ -450,6 +450,17 @@
   app-server payloads, or app-server traffic, and must not materialize external
   code, install or uninstall plugins, write plugin enablement, write skill
   config, clear extra roots, mutate sharing, or mutate marketplaces. Its
+  Automations catalog may expose only static official-documentation keys plus
+  local boundary keys, groups, states, sources, counts, and redaction flags; it
+  must not return automation names, run ids, run results, triage items,
+  findings, prompt text, schedule values, cron expressions, project names,
+  workspace paths, worktree paths, model/reasoning values, skill/plugin names,
+  sandbox values, admin-policy values, app names, notification payloads,
+  secrets, raw payloads, app-server payloads, or app-server traffic, and must
+  not create/update automations, write schedules, start or archive runs,
+  materialize worktrees, read triage inbox contents, perform unattended
+  execution, read or write files, access network, control apps, or mutate
+  automation state. Its
   Browser settings catalog may expose only
   static setting keys,
   groups, states, sources, and counts; it must not return Browser plugin or

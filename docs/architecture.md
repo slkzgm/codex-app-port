@@ -545,6 +545,20 @@ Current M1 status:
   MCP server names, hook commands, share links/principals, setting values,
   installs, uninstalls, writes, mutations, external code, paths, URLs, secrets,
   raw payloads, and app-server traffic blocked
+- done: read-only Automations catalog in `/api/settings-integrations`,
+  exposing only static official Automations documentation keys plus local
+  boundary keys/groups/states/sources/counts/redaction flags for the
+  automations pane, Triage concept, standalone/project/thread automation modes,
+  custom schedules, worktree/local run modes, model/reasoning defaults,
+  skills/plugins usage, prompt drafting, run review, worktree cleanup, sandbox
+  security, managed-requirement fallback, and create/update/schedule/run/
+  triage/worktree boundaries, with automation names, run ids/results, triage
+  items, findings, prompt text, schedule or cron values, project names,
+  workspace/worktree paths, model/reasoning values, skill/plugin names,
+  sandbox/admin policy values, app names, notification payloads, filesystem
+  access, network access, app control, unattended execution, schedule writes,
+  run starts/archives, worktree creation, mutations, secrets, raw payloads, and
+  app-server traffic blocked
 - done: read-only Browser settings catalog inside the settings parity summary,
   exposing only static Browser plugin, Chrome extension, site permission,
   ask-before-use, and full-CDP developer-mode control keys/groups/states/counts,

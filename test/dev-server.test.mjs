@@ -35197,6 +35197,259 @@ function assertSkillsPluginsCatalog(payload) {
   }
 }
 
+function expectedAutomationsCatalogEntries() {
+  return [
+    {
+      key: "automationPaneTriage",
+      group: "automation-triage",
+      state: "catalog-only",
+      source: "official-codex-automations-docs",
+    },
+    {
+      key: "standaloneAutomations",
+      group: "automation-scope",
+      state: "catalog-only",
+      source: "official-codex-automations-docs",
+    },
+    {
+      key: "projectScopedAutomations",
+      group: "automation-scope",
+      state: "catalog-only",
+      source: "official-codex-automations-docs",
+    },
+    {
+      key: "threadAutomations",
+      group: "automation-scope",
+      state: "catalog-only",
+      source: "official-codex-automations-docs",
+    },
+    {
+      key: "customSchedules",
+      group: "automation-schedule",
+      state: "catalog-only",
+      source: "official-codex-automations-docs",
+    },
+    {
+      key: "worktreeRunMode",
+      group: "automation-worktree",
+      state: "catalog-only",
+      source: "official-codex-automations-docs",
+    },
+    {
+      key: "localProjectRunMode",
+      group: "automation-local-project",
+      state: "catalog-only",
+      source: "official-codex-automations-docs",
+    },
+    {
+      key: "modelReasoningDefaults",
+      group: "automation-model",
+      state: "catalog-only",
+      source: "official-codex-automations-docs",
+    },
+    {
+      key: "skillsPluginsUsage",
+      group: "automation-integrations",
+      state: "catalog-only",
+      source: "official-codex-automations-docs",
+    },
+    {
+      key: "promptDrafting",
+      group: "automation-authoring",
+      state: "catalog-only",
+      source: "official-codex-automations-docs",
+    },
+    {
+      key: "runReview",
+      group: "automation-review",
+      state: "catalog-only",
+      source: "official-codex-automations-docs",
+    },
+    {
+      key: "worktreeCleanup",
+      group: "automation-maintenance",
+      state: "catalog-only",
+      source: "official-codex-automations-docs",
+    },
+    {
+      key: "sandboxSecurityModel",
+      group: "automation-security",
+      state: "catalog-only",
+      source: "official-codex-automations-docs",
+    },
+    {
+      key: "managedRequirementFallback",
+      group: "automation-governance",
+      state: "catalog-only",
+      source: "official-codex-automations-docs",
+    },
+    {
+      key: "automationCreateUpdateBoundary",
+      group: "automation-mutation",
+      state: "blocked",
+      source: "local-automation-create-update-boundary",
+    },
+    {
+      key: "automationSchedulingBoundary",
+      group: "automation-schedule",
+      state: "blocked",
+      source: "local-automation-scheduling-boundary",
+    },
+    {
+      key: "automationRunBoundary",
+      group: "automation-runtime",
+      state: "blocked",
+      source: "local-automation-run-boundary",
+    },
+    {
+      key: "automationTriageReadBoundary",
+      group: "automation-triage",
+      state: "blocked",
+      source: "local-automation-triage-boundary",
+    },
+    {
+      key: "automationWorktreeMaterializationBoundary",
+      group: "automation-worktree",
+      state: "blocked",
+      source: "local-automation-worktree-boundary",
+    },
+  ];
+}
+
+function assertAutomationsCatalog(payload) {
+  const catalog = payload.automationsCatalog;
+  const expectedEntries = expectedAutomationsCatalogEntries();
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-automations-docs");
+  assert.equal(catalog.settingCount, 19);
+  assert.equal(catalog.officialSettingCount, 14);
+  assert.equal(catalog.localBoundarySettingCount, 5);
+  assert.equal(catalog.catalogOnlySettingCount, 14);
+  assert.equal(catalog.blockedSettingCount, 5);
+  assert.equal(catalog.enabledSettingCount, 0);
+  assert.deepEqual(
+    (catalog.settings ?? []).map(({ key, group, state, source }) => ({
+      key,
+      group,
+      state,
+      source,
+    })),
+    expectedEntries,
+  );
+
+  const settingRedactionFlags = [
+    "automationNameReturned",
+    "runIdReturned",
+    "runResultReturned",
+    "triageItemReturned",
+    "findingReturned",
+    "promptTextReturned",
+    "scheduleValueReturned",
+    "cronExpressionReturned",
+    "projectNameReturned",
+    "workspacePathReturned",
+    "worktreePathReturned",
+    "modelSettingReturned",
+    "reasoningSettingReturned",
+    "skillNameReturned",
+    "pluginNameReturned",
+    "sandboxSettingReturned",
+    "adminPolicyReturned",
+    "appNameReturned",
+    "notificationPayloadReturned",
+    "createUpdateExecuted",
+    "scheduleWritten",
+    "runStarted",
+    "runArchived",
+    "worktreeCreated",
+    "filesystemRead",
+    "filesystemWrite",
+    "networkAccess",
+    "appControl",
+    "unattendedExecutionEnabled",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.settings.every((setting) =>
+      settingRedactionFlags.every((flag) => setting[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.automationsCatalogReturned, true);
+  for (const flag of [
+    "automationNamesReturned",
+    "runIdsReturned",
+    "runResultsReturned",
+    "triageItemsReturned",
+    "findingsReturned",
+    "promptTextReturned",
+    "scheduleValuesReturned",
+    "cronExpressionsReturned",
+    "projectNamesReturned",
+    "workspacePathsReturned",
+    "worktreePathsReturned",
+    "modelSettingsReturned",
+    "reasoningSettingsReturned",
+    "skillNamesReturned",
+    "pluginNamesReturned",
+    "sandboxSettingsReturned",
+    "adminPolicyReturned",
+    "appNamesReturned",
+    "notificationPayloadsReturned",
+    "createUpdateExecuted",
+    "schedulesWritten",
+    "runsStarted",
+    "runsArchived",
+    "worktreesCreated",
+    "filesystemReads",
+    "filesystemWrites",
+    "networkAccess",
+    "appControl",
+    "unattendedExecutionEnabled",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["automationsCatalogReturned", true],
+    ["automationsCatalogValuesReturned", false],
+    ["automationsCatalogNamesReturned", false],
+    ["automationsCatalogPromptsReturned", false],
+    ["automationsCatalogSchedulesReturned", false],
+    ["automationsCatalogCronReturned", false],
+    ["automationsCatalogProjectsReturned", false],
+    ["automationsCatalogPathsReturned", false],
+    ["automationsCatalogRunResultsReturned", false],
+    ["automationsCatalogTriageReturned", false],
+    ["automationsCatalogFindingsReturned", false],
+    ["automationsCatalogModelSettingsReturned", false],
+    ["automationsCatalogSkillsPluginsReturned", false],
+    ["automationsCatalogSandboxPolicyReturned", false],
+    ["automationsCatalogMutationsEnabled", false],
+    ["automationsCatalogUnattendedExecutionEnabled", false],
+    ["automationsCatalogFilesystemAccess", false],
+    ["automationsCatalogNetworkAccess", false],
+    ["automationsCatalogAppControl", false],
+    ["automationsCatalogRawPayloadsReturned", false],
+    ["automationsCatalogAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function assertCodexAppSettingsParity(
   payload,
   {
@@ -35299,6 +35552,7 @@ function assertCodexAppSettingsParity(
   assert.equal(summary.browserHandlersEnabled, false);
   assert.equal(summary.settingsWritesEnabled, false);
   assertSkillsPluginsCatalog(payload);
+  assertAutomationsCatalog(payload);
   assert.equal(summary.general?.returned, true);
   assert.equal(summary.general.state, "partial");
   assert.equal(summary.general.settingCount, 5);
