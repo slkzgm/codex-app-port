@@ -39,6 +39,10 @@ const elements = {
   codexChromeExtensionValuesText: document.querySelector(
     "#codex-chrome-extension-values-text",
   ),
+  codexInAppBrowserText: document.querySelector("#codex-in-app-browser-text"),
+  codexInAppBrowserValuesText: document.querySelector(
+    "#codex-in-app-browser-values-text",
+  ),
   codexAppFeaturesText: document.querySelector("#codex-app-features-text"),
   codexAppFeaturesValuesText: document.querySelector("#codex-app-features-values-text"),
   appBrowserText: document.querySelector("#app-browser-text"),
@@ -407,6 +411,7 @@ const elements = {
   automationsCatalogList: document.querySelector("#automations-catalog-list"),
   codexAppCommandsList: document.querySelector("#codex-app-commands-list"),
   codexChromeExtensionList: document.querySelector("#codex-chrome-extension-list"),
+  codexInAppBrowserList: document.querySelector("#codex-in-app-browser-list"),
   codexAppFeaturesList: document.querySelector("#codex-app-features-list"),
   appBrowserList: document.querySelector("#app-browser-list"),
   appComputerUseList: document.querySelector("#app-computer-use-list"),
@@ -10451,6 +10456,7 @@ function renderSettingsIntegrations(payload) {
   const automationsCatalog = payload.automationsCatalog ?? {};
   const codexAppCommands = payload.codexAppCommands ?? {};
   const codexChromeExtension = payload.codexChromeExtension ?? {};
+  const codexInAppBrowser = payload.codexInAppBrowser ?? {};
   const codexAppFeatures = payload.codexAppFeatures ?? {};
 
   elements.settingsStateText.textContent = settings.state ?? "blocked";
@@ -10628,6 +10634,53 @@ function renderSettingsIntegrations(payload) {
     codexChromeExtension.secretsReturned ||
     codexChromeExtension.rawPayloadsReturned ||
     codexChromeExtension.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexInAppBrowserText.textContent = codexInAppBrowser.returned
+    ? `${codexInAppBrowser.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexInAppBrowser.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexInAppBrowserValuesText.textContent =
+    codexInAppBrowser.browserStateReturned ||
+    codexInAppBrowser.browserUrlsReturned ||
+    codexInAppBrowser.pageContentReturned ||
+    codexInAppBrowser.screenshotsReturned ||
+    codexInAppBrowser.downloadsReturned ||
+    codexInAppBrowser.domReturned ||
+    codexInAppBrowser.stylesReturned ||
+    codexInAppBrowser.consoleOutputReturned ||
+    codexInAppBrowser.networkTrafficReturned ||
+    codexInAppBrowser.cookiesReturned ||
+    codexInAppBrowser.browserProfilesReturned ||
+    codexInAppBrowser.extensionStatesReturned ||
+    codexInAppBrowser.existingTabsReturned ||
+    codexInAppBrowser.commentTextReturned ||
+    codexInAppBrowser.annotationsReturned ||
+    codexInAppBrowser.stylingValuesReturned ||
+    codexInAppBrowser.pluginNamesReturned ||
+    codexInAppBrowser.settingValuesReturned ||
+    codexInAppBrowser.routeNamesReturned ||
+    codexInAppBrowser.visualStatesReturned ||
+    codexInAppBrowser.siteHostsReturned ||
+    codexInAppBrowser.allowlistsReturned ||
+    codexInAppBrowser.blocklistsReturned ||
+    codexInAppBrowser.cdpAccessStarted ||
+    codexInAppBrowser.browserLaunched ||
+    codexInAppBrowser.navigationStarted ||
+    codexInAppBrowser.browserUseStarted ||
+    codexInAppBrowser.screenshotsCaptured ||
+    codexInAppBrowser.downloadsStarted ||
+    codexInAppBrowser.inspectionJsExecuted ||
+    codexInAppBrowser.commentsCreated ||
+    codexInAppBrowser.stylingFeedbackCreated ||
+    codexInAppBrowser.networkAccess ||
+    codexInAppBrowser.mutationEnabled ||
+    codexInAppBrowser.pathsReturned ||
+    codexInAppBrowser.urlsReturned ||
+    codexInAppBrowser.secretsReturned ||
+    codexInAppBrowser.rawPayloadsReturned ||
+    codexInAppBrowser.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexAppFeaturesText.textContent = codexAppFeatures.returned
@@ -11067,6 +11120,7 @@ function renderSettingsIntegrations(payload) {
   renderAutomationsCatalog(automationsCatalog);
   renderCodexAppCommandsCatalog(codexAppCommands);
   renderCodexChromeExtensionCatalog(codexChromeExtension);
+  renderCodexInAppBrowserCatalog(codexInAppBrowser);
   renderCodexAppFeaturesCatalog(codexAppFeatures);
   renderCodexAppGeneralSettings(general);
   renderCodexAppProfileSettings(profile);
@@ -12917,6 +12971,90 @@ function renderCodexChromeExtensionCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexChromeExtensionList.append(row);
+  }
+}
+
+function renderCodexInAppBrowserCatalog(summary) {
+  elements.codexInAppBrowserList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexInAppBrowserList.append(
+      emptyState("No Codex in-app browser catalog returned."),
+    );
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "in-app-browser";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.browserStateReturned ? "browser state returned" : "browser state hidden",
+      entry.browserUrlReturned ? "browser URLs returned" : "browser URLs hidden",
+      entry.pageContentReturned ? "page content returned" : "page content hidden",
+      entry.screenshotReturned ? "screenshots returned" : "screenshots hidden",
+      entry.downloadReturned ? "downloads returned" : "downloads hidden",
+      entry.domReturned ? "DOM returned" : "DOM hidden",
+      entry.styleReturned ? "styles returned" : "styles hidden",
+      entry.consoleOutputReturned ? "console output returned" : "console output hidden",
+      entry.networkTrafficReturned ? "network traffic returned" : "network traffic hidden",
+      entry.cookieReturned ? "cookies returned" : "cookies hidden",
+      entry.browserProfileReturned ? "browser profiles returned" : "browser profiles hidden",
+      entry.extensionStateReturned ? "extension state returned" : "extension state hidden",
+      entry.existingTabReturned ? "existing tabs returned" : "existing tabs hidden",
+      entry.commentTextReturned ? "comment text returned" : "comment text hidden",
+      entry.annotationReturned ? "annotations returned" : "annotations hidden",
+      entry.stylingValueReturned ? "styling values returned" : "styling values hidden",
+      entry.pluginNameReturned ? "plugin names returned" : "plugin names hidden",
+      entry.settingValueReturned ? "setting values returned" : "setting values hidden",
+      entry.routeNameReturned ? "route names returned" : "route names hidden",
+      entry.visualStateReturned ? "visual state returned" : "visual state hidden",
+      entry.siteHostReturned ? "site hosts returned" : "site hosts hidden",
+      entry.allowlistReturned ? "allowlist returned" : "allowlist hidden",
+      entry.blocklistReturned ? "blocklist returned" : "blocklist hidden",
+      entry.cdpAccessStarted ? "CDP started" : "CDP blocked",
+      entry.browserLaunched ? "browser launched" : "browser launch blocked",
+      entry.navigationStarted ? "navigation started" : "navigation blocked",
+      entry.browserUseStarted ? "browser use started" : "browser use blocked",
+      entry.screenshotCaptured ? "screenshot captured" : "screenshot capture blocked",
+      entry.downloadStarted ? "download started" : "download blocked",
+      entry.inspectionJsExecuted ? "inspection JS executed" : "inspection JS blocked",
+      entry.commentCreated ? "comment created" : "comment creation blocked",
+      entry.stylingFeedbackCreated ? "styling feedback created" : "styling feedback blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexInAppBrowserList.append(row);
   }
 }
 

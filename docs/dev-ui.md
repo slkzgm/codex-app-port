@@ -820,6 +820,19 @@ bookmarks, downloads, tab groups, permission states, memory content, plugin
 names, setting values, paths, URLs, raw payloads, native host activity, Chrome
 launches, installs, website allow actions, browser-history reads, file-access
 enablement, network access, mutations, or app-server traffic.
+The same response exposes `codexInAppBrowser` as a static review-only catalog
+for the official Codex In-app Browser. The UI shows only catalog counts, entry
+keys, groups, state/source chips, and redaction chips for rendered previews,
+web-app debugging, visual comments, local/file/public preview targets,
+unsupported auth/profile/cookie/extension/existing-tab cases, Browser Use,
+website approval settings, review flows, annotation shortcuts, styling
+feedback, scoped browser tasks, and developer-mode CDP boundaries. It does not
+show browser state, URLs, page content, screenshots, downloads, DOM, styles,
+console output, network traffic, cookies, browser profiles, extension state,
+existing tabs, comment text, annotations, styling values, plugin names, setting
+values, routes, visual states, site hosts, allowlists, blocklists, paths, raw
+payloads, browser launches, navigation, Browser Use execution, inspection JS,
+comments, styling feedback, network access, mutations, or app-server traffic.
 The same response exposes `codexAppFeatures` as a static review-only catalog
 for official Codex app features. The UI shows only catalog counts, feature keys,
 groups, state/source chips, and redaction chips for project multitasking,

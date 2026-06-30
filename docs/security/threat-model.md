@@ -479,6 +479,17 @@
   payloads, or app-server traffic, and must not touch native hosts, launch
   Chrome, install extensions or plugins, allow websites, read browser history,
   enable file access, access network, or mutate Chrome extension state. Its
+  Codex In-app Browser catalog may expose only static official-documentation
+  keys plus local boundary keys, groups, states, sources, counts, and redaction
+  flags; it must not return browser state, browser URLs, page content,
+  screenshots, downloads, DOM, styles, console output, network traffic,
+  cookies, browser profiles, extension state, existing tabs, comment text,
+  annotations, styling values, plugin names, setting values, route names,
+  visual states, site hosts, allowlists, blocklists, paths, URLs, secrets, raw
+  payloads, app-server payloads, or app-server traffic, and must not start CDP,
+  launch a browser, navigate pages, start Browser Use, capture screenshots,
+  download assets, execute inspection JavaScript, create comments, create
+  styling feedback, access network, or mutate browser state. Its
   Codex app Features catalog may expose only static official-documentation keys
   plus local boundary keys, groups, states, sources, counts, and redaction
   flags; it must not return project names, thread ids, thread content, mode

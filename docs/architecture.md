@@ -584,6 +584,20 @@ Current M1 status:
   names, setting values, paths, URLs, secrets, raw payloads, native host touch,
   Chrome launch, installs, website allow, browser-history read, file-access
   enablement, network access, mutations, and app-server traffic blocked
+- done: read-only Codex In-app Browser catalog in `/api/settings-integrations`,
+  exposing only static official In-app Browser documentation keys plus local
+  boundary keys/groups/states/sources/counts/redaction flags for rendered
+  previews, web-app debugging, visual comments, local/file/public preview
+  targets, unsupported auth/profile/cookie/extension/existing-tab cases,
+  Browser Use, website approval settings, review flows, annotation shortcuts,
+  styling feedback, scoped browser tasks, and developer-mode CDP boundaries,
+  with browser state, URLs, page content, screenshots, downloads, DOM, styles,
+  console output, network traffic, cookies, browser profiles, extension state,
+  existing tabs, comment text, annotations, styling values, plugin names,
+  setting values, routes, visual states, site hosts, allowlists, blocklists,
+  CDP access, browser launch, navigation, Browser Use execution, inspection JS,
+  comments, styling feedback, network access, mutations, paths, URLs, secrets,
+  raw payloads, and app-server traffic blocked
 - done: read-only Codex app Features catalog in `/api/settings-integrations`,
   exposing only static official Features documentation keys plus local
   boundary keys/groups/states/sources/counts/redaction flags for project

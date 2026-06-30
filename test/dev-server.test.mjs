@@ -35980,6 +35980,298 @@ function assertCodexChromeExtensionCatalog(payload) {
   }
 }
 
+function expectedCodexInAppBrowserEntries() {
+  return [
+    ["sharedRenderedPageView", "preview", "catalog-only", "official-codex-in-app-browser-docs"],
+    ["webAppDebuggingPreview", "preview", "catalog-only", "official-codex-in-app-browser-docs"],
+    ["visualCommentWorkflow", "comments", "catalog-only", "official-codex-in-app-browser-docs"],
+    [
+      "localDevelopmentServerPreview",
+      "targets",
+      "catalog-only",
+      "official-codex-in-app-browser-docs",
+    ],
+    ["fileBackedPreview", "targets", "catalog-only", "official-codex-in-app-browser-docs"],
+    [
+      "publicUnauthenticatedPagePreview",
+      "targets",
+      "catalog-only",
+      "official-codex-in-app-browser-docs",
+    ],
+    [
+      "loginStateRequiresExternalBrowser",
+      "limits",
+      "catalog-only",
+      "official-codex-in-app-browser-docs",
+    ],
+    [
+      "browserExtensionsUnsupported",
+      "limits",
+      "catalog-only",
+      "official-codex-in-app-browser-docs",
+    ],
+    ["toolbarOpen", "open", "catalog-only", "official-codex-in-app-browser-docs"],
+    ["urlClickOpen", "open", "catalog-only", "official-codex-in-app-browser-docs"],
+    ["manualNavigation", "open", "catalog-only", "official-codex-in-app-browser-docs"],
+    ["keyboardOpenShortcut", "open", "catalog-only", "official-codex-in-app-browser-docs"],
+    [
+      "authenticationFlowUnsupported",
+      "limits",
+      "catalog-only",
+      "official-codex-in-app-browser-docs",
+    ],
+    [
+      "regularBrowserProfileUnsupported",
+      "limits",
+      "catalog-only",
+      "official-codex-in-app-browser-docs",
+    ],
+    ["cookiesUnsupported", "limits", "catalog-only", "official-codex-in-app-browser-docs"],
+    ["existingTabsUnsupported", "limits", "catalog-only", "official-codex-in-app-browser-docs"],
+    [
+      "untrustedPageContentWarning",
+      "security",
+      "catalog-only",
+      "official-codex-in-app-browser-docs",
+    ],
+    ["secretsWarning", "security", "catalog-only", "official-codex-in-app-browser-docs"],
+    [
+      "browserUsePluginRequirement",
+      "browser-use",
+      "catalog-only",
+      "official-codex-in-app-browser-docs",
+    ],
+    [
+      "browserMentionInvocation",
+      "browser-use",
+      "catalog-only",
+      "official-codex-in-app-browser-docs",
+    ],
+    [
+      "browserUseClickTypeInspect",
+      "browser-use",
+      "catalog-only",
+      "official-codex-in-app-browser-docs",
+    ],
+    ["browserUseScreenshots", "browser-use", "catalog-only", "official-codex-in-app-browser-docs"],
+    ["browserUseDownloads", "browser-use", "catalog-only", "official-codex-in-app-browser-docs"],
+    [
+      "browserUseReadOnlyInspectionJs",
+      "browser-use",
+      "catalog-only",
+      "official-codex-in-app-browser-docs",
+    ],
+    ["browserUseVerifyFix", "browser-use", "catalog-only", "official-codex-in-app-browser-docs"],
+    [
+      "websiteApprovalPrompt",
+      "website-access",
+      "catalog-only",
+      "official-codex-in-app-browser-docs",
+    ],
+    [
+      "allowedBlockedWebsiteSettings",
+      "website-access",
+      "catalog-only",
+      "official-codex-in-app-browser-docs",
+    ],
+    ["previewWithCodeDiff", "review", "catalog-only", "official-codex-in-app-browser-docs"],
+    ["annotationModeComments", "comments", "catalog-only", "official-codex-in-app-browser-docs"],
+    ["areaSelectionComment", "comments", "catalog-only", "official-codex-in-app-browser-docs"],
+    ["immediateCommentShortcut", "comments", "catalog-only", "official-codex-in-app-browser-docs"],
+    ["stylingFeedbackControls", "comments", "catalog-only", "official-codex-in-app-browser-docs"],
+    ["scopedBrowserTasks", "task-scope", "catalog-only", "official-codex-in-app-browser-docs"],
+    ["reviewPaneForRepoChanges", "review", "catalog-only", "official-codex-in-app-browser-docs"],
+    [
+      "developerModeFullCdpAccess",
+      "developer-mode",
+      "catalog-only",
+      "official-codex-in-app-browser-docs",
+    ],
+    ["browserLaunchBoundary", "runtime", "blocked", "local-in-app-browser-boundary"],
+    ["navigationBoundary", "runtime", "blocked", "local-in-app-browser-boundary"],
+    ["browserUseExecutionBoundary", "browser-use", "blocked", "local-browser-use-boundary"],
+    ["screenshotCaptureBoundary", "browser-use", "blocked", "local-browser-use-boundary"],
+    ["downloadAssetBoundary", "browser-use", "blocked", "local-browser-use-boundary"],
+    ["pageInspectionJsBoundary", "browser-use", "blocked", "local-browser-use-boundary"],
+    ["visualCommentBoundary", "comments", "blocked", "local-in-app-browser-boundary"],
+    ["stylingFeedbackBoundary", "comments", "blocked", "local-in-app-browser-boundary"],
+    [
+      "cdpAccessBoundary",
+      "developer-mode",
+      "blocked",
+      "local-browser-developer-mode-boundary",
+    ],
+    [
+      "networkTrafficInspectionBoundary",
+      "developer-mode",
+      "blocked",
+      "local-browser-developer-mode-boundary",
+    ],
+    ["cookieProfileBoundary", "limits", "blocked", "local-in-app-browser-boundary"],
+    ["websiteAllowlistBoundary", "website-access", "blocked", "local-website-access-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexInAppBrowserCatalog(payload) {
+  const catalog = payload.codexInAppBrowser;
+  const expectedEntries = expectedCodexInAppBrowserEntries();
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-in-app-browser-docs");
+  assert.equal(catalog.entryCount, 47);
+  assert.equal(catalog.officialEntryCount, 35);
+  assert.equal(catalog.localBoundaryEntryCount, 12);
+  assert.equal(catalog.catalogOnlyEntryCount, 35);
+  assert.equal(catalog.blockedEntryCount, 12);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({
+      key,
+      group,
+      state,
+      source,
+    })),
+    expectedEntries,
+  );
+
+  const entryRedactionFlags = [
+    "browserStateReturned",
+    "browserUrlReturned",
+    "pageContentReturned",
+    "screenshotReturned",
+    "downloadReturned",
+    "domReturned",
+    "styleReturned",
+    "consoleOutputReturned",
+    "networkTrafficReturned",
+    "cookieReturned",
+    "browserProfileReturned",
+    "extensionStateReturned",
+    "existingTabReturned",
+    "commentTextReturned",
+    "annotationReturned",
+    "stylingValueReturned",
+    "pluginNameReturned",
+    "settingValueReturned",
+    "routeNameReturned",
+    "visualStateReturned",
+    "siteHostReturned",
+    "allowlistReturned",
+    "blocklistReturned",
+    "cdpAccessStarted",
+    "browserLaunched",
+    "navigationStarted",
+    "browserUseStarted",
+    "screenshotCaptured",
+    "downloadStarted",
+    "inspectionJsExecuted",
+    "commentCreated",
+    "stylingFeedbackCreated",
+    "networkAccess",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.inAppBrowserCatalogReturned, true);
+  for (const flag of [
+    "browserStateReturned",
+    "browserUrlsReturned",
+    "pageContentReturned",
+    "screenshotsReturned",
+    "downloadsReturned",
+    "domReturned",
+    "stylesReturned",
+    "consoleOutputReturned",
+    "networkTrafficReturned",
+    "cookiesReturned",
+    "browserProfilesReturned",
+    "extensionStatesReturned",
+    "existingTabsReturned",
+    "commentTextReturned",
+    "annotationsReturned",
+    "stylingValuesReturned",
+    "pluginNamesReturned",
+    "settingValuesReturned",
+    "routeNamesReturned",
+    "visualStatesReturned",
+    "siteHostsReturned",
+    "allowlistsReturned",
+    "blocklistsReturned",
+    "cdpAccessStarted",
+    "browserLaunched",
+    "navigationStarted",
+    "browserUseStarted",
+    "screenshotsCaptured",
+    "downloadsStarted",
+    "inspectionJsExecuted",
+    "commentsCreated",
+    "stylingFeedbackCreated",
+    "networkAccess",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexInAppBrowserReturned", true],
+    ["codexInAppBrowserValuesReturned", false],
+    ["codexInAppBrowserStateReturned", false],
+    ["codexInAppBrowserUrlsReturned", false],
+    ["codexInAppBrowserPageContentReturned", false],
+    ["codexInAppBrowserScreenshotsReturned", false],
+    ["codexInAppBrowserDownloadsReturned", false],
+    ["codexInAppBrowserDomReturned", false],
+    ["codexInAppBrowserStylesReturned", false],
+    ["codexInAppBrowserConsoleReturned", false],
+    ["codexInAppBrowserNetworkTrafficReturned", false],
+    ["codexInAppBrowserCookiesReturned", false],
+    ["codexInAppBrowserProfilesReturned", false],
+    ["codexInAppBrowserExtensionsReturned", false],
+    ["codexInAppBrowserExistingTabsReturned", false],
+    ["codexInAppBrowserCommentsReturned", false],
+    ["codexInAppBrowserAnnotationsReturned", false],
+    ["codexInAppBrowserStylingValuesReturned", false],
+    ["codexInAppBrowserPluginNamesReturned", false],
+    ["codexInAppBrowserSettingValuesReturned", false],
+    ["codexInAppBrowserRouteNamesReturned", false],
+    ["codexInAppBrowserVisualStatesReturned", false],
+    ["codexInAppBrowserSiteHostsReturned", false],
+    ["codexInAppBrowserAllowlistsReturned", false],
+    ["codexInAppBrowserBlocklistsReturned", false],
+    ["codexInAppBrowserCdpAccessStarted", false],
+    ["codexInAppBrowserLaunchEnabled", false],
+    ["codexInAppBrowserNavigationEnabled", false],
+    ["codexInAppBrowserUseEnabled", false],
+    ["codexInAppBrowserScreenshotsCaptured", false],
+    ["codexInAppBrowserDownloadsStarted", false],
+    ["codexInAppBrowserInspectionJsExecuted", false],
+    ["codexInAppBrowserCommentsCreated", false],
+    ["codexInAppBrowserStylingFeedbackCreated", false],
+    ["codexInAppBrowserNetworkAccess", false],
+    ["codexInAppBrowserMutationsEnabled", false],
+    ["codexInAppBrowserPathsReturned", false],
+    ["codexInAppBrowserRawPayloadsReturned", false],
+    ["codexInAppBrowserAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexAppFeaturesEntries() {
   return [
     ["multitaskAcrossProjects", "project-workflows", "catalog-only", "official-codex-app-features-docs"],
@@ -36301,6 +36593,7 @@ function assertCodexAppSettingsParity(
   assertAutomationsCatalog(payload);
   assertCodexAppCommandsCatalog(payload);
   assertCodexChromeExtensionCatalog(payload);
+  assertCodexInAppBrowserCatalog(payload);
   assertCodexAppFeaturesCatalog(payload);
   assert.equal(summary.general?.returned, true);
   assert.equal(summary.general.state, "partial");

@@ -181,6 +181,21 @@ Target parity with the Codex desktop workflow:
   touch native hosts, launch Chrome, install extensions/plugins, allow
   websites, read browser history, enable file access, access network, or
   mutate Chrome extension state.
+- `/api/settings-integrations` now also exposes a read-only Codex In-app
+  Browser catalog aligned to the official Codex In-app Browser documentation.
+  It returns only static keys, groups, states, sources, counts, and redaction
+  flags for shared rendered previews, web-app debugging, visual comments,
+  local/file/public preview targets, unsupported auth/profile/cookie/extension
+  cases, Browser Use, website approval settings, review flows, annotation
+  shortcuts, styling feedback, scoped browser tasks, and full-CDP developer-mode
+  boundaries. It does not return browser state, URLs, page content,
+  screenshots, downloads, DOM, styles, console output, network traffic, cookies,
+  browser profiles, extension state, existing tabs, comment text, annotations,
+  styling values, plugin names, setting values, routes, visual states, site
+  hosts, allowlists, blocklists, paths, secrets, raw payloads, or app-server
+  traffic, and it does not launch browsers, navigate pages, start Browser Use,
+  execute inspection JavaScript, create comments or styling feedback, start CDP,
+  access network, or mutate browser state.
 - `/api/settings-integrations` now also exposes a read-only Codex app Features
   catalog aligned to the official Codex app Features documentation. It returns
   only static keys, groups, states, sources, counts, and redaction flags for
