@@ -15,6 +15,8 @@ const elements = {
   appSettingsParityText: document.querySelector("#app-settings-parity-text"),
   appSettingsBlockedText: document.querySelector("#app-settings-blocked-text"),
   appSettingsValuesText: document.querySelector("#app-settings-values-text"),
+  appShortcutsText: document.querySelector("#app-shortcuts-text"),
+  appShortcutsEditingText: document.querySelector("#app-shortcuts-editing-text"),
   realtimeVoicesButton: document.querySelector("#realtime-voices-button"),
   realtimeVoicesStateText: document.querySelector("#realtime-voices-state-text"),
   settingsSourceText: document.querySelector("#settings-source-text"),
@@ -352,6 +354,7 @@ const elements = {
   upstreamDriftList: document.querySelector("#upstream-drift-list"),
   integrationsDetailList: document.querySelector("#integrations-detail-list"),
   appSettingsParityList: document.querySelector("#app-settings-parity-list"),
+  appKeyboardShortcutsList: document.querySelector("#app-keyboard-shortcuts-list"),
   gitButton: document.querySelector("#git-button"),
   gitSwitchButton: document.querySelector("#git-switch-button"),
   gitDeleteButton: document.querySelector("#git-delete-button"),
@@ -10398,6 +10401,16 @@ function renderSettingsIntegrations(payload) {
     codexAppSettings.localSettingValuesReturned || codexAppSettings.settingValuesReturned
       ? "Returned"
       : "Hidden";
+  const keyboardShortcuts = codexAppSettings.keyboardShortcuts ?? {};
+  elements.appShortcutsText.textContent = keyboardShortcuts.returned
+    ? `${keyboardShortcuts.localShortcutCount ?? 0} local / ${
+        keyboardShortcuts.shortcutCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.appShortcutsEditingText.textContent =
+    keyboardShortcuts.customBindingEditorAvailable || keyboardShortcuts.resetCustomBindingsAvailable
+      ? "Enabled"
+      : "Blocked";
   elements.requirementsStateText.textContent = settings.requirementsAvailable
     ? `${inventory.requirements?.featureRequirementCount ?? 0} features`
     : "Blocked";
@@ -10538,6 +10551,7 @@ function renderSettingsIntegrations(payload) {
   renderIntegrationConfirmationHistory(payload.preflightConfirmationHistory);
   renderIntegrationDetails(inventory);
   renderCodexAppSettingsParity(codexAppSettings);
+  renderCodexAppKeyboardShortcuts(keyboardShortcuts);
   renderUpstreamDrift(upstreamDrift);
   renderIntegrationMethodAudit(methodAudit);
 }
@@ -12092,6 +12106,52 @@ function renderCodexAppSettingsParity(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.appSettingsParityList.append(row);
+  }
+}
+
+function renderCodexAppKeyboardShortcuts(summary) {
+  elements.appKeyboardShortcutsList.replaceChildren();
+  const shortcuts = Array.isArray(summary?.shortcuts) ? summary.shortcuts : [];
+  if (shortcuts.length === 0) {
+    elements.appKeyboardShortcutsList.append(emptyState("No keyboard shortcut catalog returned."));
+    return;
+  }
+  for (const shortcut of shortcuts) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = shortcut.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = shortcut.group ?? "shortcut";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      shortcut.state ?? "blocked",
+      shortcut.source ?? null,
+      shortcut.linuxBinding ? `linux ${shortcut.linuxBinding}` : null,
+      shortcut.customBindingReturned ? "custom binding returned" : "custom binding hidden",
+      shortcut.commandLabelReturned ? "label returned" : "label hidden",
+      shortcut.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.appKeyboardShortcutsList.append(row);
   }
 }
 

@@ -32690,10 +32690,10 @@ function assertSanitizedSettingsIntegrations(payload) {
   }
   assertSettingsServerBoundaries(payload);
   assertCodexAppSettingsParity(payload, {
-    availableSectionCount: 6,
-    partialSectionCount: 5,
+    availableSectionCount: 7,
+    partialSectionCount: 6,
     preflightOnlySectionCount: 1,
-    blockedSectionCount: 9,
+    blockedSectionCount: 8,
     profileState: "blocked",
   });
   if (
@@ -33135,6 +33135,8 @@ function assertCodexAppSettingsParity(
     JSON.stringify((summary.sections ?? []).map((section) => section.key)) !==
       JSON.stringify(sectionKeys) ||
     summary.sections?.find((section) => section.key === "profile")?.state !== profileState ||
+    summary.sections?.find((section) => section.key === "keyboardShortcuts")?.state !==
+      "partial" ||
     summary.sections?.find((section) => section.key === "browser")?.state !== "blocked" ||
     summary.sections?.find((section) => section.key === "computerUse")?.state !== "blocked" ||
     summary.sections?.find((section) => section.key === "memories")?.state !== "preflight-only"
@@ -33157,6 +33159,49 @@ function assertCodexAppSettingsParity(
     summary.mutationsEnabled !== false ||
     summary.browserHandlersEnabled !== false ||
     summary.settingsWritesEnabled !== false ||
+    summary.keyboardShortcuts?.returned !== true ||
+    summary.keyboardShortcuts.state !== "partial" ||
+    summary.keyboardShortcuts.shortcutCount !== 7 ||
+    summary.keyboardShortcuts.officialShortcutCount !== 5 ||
+    summary.keyboardShortcuts.localShortcutCount !== 2 ||
+    summary.keyboardShortcuts.blockedShortcutCount !== 5 ||
+    summary.keyboardShortcuts.editableBindingCount !== 0 ||
+    summary.keyboardShortcuts.shortcutKeysReturned !== true ||
+    summary.keyboardShortcuts.bindingNamesReturned !== true ||
+    summary.keyboardShortcuts.commandLabelsReturned !== false ||
+    summary.keyboardShortcuts.customBindingsReturned !== false ||
+    summary.keyboardShortcuts.userBindingsReturned !== false ||
+    summary.keyboardShortcuts.searchAvailable !== false ||
+    summary.keyboardShortcuts.keystrokeSearchAvailable !== false ||
+    summary.keyboardShortcuts.customBindingEditorAvailable !== false ||
+    summary.keyboardShortcuts.resetCustomBindingsAvailable !== false ||
+    summary.keyboardShortcuts.mutationEnabled !== false ||
+    summary.keyboardShortcuts.pathsReturned !== false ||
+    summary.keyboardShortcuts.urlsReturned !== false ||
+    summary.keyboardShortcuts.secretsReturned !== false ||
+    summary.keyboardShortcuts.rawPayloadsReturned !== false ||
+    summary.keyboardShortcuts.appServerTraffic !== false ||
+    JSON.stringify((summary.keyboardShortcuts.shortcuts ?? []).map((shortcut) => shortcut.key)) !==
+      JSON.stringify([
+        "openSettings",
+        "commandPalette",
+        "toggleThreadTerminal",
+        "voiceDictation",
+        "clearTerminal",
+        "activateApprovalRow",
+        "activateUiButton",
+      ]) ||
+    !summary.keyboardShortcuts.shortcuts?.every(
+      (shortcut) =>
+        shortcut.commandLabelReturned === false &&
+        shortcut.customBindingReturned === false &&
+        shortcut.userBindingReturned === false &&
+        shortcut.pathsReturned === false &&
+        shortcut.urlsReturned === false &&
+        shortcut.secretsReturned === false &&
+        shortcut.rawPayloadsReturned === false &&
+        shortcut.appServerTraffic === false,
+    ) ||
     !summary.sections?.every(
       (section) =>
         section.tracked === true &&
@@ -33174,7 +33219,12 @@ function assertCodexAppSettingsParity(
     payload.policy?.codexAppSettingsLocalNamesReturned !== false ||
     payload.policy?.codexAppSettingsPathsReturned !== false ||
     payload.policy?.codexAppSettingsUrlsReturned !== false ||
-    payload.policy?.codexAppSettingsRawPayloadsReturned !== false
+    payload.policy?.codexAppSettingsRawPayloadsReturned !== false ||
+    payload.policy?.codexAppKeyboardShortcutsReturned !== true ||
+    payload.policy?.codexAppKeyboardShortcutBindingsReturned !== true ||
+    payload.policy?.codexAppKeyboardShortcutCommandLabelsReturned !== false ||
+    payload.policy?.codexAppKeyboardShortcutCustomBindingsReturned !== false ||
+    payload.policy?.codexAppKeyboardShortcutMutationsEnabled !== false
   ) {
     throw new Error("Codex app settings parity did not preserve redaction policy");
   }
@@ -34817,10 +34867,10 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
   }
   assertSettingsServerBoundaries(payload);
   assertCodexAppSettingsParity(payload, {
-    availableSectionCount: 7,
-    partialSectionCount: 6,
+    availableSectionCount: 8,
+    partialSectionCount: 7,
     preflightOnlySectionCount: 1,
-    blockedSectionCount: 8,
+    blockedSectionCount: 7,
     profileState: "partial",
   });
   if (

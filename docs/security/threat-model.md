@@ -399,7 +399,10 @@
   Its Codex app settings parity summary may expose only static official section
   keys, states, and counts; it must not return local setting values, profile
   names, paths, URLs, secrets, raw payloads, app-server payloads, browser
-  handlers, or settings writes.
+  handlers, or settings writes. Its keyboard-shortcuts catalog may expose only
+  static shortcut keys, groups, bindings, states, sources, and counts; it must
+  not expose command labels, custom or user bindings, paths, URLs, secrets, raw
+  payloads, app-server payloads, or shortcut editing/reset mutations.
   Browser-side approval queue filters must operate only on the already sanitized
   queue payload, and visible-subset deny/accept actions must still submit the
   bounded tokenized decision batch through the normal approval route. They must

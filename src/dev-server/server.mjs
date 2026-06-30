@@ -33096,6 +33096,108 @@ const CODEX_APP_SETTINGS_PARITY_SECTION_KEYS = Object.freeze([
   "archivedThreads",
 ]);
 
+const CODEX_APP_KEYBOARD_SHORTCUTS = Object.freeze([
+  {
+    key: "openSettings",
+    group: "settings",
+    linuxBinding: "Ctrl+,",
+    macBinding: "Cmd+,",
+    state: "blocked",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "commandPalette",
+    group: "navigation",
+    linuxBinding: "Ctrl+K",
+    macBinding: "Cmd+K",
+    state: "blocked",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "toggleThreadTerminal",
+    group: "terminal",
+    linuxBinding: "Ctrl+J",
+    macBinding: "Cmd+J",
+    state: "blocked",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "voiceDictation",
+    group: "composer",
+    linuxBinding: "Ctrl+M",
+    macBinding: "Ctrl+M",
+    state: "blocked",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "clearTerminal",
+    group: "terminal",
+    linuxBinding: "Ctrl+L",
+    macBinding: "Ctrl+L",
+    state: "blocked",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "activateApprovalRow",
+    group: "approvals",
+    linuxBinding: "Enter or Space",
+    macBinding: "Enter or Space",
+    state: "local",
+    source: "local-ui-a11y",
+  },
+  {
+    key: "activateUiButton",
+    group: "navigation",
+    linuxBinding: "Enter or Space",
+    macBinding: "Enter or Space",
+    state: "local",
+    source: "browser-a11y",
+  },
+]);
+
+function buildCodexAppKeyboardShortcutsSummary() {
+  const shortcuts = CODEX_APP_KEYBOARD_SHORTCUTS.map((shortcut) => ({
+    ...shortcut,
+    commandLabelReturned: false,
+    customBindingReturned: false,
+    userBindingReturned: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+    rawPayloadsReturned: false,
+    appServerTraffic: false,
+  }));
+  const localShortcutCount = shortcuts.filter((shortcut) => shortcut.state === "local").length;
+  const blockedShortcutCount = shortcuts.filter((shortcut) => shortcut.state === "blocked").length;
+  return {
+    returned: true,
+    state: localShortcutCount > 0 ? "partial" : "blocked",
+    shortcutCount: shortcuts.length,
+    officialShortcutCount: shortcuts.filter(
+      (shortcut) => shortcut.source === "official-codex-app-docs",
+    ).length,
+    localShortcutCount,
+    blockedShortcutCount,
+    editableBindingCount: 0,
+    shortcuts,
+    shortcutKeysReturned: true,
+    bindingNamesReturned: true,
+    commandLabelsReturned: false,
+    customBindingsReturned: false,
+    userBindingsReturned: false,
+    searchAvailable: false,
+    keystrokeSearchAvailable: false,
+    customBindingEditorAvailable: false,
+    resetCustomBindingsAvailable: false,
+    mutationEnabled: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+    rawPayloadsReturned: false,
+    appServerTraffic: false,
+  };
+}
+
 function codexAppSettingsSection(key, group, state, source) {
   return {
     key,
@@ -33123,6 +33225,7 @@ function buildCodexAppSettingsParity(payload = {}) {
   const skills = surfaces.skills ?? {};
   const plugins = surfaces.plugins ?? {};
   const integrationScope = payload.integrationScope ?? {};
+  const keyboardShortcuts = buildCodexAppKeyboardShortcutsSummary();
   const hasOptInAuthAction = Boolean(
     auth.loginEnabled ||
       auth.loginCancelEnabled ||
@@ -33149,8 +33252,8 @@ function buildCodexAppSettingsParity(payload = {}) {
     codexAppSettingsSection(
       "keyboardShortcuts",
       "interface",
-      "blocked",
-      "not-implemented",
+      keyboardShortcuts.state,
+      "keyboard-shortcuts-catalog",
     ),
     codexAppSettingsSection(
       "notifications",
@@ -33213,6 +33316,7 @@ function buildCodexAppSettingsParity(payload = {}) {
     preflightOnlySectionCount,
     blockedSectionCount,
     sections,
+    keyboardShortcuts,
     sectionKeysReturned: true,
     sectionLabelsReturned: false,
     localSettingValuesReturned: false,
@@ -33603,6 +33707,11 @@ export function sanitizeSettingsIntegrationsPayload(
       codexAppSettingsPathsReturned: false,
       codexAppSettingsUrlsReturned: false,
       codexAppSettingsRawPayloadsReturned: false,
+      codexAppKeyboardShortcutsReturned: true,
+      codexAppKeyboardShortcutBindingsReturned: true,
+      codexAppKeyboardShortcutCommandLabelsReturned: false,
+      codexAppKeyboardShortcutCustomBindingsReturned: false,
+      codexAppKeyboardShortcutMutationsEnabled: false,
       serverRequestHandlersEnabled: false,
       serverRequestPayloadsReturned: false,
       serverRequestSchemasReturned: false,
@@ -41119,6 +41228,11 @@ export function buildSettingsIntegrations({
       codexAppSettingsPathsReturned: false,
       codexAppSettingsUrlsReturned: false,
       codexAppSettingsRawPayloadsReturned: false,
+      codexAppKeyboardShortcutsReturned: true,
+      codexAppKeyboardShortcutBindingsReturned: true,
+      codexAppKeyboardShortcutCommandLabelsReturned: false,
+      codexAppKeyboardShortcutCustomBindingsReturned: false,
+      codexAppKeyboardShortcutMutationsEnabled: false,
       serverRequestHandlersEnabled: false,
       serverRequestPayloadsReturned: false,
       serverRequestSchemasReturned: false,

@@ -20489,10 +20489,10 @@ test("dev server exposes settings and integration boundary without app-server tr
     );
     assertSettingsServerBoundaries(payload);
     assertCodexAppSettingsParity(payload, {
-      availableSectionCount: 6,
-      partialSectionCount: 5,
+      availableSectionCount: 7,
+      partialSectionCount: 6,
       preflightOnlySectionCount: 1,
-      blockedSectionCount: 9,
+      blockedSectionCount: 8,
       profileState: "blocked",
     });
     assert.equal(payload.surfaces.settings.state, "partial");
@@ -22761,10 +22761,10 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
     );
     assertSettingsServerBoundaries(payload);
     assertCodexAppSettingsParity(payload, {
-      availableSectionCount: 7,
-      partialSectionCount: 6,
+      availableSectionCount: 8,
+      partialSectionCount: 7,
       preflightOnlySectionCount: 1,
-      blockedSectionCount: 8,
+      blockedSectionCount: 7,
       profileState: "partial",
     });
     assert.equal(payload.appServer.auditedReadMethods.includes("configRequirements/read"), true);
@@ -34965,6 +34965,10 @@ function assertCodexAppSettingsParity(
     ],
   );
   assert.equal(summary.sections.find((section) => section.key === "profile")?.state, profileState);
+  assert.equal(
+    summary.sections.find((section) => section.key === "keyboardShortcuts")?.state,
+    "partial",
+  );
   assert.equal(summary.sections.find((section) => section.key === "browser")?.state, "blocked");
   assert.equal(
     summary.sections.find((section) => section.key === "computerUse")?.state,
@@ -34989,6 +34993,54 @@ function assertCodexAppSettingsParity(
   assert.equal(summary.mutationsEnabled, false);
   assert.equal(summary.browserHandlersEnabled, false);
   assert.equal(summary.settingsWritesEnabled, false);
+  assert.equal(summary.keyboardShortcuts?.returned, true);
+  assert.equal(summary.keyboardShortcuts.state, "partial");
+  assert.equal(summary.keyboardShortcuts.shortcutCount, 7);
+  assert.equal(summary.keyboardShortcuts.officialShortcutCount, 5);
+  assert.equal(summary.keyboardShortcuts.localShortcutCount, 2);
+  assert.equal(summary.keyboardShortcuts.blockedShortcutCount, 5);
+  assert.equal(summary.keyboardShortcuts.editableBindingCount, 0);
+  assert.equal(summary.keyboardShortcuts.shortcutKeysReturned, true);
+  assert.equal(summary.keyboardShortcuts.bindingNamesReturned, true);
+  assert.equal(summary.keyboardShortcuts.commandLabelsReturned, false);
+  assert.equal(summary.keyboardShortcuts.customBindingsReturned, false);
+  assert.equal(summary.keyboardShortcuts.userBindingsReturned, false);
+  assert.equal(summary.keyboardShortcuts.searchAvailable, false);
+  assert.equal(summary.keyboardShortcuts.keystrokeSearchAvailable, false);
+  assert.equal(summary.keyboardShortcuts.customBindingEditorAvailable, false);
+  assert.equal(summary.keyboardShortcuts.resetCustomBindingsAvailable, false);
+  assert.equal(summary.keyboardShortcuts.mutationEnabled, false);
+  assert.equal(summary.keyboardShortcuts.pathsReturned, false);
+  assert.equal(summary.keyboardShortcuts.urlsReturned, false);
+  assert.equal(summary.keyboardShortcuts.secretsReturned, false);
+  assert.equal(summary.keyboardShortcuts.rawPayloadsReturned, false);
+  assert.equal(summary.keyboardShortcuts.appServerTraffic, false);
+  assert.deepEqual(
+    summary.keyboardShortcuts.shortcuts.map((shortcut) => shortcut.key),
+    [
+      "openSettings",
+      "commandPalette",
+      "toggleThreadTerminal",
+      "voiceDictation",
+      "clearTerminal",
+      "activateApprovalRow",
+      "activateUiButton",
+    ],
+  );
+  assert.equal(
+    summary.keyboardShortcuts.shortcuts.every(
+      (shortcut) =>
+        shortcut.commandLabelReturned === false &&
+        shortcut.customBindingReturned === false &&
+        shortcut.userBindingReturned === false &&
+        shortcut.pathsReturned === false &&
+        shortcut.urlsReturned === false &&
+        shortcut.secretsReturned === false &&
+        shortcut.rawPayloadsReturned === false &&
+        shortcut.appServerTraffic === false,
+    ),
+    true,
+  );
   assert.equal(
     summary.sections.every(
       (section) =>
@@ -35010,6 +35062,11 @@ function assertCodexAppSettingsParity(
   assert.equal(payload.policy?.codexAppSettingsPathsReturned, false);
   assert.equal(payload.policy?.codexAppSettingsUrlsReturned, false);
   assert.equal(payload.policy?.codexAppSettingsRawPayloadsReturned, false);
+  assert.equal(payload.policy?.codexAppKeyboardShortcutsReturned, true);
+  assert.equal(payload.policy?.codexAppKeyboardShortcutBindingsReturned, true);
+  assert.equal(payload.policy?.codexAppKeyboardShortcutCommandLabelsReturned, false);
+  assert.equal(payload.policy?.codexAppKeyboardShortcutCustomBindingsReturned, false);
+  assert.equal(payload.policy?.codexAppKeyboardShortcutMutationsEnabled, false);
 }
 
 function assertTurnSessionRoutingContract(payload, expected) {

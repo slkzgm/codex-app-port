@@ -714,6 +714,11 @@ profile names, paths, URLs, secrets, raw payloads, app-server payloads, browser
 handlers, and settings writes omitted. Unimplemented sections such as
 Appearance, Browser, Computer Use, Personalization, and Context-aware
 Suggestions are reported as blocked.
+Within that summary, `keyboardShortcuts` exposes a static review-only shortcut
+catalog with official shortcut keys that still need Linux implementation plus
+local accessibility bindings that already exist in the UI. Custom binding
+editing, reset, keystroke search, command labels, user bindings, paths, URLs,
+raw payloads, and app-server traffic remain blocked.
 The same response also exposes static upstream-drift metadata for head-only
 app-server methods absent from the stable generated schema. It returns only
 method names, count/status metadata, and local blocked policy; it does not

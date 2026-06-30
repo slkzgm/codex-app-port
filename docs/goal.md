@@ -71,6 +71,11 @@ Target parity with the Codex desktop workflow:
   static section keys/states/counts only and no local setting values, profile
   names, paths, URLs, secrets, raw payloads, app-server payloads, browser
   handlers, or settings writes.
+- The same settings parity summary now includes a read-only keyboard-shortcuts
+  catalog with static official/local shortcut keys, bindings, states, sources,
+  and counts only; custom/user bindings, command labels, keystroke search,
+  reset/edit mutations, paths, URLs, secrets, raw payloads, and app-server
+  traffic remain blocked.
 - `permissionProfile/list` has an opt-in, counts-only inventory path; it
   returns profile counts and allowed/blocked totals only, not profile ids or
   descriptions.
