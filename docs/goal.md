@@ -95,6 +95,15 @@ Target parity with the Codex desktop workflow:
   origins, website permission values, CDP state, organization policy, Chrome
   profile data, browser launch, network traffic, paths, URLs, secrets, raw
   payloads, mutations, and app-server traffic remain blocked.
+- The same summary now includes a read-only Computer Use settings catalog for
+  the official availability, plugin install, system permission, app approval,
+  Windows app policy, locked-use, sensitive-action approval, and safety
+  guidance surfaces. It returns only keys, groups, states, sources, and counts;
+  plugin install state, Screen Recording or Accessibility permission state,
+  allowed or denied app lists, app identifiers, window titles, screen content,
+  screenshots, clipboard state, locked-use state, admin policy, desktop
+  control, permission prompts, paths, URLs, secrets, raw payloads, mutations,
+  and app-server traffic remain blocked.
 - The same summary now includes a read-only Notifications settings catalog for
   the official turn-completion and permission-prompt controls plus the local
   server-notification boundary. It returns only keys, groups, states, sources,

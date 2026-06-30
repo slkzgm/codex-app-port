@@ -506,6 +506,14 @@ Current M1 status:
   values, CDP state, organization policy, Chrome profile data, browser launch,
   network traffic, paths, URLs, secrets, raw payloads, mutations, and app-server
   traffic blocked
+- done: read-only Computer Use settings catalog inside the settings parity
+  summary, exposing only static availability, plugin install, system
+  permission, app approval, Windows app policy, locked-use, sensitive-action
+  approval, and safety guidance keys/groups/states/counts, with plugin install
+  state, Screen Recording or Accessibility permission state, allowed/denied app
+  lists, app identifiers, window titles, screen content, screenshots, clipboard
+  state, locked-use state, admin policy, desktop control, permission prompts,
+  paths, URLs, secrets, raw payloads, mutations, and app-server traffic blocked
 - done: read-only Notifications settings catalog inside the settings parity
   summary, exposing only static notification setting keys/groups/states/counts
   plus local server-notification boundary counts, with setting values, browser

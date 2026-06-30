@@ -739,6 +739,16 @@ state, allowed or blocked site lists, origins, website permission values, CDP
 state, organization policy, Chrome profile data, browser launch, network
 traffic, paths, URLs, raw payloads, mutations, and app-server traffic remain
 blocked.
+Within that same summary, `computerUse` exposes a static review-only catalog
+for Computer Use availability, plugin install, system permissions, app
+approval prompts, always-allow and denied app policy, Windows app policy,
+locked use, sensitive-action approvals, and safety guidance. The UI shows only
+setting keys, groups, state/source chips, catalog counts, and redaction chips;
+plugin install state, Screen Recording or Accessibility permission state,
+allowed or denied app lists, app identifiers, window titles, screen content,
+screenshots, clipboard state, locked-use state, admin policy, desktop control,
+permission prompts, paths, URLs, raw payloads, and app-server traffic remain
+blocked.
 Within that same summary, `notifications` exposes a static review-only catalog
 for official turn-completion notification and permission-prompt settings plus
 the local server-notification boundary. The UI shows only setting keys, groups,

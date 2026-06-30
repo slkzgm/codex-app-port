@@ -33493,6 +33493,142 @@ function buildCodexAppBrowserSettingsSummary() {
   };
 }
 
+const CODEX_APP_COMPUTER_USE_SETTINGS = Object.freeze([
+  {
+    key: "computerUseAvailability",
+    group: "availability",
+    state: "catalog-only",
+    source: "official-codex-computer-use-docs",
+  },
+  {
+    key: "computerUsePluginInstall",
+    group: "plugin",
+    state: "blocked",
+    source: "official-codex-computer-use-docs",
+  },
+  {
+    key: "screenRecordingPermission",
+    group: "system-permissions",
+    state: "blocked",
+    source: "official-codex-computer-use-docs",
+  },
+  {
+    key: "accessibilityPermission",
+    group: "system-permissions",
+    state: "blocked",
+    source: "official-codex-computer-use-docs",
+  },
+  {
+    key: "appPermissionPrompts",
+    group: "app-approvals",
+    state: "catalog-only",
+    source: "official-codex-computer-use-docs",
+  },
+  {
+    key: "alwaysAllowApps",
+    group: "app-approvals",
+    state: "catalog-only",
+    source: "official-codex-computer-use-docs",
+  },
+  {
+    key: "deniedApps",
+    group: "app-approvals",
+    state: "catalog-only",
+    source: "official-codex-computer-use-docs",
+  },
+  {
+    key: "windowsAppPolicyConfig",
+    group: "local-policy",
+    state: "blocked",
+    source: "official-codex-computer-use-docs",
+  },
+  {
+    key: "lockedComputerUse",
+    group: "locked-use",
+    state: "blocked",
+    source: "official-codex-computer-use-docs",
+  },
+  {
+    key: "sensitiveActionApprovals",
+    group: "approvals",
+    state: "catalog-only",
+    source: "official-codex-computer-use-docs",
+  },
+  {
+    key: "safetyGuidance",
+    group: "safety",
+    state: "catalog-only",
+    source: "official-codex-computer-use-docs",
+  },
+]);
+
+function buildCodexAppComputerUseSettingsSummary() {
+  const settings = CODEX_APP_COMPUTER_USE_SETTINGS.map((setting) => ({
+    ...setting,
+    settingValueReturned: false,
+    pluginInstallStateReturned: false,
+    systemPermissionStateReturned: false,
+    allowedAppsReturned: false,
+    deniedAppsReturned: false,
+    appIdentifiersReturned: false,
+    windowTitlesReturned: false,
+    screenContentReturned: false,
+    screenshotsReturned: false,
+    clipboardStateReturned: false,
+    lockedUseStateReturned: false,
+    adminPolicyReturned: false,
+    desktopControlStarted: false,
+    pluginInstallExecuted: false,
+    permissionPromptExecuted: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+    rawPayloadsReturned: false,
+    appServerTraffic: false,
+  }));
+  const catalogOnlySettingCount = settings.filter(
+    (setting) => setting.state === "catalog-only",
+  ).length;
+  const blockedSettingCount = settings.filter((setting) => setting.state === "blocked").length;
+
+  return {
+    returned: true,
+    state: catalogOnlySettingCount > 0 ? "partial" : "blocked",
+    settingCount: settings.length,
+    officialSettingCount: settings.filter(
+      (setting) => setting.source === "official-codex-computer-use-docs",
+    ).length,
+    catalogOnlySettingCount,
+    blockedSettingCount,
+    enabledSettingCount: 0,
+    settings,
+    computerUseControlsReturned: true,
+    pluginInstallStateReturned: false,
+    systemPermissionStateReturned: false,
+    appPermissionListsReturned: false,
+    allowedAppsReturned: false,
+    deniedAppsReturned: false,
+    appIdentifiersReturned: false,
+    windowTitlesReturned: false,
+    screenContentReturned: false,
+    screenshotsReturned: false,
+    clipboardStateReturned: false,
+    lockedUseStateReturned: false,
+    adminPolicyReturned: false,
+    desktopControlStarted: false,
+    pluginInstallExecuted: false,
+    permissionPromptExecuted: false,
+    settingValuesReturned: false,
+    localSettingValuesReturned: false,
+    mutationEnabled: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+    rawPayloadsReturned: false,
+    appServerTraffic: false,
+  };
+}
+
 const CODEX_APP_NOTIFICATION_SETTINGS = Object.freeze([
   {
     key: "turnCompletionNotifications",
@@ -33827,6 +33963,7 @@ function buildCodexAppSettingsParity(payload = {}) {
   const appearance = buildCodexAppAppearanceSettingsSummary();
   const codexPets = buildCodexAppPetSettingsSummary();
   const browser = buildCodexAppBrowserSettingsSummary();
+  const computerUse = buildCodexAppComputerUseSettingsSummary();
   const notifications = buildCodexAppNotificationSettingsSummary(payload);
   const personalization = buildCodexAppPersonalizationSettingsSummary();
   const memories = buildCodexAppMemoriesSettingsSummary(integrationScope);
@@ -33893,7 +34030,12 @@ function buildCodexAppSettingsParity(payload = {}) {
       browser.state,
       "browser-settings-catalog",
     ),
-    codexAppSettingsSection("computerUse", "runtime", "blocked", "not-implemented"),
+    codexAppSettingsSection(
+      "computerUse",
+      "runtime",
+      computerUse.state,
+      "computer-use-settings-catalog",
+    ),
     codexAppSettingsSection(
       "personalization",
       "agent",
@@ -33939,6 +34081,7 @@ function buildCodexAppSettingsParity(payload = {}) {
     appearance,
     codexPets,
     browser,
+    computerUse,
     notifications,
     personalization,
     memories,
@@ -34358,6 +34501,16 @@ export function sanitizeSettingsIntegrationsPayload(
       codexAppBrowserCdpStateReturned: false,
       codexAppBrowserLaunched: false,
       codexAppBrowserMutationsEnabled: false,
+      codexAppComputerUseSettingsReturned: true,
+      codexAppComputerUseValuesReturned: false,
+      codexAppComputerUsePluginInstallStateReturned: false,
+      codexAppComputerUseSystemPermissionStateReturned: false,
+      codexAppComputerUseAppListsReturned: false,
+      codexAppComputerUseAppIdentifiersReturned: false,
+      codexAppComputerUseScreenContentReturned: false,
+      codexAppComputerUseDesktopControlStarted: false,
+      codexAppComputerUseLockedUseStateReturned: false,
+      codexAppComputerUseMutationsEnabled: false,
       codexAppNotificationSettingsReturned: true,
       codexAppNotificationSettingValuesReturned: false,
       codexAppNotificationPermissionStateReturned: false,
@@ -41923,6 +42076,16 @@ export function buildSettingsIntegrations({
       codexAppBrowserCdpStateReturned: false,
       codexAppBrowserLaunched: false,
       codexAppBrowserMutationsEnabled: false,
+      codexAppComputerUseSettingsReturned: true,
+      codexAppComputerUseValuesReturned: false,
+      codexAppComputerUsePluginInstallStateReturned: false,
+      codexAppComputerUseSystemPermissionStateReturned: false,
+      codexAppComputerUseAppListsReturned: false,
+      codexAppComputerUseAppIdentifiersReturned: false,
+      codexAppComputerUseScreenContentReturned: false,
+      codexAppComputerUseDesktopControlStarted: false,
+      codexAppComputerUseLockedUseStateReturned: false,
+      codexAppComputerUseMutationsEnabled: false,
       codexAppNotificationSettingsReturned: true,
       codexAppNotificationSettingValuesReturned: false,
       codexAppNotificationPermissionStateReturned: false,

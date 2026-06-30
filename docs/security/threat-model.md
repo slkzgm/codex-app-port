@@ -419,6 +419,14 @@
   state, organization policy, Chrome profile data, browser launches, network
   traffic, paths, URLs, secrets, raw payloads, app-server payloads, or Browser
   mutations. Its
+  Computer Use settings catalog may expose only static setting keys, groups,
+  states, sources, and counts; it must not return plugin install state, Screen
+  Recording or Accessibility permission state, allowed or denied app lists, app
+  identifiers, window titles, screen content, screenshots, clipboard state,
+  locked-use state, admin policy, paths, URLs, secrets, raw payloads, or
+  app-server payloads, and must not install plugins, prompt for system
+  permissions, start desktop control, unlock a desktop, or mutate Computer Use
+  settings. Its
   Notifications settings catalog may expose only static setting keys, groups,
   states, sources, and counts plus local server-notification boundary counts;
   it must not return notification setting values, browser permission state,

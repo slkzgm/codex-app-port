@@ -21,6 +21,8 @@ const elements = {
   appPetsValuesText: document.querySelector("#app-pets-values-text"),
   appBrowserText: document.querySelector("#app-browser-text"),
   appBrowserValuesText: document.querySelector("#app-browser-values-text"),
+  appComputerUseText: document.querySelector("#app-computer-use-text"),
+  appComputerUseValuesText: document.querySelector("#app-computer-use-values-text"),
   appShortcutsText: document.querySelector("#app-shortcuts-text"),
   appShortcutsEditingText: document.querySelector("#app-shortcuts-editing-text"),
   appNotificationsText: document.querySelector("#app-notifications-text"),
@@ -369,6 +371,7 @@ const elements = {
   appAppearanceList: document.querySelector("#app-appearance-list"),
   appPetsList: document.querySelector("#app-pets-list"),
   appBrowserList: document.querySelector("#app-browser-list"),
+  appComputerUseList: document.querySelector("#app-computer-use-list"),
   appKeyboardShortcutsList: document.querySelector("#app-keyboard-shortcuts-list"),
   appNotificationsList: document.querySelector("#app-notifications-list"),
   appPersonalizationList: document.querySelector("#app-personalization-list"),
@@ -10461,6 +10464,25 @@ function renderSettingsIntegrations(payload) {
     browser.organizationPolicyReturned
       ? "Returned"
       : "Hidden";
+  const computerUse = codexAppSettings.computerUse ?? {};
+  elements.appComputerUseText.textContent = computerUse.returned
+    ? `${computerUse.catalogOnlySettingCount ?? 0} catalog / ${
+        computerUse.settingCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.appComputerUseValuesText.textContent =
+    computerUse.pluginInstallStateReturned ||
+    computerUse.systemPermissionStateReturned ||
+    computerUse.appPermissionListsReturned ||
+    computerUse.appIdentifiersReturned ||
+    computerUse.windowTitlesReturned ||
+    computerUse.screenContentReturned ||
+    computerUse.screenshotsReturned ||
+    computerUse.clipboardStateReturned ||
+    computerUse.lockedUseStateReturned ||
+    computerUse.desktopControlStarted
+      ? "Returned"
+      : "Blocked";
   const keyboardShortcuts = codexAppSettings.keyboardShortcuts ?? {};
   elements.appShortcutsText.textContent = keyboardShortcuts.returned
     ? `${keyboardShortcuts.localShortcutCount ?? 0} local / ${
@@ -10652,6 +10674,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexAppAppearanceSettings(appearance);
   renderCodexAppPetSettings(codexPets);
   renderCodexAppBrowserSettings(browser);
+  renderCodexAppComputerUseSettings(computerUse);
   renderCodexAppKeyboardShortcuts(keyboardShortcuts);
   renderCodexAppNotificationSettings(notifications);
   renderCodexAppPersonalizationSettings(personalization);
@@ -12361,6 +12384,62 @@ function renderCodexAppBrowserSettings(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.appBrowserList.append(row);
+  }
+}
+
+function renderCodexAppComputerUseSettings(summary) {
+  elements.appComputerUseList.replaceChildren();
+  const settings = Array.isArray(summary?.settings) ? summary.settings : [];
+  if (settings.length === 0) {
+    elements.appComputerUseList.append(emptyState("No Computer Use settings catalog returned."));
+    return;
+  }
+  for (const setting of settings) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = setting.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = setting.group ?? "computer-use";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      setting.state ?? "blocked",
+      setting.source ?? null,
+      setting.settingValueReturned ? "value returned" : "value hidden",
+      setting.pluginInstallStateReturned ? "plugin state returned" : "plugin state hidden",
+      setting.systemPermissionStateReturned ? "OS permission returned" : "OS permission hidden",
+      setting.allowedAppsReturned ? "allowed apps returned" : "allowed apps hidden",
+      setting.deniedAppsReturned ? "denied apps returned" : "denied apps hidden",
+      setting.appIdentifiersReturned ? "app ids returned" : "app ids hidden",
+      setting.windowTitlesReturned ? "window titles returned" : "window titles hidden",
+      setting.screenContentReturned ? "screen content returned" : "screen content hidden",
+      setting.screenshotsReturned ? "screenshots returned" : "screenshots hidden",
+      setting.clipboardStateReturned ? "clipboard returned" : "clipboard hidden",
+      setting.desktopControlStarted ? "desktop control started" : "desktop control blocked",
+      setting.pluginInstallExecuted ? "plugin install executed" : "plugin install blocked",
+      setting.permissionPromptExecuted ? "permission prompt executed" : "permission prompt blocked",
+      setting.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.appComputerUseList.append(row);
   }
 }
 

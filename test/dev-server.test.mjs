@@ -20489,10 +20489,10 @@ test("dev server exposes settings and integration boundary without app-server tr
     );
     assertSettingsServerBoundaries(payload);
     assertCodexAppSettingsParity(payload, {
-      availableSectionCount: 12,
-      partialSectionCount: 12,
+      availableSectionCount: 13,
+      partialSectionCount: 13,
       preflightOnlySectionCount: 0,
-      blockedSectionCount: 3,
+      blockedSectionCount: 2,
       profileState: "blocked",
     });
     assert.equal(payload.surfaces.settings.state, "partial");
@@ -22761,10 +22761,10 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
     );
     assertSettingsServerBoundaries(payload);
     assertCodexAppSettingsParity(payload, {
-      availableSectionCount: 13,
-      partialSectionCount: 13,
+      availableSectionCount: 14,
+      partialSectionCount: 14,
       preflightOnlySectionCount: 0,
-      blockedSectionCount: 2,
+      blockedSectionCount: 1,
       profileState: "partial",
     });
     assert.equal(payload.appServer.auditedReadMethods.includes("configRequirements/read"), true);
@@ -34985,7 +34985,7 @@ function assertCodexAppSettingsParity(
   );
   assert.equal(
     summary.sections.find((section) => section.key === "computerUse")?.state,
-    "blocked",
+    "partial",
   );
   assert.equal(
     summary.sections.find((section) => section.key === "memories")?.state,
@@ -35225,6 +35225,79 @@ function assertCodexAppSettingsParity(
     ),
     true,
   );
+  assert.equal(summary.computerUse?.returned, true);
+  assert.equal(summary.computerUse.state, "partial");
+  assert.equal(summary.computerUse.settingCount, 11);
+  assert.equal(summary.computerUse.officialSettingCount, 11);
+  assert.equal(summary.computerUse.catalogOnlySettingCount, 6);
+  assert.equal(summary.computerUse.blockedSettingCount, 5);
+  assert.equal(summary.computerUse.enabledSettingCount, 0);
+  assert.equal(summary.computerUse.computerUseControlsReturned, true);
+  assert.equal(summary.computerUse.pluginInstallStateReturned, false);
+  assert.equal(summary.computerUse.systemPermissionStateReturned, false);
+  assert.equal(summary.computerUse.appPermissionListsReturned, false);
+  assert.equal(summary.computerUse.allowedAppsReturned, false);
+  assert.equal(summary.computerUse.deniedAppsReturned, false);
+  assert.equal(summary.computerUse.appIdentifiersReturned, false);
+  assert.equal(summary.computerUse.windowTitlesReturned, false);
+  assert.equal(summary.computerUse.screenContentReturned, false);
+  assert.equal(summary.computerUse.screenshotsReturned, false);
+  assert.equal(summary.computerUse.clipboardStateReturned, false);
+  assert.equal(summary.computerUse.lockedUseStateReturned, false);
+  assert.equal(summary.computerUse.adminPolicyReturned, false);
+  assert.equal(summary.computerUse.desktopControlStarted, false);
+  assert.equal(summary.computerUse.pluginInstallExecuted, false);
+  assert.equal(summary.computerUse.permissionPromptExecuted, false);
+  assert.equal(summary.computerUse.settingValuesReturned, false);
+  assert.equal(summary.computerUse.localSettingValuesReturned, false);
+  assert.equal(summary.computerUse.mutationEnabled, false);
+  assert.equal(summary.computerUse.pathsReturned, false);
+  assert.equal(summary.computerUse.urlsReturned, false);
+  assert.equal(summary.computerUse.secretsReturned, false);
+  assert.equal(summary.computerUse.rawPayloadsReturned, false);
+  assert.equal(summary.computerUse.appServerTraffic, false);
+  assert.deepEqual(
+    summary.computerUse.settings.map((setting) => setting.key),
+    [
+      "computerUseAvailability",
+      "computerUsePluginInstall",
+      "screenRecordingPermission",
+      "accessibilityPermission",
+      "appPermissionPrompts",
+      "alwaysAllowApps",
+      "deniedApps",
+      "windowsAppPolicyConfig",
+      "lockedComputerUse",
+      "sensitiveActionApprovals",
+      "safetyGuidance",
+    ],
+  );
+  assert.equal(
+    summary.computerUse.settings.every(
+      (setting) =>
+        setting.settingValueReturned === false &&
+        setting.pluginInstallStateReturned === false &&
+        setting.systemPermissionStateReturned === false &&
+        setting.allowedAppsReturned === false &&
+        setting.deniedAppsReturned === false &&
+        setting.appIdentifiersReturned === false &&
+        setting.windowTitlesReturned === false &&
+        setting.screenContentReturned === false &&
+        setting.screenshotsReturned === false &&
+        setting.clipboardStateReturned === false &&
+        setting.lockedUseStateReturned === false &&
+        setting.adminPolicyReturned === false &&
+        setting.desktopControlStarted === false &&
+        setting.pluginInstallExecuted === false &&
+        setting.permissionPromptExecuted === false &&
+        setting.pathsReturned === false &&
+        setting.urlsReturned === false &&
+        setting.secretsReturned === false &&
+        setting.rawPayloadsReturned === false &&
+        setting.appServerTraffic === false,
+    ),
+    true,
+  );
   assert.equal(summary.notifications?.returned, true);
   assert.equal(summary.notifications.state, "partial");
   assert.equal(summary.notifications.settingCount, 4);
@@ -35442,6 +35515,16 @@ function assertCodexAppSettingsParity(
   assert.equal(payload.policy?.codexAppBrowserCdpStateReturned, false);
   assert.equal(payload.policy?.codexAppBrowserLaunched, false);
   assert.equal(payload.policy?.codexAppBrowserMutationsEnabled, false);
+  assert.equal(payload.policy?.codexAppComputerUseSettingsReturned, true);
+  assert.equal(payload.policy?.codexAppComputerUseValuesReturned, false);
+  assert.equal(payload.policy?.codexAppComputerUsePluginInstallStateReturned, false);
+  assert.equal(payload.policy?.codexAppComputerUseSystemPermissionStateReturned, false);
+  assert.equal(payload.policy?.codexAppComputerUseAppListsReturned, false);
+  assert.equal(payload.policy?.codexAppComputerUseAppIdentifiersReturned, false);
+  assert.equal(payload.policy?.codexAppComputerUseScreenContentReturned, false);
+  assert.equal(payload.policy?.codexAppComputerUseDesktopControlStarted, false);
+  assert.equal(payload.policy?.codexAppComputerUseLockedUseStateReturned, false);
+  assert.equal(payload.policy?.codexAppComputerUseMutationsEnabled, false);
   assert.equal(payload.policy?.codexAppNotificationSettingsReturned, true);
   assert.equal(payload.policy?.codexAppNotificationSettingValuesReturned, false);
   assert.equal(payload.policy?.codexAppNotificationPermissionStateReturned, false);

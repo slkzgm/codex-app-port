@@ -32690,10 +32690,10 @@ function assertSanitizedSettingsIntegrations(payload) {
   }
   assertSettingsServerBoundaries(payload);
   assertCodexAppSettingsParity(payload, {
-    availableSectionCount: 12,
-    partialSectionCount: 12,
+    availableSectionCount: 13,
+    partialSectionCount: 13,
     preflightOnlySectionCount: 0,
-    blockedSectionCount: 3,
+    blockedSectionCount: 2,
     profileState: "blocked",
   });
   if (
@@ -33146,7 +33146,7 @@ function assertCodexAppSettingsParity(
       "partial" ||
     summary.sections?.find((section) => section.key === "personalization")?.state !==
       "partial" ||
-    summary.sections?.find((section) => section.key === "computerUse")?.state !== "blocked" ||
+    summary.sections?.find((section) => section.key === "computerUse")?.state !== "partial" ||
     summary.sections?.find((section) => section.key === "memories")?.state !== "partial"
   ) {
     throw new Error("Codex app settings parity section mapping changed unexpectedly");
@@ -33366,6 +33366,74 @@ function assertCodexAppSettingsParity(
         setting.rawPayloadsReturned === false &&
         setting.appServerTraffic === false,
     ) ||
+    summary.computerUse?.returned !== true ||
+    summary.computerUse.state !== "partial" ||
+    summary.computerUse.settingCount !== 11 ||
+    summary.computerUse.officialSettingCount !== 11 ||
+    summary.computerUse.catalogOnlySettingCount !== 6 ||
+    summary.computerUse.blockedSettingCount !== 5 ||
+    summary.computerUse.enabledSettingCount !== 0 ||
+    summary.computerUse.computerUseControlsReturned !== true ||
+    summary.computerUse.pluginInstallStateReturned !== false ||
+    summary.computerUse.systemPermissionStateReturned !== false ||
+    summary.computerUse.appPermissionListsReturned !== false ||
+    summary.computerUse.allowedAppsReturned !== false ||
+    summary.computerUse.deniedAppsReturned !== false ||
+    summary.computerUse.appIdentifiersReturned !== false ||
+    summary.computerUse.windowTitlesReturned !== false ||
+    summary.computerUse.screenContentReturned !== false ||
+    summary.computerUse.screenshotsReturned !== false ||
+    summary.computerUse.clipboardStateReturned !== false ||
+    summary.computerUse.lockedUseStateReturned !== false ||
+    summary.computerUse.adminPolicyReturned !== false ||
+    summary.computerUse.desktopControlStarted !== false ||
+    summary.computerUse.pluginInstallExecuted !== false ||
+    summary.computerUse.permissionPromptExecuted !== false ||
+    summary.computerUse.settingValuesReturned !== false ||
+    summary.computerUse.localSettingValuesReturned !== false ||
+    summary.computerUse.mutationEnabled !== false ||
+    summary.computerUse.pathsReturned !== false ||
+    summary.computerUse.urlsReturned !== false ||
+    summary.computerUse.secretsReturned !== false ||
+    summary.computerUse.rawPayloadsReturned !== false ||
+    summary.computerUse.appServerTraffic !== false ||
+    JSON.stringify((summary.computerUse.settings ?? []).map((setting) => setting.key)) !==
+      JSON.stringify([
+        "computerUseAvailability",
+        "computerUsePluginInstall",
+        "screenRecordingPermission",
+        "accessibilityPermission",
+        "appPermissionPrompts",
+        "alwaysAllowApps",
+        "deniedApps",
+        "windowsAppPolicyConfig",
+        "lockedComputerUse",
+        "sensitiveActionApprovals",
+        "safetyGuidance",
+      ]) ||
+    !summary.computerUse.settings?.every(
+      (setting) =>
+        setting.settingValueReturned === false &&
+        setting.pluginInstallStateReturned === false &&
+        setting.systemPermissionStateReturned === false &&
+        setting.allowedAppsReturned === false &&
+        setting.deniedAppsReturned === false &&
+        setting.appIdentifiersReturned === false &&
+        setting.windowTitlesReturned === false &&
+        setting.screenContentReturned === false &&
+        setting.screenshotsReturned === false &&
+        setting.clipboardStateReturned === false &&
+        setting.lockedUseStateReturned === false &&
+        setting.adminPolicyReturned === false &&
+        setting.desktopControlStarted === false &&
+        setting.pluginInstallExecuted === false &&
+        setting.permissionPromptExecuted === false &&
+        setting.pathsReturned === false &&
+        setting.urlsReturned === false &&
+        setting.secretsReturned === false &&
+        setting.rawPayloadsReturned === false &&
+        setting.appServerTraffic === false,
+    ) ||
     summary.notifications?.returned !== true ||
     summary.notifications.state !== "partial" ||
     summary.notifications.settingCount !== 4 ||
@@ -33563,6 +33631,16 @@ function assertCodexAppSettingsParity(
     payload.policy?.codexAppBrowserCdpStateReturned !== false ||
     payload.policy?.codexAppBrowserLaunched !== false ||
     payload.policy?.codexAppBrowserMutationsEnabled !== false ||
+    payload.policy?.codexAppComputerUseSettingsReturned !== true ||
+    payload.policy?.codexAppComputerUseValuesReturned !== false ||
+    payload.policy?.codexAppComputerUsePluginInstallStateReturned !== false ||
+    payload.policy?.codexAppComputerUseSystemPermissionStateReturned !== false ||
+    payload.policy?.codexAppComputerUseAppListsReturned !== false ||
+    payload.policy?.codexAppComputerUseAppIdentifiersReturned !== false ||
+    payload.policy?.codexAppComputerUseScreenContentReturned !== false ||
+    payload.policy?.codexAppComputerUseDesktopControlStarted !== false ||
+    payload.policy?.codexAppComputerUseLockedUseStateReturned !== false ||
+    payload.policy?.codexAppComputerUseMutationsEnabled !== false ||
     payload.policy?.codexAppNotificationSettingsReturned !== true ||
     payload.policy?.codexAppNotificationSettingValuesReturned !== false ||
     payload.policy?.codexAppNotificationPermissionStateReturned !== false ||
@@ -35228,10 +35306,10 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
   }
   assertSettingsServerBoundaries(payload);
   assertCodexAppSettingsParity(payload, {
-    availableSectionCount: 13,
-    partialSectionCount: 13,
+    availableSectionCount: 14,
+    partialSectionCount: 14,
     preflightOnlySectionCount: 0,
-    blockedSectionCount: 2,
+    blockedSectionCount: 1,
     profileState: "partial",
   });
   if (
