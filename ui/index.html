@@ -1132,6 +1132,41 @@
             </div>
           </dl>
           <div class="turn-actions">
+            <label class="workspace-control" for="remote-control-pairing-method-select">
+              Pairing method
+              <select id="remote-control-pairing-method-select">
+                <option value="remoteControl/pairing/start">Start</option>
+                <option value="remoteControl/pairing/status">Status</option>
+              </select>
+            </label>
+          </div>
+          <textarea
+            id="remote-control-pairing-arguments-input"
+            maxlength="2000"
+            rows="3"
+            placeholder="Remote pairing params JSON"
+          ></textarea>
+          <div class="turn-actions">
+            <button id="remote-control-pairing-preflight-button" class="secondary-button" type="button">
+              Pairing Check
+            </button>
+            <span id="remote-control-pairing-status" class="empty-state">Blocked</span>
+          </div>
+          <dl class="agent-grid">
+            <div>
+              <dt>Arg keys</dt>
+              <dd id="remote-control-pairing-arg-keys">0</dd>
+            </div>
+            <div>
+              <dt>Code input</dt>
+              <dd id="remote-control-pairing-code-text">Hidden</dd>
+            </div>
+            <div>
+              <dt>Claim state</dt>
+              <dd id="remote-control-pairing-claim-text">Hidden</dd>
+            </div>
+          </dl>
+          <div class="turn-actions">
             <button id="remote-control-disable-preflight-button" class="secondary-button" type="button">
               Remote Disable Check
             </button>

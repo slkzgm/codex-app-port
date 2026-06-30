@@ -718,6 +718,13 @@ Current M1 status:
   URL/path/secret counters, short-lived confirmation/history, and no enable
   execution route, relay enrollment, pairing-code creation, app-server traffic,
   identity/status output, paths, URLs, secrets, argument echo, or raw payloads
+- done: local-only `/api/remote-control-pairing-preflight` for audited
+  `remoteControl/pairing/start` and `remoteControl/pairing/status` intent, with
+  route-specific nested response schemas, argument/key counts, `manualCode`,
+  pairing-code input, unknown-param and URL/path/secret counters, short-lived
+  confirmation/history, and no pairing execution route, pairing-code creation,
+  claim polling, app-server traffic, pairing-code output, controller info,
+  identity/status output, paths, URLs, secrets, argument echo, or raw payloads
 - done: opt-in `/api/remote-control-clients` plus
   `/api/remote-control-client-revoke` behind separate
   `CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_CLIENT_LIST=1` and

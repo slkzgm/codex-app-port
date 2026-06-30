@@ -271,6 +271,10 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /remote-control-enable-status/);
     assert.match(appScript, /runRemoteControlEnablePreflight/);
     assert.match(appScript, /renderRemoteControlEnablePreflight/);
+    assert.match(html, /remote-control-pairing-preflight-button/);
+    assert.match(html, /remote-control-pairing-status/);
+    assert.match(appScript, /runRemoteControlPairingPreflight/);
+    assert.match(appScript, /renderRemoteControlPairingPreflight/);
     assert.match(html, /remote-control-disable-preflight-button/);
     assert.match(html, /remote-control-disable-button/);
     assert.match(html, /remote-control-disable-status/);
@@ -481,6 +485,7 @@ test("browser POST body contracts are centralized and immutable", () => {
     "/api/skills-extra-roots-clear-preflight",
     "/api/skills-extra-roots-clear",
     "/api/remote-control-enable-preflight",
+    "/api/remote-control-pairing-preflight",
     "/api/remote-control-disable-preflight",
     "/api/remote-control-disable",
     "/api/remote-control-clients",
@@ -820,6 +825,10 @@ test("browser POST body contracts are centralized and immutable", () => {
     ["workspace", "arguments"],
   );
   assert.deepEqual(
+    [...BROWSER_POST_BODY_CONTRACTS["/api/remote-control-pairing-preflight"].allowedFields],
+    ["workspace", "method", "arguments"],
+  );
+  assert.deepEqual(
     [...BROWSER_POST_BODY_CONTRACTS["/api/remote-control-disable"].allowedFields],
     ["workspace", "preflightToken"],
   );
@@ -1090,6 +1099,31 @@ test("browser POST response contracts block unsafe response values", () => {
   );
   assert.equal(
     remoteControlEnablePreflightContract.nestedKeySchemas.policy.includes("unexpected"),
+    false,
+  );
+  const remoteControlPairingPreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/remote-control-pairing-preflight"];
+  assert.equal(remoteControlPairingPreflightContract.usesRouteSpecificNestedKeySchemas, true);
+  assert.equal(
+    remoteControlPairingPreflightContract.nestedKeySchemas.remoteControlPairing.includes(
+      "pairingStartExecutionBlocked",
+    ),
+    true,
+  );
+  assert.equal(
+    remoteControlPairingPreflightContract.nestedKeySchemas.remoteControlPairing.includes(
+      "pairingCodeReturned",
+    ),
+    true,
+  );
+  assert.equal(
+    remoteControlPairingPreflightContract.nestedKeySchemas.policy.includes(
+      "remoteControlPairingPreflightEnabled",
+    ),
+    true,
+  );
+  assert.equal(
+    remoteControlPairingPreflightContract.nestedKeySchemas.policy.includes("unexpected"),
     false,
   );
   const remoteControlDisableContract =
@@ -18688,7 +18722,7 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.integrationScope.state, "partial");
     assert.equal(payload.integrationScope.enabledReadMethodCount, 1);
     assert.deepEqual(payload.integrationScope.enabledReadMethods, ["config/read"]);
-    assert.equal(payload.integrationScope.enabledLocalGateCount, 18);
+    assert.equal(payload.integrationScope.enabledLocalGateCount, 19);
     assert.deepEqual(payload.integrationScope.enabledLocalGates, [
       "mcp-tool-preflight",
       "mcp-oauth-login-preflight",
@@ -18702,6 +18736,7 @@ test("dev server exposes settings and integration boundary without app-server tr
       "external-config-import-preflight",
       "review-feedback-preflight",
       "remote-control-enable-preflight",
+      "remote-control-pairing-preflight",
       "plugin-content-preflight",
       "config-value-preflight",
       "config-batch-preflight",
@@ -18742,7 +18777,10 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.integrationScope.feedbackUploadEnabled, false);
     assert.equal(payload.integrationScope.remoteControlEnablePreflightEnabled, true);
     assert.equal(payload.integrationScope.remoteControlEnableEnabled, false);
+    assert.equal(payload.integrationScope.remoteControlPairingPreflightEnabled, true);
     assert.equal(payload.integrationScope.remoteControlPairingEnabled, false);
+    assert.equal(payload.integrationScope.remoteControlPairingStartEnabled, false);
+    assert.equal(payload.integrationScope.remoteControlPairingStatusEnabled, false);
     assert.equal(payload.integrationScope.skillsConfigWriteEnabled, false);
     assert.equal(payload.integrationScope.pluginInstallEnabled, false);
     assert.equal(payload.integrationScope.pluginShareEnabled, false);
@@ -18764,7 +18802,7 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.integrationLifecycle.partialSurfaceCount, 3);
     assert.equal(payload.integrationLifecycle.blockedSurfaceCount, 4);
     assert.equal(payload.integrationLifecycle.readMethodCount, 1);
-    assert.equal(payload.integrationLifecycle.localGateCount, 18);
+    assert.equal(payload.integrationLifecycle.localGateCount, 19);
     assert.equal(payload.integrationLifecycle.enabledMutationGateCount, 0);
     assert.equal(
       payload.integrationLifecycle.blockedMutationMethodCount,
@@ -18776,8 +18814,8 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.integrationLifecycle.integrationActions.returned, true);
     assert.equal(payload.integrationLifecycle.integrationActions.state, "preflight-only");
     assert.equal(payload.integrationLifecycle.integrationActions.readMethodCount, 1);
-    assert.equal(payload.integrationLifecycle.integrationActions.localGateCount, 18);
-    assert.equal(payload.integrationLifecycle.integrationActions.preflightOnlyGateCount, 18);
+    assert.equal(payload.integrationLifecycle.integrationActions.localGateCount, 19);
+    assert.equal(payload.integrationLifecycle.integrationActions.preflightOnlyGateCount, 19);
     assert.equal(payload.integrationLifecycle.integrationActions.executableActionCount, 0);
     assert.equal(payload.integrationLifecycle.integrationActions.enabledMutationGateCount, 0);
     assert.equal(
@@ -18801,8 +18839,8 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.integrationLifecycle.integrationManagement.partialSurfaceCount, 3);
     assert.equal(payload.integrationLifecycle.integrationManagement.blockedSurfaceCount, 4);
     assert.equal(payload.integrationLifecycle.integrationManagement.readMethodCount, 1);
-    assert.equal(payload.integrationLifecycle.integrationManagement.localGateCount, 18);
-    assert.equal(payload.integrationLifecycle.integrationManagement.preflightOnlyGateCount, 18);
+    assert.equal(payload.integrationLifecycle.integrationManagement.localGateCount, 19);
+    assert.equal(payload.integrationLifecycle.integrationManagement.preflightOnlyGateCount, 19);
     assert.equal(payload.integrationLifecycle.integrationManagement.executableActionCount, 0);
     assert.equal(payload.integrationLifecycle.integrationManagement.enabledMutationGateCount, 0);
     assert.equal(
@@ -18833,8 +18871,8 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.returned, true);
     assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.state, "preflight-only");
     assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.readMethodCount, 1);
-    assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.localGateCount, 18);
-    assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.preflightOnlyGateCount, 18);
+    assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.localGateCount, 19);
+    assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.preflightOnlyGateCount, 19);
     assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.executableActionCount, 0);
     assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.enabledActionFamilyCount, 0);
     assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.enabledMutationGateCount, 0);
@@ -18895,8 +18933,8 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.integrationLifecycle.integrationSafetyContract.returned, true);
     assert.equal(payload.integrationLifecycle.integrationSafetyContract.state, "preflight-only");
     assert.equal(payload.integrationLifecycle.integrationSafetyContract.readMethodCount, 1);
-    assert.equal(payload.integrationLifecycle.integrationSafetyContract.localGateCount, 18);
-    assert.equal(payload.integrationLifecycle.integrationSafetyContract.preflightOnlyGateCount, 18);
+    assert.equal(payload.integrationLifecycle.integrationSafetyContract.localGateCount, 19);
+    assert.equal(payload.integrationLifecycle.integrationSafetyContract.preflightOnlyGateCount, 19);
     assert.equal(payload.integrationLifecycle.integrationSafetyContract.executableActionCount, 0);
     assert.equal(payload.integrationLifecycle.integrationSafetyContract.enabledActionFamilyCount, 0);
     assert.equal(payload.integrationLifecycle.integrationSafetyContract.enabledMutationGateCount, 0);
@@ -18940,8 +18978,8 @@ test("dev server exposes settings and integration boundary without app-server tr
       state: "preflight-only",
       routingMode: "local-preflight-only",
       readMethodCount: 1,
-      localGateCount: 18,
-      preflightOnlyGateCount: 18,
+      localGateCount: 19,
+      preflightOnlyGateCount: 19,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -18970,8 +19008,8 @@ test("dev server exposes settings and integration boundary without app-server tr
       partialSurfaceCount: 3,
       blockedSurfaceCount: 4,
       readMethodCount: 1,
-      localGateCount: 18,
-      preflightOnlyGateCount: 18,
+      localGateCount: 19,
+      preflightOnlyGateCount: 19,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -19005,8 +19043,8 @@ test("dev server exposes settings and integration boundary without app-server tr
       workflowMode: "preflight-review",
       routingMode: "local-preflight-only",
       readMethodCount: 1,
-      localGateCount: 18,
-      preflightOnlyGateCount: 18,
+      localGateCount: 19,
+      preflightOnlyGateCount: 19,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -19038,8 +19076,8 @@ test("dev server exposes settings and integration boundary without app-server tr
       workflowMode: "preflight-review",
       routingMode: "local-preflight-only",
       readMethodCount: 1,
-      localGateCount: 18,
-      preflightOnlyGateCount: 18,
+      localGateCount: 19,
+      preflightOnlyGateCount: 19,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -19067,8 +19105,8 @@ test("dev server exposes settings and integration boundary without app-server tr
       workflowMode: "preflight-review",
       routingMode: "local-preflight-only",
       readMethodCount: 1,
-      localGateCount: 18,
-      preflightOnlyGateCount: 18,
+      localGateCount: 19,
+      preflightOnlyGateCount: 19,
       executableActionCount: 0,
       externalActionCount: 0,
       enabledMutationGateCount: 0,
@@ -19947,7 +19985,7 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
       "config/read",
       ...optInIntegrationReadMethods(),
     ]);
-    assert.equal(payload.integrationScope.enabledLocalGateCount, 18);
+    assert.equal(payload.integrationScope.enabledLocalGateCount, 19);
     assert.equal(
       payload.integrationScope.blockedMutationMethodCount,
       blockedIntegrationMutationMethods().length,
@@ -19971,8 +20009,8 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
       state: "preflight-only",
       routingMode: "local-preflight-only",
       readMethodCount: ["config/read", ...optInIntegrationReadMethods()].length,
-      localGateCount: 18,
-      preflightOnlyGateCount: 18,
+      localGateCount: 19,
+      preflightOnlyGateCount: 19,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -20005,8 +20043,8 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
         (surface) => surface?.state === "blocked",
       ).length,
       readMethodCount: ["config/read", ...optInIntegrationReadMethods()].length,
-      localGateCount: 18,
-      preflightOnlyGateCount: 18,
+      localGateCount: 19,
+      preflightOnlyGateCount: 19,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -20040,8 +20078,8 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
       workflowMode: "preflight-review",
       routingMode: "local-preflight-only",
       readMethodCount: ["config/read", ...optInIntegrationReadMethods()].length,
-      localGateCount: 18,
-      preflightOnlyGateCount: 18,
+      localGateCount: 19,
+      preflightOnlyGateCount: 19,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -20073,8 +20111,8 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
       workflowMode: "preflight-review",
       routingMode: "local-preflight-only",
       readMethodCount: ["config/read", ...optInIntegrationReadMethods()].length,
-      localGateCount: 18,
-      preflightOnlyGateCount: 18,
+      localGateCount: 19,
+      preflightOnlyGateCount: 19,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -20102,8 +20140,8 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
       workflowMode: "preflight-review",
       routingMode: "local-preflight-only",
       readMethodCount: ["config/read", ...optInIntegrationReadMethods()].length,
-      localGateCount: 18,
-      preflightOnlyGateCount: 18,
+      localGateCount: 19,
+      preflightOnlyGateCount: 19,
       executableActionCount: 0,
       externalActionCount: 0,
       enabledMutationGateCount: 0,
@@ -23849,6 +23887,257 @@ test("dev server preflights remote control enable without app-server traffic", a
       "https://private-remote-control.example/connect",
       "/tmp/private-remote-control",
       "sk-proj-remotecontrolsecret",
+    ]) {
+      assert.equal(historySerialized.includes(marker), false, `history leaked ${marker}`);
+      assert.equal(confirmationSerialized.includes(marker), false, `confirmation leaked ${marker}`);
+    }
+  } finally {
+    await closeServer(server);
+  }
+});
+
+test("dev server preflights remote control pairing without app-server traffic", async () => {
+  let probeCalled = false;
+  const { server, url } = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    workspaceInputs: ["/tmp/second-workspace"],
+    probeFn: async () => {
+      probeCalled = true;
+      return { ok: true };
+    },
+  });
+
+  try {
+    const getResponse = await fetch(`${url}/api/remote-control-pairing-preflight`, {
+      headers: apiHeaders(server),
+    });
+    assert.equal(getResponse.status, 405);
+
+    const rejectedMethod = await fetch(`${url}/api/remote-control-pairing-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        method: "remoteControl/enable",
+        arguments: "{}",
+      }),
+    });
+    assert.equal(rejectedMethod.status, 400);
+
+    const startArgs = JSON.stringify({
+      manualCode: true,
+      callbackUrl: "https://pairing.example.invalid/callback",
+      token: "sk-proj-pairing-start-secret",
+    });
+    const startResponse = await fetch(`${url}/api/remote-control-pairing-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        method: "remoteControl/pairing/start",
+        arguments: startArgs,
+      }),
+    });
+    assert.equal(startResponse.status, 200);
+    const startPayload = await startResponse.json();
+    const startSerialized = JSON.stringify(startPayload);
+    assert.equal(startPayload.ok, true);
+    assert.deepEqual(startPayload.workspace, {
+      id: "workspace-2",
+      label: "second-workspace",
+      isDefault: false,
+    });
+    assert.equal(startPayload.appServer.touched, false);
+    assert.equal(startPayload.appServer.modelTraffic, false);
+    assert.equal(startPayload.appServer.remoteControlTraffic, false);
+    assert.equal(startPayload.action.type, "remote-control-pairing-preflight");
+    assert.equal(startPayload.action.method, "remoteControl/pairing/start");
+    assert.equal(startPayload.action.category, "remote-control");
+    assert.equal(startPayload.action.execution, "blocked");
+    assert.equal(startPayload.action.wouldStartPairing, false);
+    assert.equal(startPayload.action.wouldPollPairingStatus, false);
+    assert.equal(startPayload.action.wouldCreatePairingCode, false);
+    assert.equal(startPayload.action.appServerTouched, false);
+    assertActionPreflight(startPayload, "remote-control-pairing-preflight", "workspace-2");
+    assert.equal(startPayload.integrationAction.method, "remoteControl/pairing/start");
+    assert.equal(startPayload.integrationAction.arguments.charCount, startArgs.length);
+    assert.equal(startPayload.integrationAction.arguments.validJsonObject, true);
+    assert.equal(startPayload.integrationAction.arguments.topLevelKeyCount, 3);
+    assert.equal(startPayload.integrationAction.arguments.textReturned, false);
+    assert.equal(startPayload.integrationAction.methodAllowedByAudit, true);
+    assert.equal(startPayload.remoteControlPairing.method, "remoteControl/pairing/start");
+    assert.equal(startPayload.remoteControlPairing.argumentCharCount, startArgs.length);
+    assert.equal(startPayload.remoteControlPairing.argumentTopLevelKeyCount, 3);
+    assert.equal(startPayload.remoteControlPairing.argumentObjectAccepted, true);
+    assert.equal(startPayload.remoteControlPairing.pairingStartRequested, true);
+    assert.equal(startPayload.remoteControlPairing.pairingStatusRequested, false);
+    assert.equal(startPayload.remoteControlPairing.manualCodeRequested, true);
+    assert.equal(startPayload.remoteControlPairing.manualCodeBoolean, true);
+    assert.equal(startPayload.remoteControlPairing.pairingCodeInputProvided, false);
+    assert.equal(startPayload.remoteControlPairing.pairingCodeCharCount, 0);
+    assert.equal(startPayload.remoteControlPairing.unknownParamCount, 2);
+    assert.equal(startPayload.remoteControlPairing.stringArgumentCount, 2);
+    assert.equal(startPayload.remoteControlPairing.urlLikeArgumentCount, 1);
+    assert.equal(startPayload.remoteControlPairing.pathLikeArgumentCount, 0);
+    assert.equal(startPayload.remoteControlPairing.secretLikeArgumentCount, 1);
+    assert.equal(startPayload.remoteControlPairing.sensitiveKeyCount, 1);
+    assert.equal(startPayload.remoteControlPairing.paramsAcceptedFromBrowser, false);
+    assert.equal(startPayload.remoteControlPairing.pairingStartExecutionBlocked, true);
+    assert.equal(startPayload.remoteControlPairing.pairingStatusExecutionBlocked, true);
+    assert.equal(startPayload.remoteControlPairing.pairingCodeCreated, false);
+    assert.equal(startPayload.remoteControlPairing.pairingCodeReturned, false);
+    assert.equal(startPayload.remoteControlPairing.claimStateReturned, false);
+    assert.equal(startPayload.remoteControlPairing.controllerInfoReturned, false);
+    assert.equal(startPayload.remoteControlPairing.appServerTraffic, false);
+    assert.equal(startPayload.remoteControlPairing.environmentIdReturned, false);
+    assert.equal(startPayload.remoteControlPairing.serverNameReturned, false);
+    assert.equal(startPayload.remoteControlPairing.pathsReturned, false);
+    assert.equal(startPayload.remoteControlPairing.urlsReturned, false);
+    assert.equal(startPayload.remoteControlPairing.secretsReturned, false);
+    assert.equal(startPayload.remoteControlPairing.rawPayloadReturned, false);
+
+    const statusArgs = JSON.stringify({
+      pairingCode: "PAIR-SECRET-123456",
+      manualPairingCode: "MANUAL-PAIR-654321",
+      localPath: "/tmp/private-pairing",
+      token: "sk-proj-pairing-status-secret",
+    });
+    const statusResponse = await fetch(`${url}/api/remote-control-pairing-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        method: "remoteControl/pairing/status",
+        arguments: statusArgs,
+      }),
+    });
+    assert.equal(statusResponse.status, 200);
+    const statusPayload = await statusResponse.json();
+    const statusSerialized = JSON.stringify(statusPayload);
+    assert.equal(statusPayload.ok, true);
+    assert.equal(statusPayload.action.type, "remote-control-pairing-preflight");
+    assert.equal(statusPayload.action.method, "remoteControl/pairing/status");
+    assert.equal(statusPayload.action.wouldStartPairing, false);
+    assert.equal(statusPayload.action.wouldPollPairingStatus, false);
+    assert.equal(statusPayload.action.wouldCreatePairingCode, false);
+    assertActionPreflight(statusPayload, "remote-control-pairing-preflight", "workspace-2");
+    assert.equal(statusPayload.integrationAction.method, "remoteControl/pairing/status");
+    assert.equal(statusPayload.integrationAction.arguments.charCount, statusArgs.length);
+    assert.equal(statusPayload.integrationAction.arguments.topLevelKeyCount, 4);
+    assert.equal(statusPayload.integrationAction.arguments.textReturned, false);
+    assert.equal(statusPayload.remoteControlPairing.method, "remoteControl/pairing/status");
+    assert.equal(statusPayload.remoteControlPairing.argumentCharCount, statusArgs.length);
+    assert.equal(statusPayload.remoteControlPairing.argumentTopLevelKeyCount, 4);
+    assert.equal(statusPayload.remoteControlPairing.argumentObjectAccepted, true);
+    assert.equal(statusPayload.remoteControlPairing.pairingStartRequested, false);
+    assert.equal(statusPayload.remoteControlPairing.pairingStatusRequested, true);
+    assert.equal(statusPayload.remoteControlPairing.manualCodeRequested, false);
+    assert.equal(statusPayload.remoteControlPairing.manualCodeBoolean, false);
+    assert.equal(statusPayload.remoteControlPairing.pairingCodeInputProvided, true);
+    assert.equal(
+      statusPayload.remoteControlPairing.pairingCodeCharCount,
+      "PAIR-SECRET-123456".length + "MANUAL-PAIR-654321".length,
+    );
+    assert.equal(statusPayload.remoteControlPairing.unknownParamCount, 2);
+    assert.equal(statusPayload.remoteControlPairing.stringArgumentCount, 4);
+    assert.equal(statusPayload.remoteControlPairing.pathLikeArgumentCount, 1);
+    assert.equal(statusPayload.remoteControlPairing.secretLikeArgumentCount, 1);
+    assert.equal(statusPayload.remoteControlPairing.sensitiveKeyCount, 1);
+    assert.equal(statusPayload.remoteControlPairing.paramsAcceptedFromBrowser, false);
+    assert.equal(statusPayload.remoteControlPairing.pairingStatusPolled, false);
+    assert.equal(statusPayload.remoteControlPairing.pairingCodeCreated, false);
+    assert.equal(statusPayload.remoteControlPairing.pairingCodeReturned, false);
+    assert.equal(statusPayload.remoteControlPairing.claimStateReturned, false);
+    assert.equal(statusPayload.remoteControlPairing.controllerInfoReturned, false);
+    assert.equal(statusPayload.remoteControlPairing.appServerTraffic, false);
+    assert.equal(statusPayload.remoteControlPairing.statusValueReturned, false);
+    assert.equal(statusPayload.remoteControlPairing.environmentIdReturned, false);
+    assert.equal(statusPayload.remoteControlPairing.installationIdReturned, false);
+    assert.equal(statusPayload.remoteControlPairing.serverNameReturned, false);
+    assert.equal(statusPayload.remoteControlPairing.pathsReturned, false);
+    assert.equal(statusPayload.remoteControlPairing.urlsReturned, false);
+    assert.equal(statusPayload.remoteControlPairing.secretsReturned, false);
+    assert.equal(statusPayload.remoteControlPairing.rawPayloadReturned, false);
+    assert.equal(statusPayload.policy.appServerTraffic, false);
+    assert.equal(statusPayload.policy.remoteControlPairing, false);
+    assert.equal(statusPayload.policy.remoteControlPairingPreflightEnabled, true);
+    assert.equal(statusPayload.policy.remoteControlPairingEnabled, false);
+    assert.equal(statusPayload.policy.remoteControlPairingStartEnabled, false);
+    assert.equal(statusPayload.policy.remoteControlPairingStatusEnabled, false);
+    assert.equal(statusPayload.policy.executionRouteImplemented, false);
+    assert.equal(statusPayload.policy.dedicatedExecutionRouteImplemented, false);
+    assert.equal(statusPayload.policy.executionGateEnabled, false);
+    assert.equal(statusPayload.policy.paramsAcceptedFromBrowser, false);
+    assert.equal(statusPayload.policy.identityReturned, false);
+    assert.equal(statusPayload.policy.pairingCodesReturned, false);
+    assert.equal(statusPayload.policy.claimStateReturned, false);
+    assert.equal(statusPayload.policy.controllerInfoReturned, false);
+    assert.equal(statusPayload.policy.rawPayloadsReturned, false);
+    assert.equal(probeCalled, false);
+    for (const marker of [
+      "https://pairing.example.invalid/callback",
+      "PAIR-SECRET-123456",
+      "MANUAL-PAIR-654321",
+      "/tmp/private-pairing",
+      "sk-proj-pairing-start-secret",
+      "sk-proj-pairing-status-secret",
+      "/tmp/second-workspace",
+      "codexHome",
+      "userAgent",
+    ]) {
+      assert.equal(startSerialized.includes(marker), false, `pairing start leaked ${marker}`);
+      assert.equal(statusSerialized.includes(marker), false, `pairing status leaked ${marker}`);
+    }
+
+    const confirm = await fetch(`${url}/api/action-preflight-confirm`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        actionType: "remote-control-pairing-preflight",
+        preflightToken: statusPayload.preflight.token,
+        method: "remoteControl/pairing/status",
+        arguments: statusArgs,
+      }),
+    });
+    assert.equal(confirm.status, 200);
+    const confirmPayload = await confirm.json();
+    assertActionPreflightConfirmation(
+      confirmPayload,
+      "remote-control-pairing-preflight",
+      "workspace-2",
+    );
+    assert.equal(confirmPayload.action.method, "remoteControl/pairing/status");
+    assert.equal(confirmPayload.action.mutationExecuted, false);
+    assert.equal(JSON.stringify(confirmPayload).includes(statusPayload.preflight.token), false);
+    assert.equal(JSON.stringify(confirmPayload).includes("PAIR-SECRET-123456"), false);
+
+    const historyResponse = await fetch(`${url}/api/settings-integrations?workspace=workspace-2`, {
+      headers: apiHeaders(server),
+    });
+    assert.equal(historyResponse.status, 200);
+    const historyPayload = await historyResponse.json();
+    assert.equal(historyPayload.integrationScope.remoteControlPairingPreflightEnabled, true);
+    assert.equal(historyPayload.integrationScope.remoteControlPairingEnabled, false);
+    assert.equal(historyPayload.integrationScope.remoteControlPairingStartEnabled, false);
+    assert.equal(historyPayload.integrationScope.remoteControlPairingStatusEnabled, false);
+    assert.equal(
+      historyPayload.integrationScope.enabledLocalGates.includes("remote-control-pairing-preflight"),
+      true,
+    );
+    assert.equal(historyPayload.preflightHistory.count, 2);
+    assert.equal(historyPayload.preflightConfirmationHistory.count, 1);
+    const historySerialized = JSON.stringify(historyPayload.preflightHistory);
+    const confirmationSerialized = JSON.stringify(historyPayload.preflightConfirmationHistory);
+    for (const marker of [
+      startPayload.preflight.token,
+      statusPayload.preflight.token,
+      "https://pairing.example.invalid/callback",
+      "PAIR-SECRET-123456",
+      "MANUAL-PAIR-654321",
+      "/tmp/private-pairing",
+      "sk-proj-pairing-start-secret",
+      "sk-proj-pairing-status-secret",
     ]) {
       assert.equal(historySerialized.includes(marker), false, `history leaked ${marker}`);
       assert.equal(confirmationSerialized.includes(marker), false, `confirmation leaked ${marker}`);

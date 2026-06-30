@@ -578,6 +578,15 @@ remote-control params, calls app-server only with `null` params, and returns
 status/count/shape metadata only. Raw remote-control status payloads, server names,
 installation ids, environment ids, notifications, tokens, and raw payloads
 remain omitted from responses and action audit records.
+`remoteControl/pairing/start` and `remoteControl/pairing/status` remain blocked
+as generic browser mutations and are exposed only through
+`/api/remote-control-pairing-preflight` for local validation. The route accepts
+draft params only for count-only `manualCode`, pairing-code input,
+unknown-param, URL/path, and secret-like metadata, but has no pairing execution
+route, creates no pairing code, polls no claim state, performs no app-server
+traffic, and returns no pairing codes, claim state, controller info,
+environment ids, server names, paths, URLs, secrets, argument text, or raw
+payloads.
 `remoteControl/client/list` and `remoteControl/client/revoke` are exposed only
 through the dedicated remote-client routes. Listing is disabled unless
 `CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_CLIENT_LIST=1` is set, resolves

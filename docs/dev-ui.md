@@ -158,6 +158,12 @@ The server binds to `127.0.0.1` by default and serves:
   optional `ephemeral`, but has no execution route, no app-server traffic, no
   relay enrollment, no pairing code creation, and no identity/status/argument
   echo
+- `/api/remote-control-pairing-preflight`: local-only
+  `remoteControl/pairing/start` and `remoteControl/pairing/status` validation;
+  it accepts draft JSON params for count-only analysis, including `manualCode`,
+  `pairingCode`, and `manualPairingCode` presence, but has no execution route,
+  no app-server traffic, no pairing-code creation, no pairing-status polling,
+  and no code, claim-state, controller, identity, status, or argument echo
 - `/api/remote-control-clients`,
   `/api/remote-control-client-revoke-preflight`, and
   `/api/remote-control-client-revoke`: opt-in remote connection inventory and
@@ -979,6 +985,16 @@ remote-control enable execution route. It does not touch app-server, enable
 remote control, enroll relay state, create pairing codes, or return
 remote-control status, server names, installation ids, environment ids,
 argument text, paths, URLs, secrets, or raw payloads.
+
+The remote-control-pairing-preflight endpoint accepts draft
+`remoteControl/pairing/start` and `remoteControl/pairing/status` params only for
+local validation. It counts argument length, top-level keys, `manualCode`
+presence, pairing-code input presence/length, unknown params, and
+URL/path/secret-like values, then issues a short-lived local token for
+confirmation/history. There is no remote-control pairing execution route. It
+does not touch app-server, create pairing codes, poll claim state, or return
+pairing codes, manual pairing codes, claim state, controller info, environment
+ids, server names, argument text, paths, URLs, secrets, or raw payloads.
 
 The remote-control client list endpoint is fail-closed unless
 `CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_CLIENT_LIST=1` is enabled before launch.
@@ -1953,6 +1969,10 @@ remote-control identities, tokens, notifications, or raw payloads, that
 `/api/remote-control-enable-preflight` blocks remote-control enablement without
 relay enrollment, pairing codes, app-server traffic, identity/status output,
 argument echo, paths, URLs, secrets, or raw payloads, that
+`/api/remote-control-pairing-preflight` blocks pairing start/status without
+pairing-code creation, claim polling, app-server traffic, pairing-code output,
+controller info, identity/status output, argument echo, paths, URLs, secrets,
+or raw payloads, that
 `/api/remote-control-clients` can execute only as opt-in remote-control client
 inventory with server-side environment resolution, opaque refs, and
 count/presence metadata, and that `/api/remote-control-client-revoke` can

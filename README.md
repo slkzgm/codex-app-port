@@ -379,9 +379,9 @@ with active read methods, local preflight/login/login-cancel/logout gates, and
 blocked mutation method names/counts, including MCP reload, config-value,
 config-batch, plugin-install-preflight, marketplace-action-preflight,
 plugin-share-action-preflight, external-config-import-preflight,
-review-feedback-preflight, remote-control-enable-preflight, plugin-uninstall,
-skills-config, remote environment add, and experimental-feature gates when
-enabled; it never returns secrets, auth tokens,
+review-feedback-preflight, remote-control-enable-preflight,
+remote-control-pairing-preflight, plugin-uninstall, skills-config, remote
+environment add, and experimental-feature gates when enabled; it never returns secrets, auth tokens,
 names unless the name gate is enabled, paths, URLs, hook commands, rate-limit
 details, or raw payloads.
 Its lifecycle response also includes sanitized integration management and
@@ -611,6 +611,13 @@ never calls app-server, enables remote control, creates pairing codes, or
 returns remote-control status, server names, installation ids, environment ids,
 arguments, paths, URLs, secrets, or raw payloads. There is no remote-control
 enable execution route.
+Remote control pairing is also kept local-only. `/api/remote-control-pairing-preflight`
+validates draft `remoteControl/pairing/start` and `remoteControl/pairing/status`
+params locally, including `manualCode`, `pairingCode`, and `manualPairingCode`
+presence as counts only, and never calls app-server, starts pairing, polls
+claim state, creates or returns pairing codes, or returns environment ids,
+server names, controller info, paths, URLs, secrets, arguments, or raw payloads.
+There is no remote-control pairing execution route.
 Remote control disable is also exposed only as a defensive opt-in action.
 `/api/remote-control-disable-preflight` accepts no remote-control parameters,
 and `/api/remote-control-disable` can call `remoteControl/disable` only when

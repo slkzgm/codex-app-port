@@ -164,6 +164,12 @@ Target parity with the Codex desktop workflow:
   sends `null`, and returns only status/count/shape metadata, not status
   payloads, server names, installation ids, environment ids, notifications,
   preflight tokens, or raw payloads.
+- `remoteControl/pairing/start` and `remoteControl/pairing/status` have a
+  separate local-only preflight path. It validates draft pairing params with
+  count-only `manualCode`, pairing-code input, unknown-param, URL/path, and
+  secret-like metadata, but never creates pairing codes, polls claim state,
+  calls app-server, or returns codes, controller info, identities, arguments,
+  paths, URLs, secrets, preflight tokens, or raw payloads.
 - `remoteControl/client/list` and `remoteControl/client/revoke` have dedicated
   disabled-by-default remote connection routes. Listing is gated by
   `CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_CLIENT_LIST=1`, resolves the environment

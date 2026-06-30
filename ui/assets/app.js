@@ -268,6 +268,19 @@ const elements = {
   remoteControlEnableIdentityText: document.querySelector(
     "#remote-control-enable-identity-text",
   ),
+  remoteControlPairingMethodSelect: document.querySelector(
+    "#remote-control-pairing-method-select",
+  ),
+  remoteControlPairingArgumentsInput: document.querySelector(
+    "#remote-control-pairing-arguments-input",
+  ),
+  remoteControlPairingPreflightButton: document.querySelector(
+    "#remote-control-pairing-preflight-button",
+  ),
+  remoteControlPairingStatus: document.querySelector("#remote-control-pairing-status"),
+  remoteControlPairingArgKeys: document.querySelector("#remote-control-pairing-arg-keys"),
+  remoteControlPairingCodeText: document.querySelector("#remote-control-pairing-code-text"),
+  remoteControlPairingClaimText: document.querySelector("#remote-control-pairing-claim-text"),
   remoteControlDisablePreflightButton: document.querySelector(
     "#remote-control-disable-preflight-button",
   ),
@@ -1486,6 +1499,22 @@ elements.remoteControlEnableArgumentsInput.addEventListener("input", () => {
   elements.remoteControlEnableIdentityText.textContent = "Hidden";
 });
 
+elements.remoteControlPairingPreflightButton.addEventListener("click", () => {
+  runRemoteControlPairingPreflight();
+});
+
+elements.remoteControlPairingMethodSelect.addEventListener("change", () => {
+  elements.remoteControlPairingStatus.textContent = "Blocked";
+  elements.remoteControlPairingCodeText.textContent = "Hidden";
+  elements.remoteControlPairingClaimText.textContent = "Hidden";
+});
+
+elements.remoteControlPairingArgumentsInput.addEventListener("input", () => {
+  elements.remoteControlPairingStatus.textContent = "Blocked";
+  elements.remoteControlPairingCodeText.textContent = "Hidden";
+  elements.remoteControlPairingClaimText.textContent = "Hidden";
+});
+
 elements.remoteControlDisablePreflightButton.addEventListener("click", () => {
   runRemoteControlDisablePreflight();
 });
@@ -1969,6 +1998,10 @@ function skillsExtraRootsClearEndpoint() {
 
 function remoteControlEnablePreflightEndpoint() {
   return "/api/remote-control-enable-preflight";
+}
+
+function remoteControlPairingPreflightEndpoint() {
+  return "/api/remote-control-pairing-preflight";
 }
 
 function remoteControlDisablePreflightEndpoint() {
@@ -3368,6 +3401,35 @@ async function runRemoteControlEnablePreflight() {
     renderError(error);
   } finally {
     setRemoteControlEnableLoading(false);
+  }
+}
+
+async function runRemoteControlPairingPreflight() {
+  setRemoteControlPairingLoading(true);
+  hideError();
+
+  try {
+    const response = await fetch(remoteControlPairingPreflightEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify({
+        workspace: selectedWorkspaceId,
+        method: elements.remoteControlPairingMethodSelect.value,
+        arguments: elements.remoteControlPairingArgumentsInput.value,
+      }),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderRemoteControlPairingPreflight(payload);
+    await refreshSettingsIntegrations().catch(() => {});
+  } catch (error) {
+    elements.remoteControlPairingStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    setRemoteControlPairingLoading(false);
   }
 }
 
@@ -10704,6 +10766,20 @@ function renderRemoteControlEnablePreflight(payload) {
       : "Hidden";
 }
 
+function renderRemoteControlPairingPreflight(payload) {
+  const result = payload.remoteControlPairing ?? {};
+  elements.remoteControlPairingStatus.textContent = payload.action?.execution ?? "blocked";
+  elements.remoteControlPairingArgKeys.textContent = String(
+    result.argumentTopLevelKeyCount ?? 0,
+  );
+  elements.remoteControlPairingCodeText.textContent = result.pairingCodeInputProvided
+    ? "Provided"
+    : "Hidden";
+  elements.remoteControlPairingClaimText.textContent = result.claimStateReturned
+    ? "Returned"
+    : "Hidden";
+}
+
 function renderRemoteControlDisable(payload) {
   const result = payload.remoteControlDisable ?? {};
   elements.remoteControlDisableStatus.textContent = payload.action?.execution ?? "completed";
@@ -12859,6 +12935,17 @@ function setRemoteControlEnableLoading(isLoading) {
     : "Remote Enable Check";
   if (isLoading) {
     elements.remoteControlEnableStatus.textContent = "Checking";
+  }
+}
+
+function setRemoteControlPairingLoading(isLoading) {
+  elements.remoteControlPairingPreflightButton.disabled = isLoading;
+  elements.remoteControlPairingMethodSelect.disabled = isLoading;
+  elements.remoteControlPairingPreflightButton.textContent = isLoading
+    ? "Checking"
+    : "Pairing Check";
+  if (isLoading) {
+    elements.remoteControlPairingStatus.textContent = "Checking";
   }
 }
 

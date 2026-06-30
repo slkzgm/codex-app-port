@@ -178,6 +178,10 @@ const PLUGIN_SHARE_ACTION_METHODS = Object.freeze([
   "plugin/share/delete",
 ]);
 const REVIEW_FEEDBACK_PREFLIGHT_METHODS = Object.freeze(["review/start", "feedback/upload"]);
+const REMOTE_CONTROL_PAIRING_PREFLIGHT_METHODS = Object.freeze([
+  "remoteControl/pairing/start",
+  "remoteControl/pairing/status",
+]);
 const STATIC_ROOT = new URL("../../ui/", import.meta.url);
 const SESSION_TOKEN_PLACEHOLDER = "__CODEX_APP_PORT_SESSION_TOKEN__";
 const TERMINAL_COMMAND_ARGV = Symbol("terminalCommandArgv");
@@ -790,6 +794,13 @@ export const ACTION_PREFLIGHT_CONFIRMATION_FIELD_CONTRACTS = Object.freeze({
     "preflightToken",
     "arguments",
   ),
+  "remote-control-pairing-preflight": bodyFields(
+    "workspace",
+    "actionType",
+    "preflightToken",
+    "method",
+    "arguments",
+  ),
   "remote-control-disable": bodyFields(
     "workspace",
     "preflightToken",
@@ -1267,6 +1278,10 @@ export const BROWSER_POST_BODY_CONTRACTS = Object.freeze({
     appServerTraffic: false,
   }),
   "/api/remote-control-enable-preflight": bodyContract(["workspace", "arguments"], {
+    kind: "preflight",
+    appServerTraffic: false,
+  }),
+  "/api/remote-control-pairing-preflight": bodyContract(["workspace", "method", "arguments"], {
     kind: "preflight",
     appServerTraffic: false,
   }),
@@ -9068,6 +9083,108 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
     ],
     "preflight.scope": ["kind", "workspaceId"],
   }),
+  "/api/remote-control-pairing-preflight": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    appServer: ["touched", "modelTraffic", "commandTraffic", "remoteControlTraffic"],
+    action: [
+      "type",
+      "method",
+      "category",
+      "execution",
+      "wouldStartPairing",
+      "wouldPollPairingStatus",
+      "wouldCreatePairingCode",
+      "appServerTouched",
+      "modelTraffic",
+      "reason",
+    ],
+    integrationAction: ["method", "category", "arguments", "methodAllowedByAudit"],
+    "integrationAction.arguments": [
+      "present",
+      "charCount",
+      "lineCount",
+      "validJsonObject",
+      "topLevelKeyCount",
+      "textReturned",
+    ],
+    remoteControlPairing: [
+      "method",
+      "argumentCharCount",
+      "argumentTopLevelKeyCount",
+      "argumentObjectAccepted",
+      "pairingStartRequested",
+      "pairingStatusRequested",
+      "manualCodeRequested",
+      "manualCodeBoolean",
+      "pairingCodeInputProvided",
+      "pairingCodeCharCount",
+      "unknownParamCount",
+      "stringArgumentCount",
+      "urlLikeArgumentCount",
+      "pathLikeArgumentCount",
+      "secretLikeArgumentCount",
+      "sensitiveKeyCount",
+      "paramsAcceptedFromBrowser",
+      "pairingStartExecutionBlocked",
+      "pairingStatusExecutionBlocked",
+      "pairingStatusPolled",
+      "pairingCodeCreated",
+      "pairingCodeReturned",
+      "claimStateReturned",
+      "controllerInfoReturned",
+      "appServerTraffic",
+      "modelTraffic",
+      "statusValueReturned",
+      "environmentIdReturned",
+      "installationIdReturned",
+      "serverNameReturned",
+      "pathsReturned",
+      "urlsReturned",
+      "secretsReturned",
+      "rawPayloadReturned",
+    ],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "modelTraffic",
+      "remoteControlPairing",
+      "remoteControlPairingPreflightEnabled",
+      "remoteControlPairingEnabled",
+      "remoteControlPairingStartEnabled",
+      "remoteControlPairingStatusEnabled",
+      "executionRouteImplemented",
+      "dedicatedExecutionRouteImplemented",
+      "executionGateEnabled",
+      "paramsAcceptedFromBrowser",
+      "statusValueReturned",
+      "identityReturned",
+      "pairingCodesReturned",
+      "claimStateReturned",
+      "controllerInfoReturned",
+      "pathsReturned",
+      "urlsReturned",
+      "secretsReturned",
+      "rawPayloadsReturned",
+      "requiresApprovalPipeline",
+      "requiresIntegrationProvenance",
+      "requiresExplicitEnablement",
+      "browserMethodCallsAccepted",
+      "implemented",
+    ],
+    preflight: [
+      "token",
+      "tokenIssued",
+      "issuedAt",
+      "expiresAt",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseRequiredForMutation",
+      "consumed",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+  }),
   "/api/remote-control-disable": responseNestedKeySchemas({
     workspace: ["id", "label", "isDefault"],
     initialize: ["platformFamily", "platformOs"],
@@ -11010,6 +11127,11 @@ const BROWSER_POST_RESPONSE_ROUTE_TOP_LEVEL_KEYS = Object.freeze({
     ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
     "integrationAction",
     "remoteControlEnable",
+  ),
+  "/api/remote-control-pairing-preflight": routeResponseTopLevelKeys(
+    ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
+    "integrationAction",
+    "remoteControlPairing",
   ),
   "/api/remote-control-disable": routeResponseTopLevelKeys(
     ...RESPONSE_APP_SERVER_MUTATION_TOP_LEVEL_KEYS,
@@ -16223,6 +16345,38 @@ export async function handleRequest(request, response, options) {
     return;
   }
 
+  if (url.pathname === "/api/remote-control-pairing-preflight") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, ["workspace", "method", "arguments"]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const payload = buildRemoteControlPairingPreflight(body, { workspace });
+      const attached = attachActionPreflight(payload, { body, workspace, options });
+      options.integrationPreflightLedger?.record(attached);
+      sendJson(response, 200, attached);
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error:
+          cleanDisplayText(error.message, 200) ??
+          "Invalid remote control pairing preflight request",
+      });
+    }
+    return;
+  }
+
   if (url.pathname === "/api/remote-control-disable") {
     if (request.method !== "POST") {
       sendJson(response, 405, { ok: false, error: "Method not allowed" });
@@ -17860,6 +18014,10 @@ async function buildConfirmableActionPreflightPayload(actionType, body, { worksp
       return buildRemoteControlEnablePreflight(body, {
         workspace,
       });
+    case "remote-control-pairing-preflight":
+      return buildRemoteControlPairingPreflight(body, {
+        workspace,
+      });
     case "remote-control-client-revoke-preflight":
       return buildRemoteControlClientRevokePreflight(body, {
         workspace,
@@ -17957,6 +18115,7 @@ function isIntegrationPreflightActionType(actionType) {
     actionType === "skills-extra-roots-clear-preflight" ||
     actionType === "remote-control-disable-preflight" ||
     actionType === "remote-control-enable-preflight" ||
+    actionType === "remote-control-pairing-preflight" ||
     actionType === "remote-control-client-revoke-preflight" ||
     actionType === "environment-add-preflight" ||
     actionType === "integration-action-preflight"
@@ -28039,6 +28198,133 @@ function summarizeRemoteControlEnableRisk(argumentObject, shape) {
   };
 }
 
+export function buildRemoteControlPairingPreflight(body, { workspace } = {}) {
+  const methodAudit = integrationMethodAudit();
+  const method = validateRemoteControlPairingPreflightMethod(body?.method, methodAudit);
+  const auditEntry = methodAudit.find((entry) => entry.method === method);
+  const args = validateMcpArguments(body?.arguments);
+  const argumentObject = parseIntegrationRiskArguments(body?.arguments);
+  const shape = summarizeIntegrationRiskArgumentShape(argumentObject);
+  const remoteControlPairing = summarizeRemoteControlPairingRisk(method, argumentObject, shape);
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: publicWorkspaces([workspace])[0],
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      remoteControlTraffic: false,
+    },
+    action: {
+      type: "remote-control-pairing-preflight",
+      method,
+      category: auditEntry?.category ?? "remote-control",
+      execution: "blocked",
+      wouldStartPairing: false,
+      wouldPollPairingStatus: false,
+      wouldCreatePairingCode: false,
+      appServerTouched: false,
+      modelTraffic: false,
+      reason: "remote-control-pairing-execution-not-implemented",
+    },
+    integrationAction: {
+      method,
+      category: auditEntry?.category ?? "remote-control",
+      arguments: args,
+      methodAllowedByAudit: auditEntry?.status === "blocked",
+    },
+    remoteControlPairing: {
+      method,
+      argumentCharCount: args.charCount,
+      argumentTopLevelKeyCount: args.topLevelKeyCount,
+      argumentObjectAccepted: Boolean(argumentObject),
+      pairingStartRequested: method === "remoteControl/pairing/start",
+      pairingStatusRequested: method === "remoteControl/pairing/status",
+      manualCodeRequested: remoteControlPairing.manualCodeRequested,
+      manualCodeBoolean: remoteControlPairing.manualCodeBoolean,
+      pairingCodeInputProvided: remoteControlPairing.pairingCodeInputProvided,
+      pairingCodeCharCount: remoteControlPairing.pairingCodeCharCount,
+      unknownParamCount: remoteControlPairing.unknownParamCount,
+      stringArgumentCount: shape.stringArgumentCount,
+      urlLikeArgumentCount: shape.urlLikeArgumentCount,
+      pathLikeArgumentCount: shape.pathLikeArgumentCount,
+      secretLikeArgumentCount: shape.secretLikeArgumentCount,
+      sensitiveKeyCount: shape.sensitiveKeyCount,
+      paramsAcceptedFromBrowser: false,
+      pairingStartExecutionBlocked: true,
+      pairingStatusExecutionBlocked: true,
+      pairingStatusPolled: false,
+      pairingCodeCreated: false,
+      pairingCodeReturned: false,
+      claimStateReturned: false,
+      controllerInfoReturned: false,
+      appServerTraffic: false,
+      modelTraffic: false,
+      statusValueReturned: false,
+      environmentIdReturned: false,
+      installationIdReturned: false,
+      serverNameReturned: false,
+      pathsReturned: false,
+      urlsReturned: false,
+      secretsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: false,
+      modelTraffic: false,
+      remoteControlPairing: false,
+      remoteControlPairingPreflightEnabled: true,
+      remoteControlPairingEnabled: false,
+      remoteControlPairingStartEnabled: false,
+      remoteControlPairingStatusEnabled: false,
+      executionRouteImplemented: false,
+      dedicatedExecutionRouteImplemented: false,
+      executionGateEnabled: false,
+      paramsAcceptedFromBrowser: false,
+      statusValueReturned: false,
+      identityReturned: false,
+      pairingCodesReturned: false,
+      claimStateReturned: false,
+      controllerInfoReturned: false,
+      pathsReturned: false,
+      urlsReturned: false,
+      secretsReturned: false,
+      rawPayloadsReturned: false,
+      requiresApprovalPipeline: true,
+      requiresIntegrationProvenance: true,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: false,
+      implemented: true,
+    },
+  };
+}
+
+function summarizeRemoteControlPairingRisk(method, argumentObject, shape) {
+  const keys = argumentObject && typeof argumentObject === "object" && !Array.isArray(argumentObject)
+    ? Object.keys(argumentObject)
+    : [];
+  const allowedKeys =
+    method === "remoteControl/pairing/start"
+      ? ["manualCode"]
+      : ["pairingCode", "manualPairingCode"];
+  const pairingCodeValues = [argumentObject?.pairingCode, argumentObject?.manualPairingCode]
+    .filter((value) => typeof value === "string");
+  return {
+    manualCodeRequested: argumentObject?.manualCode === true,
+    manualCodeBoolean: typeof argumentObject?.manualCode === "boolean",
+    pairingCodeInputProvided: pairingCodeValues.some((value) => value.trim().length > 0),
+    pairingCodeCharCount: pairingCodeValues.reduce((total, value) => total + value.length, 0),
+    unknownParamCount: keys.filter((key) => !allowedKeys.includes(key)).length,
+    stringArgumentCount: shape.stringArgumentCount,
+    urlLikeArgumentCount: shape.urlLikeArgumentCount,
+    pathLikeArgumentCount: shape.pathLikeArgumentCount,
+    secretLikeArgumentCount: shape.secretLikeArgumentCount,
+    sensitiveKeyCount: shape.sensitiveKeyCount,
+  };
+}
+
 export function buildRemoteControlDisablePreflight(
   _body,
   { workspace, remoteControlDisableEnabled = false } = {},
@@ -36906,6 +37192,7 @@ function buildIntegrationActionScope({
     "external-config-import-preflight",
     "review-feedback-preflight",
     "remote-control-enable-preflight",
+    "remote-control-pairing-preflight",
     "plugin-content-preflight",
     "config-value-preflight",
     "config-batch-preflight",
@@ -36980,7 +37267,10 @@ function buildIntegrationActionScope({
     feedbackUploadEnabled: false,
     remoteControlEnablePreflightEnabled: true,
     remoteControlEnableEnabled: false,
+    remoteControlPairingPreflightEnabled: true,
     remoteControlPairingEnabled: false,
+    remoteControlPairingStartEnabled: false,
+    remoteControlPairingStatusEnabled: false,
     skillsConfigWriteEnabled: Boolean(skillsConfigWriteEnabled),
     skillsExtraRootsClearEnabled: Boolean(skillsExtraRootsClearEnabled),
     pluginReadEnabled: Boolean(pluginReadEnabled),
@@ -42687,6 +42977,17 @@ function validateReviewFeedbackPreflightMethod(value, methodAudit = integrationM
   }
   if (!methodAudit.some((entry) => entry.method === method && entry.status === "blocked")) {
     throwRequestError("Review feedback method is not available", 400);
+  }
+  return method;
+}
+
+function validateRemoteControlPairingPreflightMethod(value, methodAudit = integrationMethodAudit()) {
+  const method = cleanDisplayText(value, 100);
+  if (!method || !REMOTE_CONTROL_PAIRING_PREFLIGHT_METHODS.includes(method)) {
+    throwRequestError("Remote control pairing method is unsupported", 400);
+  }
+  if (!methodAudit.some((entry) => entry.method === method && entry.status === "blocked")) {
+    throwRequestError("Remote control pairing method is not available", 400);
   }
   return method;
 }
