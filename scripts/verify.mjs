@@ -1155,6 +1155,10 @@ async function checkStrictBrowserPostBodies() {
         },
       ],
       ["/api/plugin-install-preflight", { target: "safe-plugin", arguments: "{}" }],
+      [
+        "/api/marketplace-action-preflight",
+        { method: "marketplace/add", target: "safe-marketplace", arguments: "{}" },
+      ],
       ["/api/plugin-uninstall-preflight", { target: "safe-plugin" }],
       [
         "/api/plugin-uninstall",
@@ -1812,6 +1816,24 @@ function assertBrowserPostBodyContracts(cases) {
     pluginInstallPreflightContract.nestedKeySchemas.policy?.includes("unexpected")
   ) {
     throw new Error("plugin-install-preflight response contract is missing nested schemas");
+  }
+  const marketplaceActionPreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/marketplace-action-preflight"];
+  if (
+    marketplaceActionPreflightContract.usesRouteSpecificNestedKeySchemas !== true ||
+    !Object.isFrozen(marketplaceActionPreflightContract.nestedKeySchemas.policy) ||
+    !marketplaceActionPreflightContract.nestedKeySchemas.marketplaceAction?.includes(
+      "mutationExecutionBlocked",
+    ) ||
+    !marketplaceActionPreflightContract.nestedKeySchemas[
+      "integrationAction.risk.marketplace"
+    ]?.includes("sparsePathCount") ||
+    !marketplaceActionPreflightContract.nestedKeySchemas.policy?.includes(
+      "marketplacePreflightEnabled",
+    ) ||
+    marketplaceActionPreflightContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("marketplace-action-preflight response contract is missing nested schemas");
   }
   const pluginUninstallPreflightContract =
     BROWSER_POST_RESPONSE_CONTRACTS["/api/plugin-uninstall-preflight"];
@@ -4198,6 +4220,115 @@ function assertBrowserPostBodyContracts(cases) {
   });
   if (allowedNestedPluginInstallPreflightShape.statusCode !== 200) {
     throw new Error("browser POST response contract rejected an allowed nested plugin-install preflight shape");
+  }
+  const allowedNestedMarketplaceActionPreflightShape = applyBrowserPostResponseContract({
+    method: "POST",
+    pathname: "/api/marketplace-action-preflight",
+    statusCode: 200,
+    payload: {
+      ok: true,
+      appServer: {
+        touched: false,
+        modelTraffic: false,
+        commandTraffic: false,
+        marketplaceTraffic: false,
+      },
+      action: {
+        type: "marketplace-action-preflight",
+        method: "marketplace/add",
+        category: "plugins-marketplace",
+        execution: "blocked",
+        wouldMutateMarketplace: false,
+        wouldDownloadExternalCode: false,
+        wouldMaterializeExternalCode: false,
+        appServerTouched: false,
+        modelTraffic: false,
+      },
+      integrationAction: {
+        method: "marketplace/add",
+        category: "plugins-marketplace",
+        target: {
+          present: true,
+          charCount: 11,
+          lineCount: 1,
+          textReturned: false,
+        },
+        arguments: {
+          present: true,
+          charCount: 29,
+          lineCount: 1,
+          validJsonObject: true,
+          topLevelKeyCount: 1,
+          textReturned: false,
+        },
+        methodAllowedByAudit: true,
+      },
+      marketplaceAction: {
+        method: "marketplace/add",
+        targetPresent: true,
+        targetCharCount: 11,
+        targetUrlLike: false,
+        targetPathLike: false,
+        argumentCharCount: 29,
+        argumentTopLevelKeyCount: 1,
+        argumentObjectAccepted: true,
+        stringArgumentCount: 1,
+        urlLikeArgumentCount: 1,
+        pathLikeArgumentCount: 0,
+        secretLikeArgumentCount: 0,
+        sensitiveKeyCount: 0,
+        addRequested: true,
+        removeRequested: false,
+        upgradeRequested: false,
+        sourcePresent: true,
+        refNamePresent: false,
+        sparsePathCount: 0,
+        marketplaceNamePresent: false,
+        mutationExecutionBlocked: true,
+        externalCodeMaterialization: false,
+        downloadsExternalCode: false,
+        appServerTraffic: false,
+        marketplaceNamesReturned: false,
+        pathsReturned: false,
+        urlsReturned: false,
+        secretsReturned: false,
+        rawPayloadReturned: false,
+      },
+      preflight: {
+        token: "preflight-1234567890abcdef",
+        tokenIssued: true,
+        scope: {
+          kind: "marketplace-action-preflight",
+          workspaceId: "default",
+        },
+      },
+      policy: {
+        readOnly: true,
+        appServerTraffic: false,
+        marketplaceMutation: false,
+        marketplacePreflightEnabled: true,
+        marketplaceMutationEnabled: false,
+        mutationExecutionBlocked: true,
+        externalCodeMaterialization: false,
+        downloadsExternalCode: false,
+        executionRouteImplemented: false,
+        dedicatedExecutionRouteImplemented: false,
+        executionGateEnabled: false,
+        requiresApprovalPipeline: true,
+        requiresIntegrationProvenance: true,
+        requiresExternalCodeAudit: true,
+        browserMethodCallsAccepted: false,
+        sourceReturned: false,
+        marketplaceNamesReturned: false,
+        pathsReturned: false,
+        urlsReturned: false,
+        rawPayloadsReturned: false,
+        implemented: true,
+      },
+    },
+  });
+  if (allowedNestedMarketplaceActionPreflightShape.statusCode !== 200) {
+    throw new Error("browser POST response contract rejected an allowed marketplace preflight shape");
   }
   const allowedNestedPluginUninstallPreflightShape = applyBrowserPostResponseContract({
     method: "POST",
@@ -8175,6 +8306,56 @@ function assertBrowserPostBodyContracts(cases) {
     ) {
       throw new Error(
         "browser POST response contract did not block an unexpected skills-config preflight nested key",
+      );
+    }
+  }
+  for (const [payload, marker] of [
+    [
+      {
+        ok: true,
+        integrationAction: {
+          target: {
+            charCount: 11,
+            leakedSource: "private source",
+          },
+        },
+      },
+      "private",
+    ],
+    [
+      {
+        ok: true,
+        marketplaceAction: {
+          sourcePresent: true,
+          leakedPath: "private path",
+        },
+      },
+      "private",
+    ],
+    [
+      {
+        ok: true,
+        policy: {
+          marketplaceMutation: false,
+          leakedMarketplacePolicy: "private policy",
+        },
+      },
+      "private",
+    ],
+  ]) {
+    const unexpectedMarketplaceActionPreflightNestedKeyResponse =
+      applyBrowserPostResponseContract({
+        method: "POST",
+        pathname: "/api/marketplace-action-preflight",
+        statusCode: 200,
+        payload,
+      });
+    if (
+      unexpectedMarketplaceActionPreflightNestedKeyResponse.statusCode !== 500 ||
+      JSON.stringify(unexpectedMarketplaceActionPreflightNestedKeyResponse.payload).includes(marker)
+    ) {
+      throw new Error(
+        "browser POST response contract did not block an unexpected marketplace preflight nested key",
       );
     }
   }
@@ -24628,7 +24809,7 @@ function assertSanitizedAccountLoginHistory(payload, { token, workspaceId = "def
     partialSurfaceCount: 3,
     blockedSurfaceCount: 4,
     readMethodCount: 1,
-    localGateCount: 14,
+    localGateCount: 15,
     enabledMutationGateCount: 1,
     historyCount: 1,
     appServerTouched: false,
@@ -25119,7 +25300,7 @@ function assertSanitizedAccountLogoutHistory(payload, { token, workspaceId = "de
     partialSurfaceCount: 3,
     blockedSurfaceCount: 4,
     readMethodCount: 1,
-    localGateCount: 14,
+    localGateCount: 15,
     enabledMutationGateCount: 1,
     historyCount: 1,
     appServerTouched: false,
@@ -29526,12 +29707,13 @@ function assertSanitizedSettingsIntegrations(payload) {
     payload.integrationScope?.enabledReadMethodCount !== 1 ||
     JSON.stringify(payload.integrationScope?.enabledReadMethods ?? []) !==
       JSON.stringify(["config/read"]) ||
-    payload.integrationScope?.enabledLocalGateCount !== 13 ||
+    payload.integrationScope?.enabledLocalGateCount !== 14 ||
     !payload.integrationScope?.enabledLocalGates?.includes("mcp-tool-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("mcp-oauth-login-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("mcp-resource-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("plugin-read-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("plugin-install-preflight") ||
+    !payload.integrationScope?.enabledLocalGates?.includes("marketplace-action-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("plugin-uninstall-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("plugin-share-checkout-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("plugin-content-preflight") ||
@@ -29586,7 +29768,7 @@ function assertSanitizedSettingsIntegrations(payload) {
     partialSurfaceCount: 2,
     blockedSurfaceCount: 5,
     readMethodCount: 1,
-    localGateCount: 13,
+    localGateCount: 14,
     enabledMutationGateCount: 0,
     historyCount: 0,
     appServerTouched: false,
@@ -31113,8 +31295,9 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
       ["config/read", ...optInIntegrationReadMethods()].length ||
     JSON.stringify(payload.integrationScope?.enabledReadMethods ?? []) !==
       JSON.stringify(["config/read", ...optInIntegrationReadMethods()]) ||
-    payload.integrationScope?.enabledLocalGateCount !== 13 ||
+    payload.integrationScope?.enabledLocalGateCount !== 14 ||
     !payload.integrationScope?.enabledLocalGates?.includes("plugin-install-preflight") ||
+    !payload.integrationScope?.enabledLocalGates?.includes("marketplace-action-preflight") ||
     payload.integrationScope?.blockedMutationMethodCount !==
       blockedIntegrationMutationMethods().length ||
     payload.integrationScope?.accountLoginEnabled !== false ||
@@ -31145,7 +31328,7 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
     partialSurfaceCount: 7,
     blockedSurfaceCount: 0,
     readMethodCount: ["config/read", ...optInIntegrationReadMethods()].length,
-    localGateCount: 13,
+    localGateCount: 14,
     enabledMutationGateCount: 0,
     historyCount: 0,
     appServerTouched: true,

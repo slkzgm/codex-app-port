@@ -171,6 +171,9 @@ The server binds to `127.0.0.1` by default and serves:
   one-time preflight token; responses and audit records return only
   updated/enabled/disabled counts and omit feature names, enablement values,
   paths, tokens, and raw payloads
+- `/api/marketplace-action-preflight`: local-only `marketplace/add`,
+  `marketplace/remove`, and `marketplace/upgrade` validation with
+  target/argument/source/ref/path text omitted and execution/download blocked
 - `/api/integration-action-preflight`: local settings/auth/MCP/skills/plugins
   mutation validation with target/argument text omitted and mutation blocked
 - `/api/terminal-actions`: read-only Terminal/Actions boundary with terminal
@@ -822,6 +825,17 @@ preflight token for confirmation and history, but there is no
 `/api/plugin-install` execution route. It does not download, install, check out,
 materialize external code, touch app-server, or return plugin names,
 marketplace names, paths, URLs, secrets, target text, argument text, or raw
+payloads.
+
+The marketplace-action-preflight endpoint accepts draft `marketplace/add`,
+`marketplace/remove`, and `marketplace/upgrade` intent for local validation
+behind a route-specific nested response schema. It returns only target length,
+argument length/key counts, URL/path/secret-like counters, and
+source/ref/sparse-path/marketplace-name presence booleans. It issues a
+short-lived local preflight token for confirmation and history, but there is no
+marketplace execution route. It does not add, remove, upgrade, download, check
+out, materialize external code, touch app-server, or return marketplace names,
+sources, refs, paths, URLs, secrets, target text, argument text, or raw
 payloads.
 
 The plugin-uninstall-preflight endpoint accepts draft `plugin/uninstall` intent
@@ -1878,6 +1892,10 @@ or raw payloads, that
 `experimentalFeature/enablement/set` traffic with one-time tokens, returning
 only updated/enabled/disabled and response-shape counts without feature names,
 enablement values, paths, tokens, or raw payloads, that
+`/api/marketplace-action-preflight`
+validates marketplace mutation shape without source/ref/path/target/argument
+echo, downloads, checkout, materialization, marketplace mutation, or app-server
+traffic, that
 `/api/integration-action-preflight`
 validates audited integration mutation shape without target/argument echo,
 tool invocation, installs, auth callbacks, settings writes, sharing, or

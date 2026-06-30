@@ -634,6 +634,13 @@ Current M1 status:
   preflight confirmation/history, and no install/download/materialization
   route, app-server traffic, target/argument echo, plugin names, marketplace
   names, paths, URLs, secrets, or raw payloads
+- done: local-only `/api/marketplace-action-preflight` for audited
+  `marketplace/add`, `marketplace/remove`, and `marketplace/upgrade` intent,
+  with route-specific nested response schemas, target/argument counts,
+  URL/path/secret-like counters, source/ref/sparse-path/name presence booleans,
+  short-lived preflight confirmation/history, and no marketplace mutation,
+  download, checkout, materialization route, app-server traffic, target/argument
+  echo, marketplace names, sources, refs, paths, URLs, secrets, or raw payloads
 - done: opt-in `/api/plugin-uninstall` behind
   `CODEX_APP_PORT_ALLOW_PLUGIN_UNINSTALL=1`, exact
   `CODEX_APP_PORT_PLUGIN_UNINSTALL_ALLOWLIST` plugin-id match, safe plugin-id
@@ -855,6 +862,7 @@ Current M1 status:
   approval-decision, MCP tool-call preflight/execution, MCP resource-read
   execution, MCP OAuth-login preflight/execution, MCP server-reload
   preflight/execution, plugin-install preflight, plugin-share-checkout
+  preflight, marketplace-action preflight, plugin-uninstall
   preflight/execution, skills-config preflight/execution, config-value preflight/execution, config-batch
   preflight/execution, experimental-feature preflight/execution, and generic
   integration mutation preflight routes,

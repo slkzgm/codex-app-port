@@ -831,6 +831,52 @@
               <dd id="plugin-install-provenance-text">Required</dd>
             </div>
           </dl>
+          <form id="marketplace-action-form" class="turn-form">
+            <div class="thread-tools">
+              <label class="workspace-control" for="marketplace-method-select">
+                <span>Marketplace</span>
+                <select id="marketplace-method-select">
+                  <option value="marketplace/add">marketplace/add</option>
+                  <option value="marketplace/remove">marketplace/remove</option>
+                  <option value="marketplace/upgrade">marketplace/upgrade</option>
+                </select>
+              </label>
+              <label class="search-control" for="marketplace-target-input">
+                <span>Target</span>
+                <input id="marketplace-target-input" type="text" autocomplete="off" maxlength="500" />
+              </label>
+            </div>
+            <textarea
+              id="marketplace-arguments-input"
+              maxlength="8000"
+              rows="3"
+              placeholder='{"source":null,"marketplaceName":null}'
+            ></textarea>
+            <div class="turn-actions">
+              <button id="marketplace-action-button" class="secondary-button" type="submit">
+                Marketplace Check
+              </button>
+              <span id="marketplace-action-status" class="empty-state">Blocked</span>
+            </div>
+          </form>
+          <dl class="agent-grid">
+            <div>
+              <dt>Target chars</dt>
+              <dd id="marketplace-target-chars">0</dd>
+            </div>
+            <div>
+              <dt>Arg keys</dt>
+              <dd id="marketplace-arg-keys">0</dd>
+            </div>
+            <div>
+              <dt>Mutation</dt>
+              <dd id="marketplace-mutation-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Source</dt>
+              <dd id="marketplace-source-text">Hidden</dd>
+            </div>
+          </dl>
           <form id="plugin-uninstall-form" class="turn-form">
             <div class="thread-tools">
               <label class="search-control" for="plugin-uninstall-target-input">

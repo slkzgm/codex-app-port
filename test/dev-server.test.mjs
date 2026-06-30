@@ -250,6 +250,9 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /plugin-install-form/);
     assert.match(html, /plugin-install-status/);
     assert.match(html, /plugin-install-button/);
+    assert.match(html, /marketplace-action-form/);
+    assert.match(html, /marketplace-action-status/);
+    assert.match(html, /marketplace-action-button/);
     assert.match(html, /plugin-uninstall-form/);
     assert.match(html, /plugin-uninstall-status/);
     assert.match(html, /plugin-uninstall-run-button/);
@@ -352,7 +355,11 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(appScript, /integrationAuditContractText/);
     assert.match(appScript, /integrationProvenanceContractText/);
     assert.match(appScript, /integrationExternalCodeContractText/);
-    const integrationOptions = [...html.matchAll(/<option value="([^"]+)">([^<]+)<\/option>/g)]
+    const integrationSelectHtml =
+      html.match(/<select id="integration-method-select">([\s\S]*?)<\/select>/)?.[1] ?? "";
+    const integrationOptions = [
+      ...integrationSelectHtml.matchAll(/<option value="([^"]+)">([^<]+)<\/option>/g),
+    ]
       .map((match) => match[1])
       .filter((value) => blockedIntegrationMutationMethods().includes(value));
     assert.deepEqual(integrationOptions, blockedIntegrationMutationMethods());
@@ -441,6 +448,7 @@ test("browser POST body contracts are centralized and immutable", () => {
     "/api/plugin-read-preflight",
     "/api/plugin-read",
     "/api/plugin-install-preflight",
+    "/api/marketplace-action-preflight",
     "/api/plugin-uninstall-preflight",
     "/api/plugin-uninstall",
     "/api/plugin-share-checkout-preflight",
@@ -720,6 +728,10 @@ test("browser POST body contracts are centralized and immutable", () => {
   assert.deepEqual(
     [...BROWSER_POST_BODY_CONTRACTS["/api/plugin-install-preflight"].allowedFields],
     ["workspace", "target", "arguments"],
+  );
+  assert.deepEqual(
+    [...BROWSER_POST_BODY_CONTRACTS["/api/marketplace-action-preflight"].allowedFields],
+    ["workspace", "method", "target", "arguments"],
   );
   assert.deepEqual(
     [...BROWSER_POST_BODY_CONTRACTS["/api/plugin-uninstall-preflight"].allowedFields],
@@ -1223,6 +1235,31 @@ test("browser POST response contracts block unsafe response values", () => {
     true,
   );
   assert.equal(pluginInstallPreflightContract.nestedKeySchemas.policy.includes("unexpected"), false);
+  const marketplaceActionPreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/marketplace-action-preflight"];
+  assert.equal(marketplaceActionPreflightContract.usesRouteSpecificNestedKeySchemas, true);
+  assert.equal(
+    marketplaceActionPreflightContract.nestedKeySchemas.marketplaceAction.includes(
+      "mutationExecutionBlocked",
+    ),
+    true,
+  );
+  assert.equal(
+    marketplaceActionPreflightContract.nestedKeySchemas["integrationAction.risk.marketplace"].includes(
+      "sparsePathCount",
+    ),
+    true,
+  );
+  assert.equal(
+    marketplaceActionPreflightContract.nestedKeySchemas.policy.includes(
+      "marketplacePreflightEnabled",
+    ),
+    true,
+  );
+  assert.equal(
+    marketplaceActionPreflightContract.nestedKeySchemas.policy.includes("unexpected"),
+    false,
+  );
   const pluginUninstallPreflightContract =
     BROWSER_POST_RESPONSE_CONTRACTS["/api/plugin-uninstall-preflight"];
   assert.equal(pluginUninstallPreflightContract.usesRouteSpecificNestedKeySchemas, true);
@@ -6112,6 +6149,24 @@ test("browser POST response contracts block unsafe response values", () => {
   }
 
   for (const payload of [
+    { ok: true, integrationAction: { target: { charCount: 11, leakedSource: "private source" } } },
+    { ok: true, marketplaceAction: { sourcePresent: true, leakedPath: "private path" } },
+    { ok: true, policy: { marketplaceMutation: false, leakedMarketplacePolicy: "private policy" } },
+  ]) {
+    const unexpectedMarketplaceActionPreflightNestedKey = applyBrowserPostResponseContract({
+      method: "POST",
+      pathname: "/api/marketplace-action-preflight",
+      statusCode: 200,
+      payload,
+    });
+    assert.equal(unexpectedMarketplaceActionPreflightNestedKey.statusCode, 500);
+    assert.equal(
+      JSON.stringify(unexpectedMarketplaceActionPreflightNestedKey.payload).includes("private"),
+      false,
+    );
+  }
+
+  for (const payload of [
     { ok: true, integrationAction: { target: { charCount: 11, leakedPluginId: "private plugin" } } },
     { ok: true, pluginUninstall: { allowlistMatched: true, leakedPluginId: "private plugin" } },
     { ok: true, policy: { pluginUninstall: false, leakedPluginPolicy: "private policy" } },
@@ -7409,6 +7464,14 @@ test("dev server rejects unsupported browser POST fields without echoing values"
       path: "/api/plugin-install-preflight",
       body: {
         target: "safe-plugin",
+        arguments: "{}",
+      },
+    },
+    {
+      path: "/api/marketplace-action-preflight",
+      body: {
+        method: "marketplace/add",
+        target: "safe-marketplace",
         arguments: "{}",
       },
     },
@@ -18457,13 +18520,14 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.integrationScope.state, "partial");
     assert.equal(payload.integrationScope.enabledReadMethodCount, 1);
     assert.deepEqual(payload.integrationScope.enabledReadMethods, ["config/read"]);
-    assert.equal(payload.integrationScope.enabledLocalGateCount, 13);
+    assert.equal(payload.integrationScope.enabledLocalGateCount, 14);
     assert.deepEqual(payload.integrationScope.enabledLocalGates, [
       "mcp-tool-preflight",
       "mcp-oauth-login-preflight",
       "mcp-resource-preflight",
       "plugin-read-preflight",
       "plugin-install-preflight",
+      "marketplace-action-preflight",
       "plugin-uninstall-preflight",
       "plugin-share-checkout-preflight",
       "plugin-content-preflight",
@@ -18521,7 +18585,7 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.integrationLifecycle.partialSurfaceCount, 2);
     assert.equal(payload.integrationLifecycle.blockedSurfaceCount, 5);
     assert.equal(payload.integrationLifecycle.readMethodCount, 1);
-    assert.equal(payload.integrationLifecycle.localGateCount, 13);
+    assert.equal(payload.integrationLifecycle.localGateCount, 14);
     assert.equal(payload.integrationLifecycle.enabledMutationGateCount, 0);
     assert.equal(
       payload.integrationLifecycle.blockedMutationMethodCount,
@@ -18533,8 +18597,8 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.integrationLifecycle.integrationActions.returned, true);
     assert.equal(payload.integrationLifecycle.integrationActions.state, "preflight-only");
     assert.equal(payload.integrationLifecycle.integrationActions.readMethodCount, 1);
-    assert.equal(payload.integrationLifecycle.integrationActions.localGateCount, 13);
-    assert.equal(payload.integrationLifecycle.integrationActions.preflightOnlyGateCount, 13);
+    assert.equal(payload.integrationLifecycle.integrationActions.localGateCount, 14);
+    assert.equal(payload.integrationLifecycle.integrationActions.preflightOnlyGateCount, 14);
     assert.equal(payload.integrationLifecycle.integrationActions.executableActionCount, 0);
     assert.equal(payload.integrationLifecycle.integrationActions.enabledMutationGateCount, 0);
     assert.equal(
@@ -18558,8 +18622,8 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.integrationLifecycle.integrationManagement.partialSurfaceCount, 2);
     assert.equal(payload.integrationLifecycle.integrationManagement.blockedSurfaceCount, 5);
     assert.equal(payload.integrationLifecycle.integrationManagement.readMethodCount, 1);
-    assert.equal(payload.integrationLifecycle.integrationManagement.localGateCount, 13);
-    assert.equal(payload.integrationLifecycle.integrationManagement.preflightOnlyGateCount, 13);
+    assert.equal(payload.integrationLifecycle.integrationManagement.localGateCount, 14);
+    assert.equal(payload.integrationLifecycle.integrationManagement.preflightOnlyGateCount, 14);
     assert.equal(payload.integrationLifecycle.integrationManagement.executableActionCount, 0);
     assert.equal(payload.integrationLifecycle.integrationManagement.enabledMutationGateCount, 0);
     assert.equal(
@@ -18590,8 +18654,8 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.returned, true);
     assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.state, "preflight-only");
     assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.readMethodCount, 1);
-    assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.localGateCount, 13);
-    assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.preflightOnlyGateCount, 13);
+    assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.localGateCount, 14);
+    assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.preflightOnlyGateCount, 14);
     assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.executableActionCount, 0);
     assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.enabledActionFamilyCount, 0);
     assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.enabledMutationGateCount, 0);
@@ -18652,8 +18716,8 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.integrationLifecycle.integrationSafetyContract.returned, true);
     assert.equal(payload.integrationLifecycle.integrationSafetyContract.state, "preflight-only");
     assert.equal(payload.integrationLifecycle.integrationSafetyContract.readMethodCount, 1);
-    assert.equal(payload.integrationLifecycle.integrationSafetyContract.localGateCount, 13);
-    assert.equal(payload.integrationLifecycle.integrationSafetyContract.preflightOnlyGateCount, 13);
+    assert.equal(payload.integrationLifecycle.integrationSafetyContract.localGateCount, 14);
+    assert.equal(payload.integrationLifecycle.integrationSafetyContract.preflightOnlyGateCount, 14);
     assert.equal(payload.integrationLifecycle.integrationSafetyContract.executableActionCount, 0);
     assert.equal(payload.integrationLifecycle.integrationSafetyContract.enabledActionFamilyCount, 0);
     assert.equal(payload.integrationLifecycle.integrationSafetyContract.enabledMutationGateCount, 0);
@@ -18697,8 +18761,8 @@ test("dev server exposes settings and integration boundary without app-server tr
       state: "preflight-only",
       routingMode: "local-preflight-only",
       readMethodCount: 1,
-      localGateCount: 13,
-      preflightOnlyGateCount: 13,
+      localGateCount: 14,
+      preflightOnlyGateCount: 14,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -18727,8 +18791,8 @@ test("dev server exposes settings and integration boundary without app-server tr
       partialSurfaceCount: 2,
       blockedSurfaceCount: 5,
       readMethodCount: 1,
-      localGateCount: 13,
-      preflightOnlyGateCount: 13,
+      localGateCount: 14,
+      preflightOnlyGateCount: 14,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -18762,8 +18826,8 @@ test("dev server exposes settings and integration boundary without app-server tr
       workflowMode: "preflight-review",
       routingMode: "local-preflight-only",
       readMethodCount: 1,
-      localGateCount: 13,
-      preflightOnlyGateCount: 13,
+      localGateCount: 14,
+      preflightOnlyGateCount: 14,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -18795,8 +18859,8 @@ test("dev server exposes settings and integration boundary without app-server tr
       workflowMode: "preflight-review",
       routingMode: "local-preflight-only",
       readMethodCount: 1,
-      localGateCount: 13,
-      preflightOnlyGateCount: 13,
+      localGateCount: 14,
+      preflightOnlyGateCount: 14,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -18824,8 +18888,8 @@ test("dev server exposes settings and integration boundary without app-server tr
       workflowMode: "preflight-review",
       routingMode: "local-preflight-only",
       readMethodCount: 1,
-      localGateCount: 13,
-      preflightOnlyGateCount: 13,
+      localGateCount: 14,
+      preflightOnlyGateCount: 14,
       executableActionCount: 0,
       externalActionCount: 0,
       enabledMutationGateCount: 0,
@@ -19702,7 +19766,7 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
       "config/read",
       ...optInIntegrationReadMethods(),
     ]);
-    assert.equal(payload.integrationScope.enabledLocalGateCount, 13);
+    assert.equal(payload.integrationScope.enabledLocalGateCount, 14);
     assert.equal(
       payload.integrationScope.blockedMutationMethodCount,
       blockedIntegrationMutationMethods().length,
@@ -19725,8 +19789,8 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
       state: "preflight-only",
       routingMode: "local-preflight-only",
       readMethodCount: ["config/read", ...optInIntegrationReadMethods()].length,
-      localGateCount: 13,
-      preflightOnlyGateCount: 13,
+      localGateCount: 14,
+      preflightOnlyGateCount: 14,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -19759,8 +19823,8 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
         (surface) => surface?.state === "blocked",
       ).length,
       readMethodCount: ["config/read", ...optInIntegrationReadMethods()].length,
-      localGateCount: 13,
-      preflightOnlyGateCount: 13,
+      localGateCount: 14,
+      preflightOnlyGateCount: 14,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -19794,8 +19858,8 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
       workflowMode: "preflight-review",
       routingMode: "local-preflight-only",
       readMethodCount: ["config/read", ...optInIntegrationReadMethods()].length,
-      localGateCount: 13,
-      preflightOnlyGateCount: 13,
+      localGateCount: 14,
+      preflightOnlyGateCount: 14,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -19827,8 +19891,8 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
       workflowMode: "preflight-review",
       routingMode: "local-preflight-only",
       readMethodCount: ["config/read", ...optInIntegrationReadMethods()].length,
-      localGateCount: 13,
-      preflightOnlyGateCount: 13,
+      localGateCount: 14,
+      preflightOnlyGateCount: 14,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -19856,8 +19920,8 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
       workflowMode: "preflight-review",
       routingMode: "local-preflight-only",
       readMethodCount: ["config/read", ...optInIntegrationReadMethods()].length,
-      localGateCount: 13,
-      preflightOnlyGateCount: 13,
+      localGateCount: 14,
+      preflightOnlyGateCount: 14,
       executableActionCount: 0,
       externalActionCount: 0,
       enabledMutationGateCount: 0,
@@ -25185,6 +25249,221 @@ test("dev server preflights plugin installs without app-server traffic", async (
       "example.test",
       "sk-proj-privatevalue",
       "/tmp/private-marketplace",
+    ]) {
+      assert.equal(historySerialized.includes(marker), false, `history leaked ${marker}`);
+      assert.equal(confirmationSerialized.includes(marker), false, `confirmation leaked ${marker}`);
+    }
+  } finally {
+    await closeServer(server);
+  }
+});
+
+test("dev server preflights marketplace actions without app-server traffic", async () => {
+  let probeCalled = false;
+  const { server, url } = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    workspaceInputs: ["/tmp/second-workspace"],
+    probeFn: async () => {
+      probeCalled = true;
+      return { ok: true };
+    },
+  });
+
+  try {
+    const getResponse = await fetch(`${url}/api/marketplace-action-preflight`, {
+      headers: apiHeaders(server),
+    });
+    assert.equal(getResponse.status, 405);
+
+    const target = "private-marketplace-target";
+    const args = JSON.stringify({
+      source: "https://example.test/private-marketplace.git",
+      refName: "private-marketplace-ref",
+      sparsePaths: ["/tmp/private-marketplace"],
+      marketplaceName: "private-marketplace",
+      token: "sk-proj-privatevalue",
+    });
+    const response = await fetch(`${url}/api/marketplace-action-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        method: "marketplace/add",
+        target,
+        arguments: args,
+      }),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.deepEqual(payload.workspace, {
+      id: "workspace-2",
+      label: "second-workspace",
+      isDefault: false,
+    });
+    assert.equal(payload.appServer.touched, false);
+    assert.equal(payload.appServer.modelTraffic, false);
+    assert.equal(payload.appServer.marketplaceTraffic, false);
+    assert.equal(payload.action.type, "marketplace-action-preflight");
+    assert.equal(payload.action.method, "marketplace/add");
+    assert.equal(payload.action.category, "plugins-marketplace");
+    assert.equal(payload.action.execution, "blocked");
+    assert.equal(payload.action.wouldMutateMarketplace, false);
+    assert.equal(payload.action.wouldDownloadExternalCode, false);
+    assert.equal(payload.action.wouldMaterializeExternalCode, false);
+    assert.equal(payload.action.appServerTouched, false);
+    assertActionPreflight(payload, "marketplace-action-preflight", "workspace-2");
+    assert.equal(payload.integrationAction.method, "marketplace/add");
+    assert.equal(payload.integrationAction.category, "plugins-marketplace");
+    assert.equal(payload.integrationAction.target.charCount, target.length);
+    assert.equal(payload.integrationAction.target.textReturned, false);
+    assert.equal(payload.integrationAction.arguments.charCount, args.length);
+    assert.equal(payload.integrationAction.arguments.validJsonObject, true);
+    assert.equal(payload.integrationAction.arguments.topLevelKeyCount, 5);
+    assert.equal(payload.integrationAction.arguments.textReturned, false);
+    assert.equal(payload.integrationAction.methodAllowedByAudit, true);
+    assert.equal(payload.integrationAction.risk.methodFamily, "plugin-marketplace");
+    assert.equal(payload.integrationAction.risk.marketplaceMutationSurface, true);
+    assert.equal(payload.integrationAction.risk.urlLikeArgumentCount, 1);
+    assert.equal(payload.integrationAction.risk.pathLikeArgumentCount, 1);
+    assert.equal(payload.integrationAction.risk.secretLikeArgumentCount, 1);
+    assert.equal(payload.integrationAction.risk.sensitiveKeyCount, 1);
+    assert.equal(payload.integrationAction.risk.marketplace.addSourcePresent, true);
+    assert.equal(payload.integrationAction.risk.marketplace.refNamePresent, true);
+    assert.equal(payload.integrationAction.risk.marketplace.sparsePathCount, 1);
+    assert.equal(payload.integrationAction.risk.marketplace.marketplaceNamePresent, true);
+    assert.equal(payload.integrationAction.risk.namesReturned, false);
+    assert.equal(payload.integrationAction.risk.marketplaceNamesReturned, false);
+    assert.equal(payload.integrationAction.risk.pathsReturned, false);
+    assert.equal(payload.integrationAction.risk.urlsReturned, false);
+    assert.equal(payload.integrationAction.risk.rawPayloadReturned, false);
+    assert.equal(payload.marketplaceAction.method, "marketplace/add");
+    assert.equal(payload.marketplaceAction.targetPresent, true);
+    assert.equal(payload.marketplaceAction.targetCharCount, target.length);
+    assert.equal(payload.marketplaceAction.argumentCharCount, args.length);
+    assert.equal(payload.marketplaceAction.argumentTopLevelKeyCount, 5);
+    assert.equal(payload.marketplaceAction.argumentObjectAccepted, true);
+    assert.equal(payload.marketplaceAction.addRequested, true);
+    assert.equal(payload.marketplaceAction.removeRequested, false);
+    assert.equal(payload.marketplaceAction.upgradeRequested, false);
+    assert.equal(payload.marketplaceAction.sourcePresent, true);
+    assert.equal(payload.marketplaceAction.refNamePresent, true);
+    assert.equal(payload.marketplaceAction.sparsePathCount, 1);
+    assert.equal(payload.marketplaceAction.marketplaceNamePresent, true);
+    assert.equal(payload.marketplaceAction.mutationExecutionBlocked, true);
+    assert.equal(payload.marketplaceAction.externalCodeMaterialization, false);
+    assert.equal(payload.marketplaceAction.downloadsExternalCode, false);
+    assert.equal(payload.marketplaceAction.appServerTraffic, false);
+    assert.equal(payload.marketplaceAction.marketplaceNamesReturned, false);
+    assert.equal(payload.marketplaceAction.pathsReturned, false);
+    assert.equal(payload.marketplaceAction.urlsReturned, false);
+    assert.equal(payload.marketplaceAction.secretsReturned, false);
+    assert.equal(payload.marketplaceAction.rawPayloadReturned, false);
+    assert.equal(payload.policy.appServerTraffic, false);
+    assert.equal(payload.policy.marketplacePreflightEnabled, true);
+    assert.equal(payload.policy.marketplaceMutationEnabled, false);
+    assert.equal(payload.policy.mutationExecutionBlocked, true);
+    assert.equal(payload.policy.executionRouteImplemented, false);
+    assert.equal(payload.policy.dedicatedExecutionRouteImplemented, false);
+    assert.equal(payload.policy.executionGateEnabled, false);
+    assert.equal(payload.policy.requiresIntegrationProvenance, true);
+    assert.equal(payload.policy.requiresExternalCodeAudit, true);
+    assert.equal(payload.policy.sourceReturned, false);
+    assert.equal(payload.policy.marketplaceNamesReturned, false);
+    assert.equal(payload.policy.targetReturned, false);
+    assert.equal(payload.policy.argumentTextReturned, false);
+    assert.equal(payload.policy.pathsReturned, false);
+    assert.equal(payload.policy.urlsReturned, false);
+    assert.equal(payload.policy.secretsReturned, false);
+    assert.equal(probeCalled, false);
+    for (const marker of [
+      "private-marketplace-target",
+      "private-marketplace-ref",
+      "private-marketplace.git",
+      "/tmp/private-marketplace",
+      "sk-proj-privatevalue",
+      "/tmp/second-workspace",
+      "codexHome",
+      "userAgent",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `preflight leaked ${marker}`);
+    }
+
+    const confirm = await fetch(`${url}/api/action-preflight-confirm`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        actionType: "marketplace-action-preflight",
+        preflightToken: payload.preflight.token,
+        method: "marketplace/add",
+        target,
+        arguments: args,
+      }),
+    });
+    assert.equal(confirm.status, 200);
+    const confirmPayload = await confirm.json();
+    assertActionPreflightConfirmation(confirmPayload, "marketplace-action-preflight", "workspace-2");
+    assert.equal(confirmPayload.action.method, "marketplace/add");
+    assert.equal(confirmPayload.action.mutationExecuted, false);
+    const confirmSerialized = JSON.stringify(confirmPayload);
+    for (const marker of [
+      payload.preflight.token,
+      "private-marketplace-target",
+      "private-marketplace-ref",
+      "private-marketplace.git",
+      "/tmp/private-marketplace",
+      "sk-proj-privatevalue",
+    ]) {
+      assert.equal(confirmSerialized.includes(marker), false, `confirmation leaked ${marker}`);
+    }
+
+    const historyResponse = await fetch(`${url}/api/settings-integrations?workspace=workspace-2`, {
+      headers: apiHeaders(server),
+    });
+    assert.equal(historyResponse.status, 200);
+    const historyPayload = await historyResponse.json();
+    const historySerialized = JSON.stringify(historyPayload.preflightHistory);
+    const confirmationSerialized = JSON.stringify(historyPayload.preflightConfirmationHistory);
+    assert.equal(historyPayload.integrationScope.marketplacePreflightEnabled, true);
+    assert.equal(historyPayload.integrationScope.marketplaceMutationEnabled, false);
+    assert.equal(
+      historyPayload.integrationScope.enabledLocalGates.includes("marketplace-action-preflight"),
+      true,
+    );
+    assert.equal(historyPayload.surfaces.plugins.marketplacePreflightEnabled, true);
+    assert.equal(historyPayload.preflightHistory.count, 1);
+    assert.equal(historyPayload.preflightHistory.targetReturned, false);
+    assert.equal(historyPayload.preflightHistory.argumentTextReturned, false);
+    assert.equal(historyPayload.preflightConfirmationHistory.count, 1);
+    const historyItem = historyPayload.preflightHistory.items[0];
+    assert.equal(historyItem.action.type, "marketplace-action-preflight");
+    assert.equal(historyItem.action.method, "marketplace/add");
+    assert.equal(historyItem.action.category, "plugins-marketplace");
+    assert.equal(historyItem.integrationAction.method, "marketplace/add");
+    assert.equal(historyItem.integrationAction.category, "plugins-marketplace");
+    assert.equal(historyItem.integrationAction.targetCharCount, target.length);
+    assert.equal(historyItem.integrationAction.argumentCharCount, args.length);
+    assert.equal(historyItem.integrationAction.argumentTopLevelKeyCount, 5);
+    assert.equal(historyItem.integrationAction.targetReturned, false);
+    assert.equal(historyItem.integrationAction.argumentTextReturned, false);
+    assert.equal(historyItem.policy.marketplaceMutations, false);
+    const confirmationItem = historyPayload.preflightConfirmationHistory.items[0];
+    assert.equal(confirmationItem.action.type, "marketplace-action-preflight");
+    assert.equal(confirmationItem.action.method, "marketplace/add");
+    assert.equal(confirmationItem.action.mutationExecuted, false);
+    assert.equal(confirmationItem.preflight.tokenConsumed, true);
+    assert.equal(confirmationItem.preflight.tokenReturned, false);
+    assert.equal(confirmationItem.policy.mutationExecuted, false);
+    assert.equal(confirmationItem.policy.marketplaceMutations, false);
+    for (const marker of [
+      payload.preflight.token,
+      "private-marketplace-target",
+      "private-marketplace-ref",
+      "private-marketplace.git",
+      "/tmp/private-marketplace",
+      "sk-proj-privatevalue",
     ]) {
       assert.equal(historySerialized.includes(marker), false, `history leaked ${marker}`);
       assert.equal(confirmationSerialized.includes(marker), false, `confirmation leaked ${marker}`);

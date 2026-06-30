@@ -517,6 +517,14 @@ for confirmation/history, and never downloads, installs, materializes external
 code, calls app-server, or returns plugin names, marketplace names, paths, URLs,
 secrets, targets, arguments, or raw payloads. There is no `/api/plugin-install`
 execution route.
+Marketplace mutations have a separate local-only
+`/api/marketplace-action-preflight` route for `marketplace/add`,
+`marketplace/remove`, and `marketplace/upgrade`. It returns target and argument
+counts plus source/ref/sparse-path/name presence booleans only, records a
+short-lived preflight token for confirmation/history, and never adds, removes,
+upgrades, downloads, checks out, materializes code, calls app-server, or returns
+marketplace names, sources, refs, sparse paths, URLs, secrets, targets,
+arguments, or raw payloads. There is no marketplace execution route.
 Plugin uninstall is a separate mutation path, disabled unless
 `CODEX_APP_PORT_ALLOW_PLUGIN_UNINSTALL=1` is set and the plugin id exactly
 matches `CODEX_APP_PORT_PLUGIN_UNINSTALL_ALLOWLIST`. `/api/plugin-uninstall`
@@ -630,7 +638,7 @@ target/argument counts only, and does not echo targets, names, URLs, arguments,
 invoke tools, install or uninstall plugins, write settings, start auth callbacks, or touch
 app-server.
 `/api/settings-integrations` also includes a capped process-local history of
-successful MCP server-reload/OAuth/tool/resource, plugin-read/plugin-install/plugin-uninstall/plugin-content,
+successful MCP server-reload/OAuth/tool/resource, plugin-read/plugin-install/marketplace/plugin-uninstall/plugin-content,
 skills-config, config-value, config-batch, experimental-feature, and integration mutation preflights from this server. It shows only action type,
 audited method/category,
 target/name/resource/argument counts, and redaction flags; it does not return

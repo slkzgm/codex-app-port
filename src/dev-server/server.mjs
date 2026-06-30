@@ -167,6 +167,11 @@ export const MAX_INTEGRATION_PREFLIGHT_HISTORY_RECORDS = 20;
 export const MAX_INTEGRATION_PREFLIGHT_CONFIRMATION_HISTORY_RECORDS = 20;
 
 const PLUGIN_CONTENT_READ_METHODS = Object.freeze(["plugin/share/list", "plugin/skill/read"]);
+const MARKETPLACE_ACTION_METHODS = Object.freeze([
+  "marketplace/add",
+  "marketplace/remove",
+  "marketplace/upgrade",
+]);
 const STATIC_ROOT = new URL("../../ui/", import.meta.url);
 const SESSION_TOKEN_PLACEHOLDER = "__CODEX_APP_PORT_SESSION_TOKEN__";
 const TERMINAL_COMMAND_ARGV = Symbol("terminalCommandArgv");
@@ -678,6 +683,14 @@ export const ACTION_PREFLIGHT_CONFIRMATION_FIELD_CONTRACTS = Object.freeze({
     "target",
     "arguments",
   ),
+  "marketplace-action-preflight": bodyFields(
+    "workspace",
+    "actionType",
+    "preflightToken",
+    "method",
+    "target",
+    "arguments",
+  ),
   "plugin-uninstall-preflight": bodyFields(
     "workspace",
     "actionType",
@@ -1143,6 +1156,13 @@ export const BROWSER_POST_BODY_CONTRACTS = Object.freeze({
     kind: "preflight",
     appServerTraffic: false,
   }),
+  "/api/marketplace-action-preflight": bodyContract(
+    ["workspace", "method", "target", "arguments"],
+    {
+      kind: "preflight",
+      appServerTraffic: false,
+    },
+  ),
   "/api/plugin-uninstall-preflight": bodyContract(["workspace", "target"], {
     kind: "preflight",
     appServerTraffic: false,
@@ -7334,6 +7354,239 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
     ],
     "preflight.scope": ["kind", "workspaceId"],
   }),
+  "/api/marketplace-action-preflight": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    appServer: ["touched", "modelTraffic", "commandTraffic", "marketplaceTraffic"],
+    action: [
+      "type",
+      "method",
+      "category",
+      "execution",
+      "wouldMutateMarketplace",
+      "wouldDownloadExternalCode",
+      "wouldMaterializeExternalCode",
+      "appServerTouched",
+      "modelTraffic",
+      "reason",
+    ],
+    integrationAction: ["method", "category", "target", "arguments", "methodAllowedByAudit", "risk"],
+    "integrationAction.target": ["present", "charCount", "lineCount", "textReturned"],
+    "integrationAction.arguments": [
+      "present",
+      "charCount",
+      "lineCount",
+      "validJsonObject",
+      "topLevelKeyCount",
+      "textReturned",
+    ],
+    "integrationAction.risk": [
+      "level",
+      "methodFamily",
+      "methodBlockedByAudit",
+      "executionBlocked",
+      "appServerTraffic",
+      "requiresSpecificAudit",
+      "requiresApprovalPipeline",
+      "installSurface",
+      "pluginSharingSurface",
+      "marketplaceMutationSurface",
+      "externalConfigImportSurface",
+      "authCallbackSurface",
+      "authMutationSurface",
+      "mcpAuthSurface",
+      "mcpToolSurface",
+      "settingsWriteSurface",
+      "settingsMutationSurface",
+      "skillsWriteSurface",
+      "targetPresent",
+      "targetCharCount",
+      "argumentObjectAccepted",
+      "argumentKeyCount",
+      "stringArgumentCount",
+      "arrayArgumentCount",
+      "nestedObjectCount",
+      "urlLikeArgumentCount",
+      "pathLikeArgumentCount",
+      "secretLikeArgumentCount",
+      "sensitiveKeyCount",
+      "auth",
+      "mcp",
+      "settings",
+      "pluginInstall",
+      "pluginShare",
+      "marketplace",
+      "externalImport",
+      "targetReturned",
+      "argumentTextReturned",
+      "namesReturned",
+      "marketplaceNamesReturned",
+      "pluginNamesReturned",
+      "shareTargetsReturned",
+      "principalIdsReturned",
+      "principalsReturned",
+      "pathsReturned",
+      "urlsReturned",
+      "secretsReturned",
+      "rawPayloadReturned",
+    ],
+    "integrationAction.risk.auth": [
+      "loginStartRequested",
+      "loginCancelRequested",
+      "logoutRequested",
+      "addCreditsEmailRequested",
+      "apiKeyLoginRequested",
+      "chatgptLoginRequested",
+      "deviceCodeLoginRequested",
+      "authTokenLoginRequested",
+      "loginTypePresent",
+      "credentialStringCount",
+      "accountIdentifierPresent",
+      "planTypePresent",
+      "loginIdPresent",
+      "streamlinedLoginRequested",
+    ],
+    "integrationAction.risk.mcp": [
+      "oauthLoginRequested",
+      "toolCallRequested",
+      "serverReloadRequested",
+      "serverNamePresent",
+      "toolNamePresent",
+      "threadIdPresent",
+      "scopeCount",
+      "timeoutRequested",
+      "toolArgumentsObjectAccepted",
+      "toolArgumentKeyCount",
+      "metaObjectAccepted",
+      "metaKeyCount",
+    ],
+    "integrationAction.risk.settings": [
+      "configValueWriteRequested",
+      "configBatchWriteRequested",
+      "mcpServerReloadRequested",
+      "experimentalFeatureSetRequested",
+      "skillsConfigWriteRequested",
+      "keyPathCount",
+      "editCount",
+      "valuePresent",
+      "valueObjectCount",
+      "valueArrayCount",
+      "mergeStrategyCount",
+      "filePathPresent",
+      "expectedVersionPresent",
+      "reloadUserConfigRequested",
+      "featureEnablementCount",
+      "requestedEnabledCount",
+      "requestedDisabledCount",
+    ],
+    "integrationAction.risk.pluginInstall": [
+      "pluginNamePresent",
+      "remoteMarketplaceNamePresent",
+      "marketplacePathPresent",
+    ],
+    "integrationAction.risk.pluginShare": [
+      "saveRequested",
+      "updateTargetsRequested",
+      "deleteRequested",
+      "pluginPathPresent",
+      "remotePluginIdPresent",
+      "discoverabilityPresent",
+      "shareTargetCount",
+      "userTargetCount",
+      "groupTargetCount",
+      "workspaceTargetCount",
+      "unknownPrincipalTypeCount",
+      "principalIdCount",
+    ],
+    "integrationAction.risk.marketplace": [
+      "addSourcePresent",
+      "refNamePresent",
+      "sparsePathCount",
+      "marketplaceNamePresent",
+    ],
+    "integrationAction.risk.externalImport": [
+      "migrationItemCount",
+      "repoScopedMigrationItemCount",
+      "pluginMigrationCount",
+      "pluginNameReferenceCount",
+      "marketplaceNameReferenceCount",
+      "sessionMigrationCount",
+      "commandMigrationCount",
+      "hookMigrationCount",
+      "mcpServerMigrationCount",
+      "subagentMigrationCount",
+    ],
+    marketplaceAction: [
+      "method",
+      "targetPresent",
+      "targetCharCount",
+      "targetUrlLike",
+      "targetPathLike",
+      "argumentCharCount",
+      "argumentTopLevelKeyCount",
+      "argumentObjectAccepted",
+      "stringArgumentCount",
+      "urlLikeArgumentCount",
+      "pathLikeArgumentCount",
+      "secretLikeArgumentCount",
+      "sensitiveKeyCount",
+      "addRequested",
+      "removeRequested",
+      "upgradeRequested",
+      "sourcePresent",
+      "refNamePresent",
+      "sparsePathCount",
+      "marketplaceNamePresent",
+      "mutationExecutionBlocked",
+      "externalCodeMaterialization",
+      "downloadsExternalCode",
+      "appServerTraffic",
+      "marketplaceNamesReturned",
+      "pathsReturned",
+      "urlsReturned",
+      "secretsReturned",
+      "rawPayloadReturned",
+    ],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "marketplaceMutation",
+      "marketplacePreflightEnabled",
+      "marketplaceMutationEnabled",
+      "mutationExecutionBlocked",
+      "externalCodeMaterialization",
+      "downloadsExternalCode",
+      "executionRouteImplemented",
+      "dedicatedExecutionRouteImplemented",
+      "executionGateEnabled",
+      "requiresApprovalPipeline",
+      "requiresIntegrationProvenance",
+      "requiresExternalCodeAudit",
+      "requiresExplicitEnablement",
+      "browserMethodCallsAccepted",
+      "sourceReturned",
+      "marketplaceNamesReturned",
+      "targetReturned",
+      "argumentTextReturned",
+      "pathsReturned",
+      "urlsReturned",
+      "secretsReturned",
+      "rawPayloadsReturned",
+      "implemented",
+    ],
+    preflight: [
+      "token",
+      "tokenIssued",
+      "issuedAt",
+      "expiresAt",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseRequiredForMutation",
+      "consumed",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+  }),
   "/api/plugin-uninstall-preflight": responseNestedKeySchemas({
     workspace: ["id", "label", "isDefault"],
     appServer: ["touched", "modelTraffic", "commandTraffic", "pluginMutationTraffic"],
@@ -10195,6 +10448,11 @@ const BROWSER_POST_RESPONSE_ROUTE_TOP_LEVEL_KEYS = Object.freeze({
     ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
     "integrationAction",
     "pluginInstall",
+  ),
+  "/api/marketplace-action-preflight": routeResponseTopLevelKeys(
+    ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
+    "integrationAction",
+    "marketplaceAction",
   ),
   "/api/plugin-uninstall-preflight": routeResponseTopLevelKeys(
     ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
@@ -14755,6 +15013,41 @@ export async function handleRequest(request, response, options) {
     return;
   }
 
+  if (url.pathname === "/api/marketplace-action-preflight") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, [
+        "workspace",
+        "method",
+        "target",
+        "arguments",
+      ]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const payload = buildMarketplaceActionPreflight(body, { workspace });
+      const attached = attachActionPreflight(payload, { body, workspace, options });
+      options.integrationPreflightLedger?.record(attached);
+      sendJson(response, 200, attached);
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid marketplace preflight request",
+      });
+    }
+    return;
+  }
+
   if (url.pathname === "/api/plugin-uninstall-preflight") {
     if (request.method !== "POST") {
       sendJson(response, 405, { ok: false, error: "Method not allowed" });
@@ -16876,6 +17169,10 @@ async function buildConfirmableActionPreflightPayload(actionType, body, { worksp
       return buildPluginInstallPreflight(body, {
         workspace,
       });
+    case "marketplace-action-preflight":
+      return buildMarketplaceActionPreflight(body, {
+        workspace,
+      });
     case "plugin-uninstall-preflight":
       return buildPluginUninstallPreflight(body, {
         workspace,
@@ -16995,6 +17292,7 @@ function isIntegrationPreflightActionType(actionType) {
     actionType === "mcp-resource-preflight" ||
     actionType === "plugin-read-preflight" ||
     actionType === "plugin-install-preflight" ||
+    actionType === "marketplace-action-preflight" ||
     actionType === "plugin-uninstall-preflight" ||
     actionType === "plugin-share-checkout-preflight" ||
     actionType === "plugin-content-preflight" ||
@@ -25191,6 +25489,111 @@ export function buildPluginInstallPreflight(body, { workspace } = {}) {
   };
 }
 
+export function buildMarketplaceActionPreflight(body, { workspace } = {}) {
+  const methodAudit = integrationMethodAudit();
+  const method = validateMarketplaceActionMethod(body?.method, methodAudit);
+  const auditEntry = methodAudit.find((entry) => entry.method === method);
+  const category = auditEntry?.category ?? "plugins-marketplace";
+  const target = validateIntegrationTarget(body?.target);
+  const args = validateMcpArguments(body?.arguments);
+  const risk = summarizeBlockedIntegrationActionRisk({
+    method,
+    category,
+    target,
+    argumentsValue: body?.arguments,
+  });
+  const targetText = typeof body?.target === "string" ? body.target.trim() : "";
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: publicWorkspaces([workspace])[0],
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      marketplaceTraffic: false,
+    },
+    action: {
+      type: "marketplace-action-preflight",
+      method,
+      category,
+      execution: "blocked",
+      wouldMutateMarketplace: false,
+      wouldDownloadExternalCode: false,
+      wouldMaterializeExternalCode: false,
+      appServerTouched: false,
+      modelTraffic: false,
+      reason: "marketplace-mutation-execution-not-implemented",
+    },
+    integrationAction: {
+      method,
+      category,
+      target,
+      arguments: args,
+      methodAllowedByAudit: auditEntry?.status === "blocked",
+      risk,
+    },
+    marketplaceAction: {
+      method,
+      targetPresent: target.present,
+      targetCharCount: target.charCount,
+      targetUrlLike: isUrlLikeArgument(targetText),
+      targetPathLike: isPathLikeArgument(targetText),
+      argumentCharCount: args.charCount,
+      argumentTopLevelKeyCount: args.topLevelKeyCount,
+      argumentObjectAccepted: risk.argumentObjectAccepted,
+      stringArgumentCount: risk.stringArgumentCount,
+      urlLikeArgumentCount: risk.urlLikeArgumentCount,
+      pathLikeArgumentCount: risk.pathLikeArgumentCount,
+      secretLikeArgumentCount: risk.secretLikeArgumentCount,
+      sensitiveKeyCount: risk.sensitiveKeyCount,
+      addRequested: method === "marketplace/add",
+      removeRequested: method === "marketplace/remove",
+      upgradeRequested: method === "marketplace/upgrade",
+      sourcePresent: risk.marketplace.addSourcePresent,
+      refNamePresent: risk.marketplace.refNamePresent,
+      sparsePathCount: risk.marketplace.sparsePathCount,
+      marketplaceNamePresent: risk.marketplace.marketplaceNamePresent,
+      mutationExecutionBlocked: true,
+      externalCodeMaterialization: false,
+      downloadsExternalCode: false,
+      appServerTraffic: false,
+      marketplaceNamesReturned: false,
+      pathsReturned: false,
+      urlsReturned: false,
+      secretsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: false,
+      marketplaceMutation: false,
+      marketplacePreflightEnabled: true,
+      marketplaceMutationEnabled: false,
+      mutationExecutionBlocked: true,
+      externalCodeMaterialization: false,
+      downloadsExternalCode: false,
+      executionRouteImplemented: false,
+      dedicatedExecutionRouteImplemented: false,
+      executionGateEnabled: false,
+      requiresApprovalPipeline: true,
+      requiresIntegrationProvenance: true,
+      requiresExternalCodeAudit: true,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: false,
+      sourceReturned: false,
+      marketplaceNamesReturned: false,
+      targetReturned: false,
+      argumentTextReturned: false,
+      pathsReturned: false,
+      urlsReturned: false,
+      secretsReturned: false,
+      rawPayloadsReturned: false,
+      implemented: true,
+    },
+  };
+}
+
 export function buildPluginUninstallPreflight(
   body,
   {
@@ -28719,6 +29122,7 @@ export function sanitizeSettingsIntegrationsPayload(
         installedListingAvailable: inventory.installedPlugins.ok,
         detailReadEnabled: Boolean(pluginReadEnabled),
         installPreflightEnabled: true,
+        marketplacePreflightEnabled: true,
         shareCheckoutEnabled: Boolean(pluginShareCheckoutEnabled),
         uninstallEnabled: Boolean(pluginUninstallEnabled),
         contentReadEnabled: Boolean(pluginContentReadEnabled),
@@ -28730,7 +29134,7 @@ export function sanitizeSettingsIntegrationsPayload(
           ? inventory.plugins.namesReturned
             ? "names-and-counts"
             : "counts-only"
-          : "plugin-install-preflight-local-only",
+          : "plugin-install-and-marketplace-preflight-local-only",
       },
     },
     inventory,
@@ -35197,6 +35601,7 @@ export function buildSettingsIntegrations({
         listingAvailable: false,
         detailReadEnabled: Boolean(pluginReadEnabled),
         installPreflightEnabled: true,
+        marketplacePreflightEnabled: true,
         shareCheckoutEnabled: Boolean(pluginShareCheckoutEnabled),
         uninstallEnabled: Boolean(pluginUninstallEnabled),
         contentReadEnabled: Boolean(pluginContentReadEnabled),
@@ -35204,7 +35609,7 @@ export function buildSettingsIntegrations({
         installEnabled: false,
         executionEnabled: false,
         mutationEnabled: Boolean(pluginUninstallEnabled || pluginShareCheckoutEnabled),
-        reason: "plugin-install-preflight-local-only",
+        reason: "plugin-install-and-marketplace-preflight-local-only",
       },
     },
     preflightHistory,
@@ -35337,6 +35742,7 @@ function buildIntegrationActionScope({
     "mcp-resource-preflight",
     "plugin-read-preflight",
     "plugin-install-preflight",
+    "marketplace-action-preflight",
     "plugin-uninstall-preflight",
     "plugin-share-checkout-preflight",
     "plugin-content-preflight",
@@ -35411,6 +35817,7 @@ function buildIntegrationActionScope({
     skillsExtraRootsClearEnabled: Boolean(skillsExtraRootsClearEnabled),
     pluginReadEnabled: Boolean(pluginReadEnabled),
     pluginInstallPreflightEnabled: true,
+    marketplacePreflightEnabled: true,
     pluginShareCheckoutEnabled: Boolean(pluginShareCheckoutEnabled),
     pluginUninstallEnabled: Boolean(pluginUninstallEnabled),
     pluginInstallEnabled: false,
@@ -41078,6 +41485,17 @@ function validateIntegrationMutationMethod(value, methodAudit = integrationMetho
   }
   if (!methodAudit.some((entry) => entry.method === method && entry.status === "blocked")) {
     throwRequestError("Integration mutation method is not available", 400);
+  }
+  return method;
+}
+
+function validateMarketplaceActionMethod(value, methodAudit = integrationMethodAudit()) {
+  const method = cleanDisplayText(value, 100);
+  if (!method || !MARKETPLACE_ACTION_METHODS.includes(method)) {
+    throwRequestError("Marketplace method is unsupported", 400);
+  }
+  if (!methodAudit.some((entry) => entry.method === method && entry.status === "blocked")) {
+    throwRequestError("Marketplace method is not available", 400);
   }
   return method;
 }

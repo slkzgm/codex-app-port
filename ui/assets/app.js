@@ -160,6 +160,16 @@ const elements = {
   pluginInstallArgKeys: document.querySelector("#plugin-install-arg-keys"),
   pluginInstallText: document.querySelector("#plugin-install-text"),
   pluginInstallProvenanceText: document.querySelector("#plugin-install-provenance-text"),
+  marketplaceActionForm: document.querySelector("#marketplace-action-form"),
+  marketplaceMethodSelect: document.querySelector("#marketplace-method-select"),
+  marketplaceTargetInput: document.querySelector("#marketplace-target-input"),
+  marketplaceArgumentsInput: document.querySelector("#marketplace-arguments-input"),
+  marketplaceActionButton: document.querySelector("#marketplace-action-button"),
+  marketplaceActionStatus: document.querySelector("#marketplace-action-status"),
+  marketplaceTargetChars: document.querySelector("#marketplace-target-chars"),
+  marketplaceArgKeys: document.querySelector("#marketplace-arg-keys"),
+  marketplaceMutationText: document.querySelector("#marketplace-mutation-text"),
+  marketplaceSourceText: document.querySelector("#marketplace-source-text"),
   pluginUninstallForm: document.querySelector("#plugin-uninstall-form"),
   pluginUninstallTargetInput: document.querySelector("#plugin-uninstall-target-input"),
   pluginUninstallButton: document.querySelector("#plugin-uninstall-button"),
@@ -1299,6 +1309,28 @@ elements.pluginInstallForm.addEventListener("submit", (event) => {
   runPluginInstallPreflight();
 });
 
+elements.marketplaceActionForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  runMarketplaceActionPreflight();
+});
+
+for (const input of [
+  elements.marketplaceMethodSelect,
+  elements.marketplaceTargetInput,
+  elements.marketplaceArgumentsInput,
+]) {
+  input.addEventListener("input", () => {
+    elements.marketplaceActionStatus.textContent = "Blocked";
+    elements.marketplaceMutationText.textContent = "Blocked";
+    elements.marketplaceSourceText.textContent = "Hidden";
+  });
+  input.addEventListener("change", () => {
+    elements.marketplaceActionStatus.textContent = "Blocked";
+    elements.marketplaceMutationText.textContent = "Blocked";
+    elements.marketplaceSourceText.textContent = "Hidden";
+  });
+}
+
 elements.pluginUninstallForm.addEventListener("submit", (event) => {
   event.preventDefault();
   runPluginUninstallPreflight();
@@ -1779,6 +1811,10 @@ function pluginReadEndpoint() {
 
 function pluginInstallPreflightEndpoint() {
   return "/api/plugin-install-preflight";
+}
+
+function marketplaceActionPreflightEndpoint() {
+  return "/api/marketplace-action-preflight";
 }
 
 function pluginUninstallPreflightEndpoint() {
@@ -2733,6 +2769,37 @@ async function runPluginInstallPreflight() {
     renderError(error);
   } finally {
     setPluginInstallLoading(false);
+  }
+}
+
+async function runMarketplaceActionPreflight() {
+  setMarketplaceActionLoading(true);
+  hideError();
+
+  try {
+    const body = {
+      workspace: selectedWorkspaceId,
+      method: elements.marketplaceMethodSelect.value,
+      target: elements.marketplaceTargetInput.value,
+      arguments: elements.marketplaceArgumentsInput.value,
+    };
+    const response = await fetch(marketplaceActionPreflightEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify(body),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderMarketplaceActionPreflight(payload);
+    await refreshSettingsIntegrations().catch(() => {});
+  } catch (error) {
+    elements.marketplaceActionStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    setMarketplaceActionLoading(false);
   }
 }
 
@@ -10175,6 +10242,17 @@ function renderPluginInstallPreflight(payload) {
     : "Unknown";
 }
 
+function renderMarketplaceActionPreflight(payload) {
+  const marketplace = payload.marketplaceAction ?? {};
+  elements.marketplaceActionStatus.textContent = payload.action?.execution ?? "blocked";
+  elements.marketplaceTargetChars.textContent = String(marketplace.targetCharCount ?? 0);
+  elements.marketplaceArgKeys.textContent = String(marketplace.argumentTopLevelKeyCount ?? 0);
+  elements.marketplaceMutationText.textContent = payload.policy?.marketplaceMutation
+    ? "Enabled"
+    : "Blocked";
+  elements.marketplaceSourceText.textContent = marketplace.sourcePresent ? "Present" : "Hidden";
+}
+
 function renderPluginUninstallPreflight(payload) {
   const plugin = payload.pluginUninstall ?? {};
   elements.pluginUninstallStatus.textContent = payload.action?.execution ?? "blocked";
@@ -12332,6 +12410,14 @@ function setPluginInstallLoading(isLoading) {
   elements.pluginInstallButton.textContent = isLoading ? "Checking" : "Install Check";
   if (isLoading) {
     elements.pluginInstallStatus.textContent = "Checking";
+  }
+}
+
+function setMarketplaceActionLoading(isLoading) {
+  elements.marketplaceActionButton.disabled = isLoading;
+  elements.marketplaceActionButton.textContent = isLoading ? "Checking" : "Marketplace Check";
+  if (isLoading) {
+    elements.marketplaceActionStatus.textContent = "Checking";
   }
 }
 
