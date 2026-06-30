@@ -207,6 +207,16 @@ const elements = {
   pluginUninstallText: document.querySelector("#plugin-uninstall-text"),
   pluginUninstallResponseKeys: document.querySelector("#plugin-uninstall-response-keys"),
   pluginUninstallDetailsText: document.querySelector("#plugin-uninstall-details-text"),
+  pluginEnablementForm: document.querySelector("#plugin-enablement-form"),
+  pluginEnablementTargetInput: document.querySelector("#plugin-enablement-target-input"),
+  pluginEnablementEnabledSelect: document.querySelector("#plugin-enablement-enabled-select"),
+  pluginEnablementButton: document.querySelector("#plugin-enablement-button"),
+  pluginEnablementRunButton: document.querySelector("#plugin-enablement-run-button"),
+  pluginEnablementStatus: document.querySelector("#plugin-enablement-status"),
+  pluginEnablementTargetChars: document.querySelector("#plugin-enablement-target-chars"),
+  pluginEnablementRequestText: document.querySelector("#plugin-enablement-request-text"),
+  pluginEnablementText: document.querySelector("#plugin-enablement-text"),
+  pluginEnablementResponseKeys: document.querySelector("#plugin-enablement-response-keys"),
   pluginShareCheckoutForm: document.querySelector("#plugin-share-checkout-form"),
   pluginShareCheckoutTargetInput: document.querySelector("#plugin-share-checkout-target-input"),
   pluginShareCheckoutButton: document.querySelector("#plugin-share-checkout-button"),
@@ -774,6 +784,7 @@ let lastExperimentalFeaturePreflight = null;
 let lastMcpResourcePreflight = null;
 let lastPluginContentPreflight = null;
 let lastPluginReadPreflight = null;
+let lastPluginEnablementPreflight = null;
 let lastPluginShareCheckoutPreflight = null;
 let lastPluginUninstallPreflight = null;
 let lastSkillsConfigPreflight = null;
@@ -843,6 +854,7 @@ elements.workspaceSelect.addEventListener("change", () => {
   lastMcpResourcePreflight = null;
   lastPluginContentPreflight = null;
   lastPluginReadPreflight = null;
+  lastPluginEnablementPreflight = null;
   lastPluginShareCheckoutPreflight = null;
   lastPluginUninstallPreflight = null;
   lastSkillsConfigPreflight = null;
@@ -1517,6 +1529,29 @@ elements.pluginUninstallRunButton.addEventListener("click", () => {
   runPluginUninstall();
 });
 
+elements.pluginEnablementForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  runPluginEnablementPreflight();
+});
+
+for (const input of [
+  elements.pluginEnablementTargetInput,
+  elements.pluginEnablementEnabledSelect,
+]) {
+  input.addEventListener("input", () => {
+    lastPluginEnablementPreflight = null;
+    elements.pluginEnablementRunButton.disabled = true;
+  });
+  input.addEventListener("change", () => {
+    lastPluginEnablementPreflight = null;
+    elements.pluginEnablementRunButton.disabled = true;
+  });
+}
+
+elements.pluginEnablementRunButton.addEventListener("click", () => {
+  runPluginEnablementSet();
+});
+
 elements.pluginShareCheckoutForm.addEventListener("submit", (event) => {
   event.preventDefault();
   runPluginShareCheckoutPreflight();
@@ -2078,6 +2113,14 @@ function pluginUninstallPreflightEndpoint() {
 
 function pluginUninstallEndpoint() {
   return "/api/plugin-uninstall";
+}
+
+function pluginEnablementPreflightEndpoint() {
+  return "/api/plugin-enablement-preflight";
+}
+
+function pluginEnablementSetEndpoint() {
+  return "/api/plugin-enablement-set";
 }
 
 function pluginShareCheckoutPreflightEndpoint() {
@@ -3161,6 +3204,77 @@ async function runPluginUninstall() {
     lastPluginUninstallPreflight = null;
     elements.pluginUninstallRunButton.disabled = true;
     setPluginUninstallLoading(false);
+  }
+}
+
+async function runPluginEnablementPreflight() {
+  setPluginEnablementLoading(true);
+  hideError();
+
+  try {
+    lastPluginEnablementPreflight = null;
+    elements.pluginEnablementRunButton.disabled = true;
+    const body = {
+      workspace: selectedWorkspaceId,
+      target: elements.pluginEnablementTargetInput.value,
+      enabled: elements.pluginEnablementEnabledSelect.value === "true",
+    };
+    const response = await fetch(pluginEnablementPreflightEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify(body),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    lastPluginEnablementPreflight = {
+      body,
+      token: payload.preflight?.token,
+      enabled: payload.policy?.executionGateEnabled === true,
+    };
+    renderPluginEnablementPreflight(payload);
+    await refreshSettingsIntegrations().catch(() => {});
+  } catch (error) {
+    elements.pluginEnablementStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    setPluginEnablementLoading(false);
+  }
+}
+
+async function runPluginEnablementSet() {
+  if (!lastPluginEnablementPreflight?.token || !lastPluginEnablementPreflight?.body) {
+    return;
+  }
+
+  setPluginEnablementLoading(true);
+  hideError();
+
+  try {
+    const response = await fetch(pluginEnablementSetEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify({
+        ...lastPluginEnablementPreflight.body,
+        preflightToken: lastPluginEnablementPreflight.token,
+      }),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderPluginEnablementSet(payload);
+    await refreshSettingsIntegrations().catch(() => {});
+  } catch (error) {
+    elements.pluginEnablementStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    lastPluginEnablementPreflight = null;
+    elements.pluginEnablementRunButton.disabled = true;
+    setPluginEnablementLoading(false);
   }
 }
 
@@ -10969,6 +11083,35 @@ function renderPluginUninstall(payload) {
   elements.pluginUninstallDetailsText.textContent = "Omitted";
 }
 
+function renderPluginEnablementPreflight(payload) {
+  const plugin = payload.pluginEnablement ?? {};
+  elements.pluginEnablementStatus.textContent = payload.action?.execution ?? "blocked";
+  elements.pluginEnablementTargetChars.textContent = String(plugin.pluginIdCharCount ?? 0);
+  elements.pluginEnablementRequestText.textContent =
+    plugin.requestedEnabled === true ? "Enable" : "Disable";
+  elements.pluginEnablementText.textContent = payload.policy?.executionGateEnabled
+    ? "Enabled"
+    : "Blocked";
+  elements.pluginEnablementResponseKeys.textContent = "0";
+  elements.pluginEnablementRunButton.disabled =
+    !lastPluginEnablementPreflight?.token ||
+    lastPluginEnablementPreflight.enabled !== true;
+}
+
+function renderPluginEnablementSet(payload) {
+  const plugin = payload.pluginEnablement ?? {};
+  elements.pluginEnablementStatus.textContent = payload.action?.execution ?? "completed";
+  elements.pluginEnablementTargetChars.textContent = String(plugin.pluginIdCharCount ?? 0);
+  elements.pluginEnablementRequestText.textContent =
+    plugin.requestedEnabled === true ? "Enable" : "Disable";
+  elements.pluginEnablementText.textContent = payload.policy?.settingsWrite
+    ? "Applied"
+    : "Blocked";
+  elements.pluginEnablementResponseKeys.textContent = String(
+    plugin.responseTopLevelKeyCount ?? 0,
+  );
+}
+
 function renderPluginShareCheckoutPreflight(payload) {
   const checkout = payload.pluginShareCheckout ?? {};
   elements.pluginShareCheckoutStatus.textContent = payload.action?.execution ?? "blocked";
@@ -13315,6 +13458,18 @@ function setPluginUninstallLoading(isLoading) {
   elements.pluginUninstallButton.textContent = isLoading ? "Checking" : "Uninstall Check";
   if (isLoading) {
     elements.pluginUninstallStatus.textContent = "Checking";
+  }
+}
+
+function setPluginEnablementLoading(isLoading) {
+  elements.pluginEnablementButton.disabled = isLoading;
+  elements.pluginEnablementRunButton.disabled =
+    isLoading ||
+    !lastPluginEnablementPreflight?.token ||
+    lastPluginEnablementPreflight.enabled !== true;
+  elements.pluginEnablementButton.textContent = isLoading ? "Checking" : "Enablement Check";
+  if (isLoading) {
+    elements.pluginEnablementStatus.textContent = "Checking";
   }
 }
 

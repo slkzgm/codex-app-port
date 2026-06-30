@@ -948,6 +948,11 @@ rebuilds the same preflight, consumes a matching token once, constructs
 `plugins."<plugin-id>".enabled` on the server, forces `upsert`, and calls
 `config/value/write` with only the boolean value. It does not return or audit
 plugin ids, key paths, values, config paths, tokens, or raw payloads.
+The Settings & Integrations UI exposes this as a dedicated plugin enablement
+panel with plugin-id and boolean state inputs. The Apply button stays disabled
+until the route-specific preflight returns an executable one-time token, and
+the UI renders only plugin-id character count, requested state, gate status,
+and response-key count.
 
 The plugin-share-checkout-preflight endpoint accepts only a safe remote plugin
 id and validates whether the dedicated checkout gate and exact allowlist match

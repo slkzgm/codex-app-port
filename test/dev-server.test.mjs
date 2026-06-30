@@ -271,6 +271,9 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /plugin-uninstall-form/);
     assert.match(html, /plugin-uninstall-status/);
     assert.match(html, /plugin-uninstall-run-button/);
+    assert.match(html, /plugin-enablement-form/);
+    assert.match(html, /plugin-enablement-status/);
+    assert.match(html, /plugin-enablement-run-button/);
     assert.match(html, /plugin-content-form/);
     assert.match(html, /plugin-content-status/);
     assert.match(html, /plugin-content-run-button/);
@@ -310,6 +313,10 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /plugin-share-checkout-form/);
     assert.match(html, /plugin-share-checkout-status/);
     assert.match(html, /plugin-share-checkout-run-button/);
+    assert.match(appScript, /runPluginEnablementPreflight/);
+    assert.match(appScript, /runPluginEnablementSet/);
+    assert.match(appScript, /renderPluginEnablementPreflight/);
+    assert.match(appScript, /renderPluginEnablementSet/);
     assert.match(appScript, /runPluginShareCheckoutPreflight/);
     assert.match(appScript, /runPluginShareCheckout/);
     assert.match(html, /plugin-share-action-form/);

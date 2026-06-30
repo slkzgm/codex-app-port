@@ -569,6 +569,8 @@ and calls `config/value/write` with only the boolean enablement value.
 Responses and action audit records return only plugin-id length,
 requested-enable state, and response-shape counts; plugin ids, key paths,
 values, config paths, tokens, and raw app-server payloads stay omitted.
+The local UI renders this as a plugin enablement panel whose Apply action is
+disabled until the matching preflight issues an executable one-time token.
 Shared plugin checkout is also a separate mutation path because it can
 materialize external code. `/api/plugin-share-checkout` is disabled unless
 `CODEX_APP_PORT_ALLOW_PLUGIN_SHARE_CHECKOUT=1` is set and the remote plugin id

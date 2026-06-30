@@ -912,6 +912,48 @@
               <dd id="plugin-uninstall-details-text">Omitted</dd>
             </div>
           </dl>
+          <form id="plugin-enablement-form" class="turn-form">
+            <div class="thread-tools">
+              <label class="search-control" for="plugin-enablement-target-input">
+                <span>Plugin id</span>
+                <input id="plugin-enablement-target-input" type="text" autocomplete="off" maxlength="200" />
+              </label>
+              <label class="workspace-control" for="plugin-enablement-enabled-select">
+                <span>State</span>
+                <select id="plugin-enablement-enabled-select">
+                  <option value="true">Enable</option>
+                  <option value="false">Disable</option>
+                </select>
+              </label>
+            </div>
+            <div class="turn-actions">
+              <button id="plugin-enablement-button" class="secondary-button" type="submit">
+                Enablement Check
+              </button>
+              <button id="plugin-enablement-run-button" class="secondary-button" type="button" disabled>
+                Apply
+              </button>
+              <span id="plugin-enablement-status" class="empty-state">Blocked</span>
+            </div>
+          </form>
+          <dl class="agent-grid">
+            <div>
+              <dt>Plugin chars</dt>
+              <dd id="plugin-enablement-target-chars">0</dd>
+            </div>
+            <div>
+              <dt>Requested</dt>
+              <dd id="plugin-enablement-request-text">Unset</dd>
+            </div>
+            <div>
+              <dt>Write</dt>
+              <dd id="plugin-enablement-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Response keys</dt>
+              <dd id="plugin-enablement-response-keys">0</dd>
+            </div>
+          </dl>
           <form id="plugin-share-checkout-form" class="turn-form">
             <div class="thread-tools">
               <label class="search-control" for="plugin-share-checkout-target-input">
