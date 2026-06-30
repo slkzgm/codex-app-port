@@ -408,7 +408,11 @@
   it must not return notification setting values, browser permission state,
   subscriptions, notification payloads, paths, URLs, secrets, raw payloads,
   app-server payloads, browser Notification API prompts, or notification
-  mutations.
+  mutations. Its Personalization settings catalog may expose only static
+  setting keys, groups, states, sources, and counts; it must not return active
+  personality values, custom instructions, personal `AGENTS.md` content or
+  paths, paths, URLs, secrets, raw payloads, app-server payloads, or
+  personalization mutations.
   Browser-side approval queue filters must operate only on the already sanitized
   queue payload, and visible-subset deny/accept actions must still submit the
   bounded tokenized decision batch through the normal approval route. They must

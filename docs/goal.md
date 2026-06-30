@@ -82,6 +82,11 @@ Target parity with the Codex desktop workflow:
   and counts; notification values, browser permission state, subscriptions,
   notification payloads, browser Notification API prompts, paths, URLs, secrets,
   raw payloads, and app-server traffic remain blocked.
+- The same summary now includes a read-only Personalization settings catalog for
+  the official personality modes and custom-instructions boundary. It returns
+  only keys, groups, states, sources, and counts; the active personality,
+  custom instructions, personal `AGENTS.md` content or paths, paths, URLs,
+  secrets, raw payloads, mutations, and app-server traffic remain blocked.
 - `permissionProfile/list` has an opt-in, counts-only inventory path; it
   returns profile counts and allowed/blocked totals only, not profile ids or
   descriptions.

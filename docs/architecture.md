@@ -493,6 +493,11 @@ Current M1 status:
   permission state, subscriptions, notification payloads, browser Notification
   API prompts, paths, URLs, secrets, raw payloads, and app-server traffic
   blocked
+- done: read-only Personalization settings catalog inside the settings parity
+  summary, exposing only static personality option and custom-instructions
+  boundary keys/groups/states/counts, with active personality, custom
+  instructions, personal `AGENTS.md` content or paths, paths, URLs, secrets,
+  raw payloads, mutations, and app-server traffic blocked
 - done: opt-in `/api/account-login-start` path behind
   `CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN=1`, with matching one-time
   account-login-preflight token consumption, `account/login/start` device-code

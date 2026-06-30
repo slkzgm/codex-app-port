@@ -19,6 +19,8 @@ const elements = {
   appShortcutsEditingText: document.querySelector("#app-shortcuts-editing-text"),
   appNotificationsText: document.querySelector("#app-notifications-text"),
   appNotificationsPermissionText: document.querySelector("#app-notifications-permission-text"),
+  appPersonalizationText: document.querySelector("#app-personalization-text"),
+  appPersonalizationValueText: document.querySelector("#app-personalization-value-text"),
   realtimeVoicesButton: document.querySelector("#realtime-voices-button"),
   realtimeVoicesStateText: document.querySelector("#realtime-voices-state-text"),
   settingsSourceText: document.querySelector("#settings-source-text"),
@@ -358,6 +360,7 @@ const elements = {
   appSettingsParityList: document.querySelector("#app-settings-parity-list"),
   appKeyboardShortcutsList: document.querySelector("#app-keyboard-shortcuts-list"),
   appNotificationsList: document.querySelector("#app-notifications-list"),
+  appPersonalizationList: document.querySelector("#app-personalization-list"),
   gitButton: document.querySelector("#git-button"),
   gitSwitchButton: document.querySelector("#git-switch-button"),
   gitDeleteButton: document.querySelector("#git-delete-button"),
@@ -10424,6 +10427,18 @@ function renderSettingsIntegrations(payload) {
     notifications.permissionPromptAvailable || notifications.permissionPromptExecuted
       ? "Enabled"
       : "Blocked";
+  const personalization = codexAppSettings.personalization ?? {};
+  elements.appPersonalizationText.textContent = personalization.returned
+    ? `${personalization.catalogOnlySettingCount ?? 0} catalog / ${
+        personalization.settingCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.appPersonalizationValueText.textContent =
+    personalization.currentPersonalityReturned ||
+    personalization.customInstructionsReturned ||
+    personalization.personalInstructionsReturned
+      ? "Returned"
+      : "Hidden";
   elements.requirementsStateText.textContent = settings.requirementsAvailable
     ? `${inventory.requirements?.featureRequirementCount ?? 0} features`
     : "Blocked";
@@ -10566,6 +10581,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexAppSettingsParity(codexAppSettings);
   renderCodexAppKeyboardShortcuts(keyboardShortcuts);
   renderCodexAppNotificationSettings(notifications);
+  renderCodexAppPersonalizationSettings(personalization);
   renderUpstreamDrift(upstreamDrift);
   renderIntegrationMethodAudit(methodAudit);
 }
@@ -12213,6 +12229,56 @@ function renderCodexAppNotificationSettings(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.appNotificationsList.append(row);
+  }
+}
+
+function renderCodexAppPersonalizationSettings(summary) {
+  elements.appPersonalizationList.replaceChildren();
+  const settings = Array.isArray(summary?.settings) ? summary.settings : [];
+  if (settings.length === 0) {
+    elements.appPersonalizationList.append(
+      emptyState("No personalization settings catalog returned."),
+    );
+    return;
+  }
+  for (const setting of settings) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = setting.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = setting.group ?? "personalization";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      setting.state ?? "blocked",
+      setting.source ?? null,
+      setting.settingValueReturned ? "value returned" : "value hidden",
+      setting.currentPersonalityReturned ? "personality returned" : "personality hidden",
+      setting.customInstructionsReturned ? "custom instructions returned" : "custom hidden",
+      setting.agentsMdContentReturned ? "AGENTS content returned" : "AGENTS content hidden",
+      setting.agentsMdPathReturned ? "AGENTS path returned" : "AGENTS path hidden",
+      setting.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.appPersonalizationList.append(row);
   }
 }
 

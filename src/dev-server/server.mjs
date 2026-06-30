@@ -33278,6 +33278,87 @@ function buildCodexAppNotificationSettingsSummary(payload = {}) {
   };
 }
 
+const CODEX_APP_PERSONALIZATION_SETTINGS = Object.freeze([
+  {
+    key: "personalityModeFriendly",
+    group: "personality",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "personalityModePragmatic",
+    group: "personality",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "personalityModeNone",
+    group: "personality",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "customInstructions",
+    group: "instructions",
+    state: "blocked",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "personalInstructionsAgentsMd",
+    group: "instructions",
+    state: "blocked",
+    source: "official-codex-app-docs",
+  },
+]);
+
+function buildCodexAppPersonalizationSettingsSummary() {
+  const settings = CODEX_APP_PERSONALIZATION_SETTINGS.map((setting) => ({
+    ...setting,
+    settingValueReturned: false,
+    currentPersonalityReturned: false,
+    customInstructionsReturned: false,
+    personalInstructionsReturned: false,
+    agentsMdContentReturned: false,
+    agentsMdPathReturned: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+    rawPayloadsReturned: false,
+    appServerTraffic: false,
+  }));
+  const catalogOnlySettingCount = settings.filter(
+    (setting) => setting.state === "catalog-only",
+  ).length;
+  const blockedSettingCount = settings.filter((setting) => setting.state === "blocked").length;
+
+  return {
+    returned: true,
+    state: catalogOnlySettingCount > 0 ? "partial" : "blocked",
+    settingCount: settings.length,
+    officialSettingCount: settings.filter(
+      (setting) => setting.source === "official-codex-app-docs",
+    ).length,
+    catalogOnlySettingCount,
+    blockedSettingCount,
+    enabledSettingCount: 0,
+    settings,
+    personalityOptionsReturned: true,
+    currentPersonalityReturned: false,
+    customInstructionsReturned: false,
+    personalInstructionsReturned: false,
+    agentsMdContentReturned: false,
+    agentsMdPathsReturned: false,
+    settingValuesReturned: false,
+    localSettingValuesReturned: false,
+    mutationEnabled: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+    rawPayloadsReturned: false,
+    appServerTraffic: false,
+  };
+}
+
 function codexAppSettingsSection(key, group, state, source) {
   return {
     key,
@@ -33307,6 +33388,7 @@ function buildCodexAppSettingsParity(payload = {}) {
   const integrationScope = payload.integrationScope ?? {};
   const keyboardShortcuts = buildCodexAppKeyboardShortcutsSummary();
   const notifications = buildCodexAppNotificationSettingsSummary(payload);
+  const personalization = buildCodexAppPersonalizationSettingsSummary();
   const hasOptInAuthAction = Boolean(
     auth.loginEnabled ||
       auth.loginCancelEnabled ||
@@ -33361,7 +33443,12 @@ function buildCodexAppSettingsParity(payload = {}) {
     ),
     codexAppSettingsSection("browser", "runtime", "blocked", "not-implemented"),
     codexAppSettingsSection("computerUse", "runtime", "blocked", "not-implemented"),
-    codexAppSettingsSection("personalization", "agent", "blocked", "not-implemented"),
+    codexAppSettingsSection(
+      "personalization",
+      "agent",
+      personalization.state,
+      "personalization-settings-catalog",
+    ),
     codexAppSettingsSection(
       "contextAwareSuggestions",
       "agent",
@@ -33399,6 +33486,7 @@ function buildCodexAppSettingsParity(payload = {}) {
     sections,
     keyboardShortcuts,
     notifications,
+    personalization,
     sectionKeysReturned: true,
     sectionLabelsReturned: false,
     localSettingValuesReturned: false,
@@ -33801,6 +33889,12 @@ export function sanitizeSettingsIntegrationsPayload(
       codexAppNotificationPayloadsReturned: false,
       codexAppNotificationBrowserApiTouched: false,
       codexAppNotificationMutationsEnabled: false,
+      codexAppPersonalizationSettingsReturned: true,
+      codexAppPersonalizationCurrentValueReturned: false,
+      codexAppPersonalizationCustomInstructionsReturned: false,
+      codexAppPersonalizationAgentsMdContentReturned: false,
+      codexAppPersonalizationAgentsMdPathsReturned: false,
+      codexAppPersonalizationMutationsEnabled: false,
       serverRequestHandlersEnabled: false,
       serverRequestPayloadsReturned: false,
       serverRequestSchemasReturned: false,
@@ -41329,6 +41423,12 @@ export function buildSettingsIntegrations({
       codexAppNotificationPayloadsReturned: false,
       codexAppNotificationBrowserApiTouched: false,
       codexAppNotificationMutationsEnabled: false,
+      codexAppPersonalizationSettingsReturned: true,
+      codexAppPersonalizationCurrentValueReturned: false,
+      codexAppPersonalizationCustomInstructionsReturned: false,
+      codexAppPersonalizationAgentsMdContentReturned: false,
+      codexAppPersonalizationAgentsMdPathsReturned: false,
+      codexAppPersonalizationMutationsEnabled: false,
       serverRequestHandlersEnabled: false,
       serverRequestPayloadsReturned: false,
       serverRequestSchemasReturned: false,

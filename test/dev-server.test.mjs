@@ -20489,10 +20489,10 @@ test("dev server exposes settings and integration boundary without app-server tr
     );
     assertSettingsServerBoundaries(payload);
     assertCodexAppSettingsParity(payload, {
-      availableSectionCount: 8,
-      partialSectionCount: 7,
+      availableSectionCount: 9,
+      partialSectionCount: 8,
       preflightOnlySectionCount: 1,
-      blockedSectionCount: 7,
+      blockedSectionCount: 6,
       profileState: "blocked",
     });
     assert.equal(payload.surfaces.settings.state, "partial");
@@ -22761,10 +22761,10 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
     );
     assertSettingsServerBoundaries(payload);
     assertCodexAppSettingsParity(payload, {
-      availableSectionCount: 9,
-      partialSectionCount: 8,
+      availableSectionCount: 10,
+      partialSectionCount: 9,
       preflightOnlySectionCount: 1,
-      blockedSectionCount: 6,
+      blockedSectionCount: 5,
       profileState: "partial",
     });
     assert.equal(payload.appServer.auditedReadMethods.includes("configRequirements/read"), true);
@@ -34973,6 +34973,10 @@ function assertCodexAppSettingsParity(
     summary.sections.find((section) => section.key === "notifications")?.state,
     "partial",
   );
+  assert.equal(
+    summary.sections.find((section) => section.key === "personalization")?.state,
+    "partial",
+  );
   assert.equal(summary.sections.find((section) => section.key === "browser")?.state, "blocked");
   assert.equal(
     summary.sections.find((section) => section.key === "computerUse")?.state,
@@ -35097,6 +35101,54 @@ function assertCodexAppSettingsParity(
     ),
     true,
   );
+  assert.equal(summary.personalization?.returned, true);
+  assert.equal(summary.personalization.state, "partial");
+  assert.equal(summary.personalization.settingCount, 5);
+  assert.equal(summary.personalization.officialSettingCount, 5);
+  assert.equal(summary.personalization.catalogOnlySettingCount, 3);
+  assert.equal(summary.personalization.blockedSettingCount, 2);
+  assert.equal(summary.personalization.enabledSettingCount, 0);
+  assert.equal(summary.personalization.personalityOptionsReturned, true);
+  assert.equal(summary.personalization.currentPersonalityReturned, false);
+  assert.equal(summary.personalization.customInstructionsReturned, false);
+  assert.equal(summary.personalization.personalInstructionsReturned, false);
+  assert.equal(summary.personalization.agentsMdContentReturned, false);
+  assert.equal(summary.personalization.agentsMdPathsReturned, false);
+  assert.equal(summary.personalization.settingValuesReturned, false);
+  assert.equal(summary.personalization.localSettingValuesReturned, false);
+  assert.equal(summary.personalization.mutationEnabled, false);
+  assert.equal(summary.personalization.pathsReturned, false);
+  assert.equal(summary.personalization.urlsReturned, false);
+  assert.equal(summary.personalization.secretsReturned, false);
+  assert.equal(summary.personalization.rawPayloadsReturned, false);
+  assert.equal(summary.personalization.appServerTraffic, false);
+  assert.deepEqual(
+    summary.personalization.settings.map((setting) => setting.key),
+    [
+      "personalityModeFriendly",
+      "personalityModePragmatic",
+      "personalityModeNone",
+      "customInstructions",
+      "personalInstructionsAgentsMd",
+    ],
+  );
+  assert.equal(
+    summary.personalization.settings.every(
+      (setting) =>
+        setting.settingValueReturned === false &&
+        setting.currentPersonalityReturned === false &&
+        setting.customInstructionsReturned === false &&
+        setting.personalInstructionsReturned === false &&
+        setting.agentsMdContentReturned === false &&
+        setting.agentsMdPathReturned === false &&
+        setting.pathsReturned === false &&
+        setting.urlsReturned === false &&
+        setting.secretsReturned === false &&
+        setting.rawPayloadsReturned === false &&
+        setting.appServerTraffic === false,
+    ),
+    true,
+  );
   assert.equal(
     summary.sections.every(
       (section) =>
@@ -35130,6 +35182,12 @@ function assertCodexAppSettingsParity(
   assert.equal(payload.policy?.codexAppNotificationPayloadsReturned, false);
   assert.equal(payload.policy?.codexAppNotificationBrowserApiTouched, false);
   assert.equal(payload.policy?.codexAppNotificationMutationsEnabled, false);
+  assert.equal(payload.policy?.codexAppPersonalizationSettingsReturned, true);
+  assert.equal(payload.policy?.codexAppPersonalizationCurrentValueReturned, false);
+  assert.equal(payload.policy?.codexAppPersonalizationCustomInstructionsReturned, false);
+  assert.equal(payload.policy?.codexAppPersonalizationAgentsMdContentReturned, false);
+  assert.equal(payload.policy?.codexAppPersonalizationAgentsMdPathsReturned, false);
+  assert.equal(payload.policy?.codexAppPersonalizationMutationsEnabled, false);
 }
 
 function assertTurnSessionRoutingContract(payload, expected) {

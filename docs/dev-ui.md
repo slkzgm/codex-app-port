@@ -712,8 +712,8 @@ for the current official Codex app Settings sections. It returns only static
 section keys, section states, and counts, and keeps local setting values,
 profile names, paths, URLs, secrets, raw payloads, app-server payloads, browser
 handlers, and settings writes omitted. Unimplemented sections such as
-Appearance, Browser, Computer Use, Personalization, and Context-aware
-Suggestions are reported as blocked.
+Appearance, Browser, Computer Use, and Context-aware Suggestions are reported as
+blocked.
 Within that summary, `keyboardShortcuts` exposes a static review-only shortcut
 catalog with official shortcut keys that still need Linux implementation plus
 local accessibility bindings that already exist in the UI. Custom binding
@@ -725,6 +725,12 @@ the local server-notification boundary. The UI shows only setting keys, groups,
 state/source chips, boundary counts, and redaction chips; notification values,
 browser permission state, subscriptions, payloads, browser Notification API
 prompts, paths, URLs, raw payloads, and app-server traffic remain blocked.
+Within that same summary, `personalization` exposes a static review-only
+catalog for the official personality-mode options and custom-instructions
+boundary. The UI shows only setting keys, groups, state/source chips, catalog
+counts, and redaction chips; active personality, custom instructions, personal
+`AGENTS.md` content or paths, paths, URLs, raw payloads, mutations, and
+app-server traffic remain blocked.
 The same response also exposes static upstream-drift metadata for head-only
 app-server methods absent from the stable generated schema. It returns only
 method names, count/status metadata, and local blocked policy; it does not

@@ -32690,10 +32690,10 @@ function assertSanitizedSettingsIntegrations(payload) {
   }
   assertSettingsServerBoundaries(payload);
   assertCodexAppSettingsParity(payload, {
-    availableSectionCount: 8,
-    partialSectionCount: 7,
+    availableSectionCount: 9,
+    partialSectionCount: 8,
     preflightOnlySectionCount: 1,
-    blockedSectionCount: 7,
+    blockedSectionCount: 6,
     profileState: "blocked",
   });
   if (
@@ -33139,6 +33139,8 @@ function assertCodexAppSettingsParity(
       "partial" ||
     summary.sections?.find((section) => section.key === "notifications")?.state !==
       "partial" ||
+    summary.sections?.find((section) => section.key === "personalization")?.state !==
+      "partial" ||
     summary.sections?.find((section) => section.key === "browser")?.state !== "blocked" ||
     summary.sections?.find((section) => section.key === "computerUse")?.state !== "blocked" ||
     summary.sections?.find((section) => section.key === "memories")?.state !== "preflight-only"
@@ -33249,6 +33251,49 @@ function assertCodexAppSettingsParity(
         setting.browserNotificationApiTouched === false &&
         setting.appServerTraffic === false,
     ) ||
+    summary.personalization?.returned !== true ||
+    summary.personalization.state !== "partial" ||
+    summary.personalization.settingCount !== 5 ||
+    summary.personalization.officialSettingCount !== 5 ||
+    summary.personalization.catalogOnlySettingCount !== 3 ||
+    summary.personalization.blockedSettingCount !== 2 ||
+    summary.personalization.enabledSettingCount !== 0 ||
+    summary.personalization.personalityOptionsReturned !== true ||
+    summary.personalization.currentPersonalityReturned !== false ||
+    summary.personalization.customInstructionsReturned !== false ||
+    summary.personalization.personalInstructionsReturned !== false ||
+    summary.personalization.agentsMdContentReturned !== false ||
+    summary.personalization.agentsMdPathsReturned !== false ||
+    summary.personalization.settingValuesReturned !== false ||
+    summary.personalization.localSettingValuesReturned !== false ||
+    summary.personalization.mutationEnabled !== false ||
+    summary.personalization.pathsReturned !== false ||
+    summary.personalization.urlsReturned !== false ||
+    summary.personalization.secretsReturned !== false ||
+    summary.personalization.rawPayloadsReturned !== false ||
+    summary.personalization.appServerTraffic !== false ||
+    JSON.stringify((summary.personalization.settings ?? []).map((setting) => setting.key)) !==
+      JSON.stringify([
+        "personalityModeFriendly",
+        "personalityModePragmatic",
+        "personalityModeNone",
+        "customInstructions",
+        "personalInstructionsAgentsMd",
+      ]) ||
+    !summary.personalization.settings?.every(
+      (setting) =>
+        setting.settingValueReturned === false &&
+        setting.currentPersonalityReturned === false &&
+        setting.customInstructionsReturned === false &&
+        setting.personalInstructionsReturned === false &&
+        setting.agentsMdContentReturned === false &&
+        setting.agentsMdPathReturned === false &&
+        setting.pathsReturned === false &&
+        setting.urlsReturned === false &&
+        setting.secretsReturned === false &&
+        setting.rawPayloadsReturned === false &&
+        setting.appServerTraffic === false,
+    ) ||
     !summary.sections?.every(
       (section) =>
         section.tracked === true &&
@@ -33278,7 +33323,13 @@ function assertCodexAppSettingsParity(
     payload.policy?.codexAppNotificationPermissionPromptExecuted !== false ||
     payload.policy?.codexAppNotificationPayloadsReturned !== false ||
     payload.policy?.codexAppNotificationBrowserApiTouched !== false ||
-    payload.policy?.codexAppNotificationMutationsEnabled !== false
+    payload.policy?.codexAppNotificationMutationsEnabled !== false ||
+    payload.policy?.codexAppPersonalizationSettingsReturned !== true ||
+    payload.policy?.codexAppPersonalizationCurrentValueReturned !== false ||
+    payload.policy?.codexAppPersonalizationCustomInstructionsReturned !== false ||
+    payload.policy?.codexAppPersonalizationAgentsMdContentReturned !== false ||
+    payload.policy?.codexAppPersonalizationAgentsMdPathsReturned !== false ||
+    payload.policy?.codexAppPersonalizationMutationsEnabled !== false
   ) {
     throw new Error("Codex app settings parity did not preserve redaction policy");
   }
@@ -34921,10 +34972,10 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
   }
   assertSettingsServerBoundaries(payload);
   assertCodexAppSettingsParity(payload, {
-    availableSectionCount: 9,
-    partialSectionCount: 8,
+    availableSectionCount: 10,
+    partialSectionCount: 9,
     preflightOnlySectionCount: 1,
-    blockedSectionCount: 6,
+    blockedSectionCount: 5,
     profileState: "partial",
   });
   if (
