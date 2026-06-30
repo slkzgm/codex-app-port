@@ -224,11 +224,12 @@ The server binds to `127.0.0.1` by default and serves:
 - `/api/execution-gate`: blocked approval/execution state with no app-server
   traffic plus a capped, sanitized process-local history of successful thread
   start/archive/delete/fork/rename/compact actions
-- `/api/approval-decisions`: deny-only browser decision intake for sanitized
-  turn-session approvals, including a bounded tokenized `decisions` batch for
-  queue denial and gated accept-once actions; pending managed approvals may be
-  deny-forwarded only when `CODEX_APP_PORT_ALLOW_APPROVAL_FORWARDING=1` is
-  explicitly enabled, and request-scoped accept forwarding also requires
+- `/api/approval-decisions`: request-scoped browser decision intake for
+  sanitized turn-session approvals, including a bounded tokenized `decisions`
+  batch for queue denial and gated accept-once actions; pending managed
+  approvals may be deny-forwarded only when
+  `CODEX_APP_PORT_ALLOW_APPROVAL_FORWARDING=1` is explicitly enabled, and
+  request-scoped accept forwarding also requires
   `CODEX_APP_PORT_ALLOW_APPROVAL_ACCEPT=1`; the queue summary is counts-only,
   and the lifecycle summary exposes only state/count/latest sanitized decision
   metadata. Both omit tokens, request keys, session ids, raw approval details,

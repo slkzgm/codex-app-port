@@ -1008,9 +1008,9 @@ Current M1 status:
   app-server payloads
 - pending: full real `turn/start` parity and broader active-session workflows
   beyond sanitized operation/management summaries, explicit request-scoped
-  approval policy, gate flags, execution-readiness state, managed-client state,
-  loaded-session suffixes, latest suffix/status/event metadata, and
-  recent-control metadata
+  approval policy, request-scoped approve/deny controls, gate flags,
+  execution-readiness state, managed-client state, loaded-session suffixes,
+  latest suffix/status/event metadata, and recent-control metadata
 - pending: full real `turn/start` parity behind explicit execution and approval gates
 - pending: expand per-route nested object-shape validation beyond the generic
   integration mutation preflight route before broadening enabled mutations
@@ -1023,13 +1023,13 @@ M2: Omarchy desktop shell.
 - done: sanitized thread transcript
 - turn input
 - event streaming
-- explicit approval prompts
+- done: explicit request-scoped approval queue and prompts
 
 M3: Review workflow.
 
 - done: sanitized file-change view
 - done: bounded sanitized diff rendering
-- approve/deny controls
+- done: request-scoped approve/deny controls
 - command output panel
 - done: opt-in command/exec terminal resize/write/terminate support where the
   protocol permits it, with process controls still blocked

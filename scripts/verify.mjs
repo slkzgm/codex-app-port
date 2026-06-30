@@ -379,7 +379,7 @@ async function checkGoalAudit() {
     ["streamed-agent-output", "met"],
     ["thread-transcript", "met"],
     ["real-turn-start", "partial"],
-    ["approval-decisions", "partial"],
+    ["approval-decisions", "met"],
     ["diff-review", "met"],
     ["terminal-action-surfaces", "met"],
     ["git-worktree-workflows", "met"],
