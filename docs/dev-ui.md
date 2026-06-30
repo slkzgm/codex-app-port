@@ -754,6 +754,13 @@ state/source chips, catalog counts, and redaction chips; selected pet values,
 pet names, custom pet assets, local Codex home scans, overlay state,
 active-thread overlay data, skill install/reload, slash-command execution,
 paths, URLs, raw payloads, mutations, and app-server traffic remain blocked.
+Within that same summary, `git` exposes a static review-only catalog for
+branch-naming standardization, force-push preference, commit-message prompt, and
+pull-request description prompt controls. The UI shows only setting keys,
+groups, state/source chips, catalog counts, and redaction chips; branch naming
+values, force-push preferences, prompt text, generated commit or pull-request
+text, repository names, repository paths, remote URLs, paths, URLs, raw payloads,
+mutations, and app-server traffic remain blocked.
 Within that same summary, `browser` exposes a static review-only catalog for
 the official Browser plugin, Chrome extension, site permission, ask-before-use,
 and full-CDP developer-mode controls. The UI shows only setting keys, groups,
@@ -795,6 +802,12 @@ redaction chips; current values, config values, memory files, memory content,
 memory paths, storage paths, per-thread choices, rate-limit values, model
 names, generation/injection triggers, reset execution, paths, URLs, raw
 payloads, and app-server traffic remain blocked.
+Within that same summary, `archivedThreads` exposes a static review-only catalog
+for the archived-list, date metadata, project-context, and unarchive-action
+surfaces. The UI shows only setting keys, groups, state/source chips, catalog
+counts, and redaction chips; archived thread lists, dates, project context,
+thread names, ids, content, unarchive execution, paths, URLs, raw payloads,
+mutations, and app-server traffic remain blocked.
 Within that same summary, `personalization` exposes a static review-only
 catalog for the official personality-mode options and custom-instructions
 boundary. The UI shows only setting keys, groups, state/source chips, catalog

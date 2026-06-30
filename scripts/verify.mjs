@@ -33146,6 +33146,7 @@ function assertCodexAppSettingsParity(
     summary.sections?.find((section) => section.key === "appearance")?.state !==
       "partial" ||
     summary.sections?.find((section) => section.key === "codexPets")?.state !== "partial" ||
+    summary.sections?.find((section) => section.key === "git")?.state !== "partial" ||
     summary.sections?.find((section) => section.key === "browser")?.state !==
       "partial" ||
     summary.sections?.find((section) => section.key === "personalization")?.state !==
@@ -33153,7 +33154,9 @@ function assertCodexAppSettingsParity(
     summary.sections?.find((section) => section.key === "computerUse")?.state !== "partial" ||
     summary.sections?.find((section) => section.key === "contextAwareSuggestions")?.state !==
       "partial" ||
-    summary.sections?.find((section) => section.key === "memories")?.state !== "partial"
+    summary.sections?.find((section) => section.key === "memories")?.state !== "partial" ||
+    summary.sections?.find((section) => section.key === "archivedThreads")?.state !==
+      "partial"
   ) {
     throw new Error("Codex app settings parity section mapping changed unexpectedly");
   }
@@ -33473,6 +33476,60 @@ function assertCodexAppSettingsParity(
         setting.skillInstallExecuted === false &&
         setting.skillReloadExecuted === false &&
         setting.slashCommandExecuted === false &&
+        setting.pathsReturned === false &&
+        setting.urlsReturned === false &&
+        setting.secretsReturned === false &&
+        setting.rawPayloadsReturned === false &&
+        setting.appServerTraffic === false,
+    ) ||
+    summary.git?.returned !== true ||
+    summary.git.state !== "partial" ||
+    summary.git.settingCount !== 4 ||
+    summary.git.officialSettingCount !== 4 ||
+    summary.git.catalogOnlySettingCount !== 4 ||
+    summary.git.blockedSettingCount !== 0 ||
+    summary.git.enabledSettingCount !== 0 ||
+    summary.git.gitControlsReturned !== true ||
+    summary.git.branchNamingControlsReturned !== true ||
+    summary.git.forcePushControlsReturned !== true ||
+    summary.git.commitPromptControlsReturned !== true ||
+    summary.git.pullRequestPromptControlsReturned !== true ||
+    summary.git.branchNameValuesReturned !== false ||
+    summary.git.forcePushPreferencesReturned !== false ||
+    summary.git.promptValuesReturned !== false ||
+    summary.git.commitMessagePromptReturned !== false ||
+    summary.git.pullRequestDescriptionPromptReturned !== false ||
+    summary.git.generatedCommitMessagesReturned !== false ||
+    summary.git.generatedPullRequestsReturned !== false ||
+    summary.git.repositoryNamesReturned !== false ||
+    summary.git.repositoryPathsReturned !== false ||
+    summary.git.gitRemoteUrlsReturned !== false ||
+    summary.git.settingValuesReturned !== false ||
+    summary.git.localSettingValuesReturned !== false ||
+    summary.git.mutationEnabled !== false ||
+    summary.git.pathsReturned !== false ||
+    summary.git.urlsReturned !== false ||
+    summary.git.secretsReturned !== false ||
+    summary.git.rawPayloadsReturned !== false ||
+    summary.git.appServerTraffic !== false ||
+    JSON.stringify((summary.git.settings ?? []).map((setting) => setting.key)) !==
+      JSON.stringify([
+        "branchNamingStandardization",
+        "forcePushPreference",
+        "commitMessagePrompt",
+        "pullRequestDescriptionPrompt",
+      ]) ||
+    !summary.git.settings?.every(
+      (setting) =>
+        setting.settingValueReturned === false &&
+        setting.branchNameValueReturned === false &&
+        setting.forcePushPreferenceReturned === false &&
+        setting.promptValueReturned === false &&
+        setting.generatedTextReturned === false &&
+        setting.repositoryNameReturned === false &&
+        setting.repositoryPathReturned === false &&
+        setting.remoteUrlReturned === false &&
+        setting.mutationEnabled === false &&
         setting.pathsReturned === false &&
         setting.urlsReturned === false &&
         setting.secretsReturned === false &&
@@ -33809,6 +33866,54 @@ function assertCodexAppSettingsParity(
         setting.rawPayloadsReturned === false &&
         setting.appServerTraffic === false,
     ) ||
+    summary.archivedThreads?.returned !== true ||
+    summary.archivedThreads.state !== "partial" ||
+    summary.archivedThreads.settingCount !== 4 ||
+    summary.archivedThreads.officialSettingCount !== 4 ||
+    summary.archivedThreads.catalogOnlySettingCount !== 2 ||
+    summary.archivedThreads.blockedSettingCount !== 2 ||
+    summary.archivedThreads.enabledSettingCount !== 0 ||
+    summary.archivedThreads.archivedThreadControlsReturned !== true ||
+    summary.archivedThreads.archivedThreadCatalogReturned !== true ||
+    summary.archivedThreads.archivedThreadListReturned !== false ||
+    summary.archivedThreads.archivedThreadDatesReturned !== false ||
+    summary.archivedThreads.archivedProjectContextReturned !== false ||
+    summary.archivedThreads.archivedThreadNamesReturned !== false ||
+    summary.archivedThreads.archivedThreadIdsReturned !== false ||
+    summary.archivedThreads.archivedThreadContentReturned !== false ||
+    summary.archivedThreads.unarchiveActionEnabled !== false ||
+    summary.archivedThreads.settingValuesReturned !== false ||
+    summary.archivedThreads.localSettingValuesReturned !== false ||
+    summary.archivedThreads.mutationEnabled !== false ||
+    summary.archivedThreads.pathsReturned !== false ||
+    summary.archivedThreads.urlsReturned !== false ||
+    summary.archivedThreads.secretsReturned !== false ||
+    summary.archivedThreads.rawPayloadsReturned !== false ||
+    summary.archivedThreads.appServerTraffic !== false ||
+    JSON.stringify((summary.archivedThreads.settings ?? []).map((setting) => setting.key)) !==
+      JSON.stringify([
+        "archivedThreadList",
+        "archivedThreadDates",
+        "archivedProjectContext",
+        "unarchiveThreadAction",
+      ]) ||
+    !summary.archivedThreads.settings?.every(
+      (setting) =>
+        setting.settingValueReturned === false &&
+        setting.archivedThreadListReturned === false &&
+        setting.archivedThreadDateReturned === false &&
+        setting.archivedProjectContextReturned === false &&
+        setting.archivedThreadNameReturned === false &&
+        setting.archivedThreadIdReturned === false &&
+        setting.archivedThreadContentReturned === false &&
+        setting.unarchiveActionEnabled === false &&
+        setting.mutationEnabled === false &&
+        setting.pathsReturned === false &&
+        setting.urlsReturned === false &&
+        setting.secretsReturned === false &&
+        setting.rawPayloadsReturned === false &&
+        setting.appServerTraffic === false,
+    ) ||
     !summary.sections?.every(
       (section) =>
         section.tracked === true &&
@@ -33869,6 +33974,12 @@ function assertCodexAppSettingsParity(
     payload.policy?.codexAppPetOverlayLaunched !== false ||
     payload.policy?.codexAppPetSkillInstallEnabled !== false ||
     payload.policy?.codexAppPetMutationsEnabled !== false ||
+    payload.policy?.codexAppGitSettingsReturned !== true ||
+    payload.policy?.codexAppGitValuesReturned !== false ||
+    payload.policy?.codexAppGitPromptValuesReturned !== false ||
+    payload.policy?.codexAppGitRepositoryMetadataReturned !== false ||
+    payload.policy?.codexAppGitRemoteUrlsReturned !== false ||
+    payload.policy?.codexAppGitMutationsEnabled !== false ||
     payload.policy?.codexAppBrowserSettingsReturned !== true ||
     payload.policy?.codexAppBrowserValuesReturned !== false ||
     payload.policy?.codexAppBrowserWebsiteListsReturned !== false ||
@@ -33915,7 +34026,12 @@ function assertCodexAppSettingsParity(
     payload.policy?.codexAppMemoriesThreadChoicesReturned !== false ||
     payload.policy?.codexAppMemoriesModelNamesReturned !== false ||
     payload.policy?.codexAppMemoriesResetExecuted !== false ||
-    payload.policy?.codexAppMemoriesMutationsEnabled !== false
+    payload.policy?.codexAppMemoriesMutationsEnabled !== false ||
+    payload.policy?.codexAppArchivedThreadsSettingsReturned !== true ||
+    payload.policy?.codexAppArchivedThreadMetadataReturned !== false ||
+    payload.policy?.codexAppArchivedThreadContentReturned !== false ||
+    payload.policy?.codexAppArchivedThreadActionsEnabled !== false ||
+    payload.policy?.codexAppArchivedThreadMutationsEnabled !== false
   ) {
     throw new Error("Codex app settings parity did not preserve redaction policy");
   }

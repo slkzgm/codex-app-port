@@ -33696,6 +33696,93 @@ function buildCodexAppPetSettingsSummary() {
   };
 }
 
+const CODEX_APP_GIT_SETTINGS = Object.freeze([
+  {
+    key: "branchNamingStandardization",
+    group: "branch-naming",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "forcePushPreference",
+    group: "push-policy",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "commitMessagePrompt",
+    group: "commit-prompts",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "pullRequestDescriptionPrompt",
+    group: "pull-request-prompts",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+]);
+
+function buildCodexAppGitSettingsSummary() {
+  const settings = CODEX_APP_GIT_SETTINGS.map((setting) => ({
+    ...setting,
+    settingValueReturned: false,
+    branchNameValueReturned: false,
+    forcePushPreferenceReturned: false,
+    promptValueReturned: false,
+    generatedTextReturned: false,
+    repositoryNameReturned: false,
+    repositoryPathReturned: false,
+    remoteUrlReturned: false,
+    mutationEnabled: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+    rawPayloadsReturned: false,
+    appServerTraffic: false,
+  }));
+  const catalogOnlySettingCount = settings.filter(
+    (setting) => setting.state === "catalog-only",
+  ).length;
+  const blockedSettingCount = settings.filter((setting) => setting.state === "blocked").length;
+
+  return {
+    returned: true,
+    state: catalogOnlySettingCount > 0 ? "partial" : "blocked",
+    settingCount: settings.length,
+    officialSettingCount: settings.filter(
+      (setting) => setting.source === "official-codex-app-docs",
+    ).length,
+    catalogOnlySettingCount,
+    blockedSettingCount,
+    enabledSettingCount: 0,
+    settings,
+    gitControlsReturned: true,
+    branchNamingControlsReturned: true,
+    forcePushControlsReturned: true,
+    commitPromptControlsReturned: true,
+    pullRequestPromptControlsReturned: true,
+    branchNameValuesReturned: false,
+    forcePushPreferencesReturned: false,
+    promptValuesReturned: false,
+    commitMessagePromptReturned: false,
+    pullRequestDescriptionPromptReturned: false,
+    generatedCommitMessagesReturned: false,
+    generatedPullRequestsReturned: false,
+    repositoryNamesReturned: false,
+    repositoryPathsReturned: false,
+    gitRemoteUrlsReturned: false,
+    settingValuesReturned: false,
+    localSettingValuesReturned: false,
+    mutationEnabled: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+    rawPayloadsReturned: false,
+    appServerTraffic: false,
+  };
+}
+
 const CODEX_APP_BROWSER_SETTINGS = Object.freeze([
   {
     key: "bundledBrowserPlugin",
@@ -34328,6 +34415,87 @@ function buildCodexAppMemoriesSettingsSummary(integrationScope = {}) {
   };
 }
 
+const CODEX_APP_ARCHIVED_THREADS_SETTINGS = Object.freeze([
+  {
+    key: "archivedThreadList",
+    group: "inventory",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "archivedThreadDates",
+    group: "metadata",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "archivedProjectContext",
+    group: "metadata",
+    state: "blocked",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "unarchiveThreadAction",
+    group: "thread-action",
+    state: "blocked",
+    source: "official-codex-app-docs",
+  },
+]);
+
+function buildCodexAppArchivedThreadsSettingsSummary() {
+  const settings = CODEX_APP_ARCHIVED_THREADS_SETTINGS.map((setting) => ({
+    ...setting,
+    settingValueReturned: false,
+    archivedThreadListReturned: false,
+    archivedThreadDateReturned: false,
+    archivedProjectContextReturned: false,
+    archivedThreadNameReturned: false,
+    archivedThreadIdReturned: false,
+    archivedThreadContentReturned: false,
+    unarchiveActionEnabled: false,
+    mutationEnabled: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+    rawPayloadsReturned: false,
+    appServerTraffic: false,
+  }));
+  const catalogOnlySettingCount = settings.filter(
+    (setting) => setting.state === "catalog-only",
+  ).length;
+  const blockedSettingCount = settings.filter((setting) => setting.state === "blocked").length;
+
+  return {
+    returned: true,
+    state: catalogOnlySettingCount > 0 ? "partial" : "blocked",
+    settingCount: settings.length,
+    officialSettingCount: settings.filter(
+      (setting) => setting.source === "official-codex-app-docs",
+    ).length,
+    catalogOnlySettingCount,
+    blockedSettingCount,
+    enabledSettingCount: 0,
+    settings,
+    archivedThreadControlsReturned: true,
+    archivedThreadCatalogReturned: true,
+    archivedThreadListReturned: false,
+    archivedThreadDatesReturned: false,
+    archivedProjectContextReturned: false,
+    archivedThreadNamesReturned: false,
+    archivedThreadIdsReturned: false,
+    archivedThreadContentReturned: false,
+    unarchiveActionEnabled: false,
+    settingValuesReturned: false,
+    localSettingValuesReturned: false,
+    mutationEnabled: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+    rawPayloadsReturned: false,
+    appServerTraffic: false,
+  };
+}
+
 function codexAppSettingsSection(key, group, state, source) {
   return {
     key,
@@ -34359,12 +34527,14 @@ function buildCodexAppSettingsParity(payload = {}) {
   const profile = buildCodexAppProfileSettingsSummary();
   const appearance = buildCodexAppAppearanceSettingsSummary();
   const codexPets = buildCodexAppPetSettingsSummary();
+  const git = buildCodexAppGitSettingsSummary();
   const browser = buildCodexAppBrowserSettingsSummary();
   const computerUse = buildCodexAppComputerUseSettingsSummary();
   const contextAwareSuggestions = buildCodexAppContextAwareSuggestionsSettingsSummary();
   const notifications = buildCodexAppNotificationSettingsSummary(payload);
   const personalization = buildCodexAppPersonalizationSettingsSummary();
   const memories = buildCodexAppMemoriesSettingsSummary(integrationScope);
+  const archivedThreads = buildCodexAppArchivedThreadsSettingsSummary();
   const integrationsVisible = [apps, externalAgentConfig, mcp, skills, plugins].some(
     (surface) => surface.state === "partial",
   );
@@ -34406,7 +34576,7 @@ function buildCodexAppSettingsParity(payload = {}) {
       "appearance-settings-catalog",
     ),
     codexAppSettingsSection("codexPets", "interface", codexPets.state, "pet-settings-catalog"),
-    codexAppSettingsSection("git", "workspace", "partial", "read-only-git-panel"),
+    codexAppSettingsSection("git", "workspace", git.state, "git-settings-catalog"),
     codexAppSettingsSection(
       "integrationsMcp",
       "integrations",
@@ -34448,8 +34618,8 @@ function buildCodexAppSettingsParity(payload = {}) {
     codexAppSettingsSection(
       "archivedThreads",
       "threads",
-      "partial",
-      "thread-archive-boundary",
+      archivedThreads.state,
+      "archived-threads-settings-catalog",
     ),
   ];
   const blockedSectionCount = sections.filter((section) => section.state === "blocked").length;
@@ -34474,12 +34644,14 @@ function buildCodexAppSettingsParity(payload = {}) {
     keyboardShortcuts,
     appearance,
     codexPets,
+    git,
     browser,
     computerUse,
     contextAwareSuggestions,
     notifications,
     personalization,
     memories,
+    archivedThreads,
     sectionKeysReturned: true,
     sectionLabelsReturned: false,
     localSettingValuesReturned: false,
@@ -34912,6 +35084,12 @@ export function sanitizeSettingsIntegrationsPayload(
       codexAppPetOverlayLaunched: false,
       codexAppPetSkillInstallEnabled: false,
       codexAppPetMutationsEnabled: false,
+      codexAppGitSettingsReturned: true,
+      codexAppGitValuesReturned: false,
+      codexAppGitPromptValuesReturned: false,
+      codexAppGitRepositoryMetadataReturned: false,
+      codexAppGitRemoteUrlsReturned: false,
+      codexAppGitMutationsEnabled: false,
       codexAppBrowserSettingsReturned: true,
       codexAppBrowserValuesReturned: false,
       codexAppBrowserWebsiteListsReturned: false,
@@ -34959,6 +35137,11 @@ export function sanitizeSettingsIntegrationsPayload(
       codexAppMemoriesModelNamesReturned: false,
       codexAppMemoriesResetExecuted: false,
       codexAppMemoriesMutationsEnabled: false,
+      codexAppArchivedThreadsSettingsReturned: true,
+      codexAppArchivedThreadMetadataReturned: false,
+      codexAppArchivedThreadContentReturned: false,
+      codexAppArchivedThreadActionsEnabled: false,
+      codexAppArchivedThreadMutationsEnabled: false,
       serverRequestHandlersEnabled: false,
       serverRequestPayloadsReturned: false,
       serverRequestSchemasReturned: false,
@@ -42517,6 +42700,12 @@ export function buildSettingsIntegrations({
       codexAppPetOverlayLaunched: false,
       codexAppPetSkillInstallEnabled: false,
       codexAppPetMutationsEnabled: false,
+      codexAppGitSettingsReturned: true,
+      codexAppGitValuesReturned: false,
+      codexAppGitPromptValuesReturned: false,
+      codexAppGitRepositoryMetadataReturned: false,
+      codexAppGitRemoteUrlsReturned: false,
+      codexAppGitMutationsEnabled: false,
       codexAppBrowserSettingsReturned: true,
       codexAppBrowserValuesReturned: false,
       codexAppBrowserWebsiteListsReturned: false,
@@ -42564,6 +42753,11 @@ export function buildSettingsIntegrations({
       codexAppMemoriesModelNamesReturned: false,
       codexAppMemoriesResetExecuted: false,
       codexAppMemoriesMutationsEnabled: false,
+      codexAppArchivedThreadsSettingsReturned: true,
+      codexAppArchivedThreadMetadataReturned: false,
+      codexAppArchivedThreadContentReturned: false,
+      codexAppArchivedThreadActionsEnabled: false,
+      codexAppArchivedThreadMutationsEnabled: false,
       serverRequestHandlersEnabled: false,
       serverRequestPayloadsReturned: false,
       serverRequestSchemasReturned: false,

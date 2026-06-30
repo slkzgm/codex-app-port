@@ -428,12 +428,17 @@
   names, custom pet assets, local Codex home scan results, overlay state,
   active-thread overlay data, paths, URLs, secrets, raw payloads, app-server
   payloads, or pet mutations, and must not install or reload skills, execute
-  `/pet`, launch overlays, or refresh custom pets. Its
-  Browser settings catalog may expose only static setting keys, groups, states,
-  sources, and counts; it must not return Browser plugin or Chrome extension
-  state, allowed or blocked site lists, origins, website permission values, CDP
-  state, organization policy, Chrome profile data, browser launches, network
-  traffic, paths, URLs, secrets, raw payloads, app-server payloads, or Browser
+  `/pet`, launch overlays, or refresh custom pets. Its Git settings catalog may
+  expose only static setting keys, groups, states, sources, and counts; it must
+  not return branch naming values, force-push preferences, prompt text, generated
+  commit or pull-request text, repository names, repository paths, remote URLs,
+  paths, URLs, secrets, raw payloads, app-server payloads, or Git settings
+  mutations. Its Browser settings catalog may expose only static setting keys,
+  groups, states, sources, and counts; it must not return Browser plugin or
+  Chrome extension state, allowed or blocked site lists, origins, website
+  permission values, CDP state, organization policy, Chrome profile data,
+  browser launches, network traffic, paths, URLs, secrets, raw payloads,
+  app-server payloads, or Browser
   mutations. Its
   Computer Use settings catalog may expose only static setting keys, groups,
   states, sources, and counts; it must not return plugin install state, Screen
@@ -457,13 +462,17 @@
   not return suggestion text, task content, thread content or ids,
   project/workspace names, source context, ranking signals, resume targets,
   paths, URLs, secrets, raw payloads, or app-server payloads, and must not
-  trigger suggestion generation or suggestion mutations. Its Memories settings catalog may expose only
-  static setting keys, groups, states, sources, and counts; it must not return
-  current memory setting values, config values, memory files, memory content,
-  memory paths, storage paths, thread-level choices, rate-limit values, model
-  names, paths, URLs, secrets, raw payloads, or app-server payloads, and must
-  not trigger memory generation, memory injection, memory reset, or memory
-  mutations.
+  trigger suggestion generation or suggestion mutations. Its Memories settings
+  catalog may expose only static setting keys, groups, states, sources, and
+  counts; it must not return current memory setting values, config values,
+  memory files, memory content, memory paths, storage paths, thread-level
+  choices, rate-limit values, model names, paths, URLs, secrets, raw payloads,
+  or app-server payloads, and must not trigger memory generation, memory
+  injection, memory reset, or memory mutations. Its Archived threads settings
+  catalog may expose only static setting keys, groups, states, sources, and
+  counts; it must not return archived thread lists, dates, project context,
+  thread names, ids, content, paths, URLs, secrets, raw payloads, app-server
+  payloads, or execute unarchive/thread mutations.
   Browser-side approval queue filters must operate only on the already sanitized
   queue payload, and visible-subset deny/accept actions must still submit the
   bounded tokenized decision batch through the normal approval route. They must

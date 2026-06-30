@@ -25,6 +25,8 @@ const elements = {
   appAppearanceValuesText: document.querySelector("#app-appearance-values-text"),
   appPetsText: document.querySelector("#app-pets-text"),
   appPetsValuesText: document.querySelector("#app-pets-values-text"),
+  appGitText: document.querySelector("#app-git-text"),
+  appGitValuesText: document.querySelector("#app-git-values-text"),
   appBrowserText: document.querySelector("#app-browser-text"),
   appBrowserValuesText: document.querySelector("#app-browser-values-text"),
   appComputerUseText: document.querySelector("#app-computer-use-text"),
@@ -39,6 +41,8 @@ const elements = {
   appNotificationsPermissionText: document.querySelector("#app-notifications-permission-text"),
   appMemoriesText: document.querySelector("#app-memories-text"),
   appMemoriesValuesText: document.querySelector("#app-memories-values-text"),
+  appArchivedThreadsText: document.querySelector("#app-archived-threads-text"),
+  appArchivedThreadsValuesText: document.querySelector("#app-archived-threads-values-text"),
   appPersonalizationText: document.querySelector("#app-personalization-text"),
   appPersonalizationValueText: document.querySelector("#app-personalization-value-text"),
   realtimeVoicesButton: document.querySelector("#realtime-voices-button"),
@@ -383,6 +387,7 @@ const elements = {
   appAgentConfigList: document.querySelector("#app-agent-config-list"),
   appAppearanceList: document.querySelector("#app-appearance-list"),
   appPetsList: document.querySelector("#app-pets-list"),
+  appGitList: document.querySelector("#app-git-list"),
   appBrowserList: document.querySelector("#app-browser-list"),
   appComputerUseList: document.querySelector("#app-computer-use-list"),
   appContextSuggestionsList: document.querySelector("#app-context-suggestions-list"),
@@ -390,6 +395,7 @@ const elements = {
   appNotificationsList: document.querySelector("#app-notifications-list"),
   appPersonalizationList: document.querySelector("#app-personalization-list"),
   appMemoriesList: document.querySelector("#app-memories-list"),
+  appArchivedThreadsList: document.querySelector("#app-archived-threads-list"),
   gitButton: document.querySelector("#git-button"),
   gitSwitchButton: document.querySelector("#git-switch-button"),
   gitDeleteButton: document.querySelector("#git-delete-button"),
@@ -10513,6 +10519,21 @@ function renderSettingsIntegrations(payload) {
     codexPets.activeThreadReturned
       ? "Returned"
       : "Hidden";
+  const gitSettings = codexAppSettings.git ?? {};
+  elements.appGitText.textContent = gitSettings.returned
+    ? `${gitSettings.catalogOnlySettingCount ?? 0} catalog / ${
+        gitSettings.settingCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.appGitValuesText.textContent =
+    gitSettings.branchNameValuesReturned ||
+    gitSettings.forcePushPreferencesReturned ||
+    gitSettings.promptValuesReturned ||
+    gitSettings.repositoryNamesReturned ||
+    gitSettings.repositoryPathsReturned ||
+    gitSettings.gitRemoteUrlsReturned
+      ? "Returned"
+      : "Hidden";
   const browser = codexAppSettings.browser ?? {};
   elements.appBrowserText.textContent = browser.returned
     ? `${browser.catalogOnlySettingCount ?? 0} catalog / ${
@@ -10600,6 +10621,21 @@ function renderSettingsIntegrations(payload) {
     memories.memoryPathsReturned ||
     memories.threadChoicesReturned ||
     memories.modelNamesReturned
+      ? "Returned"
+      : "Hidden";
+  const archivedThreads = codexAppSettings.archivedThreads ?? {};
+  elements.appArchivedThreadsText.textContent = archivedThreads.returned
+    ? `${archivedThreads.catalogOnlySettingCount ?? 0} catalog / ${
+        archivedThreads.settingCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.appArchivedThreadsValuesText.textContent =
+    archivedThreads.archivedThreadListReturned ||
+    archivedThreads.archivedThreadDatesReturned ||
+    archivedThreads.archivedProjectContextReturned ||
+    archivedThreads.archivedThreadNamesReturned ||
+    archivedThreads.archivedThreadIdsReturned ||
+    archivedThreads.archivedThreadContentReturned
       ? "Returned"
       : "Hidden";
   const personalization = codexAppSettings.personalization ?? {};
@@ -10759,6 +10795,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexAppAgentConfigurationSettings(agentConfiguration);
   renderCodexAppAppearanceSettings(appearance);
   renderCodexAppPetSettings(codexPets);
+  renderCodexAppGitSettings(gitSettings);
   renderCodexAppBrowserSettings(browser);
   renderCodexAppComputerUseSettings(computerUse);
   renderCodexAppContextAwareSuggestionsSettings(contextAwareSuggestions);
@@ -10766,6 +10803,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexAppNotificationSettings(notifications);
   renderCodexAppPersonalizationSettings(personalization);
   renderCodexAppMemoriesSettings(memories);
+  renderCodexAppArchivedThreadsSettings(archivedThreads);
   renderUpstreamDrift(upstreamDrift);
   renderIntegrationMethodAudit(methodAudit);
 }
@@ -12579,6 +12617,58 @@ function renderCodexAppPetSettings(summary) {
   }
 }
 
+function renderCodexAppGitSettings(summary) {
+  elements.appGitList.replaceChildren();
+  const settings = Array.isArray(summary?.settings) ? summary.settings : [];
+  if (settings.length === 0) {
+    elements.appGitList.append(emptyState("No Git settings catalog returned."));
+    return;
+  }
+  for (const setting of settings) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = setting.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = setting.group ?? "git";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      setting.state ?? "blocked",
+      setting.source ?? null,
+      setting.settingValueReturned ? "value returned" : "value hidden",
+      setting.branchNameValueReturned ? "branch names returned" : "branch names hidden",
+      setting.forcePushPreferenceReturned ? "force push returned" : "force push hidden",
+      setting.promptValueReturned ? "prompt returned" : "prompt hidden",
+      setting.generatedTextReturned ? "generated text returned" : "generated text hidden",
+      setting.repositoryNameReturned ? "repo name returned" : "repo name hidden",
+      setting.repositoryPathReturned ? "repo path returned" : "repo path hidden",
+      setting.remoteUrlReturned ? "remote URL returned" : "remote URL hidden",
+      setting.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      setting.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.appGitList.append(row);
+  }
+}
+
 function renderCodexAppBrowserSettings(summary) {
   elements.appBrowserList.replaceChildren();
   const settings = Array.isArray(summary?.settings) ? summary.settings : [];
@@ -12930,6 +13020,59 @@ function renderCodexAppMemoriesSettings(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.appMemoriesList.append(row);
+  }
+}
+
+function renderCodexAppArchivedThreadsSettings(summary) {
+  elements.appArchivedThreadsList.replaceChildren();
+  const settings = Array.isArray(summary?.settings) ? summary.settings : [];
+  if (settings.length === 0) {
+    elements.appArchivedThreadsList.append(
+      emptyState("No archived threads settings catalog returned."),
+    );
+    return;
+  }
+  for (const setting of settings) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = setting.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = setting.group ?? "archived-threads";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      setting.state ?? "blocked",
+      setting.source ?? null,
+      setting.settingValueReturned ? "value returned" : "value hidden",
+      setting.archivedThreadListReturned ? "thread list returned" : "thread list hidden",
+      setting.archivedThreadDateReturned ? "dates returned" : "dates hidden",
+      setting.archivedProjectContextReturned ? "project context returned" : "context hidden",
+      setting.archivedThreadNameReturned ? "thread names returned" : "thread names hidden",
+      setting.archivedThreadIdReturned ? "thread ids returned" : "thread ids hidden",
+      setting.archivedThreadContentReturned ? "thread content returned" : "thread content hidden",
+      setting.unarchiveActionEnabled ? "unarchive enabled" : "unarchive blocked",
+      setting.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.appArchivedThreadsList.append(row);
   }
 }
 

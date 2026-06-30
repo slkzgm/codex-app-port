@@ -34984,6 +34984,7 @@ function assertCodexAppSettingsParity(
     "partial",
   );
   assert.equal(summary.sections.find((section) => section.key === "codexPets")?.state, "partial");
+  assert.equal(summary.sections.find((section) => section.key === "git")?.state, "partial");
   assert.equal(summary.sections.find((section) => section.key === "browser")?.state, "partial");
   assert.equal(
     summary.sections.find((section) => section.key === "personalization")?.state,
@@ -34999,6 +35000,10 @@ function assertCodexAppSettingsParity(
   );
   assert.equal(
     summary.sections.find((section) => section.key === "memories")?.state,
+    "partial",
+  );
+  assert.equal(
+    summary.sections.find((section) => section.key === "archivedThreads")?.state,
     "partial",
   );
   assert.equal(summary.sectionKeysReturned, true);
@@ -35344,6 +35349,65 @@ function assertCodexAppSettingsParity(
         setting.skillInstallExecuted === false &&
         setting.skillReloadExecuted === false &&
         setting.slashCommandExecuted === false &&
+        setting.pathsReturned === false &&
+        setting.urlsReturned === false &&
+        setting.secretsReturned === false &&
+        setting.rawPayloadsReturned === false &&
+        setting.appServerTraffic === false,
+    ),
+    true,
+  );
+  assert.equal(summary.git?.returned, true);
+  assert.equal(summary.git.state, "partial");
+  assert.equal(summary.git.settingCount, 4);
+  assert.equal(summary.git.officialSettingCount, 4);
+  assert.equal(summary.git.catalogOnlySettingCount, 4);
+  assert.equal(summary.git.blockedSettingCount, 0);
+  assert.equal(summary.git.enabledSettingCount, 0);
+  assert.equal(summary.git.gitControlsReturned, true);
+  assert.equal(summary.git.branchNamingControlsReturned, true);
+  assert.equal(summary.git.forcePushControlsReturned, true);
+  assert.equal(summary.git.commitPromptControlsReturned, true);
+  assert.equal(summary.git.pullRequestPromptControlsReturned, true);
+  assert.equal(summary.git.branchNameValuesReturned, false);
+  assert.equal(summary.git.forcePushPreferencesReturned, false);
+  assert.equal(summary.git.promptValuesReturned, false);
+  assert.equal(summary.git.commitMessagePromptReturned, false);
+  assert.equal(summary.git.pullRequestDescriptionPromptReturned, false);
+  assert.equal(summary.git.generatedCommitMessagesReturned, false);
+  assert.equal(summary.git.generatedPullRequestsReturned, false);
+  assert.equal(summary.git.repositoryNamesReturned, false);
+  assert.equal(summary.git.repositoryPathsReturned, false);
+  assert.equal(summary.git.gitRemoteUrlsReturned, false);
+  assert.equal(summary.git.settingValuesReturned, false);
+  assert.equal(summary.git.localSettingValuesReturned, false);
+  assert.equal(summary.git.mutationEnabled, false);
+  assert.equal(summary.git.pathsReturned, false);
+  assert.equal(summary.git.urlsReturned, false);
+  assert.equal(summary.git.secretsReturned, false);
+  assert.equal(summary.git.rawPayloadsReturned, false);
+  assert.equal(summary.git.appServerTraffic, false);
+  assert.deepEqual(
+    summary.git.settings.map((setting) => setting.key),
+    [
+      "branchNamingStandardization",
+      "forcePushPreference",
+      "commitMessagePrompt",
+      "pullRequestDescriptionPrompt",
+    ],
+  );
+  assert.equal(
+    summary.git.settings.every(
+      (setting) =>
+        setting.settingValueReturned === false &&
+        setting.branchNameValueReturned === false &&
+        setting.forcePushPreferenceReturned === false &&
+        setting.promptValueReturned === false &&
+        setting.generatedTextReturned === false &&
+        setting.repositoryNameReturned === false &&
+        setting.repositoryPathReturned === false &&
+        setting.remoteUrlReturned === false &&
+        setting.mutationEnabled === false &&
         setting.pathsReturned === false &&
         setting.urlsReturned === false &&
         setting.secretsReturned === false &&
@@ -35712,6 +35776,59 @@ function assertCodexAppSettingsParity(
     ),
     true,
   );
+  assert.equal(summary.archivedThreads?.returned, true);
+  assert.equal(summary.archivedThreads.state, "partial");
+  assert.equal(summary.archivedThreads.settingCount, 4);
+  assert.equal(summary.archivedThreads.officialSettingCount, 4);
+  assert.equal(summary.archivedThreads.catalogOnlySettingCount, 2);
+  assert.equal(summary.archivedThreads.blockedSettingCount, 2);
+  assert.equal(summary.archivedThreads.enabledSettingCount, 0);
+  assert.equal(summary.archivedThreads.archivedThreadControlsReturned, true);
+  assert.equal(summary.archivedThreads.archivedThreadCatalogReturned, true);
+  assert.equal(summary.archivedThreads.archivedThreadListReturned, false);
+  assert.equal(summary.archivedThreads.archivedThreadDatesReturned, false);
+  assert.equal(summary.archivedThreads.archivedProjectContextReturned, false);
+  assert.equal(summary.archivedThreads.archivedThreadNamesReturned, false);
+  assert.equal(summary.archivedThreads.archivedThreadIdsReturned, false);
+  assert.equal(summary.archivedThreads.archivedThreadContentReturned, false);
+  assert.equal(summary.archivedThreads.unarchiveActionEnabled, false);
+  assert.equal(summary.archivedThreads.settingValuesReturned, false);
+  assert.equal(summary.archivedThreads.localSettingValuesReturned, false);
+  assert.equal(summary.archivedThreads.mutationEnabled, false);
+  assert.equal(summary.archivedThreads.pathsReturned, false);
+  assert.equal(summary.archivedThreads.urlsReturned, false);
+  assert.equal(summary.archivedThreads.secretsReturned, false);
+  assert.equal(summary.archivedThreads.rawPayloadsReturned, false);
+  assert.equal(summary.archivedThreads.appServerTraffic, false);
+  assert.deepEqual(
+    summary.archivedThreads.settings.map((setting) => setting.key),
+    [
+      "archivedThreadList",
+      "archivedThreadDates",
+      "archivedProjectContext",
+      "unarchiveThreadAction",
+    ],
+  );
+  assert.equal(
+    summary.archivedThreads.settings.every(
+      (setting) =>
+        setting.settingValueReturned === false &&
+        setting.archivedThreadListReturned === false &&
+        setting.archivedThreadDateReturned === false &&
+        setting.archivedProjectContextReturned === false &&
+        setting.archivedThreadNameReturned === false &&
+        setting.archivedThreadIdReturned === false &&
+        setting.archivedThreadContentReturned === false &&
+        setting.unarchiveActionEnabled === false &&
+        setting.mutationEnabled === false &&
+        setting.pathsReturned === false &&
+        setting.urlsReturned === false &&
+        setting.secretsReturned === false &&
+        setting.rawPayloadsReturned === false &&
+        setting.appServerTraffic === false,
+    ),
+    true,
+  );
   assert.equal(
     summary.sections.every(
       (section) =>
@@ -35775,6 +35892,12 @@ function assertCodexAppSettingsParity(
   assert.equal(payload.policy?.codexAppPetOverlayLaunched, false);
   assert.equal(payload.policy?.codexAppPetSkillInstallEnabled, false);
   assert.equal(payload.policy?.codexAppPetMutationsEnabled, false);
+  assert.equal(payload.policy?.codexAppGitSettingsReturned, true);
+  assert.equal(payload.policy?.codexAppGitValuesReturned, false);
+  assert.equal(payload.policy?.codexAppGitPromptValuesReturned, false);
+  assert.equal(payload.policy?.codexAppGitRepositoryMetadataReturned, false);
+  assert.equal(payload.policy?.codexAppGitRemoteUrlsReturned, false);
+  assert.equal(payload.policy?.codexAppGitMutationsEnabled, false);
   assert.equal(payload.policy?.codexAppBrowserSettingsReturned, true);
   assert.equal(payload.policy?.codexAppBrowserValuesReturned, false);
   assert.equal(payload.policy?.codexAppBrowserWebsiteListsReturned, false);
@@ -35822,6 +35945,11 @@ function assertCodexAppSettingsParity(
   assert.equal(payload.policy?.codexAppMemoriesModelNamesReturned, false);
   assert.equal(payload.policy?.codexAppMemoriesResetExecuted, false);
   assert.equal(payload.policy?.codexAppMemoriesMutationsEnabled, false);
+  assert.equal(payload.policy?.codexAppArchivedThreadsSettingsReturned, true);
+  assert.equal(payload.policy?.codexAppArchivedThreadMetadataReturned, false);
+  assert.equal(payload.policy?.codexAppArchivedThreadContentReturned, false);
+  assert.equal(payload.policy?.codexAppArchivedThreadActionsEnabled, false);
+  assert.equal(payload.policy?.codexAppArchivedThreadMutationsEnabled, false);
 }
 
 function assertTurnSessionRoutingContract(payload, expected) {

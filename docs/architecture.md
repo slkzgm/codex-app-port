@@ -518,6 +518,12 @@ Current M1 status:
   scans, overlay state, active-thread overlay data, skill install/reload,
   slash-command execution, paths, URLs, secrets, raw payloads, mutations, and
   app-server traffic blocked
+- done: read-only Git settings catalog inside the settings parity summary,
+  exposing only static branch-naming, force-push, commit-message prompt, and
+  pull-request description prompt keys/groups/states/counts, with branch naming
+  values, force-push preferences, prompt text, generated commit or pull-request
+  text, repository names, repository paths, remote URLs, paths, URLs, secrets,
+  raw payloads, mutations, and app-server traffic blocked
 - done: read-only Browser settings catalog inside the settings parity summary,
   exposing only static Browser plugin, Chrome extension, site permission,
   ask-before-use, and full-CDP developer-mode control keys/groups/states/counts,
@@ -559,6 +565,11 @@ Current M1 status:
   choices, rate-limit values, model names, generation/injection triggers, reset
   execution, paths, URLs, secrets, raw payloads, mutations, and app-server
   traffic blocked
+- done: read-only Archived threads settings catalog inside the settings parity
+  summary, exposing only static archived-list, date metadata, project-context,
+  and unarchive-action keys/groups/states/counts, with archived thread lists,
+  dates, project context, thread names, ids, content, unarchive execution, paths,
+  URLs, secrets, raw payloads, mutations, and app-server traffic blocked
 - done: opt-in `/api/account-login-start` path behind
   `CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN=1`, with matching one-time
   account-login-preflight token consumption, `account/login/start` device-code

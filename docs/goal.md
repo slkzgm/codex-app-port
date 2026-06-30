@@ -110,6 +110,13 @@ Target parity with the Codex desktop workflow:
   home scans, overlay state, active-thread overlay data, skill install/reload,
   slash-command execution, paths, URLs, secrets, raw payloads, mutations, and
   app-server traffic remain blocked.
+- The same summary now includes a read-only Git settings catalog for the
+  official branch-naming, force-push, commit-message prompt, and pull-request
+  description prompt controls. It returns only keys, groups, states, sources,
+  and counts; branch naming values, force-push preferences, prompt text,
+  generated commit or pull-request text, repository names, repository paths,
+  remote URLs, paths, URLs, secrets, raw payloads, mutations, and app-server
+  traffic remain blocked.
 - The same summary now includes a read-only Browser settings catalog for the
   official Browser plugin, Chrome extension, site permission, ask-before-use,
   and full-CDP developer-mode controls. It returns only keys, groups, states,
@@ -154,6 +161,12 @@ Target parity with the Codex desktop workflow:
   rate-limit values, model names, generation/injection triggers, reset
   execution, paths, URLs, secrets, raw payloads, mutations, and app-server
   traffic remain blocked.
+- The same summary now includes a read-only Archived threads settings catalog
+  for the official archived-list, date metadata, project-context, and unarchive
+  action surfaces. It returns only keys, groups, states, sources, and counts;
+  archived thread lists, dates, project context, thread names, ids, content,
+  unarchive execution, paths, URLs, secrets, raw payloads, mutations, and
+  app-server traffic remain blocked.
 - `permissionProfile/list` has an opt-in, counts-only inventory path; it
   returns profile counts and allowed/blocked totals only, not profile ids or
   descriptions.
