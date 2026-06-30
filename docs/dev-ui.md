@@ -597,6 +597,11 @@ Manual/Ready/Refreshing/Failed status. That control calls only the existing
 sanitized `/api/settings-integrations` route and does not add API fields,
 tokens, names, targets, argument text, resource content, skill content, URLs,
 paths, secrets, or raw payloads.
+The same response also exposes static upstream-drift metadata for head-only
+app-server methods absent from the stable generated schema. It returns only
+method names, count/status metadata, and local blocked policy; it does not
+return source paths, response requirements, URLs, secrets, raw payloads, or
+perform app-server traffic.
 It also exposes a compact integration scope summary with active read methods,
 local preflight/login/login-cancel/logout gates, and blocked mutation method
 names/counts. That summary still omits secrets, auth tokens, paths, URLs, hook commands,

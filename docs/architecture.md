@@ -548,6 +548,11 @@ Current M1 status:
   per-family allowlist requirements, sanitized audit requirements, and token,
   target, argument, resource, skill-content, name, URL, path, secret,
   raw-payload, and app-server payload redaction flags
+- done: browser-facing `/api/settings-integrations` upstream-drift summary
+  derived only from static audited OpenAI HEAD method names and stable-schema
+  status, with `environment/info` and `thread/items/list` blocked until a
+  stable generated schema exposes them; no source paths, requirements, raw
+  payloads, URLs, secrets, or app-server traffic are returned
 - done: opt-in counts-only integration inventory behind
   `CODEX_APP_PORT_ALLOW_INTEGRATION_INVENTORY=1` for
   `configRequirements/read`, `model/list`, `modelProvider/capabilities/read`,

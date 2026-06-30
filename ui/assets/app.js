@@ -118,6 +118,7 @@ const elements = {
   installedPluginsStateText: document.querySelector("#installed-plugins-state-text"),
   integrationsTrafficText: document.querySelector("#integrations-traffic-text"),
   integrationsAuditedText: document.querySelector("#integrations-audited-text"),
+  upstreamDriftText: document.querySelector("#upstream-drift-text"),
   mcpToolForm: document.querySelector("#mcp-tool-form"),
   mcpServerInput: document.querySelector("#mcp-server-input"),
   mcpToolInput: document.querySelector("#mcp-tool-input"),
@@ -248,6 +249,7 @@ const elements = {
   accountResetCreditHistoryList: document.querySelector("#account-reset-credit-history-list"),
   accountLogoutHistoryList: document.querySelector("#account-logout-history-list"),
   integrationsMethodList: document.querySelector("#integrations-method-list"),
+  upstreamDriftList: document.querySelector("#upstream-drift-list"),
   integrationsDetailList: document.querySelector("#integrations-detail-list"),
   gitButton: document.querySelector("#git-button"),
   gitSwitchButton: document.querySelector("#git-switch-button"),
@@ -9302,12 +9304,16 @@ function renderSettingsIntegrations(payload) {
   elements.integrationsTrafficText.textContent = payload.appServer?.touched ? "App-server" : "None";
   const methodAudit = Array.isArray(payload.methodAudit) ? payload.methodAudit : [];
   elements.integrationsAuditedText.textContent = String(methodAudit.length);
+  const upstreamDrift = payload.upstreamDrift ?? {};
+  elements.upstreamDriftText.textContent =
+    upstreamDrift.methodCount > 0 ? `${upstreamDrift.methodCount} blocked` : "None";
   renderAccountLoginHistory(payload.accountLoginHistory);
   renderAccountResetCreditHistory(payload.accountResetCreditHistory);
   renderAccountLogoutHistory(payload.accountLogoutHistory);
   renderIntegrationPreflightHistory(payload.preflightHistory);
   renderIntegrationConfirmationHistory(payload.preflightConfirmationHistory);
   renderIntegrationDetails(inventory);
+  renderUpstreamDrift(upstreamDrift);
   renderIntegrationMethodAudit(methodAudit);
 }
 
@@ -10627,6 +10633,50 @@ function renderIntegrationMethodAudit(methodAudit) {
     header.append(title, meta);
     row.append(header, chips);
     elements.integrationsMethodList.append(row);
+  }
+}
+
+function renderUpstreamDrift(upstreamDrift) {
+  elements.upstreamDriftList.replaceChildren();
+  const methods = Array.isArray(upstreamDrift?.methods) ? upstreamDrift.methods : [];
+  if (methods.length === 0) {
+    elements.upstreamDriftList.append(emptyState("No upstream drift tracked."));
+    return;
+  }
+  for (const method of methods) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = method.method ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = method.kind ?? "upstream";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      method.localPolicy ?? "blocked-until-stable-schema",
+      method.stableSchemaStatus ?? "absent-from-stable-schema",
+      method.stablePredecessor ? `stable ${method.stablePredecessor}` : null,
+      method.appServerTraffic === false ? "no app-server traffic" : null,
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.upstreamDriftList.append(row);
   }
 }
 

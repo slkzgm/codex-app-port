@@ -26,6 +26,7 @@ import {
   serverRequestMethodNames,
 } from "../src/app-server/integration-policy.mjs";
 import { terminalActionMethodNames } from "../src/app-server/terminal-policy.mjs";
+import { upstreamHeadMethodDriftNames } from "../src/app-server/upstream-drift.mjs";
 import { createAppServerSessionManager } from "../src/app-server/session-manager.mjs";
 import { createActionAuditLog } from "../src/dev-server/action-audit-log.mjs";
 import { createApprovalAuditLog } from "../src/dev-server/approval-audit-log.mjs";
@@ -18200,6 +18201,22 @@ test("dev server exposes settings and integration boundary without app-server tr
     });
     assert.equal(payload.appServer.touched, false);
     assert.equal(payload.appServer.modelTraffic, false);
+    assert.equal(payload.upstreamDrift.returned, true);
+    assert.equal(payload.upstreamDrift.methodCount, upstreamHeadMethodDriftNames().length);
+    assert.deepEqual(payload.upstreamDrift.methodNames, upstreamHeadMethodDriftNames());
+    assert.equal(payload.upstreamDrift.headOnlyMethodsAbsentFromStableSchema, true);
+    assert.equal(payload.upstreamDrift.browserEnabled, false);
+    assert.equal(payload.upstreamDrift.appServerTraffic, false);
+    assert.equal(payload.upstreamDrift.rawPayloadsReturned, false);
+    assert.equal(payload.upstreamDrift.pathsReturned, false);
+    assert.equal(payload.upstreamDrift.urlsReturned, false);
+    assert.equal(payload.upstreamDrift.secretsReturned, false);
+    assert.equal(
+      payload.upstreamDrift.methods.every(
+        (entry) => entry.localPolicy === "blocked-until-stable-schema",
+      ),
+      true,
+    );
     assert.deepEqual(payload.appServer.auditedReadMethods, ["config/read"]);
     assert.deepEqual(payload.appServer.auditedMutationMethods, []);
     assert.deepEqual(payload.appServer.blockedMutationMethods, blockedIntegrationMutationMethods());
@@ -18704,6 +18721,9 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.policy.integrationAuditContractReturned, true);
     assert.equal(payload.policy.integrationProvenanceContractReturned, true);
     assert.equal(payload.policy.integrationExternalCodeContractReturned, true);
+    assert.equal(payload.policy.upstreamDriftReturned, true);
+    assert.equal(payload.policy.upstreamDriftMethodsBrowserEnabled, false);
+    assert.equal(payload.policy.upstreamDriftAppServerTraffic, false);
     assert.equal(payload.policy.integrationActionTokensReturned, false);
     assert.equal(payload.policy.integrationManagementTokensReturned, false);
     assert.equal(payload.policy.integrationExecutionReadinessTokensReturned, false);
@@ -19901,6 +19921,19 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
     assert.equal(payload.appServer.auditedReadMethods.includes("experimentalFeature/list"), true);
     assert.equal(payload.appServer.auditedReadMethods.includes("plugin/installed"), true);
     assert.equal(payload.appServer.auditedReadMethods.includes("hooks/list"), true);
+    assert.equal(payload.upstreamDrift.returned, true);
+    assert.deepEqual(payload.upstreamDrift.methodNames, upstreamHeadMethodDriftNames());
+    assert.equal(
+      payload.upstreamDrift.methods.some((entry) => entry.method === "environment/info"),
+      true,
+    );
+    assert.equal(
+      payload.upstreamDrift.methods.some((entry) => entry.method === "thread/items/list"),
+      true,
+    );
+    assert.equal(payload.upstreamDrift.sourcePathsReturned, false);
+    assert.equal(payload.upstreamDrift.requirementsReturned, false);
+    assert.equal(payload.upstreamDrift.rawPayloadsReturned, false);
     assert.equal(payload.methodAudit.some((method) => method.method === "mcpServer/tool/call" && method.status === "blocked"), true);
     assert.equal(payload.methodAudit.some((method) => method.method === "externalAgentConfig/import" && method.status === "blocked"), true);
     assert.equal(payload.methodAudit.some((method) => method.method === "app/list" && method.status === "opt-in-read"), true);

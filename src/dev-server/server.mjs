@@ -68,6 +68,10 @@ import {
   serverRequestMethodNames,
 } from "../app-server/integration-policy.mjs";
 import {
+  officialCodexSourceAudit,
+  upstreamHeadMethodDrift,
+} from "../app-server/upstream-drift.mjs";
+import {
   terminalActionMethodAudit,
   terminalActionMethodNames,
 } from "../app-server/terminal-policy.mjs";
@@ -28240,6 +28244,7 @@ export function sanitizeSettingsIntegrationsPayload(
     accountResetCreditHistory,
   );
   const recentAccountLogoutHistory = sanitizeAccountLogoutHistory(accountLogoutHistory);
+  const upstreamDrift = buildUpstreamDriftSummary();
   const namesReturned = Boolean(
     inventory.apps.namesReturned ||
       inventory.apps.pluginDisplayNamesReturned ||
@@ -28497,6 +28502,7 @@ export function sanitizeSettingsIntegrationsPayload(
     accountLogoutHistory: recentAccountLogoutHistory,
     integrationScope,
     methodAudit,
+    upstreamDrift,
     policy: {
       secretsReturned: false,
       filesystemReads: true,
@@ -28536,6 +28542,9 @@ export function sanitizeSettingsIntegrationsPayload(
       integrationAuditContractReturned: true,
       integrationProvenanceContractReturned: true,
       integrationExternalCodeContractReturned: true,
+      upstreamDriftReturned: true,
+      upstreamDriftMethodsBrowserEnabled: false,
+      upstreamDriftAppServerTraffic: false,
       integrationActionTokensReturned: false,
       integrationManagementTokensReturned: false,
       integrationExecutionReadinessTokensReturned: false,
@@ -34774,6 +34783,7 @@ export function buildSettingsIntegrations({
     accountResetCreditHistory,
   );
   const recentAccountLogoutHistory = sanitizeAccountLogoutHistory(accountLogoutHistory);
+  const upstreamDrift = buildUpstreamDriftSummary();
   const integrationScope = buildIntegrationActionScope({
     enabledReadMethods: ["config/read"],
     accountLoginCancelEnabled: loginCancelEnabled,
@@ -34971,6 +34981,7 @@ export function buildSettingsIntegrations({
     accountLogoutHistory: recentAccountLogoutHistory,
     integrationScope,
     methodAudit,
+    upstreamDrift,
     policy: {
       secretsReturned: false,
       filesystemReads: false,
@@ -35010,6 +35021,9 @@ export function buildSettingsIntegrations({
       integrationAuditContractReturned: true,
       integrationProvenanceContractReturned: true,
       integrationExternalCodeContractReturned: true,
+      upstreamDriftReturned: true,
+      upstreamDriftMethodsBrowserEnabled: false,
+      upstreamDriftAppServerTraffic: false,
       integrationActionTokensReturned: false,
       integrationManagementTokensReturned: false,
       integrationExecutionReadinessTokensReturned: false,
@@ -35179,6 +35193,53 @@ function buildIntegrationActionScope({
     requiresExplicitEnablement: true,
     requiresPreflightForMutations: true,
     reason: "integration-mutations-require-specific-audit-and-provenance",
+  };
+}
+
+function buildUpstreamDriftSummary() {
+  const sourceAudit = officialCodexSourceAudit();
+  const methods = upstreamHeadMethodDrift().map((entry) => ({
+    method: cleanDisplayText(entry.method, 120) ?? "unknown",
+    kind: cleanDisplayText(entry.kind, 80) ?? "client-request",
+    upstreamStatus: cleanDisplayText(entry.upstreamStatus, 120) ?? "present-in-upstream",
+    stableSchemaStatus:
+      cleanDisplayText(entry.stableSchemaStatus, 120) ?? "absent-from-stable-schema",
+    stablePredecessor: cleanDisplayText(entry.stablePredecessor, 120),
+    localPolicy: cleanDisplayText(entry.localPolicy, 120) ?? "blocked-until-stable-schema",
+    sourcePathCount: safeCount(entry.sourcePaths?.length),
+    requiredBeforeExposureCount: safeCount(entry.requiredBeforeExposure?.length),
+    browserEnabled: false,
+    appServerTraffic: false,
+    modelTraffic: false,
+    sourcePathsReturned: false,
+    requirementsReturned: false,
+    rawPayloadsReturned: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+  }));
+  return {
+    returned: true,
+    checkedOn: cleanDisplayText(sourceAudit.checkedOn, 20),
+    stableCodexVersion: cleanDisplayText(sourceAudit.stableCodexVersion, 80),
+    stableSchemaCount: safeCount(sourceAudit.stableSchemaCount),
+    stableDistTag: cleanDisplayText(sourceAudit.stableDistTag, 80),
+    alphaDistTagObserved: cleanDisplayText(sourceAudit.alphaDistTag, 80),
+    openaiCodexHead: cleanDisplayText(sourceAudit.openaiCodexHead, 80),
+    localSchemaStatus: cleanDisplayText(sourceAudit.localSchemaStatus, 80),
+    methodCount: methods.length,
+    methods,
+    methodNames: methods.map((entry) => entry.method),
+    headOnlyMethodsAbsentFromStableSchema: true,
+    browserEnabled: false,
+    appServerTraffic: false,
+    modelTraffic: false,
+    sourcePathsReturned: false,
+    requirementsReturned: false,
+    rawPayloadsReturned: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
   };
 }
 
