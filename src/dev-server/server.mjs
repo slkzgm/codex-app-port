@@ -188,6 +188,13 @@ const THREAD_RESUME_INJECT_PREFLIGHT_METHODS = Object.freeze([
   "thread/resume",
   "thread/inject_items",
 ]);
+const THREAD_REALTIME_PREFLIGHT_METHODS = Object.freeze([
+  "thread/realtime/start",
+  "thread/realtime/appendAudio",
+  "thread/realtime/appendText",
+  "thread/realtime/appendSpeech",
+  "thread/realtime/stop",
+]);
 const THREAD_RESUME_ARGUMENT_KEYS = Object.freeze([
   "approvalPolicy",
   "approvalsReviewer",
@@ -207,6 +214,24 @@ const THREAD_RESUME_ARGUMENT_KEYS = Object.freeze([
   "sandbox",
   "serviceTier",
 ]);
+const THREAD_REALTIME_START_ARGUMENT_KEYS = Object.freeze([
+  "clientManagedHandoffs",
+  "codexResponseHandoffPrefix",
+  "codexResponseItemPrefix",
+  "codexResponsesAsItems",
+  "includeStartupContext",
+  "model",
+  "outputModality",
+  "prompt",
+  "realtimeSessionId",
+  "transport",
+  "version",
+  "voice",
+]);
+const THREAD_REALTIME_OUTPUT_MODALITIES = Object.freeze(["text", "audio"]);
+const THREAD_REALTIME_VERSIONS = Object.freeze(["v1", "v2"]);
+const THREAD_REALTIME_TEXT_ROLES = Object.freeze(["user", "developer", "assistant"]);
+const THREAD_REALTIME_TRANSPORT_TYPES = Object.freeze(["websocket", "webrtc"]);
 const STATIC_ROOT = new URL("../../ui/", import.meta.url);
 const SESSION_TOKEN_PLACEHOLDER = "__CODEX_APP_PORT_SESSION_TOKEN__";
 const TERMINAL_COMMAND_ARGV = Symbol("terminalCommandArgv");
@@ -541,6 +566,14 @@ export const ACTION_PREFLIGHT_CONFIRMATION_FIELD_CONTRACTS = Object.freeze({
     "arguments",
   ),
   "thread-resume-inject-preflight": bodyFields(
+    "workspace",
+    "actionType",
+    "preflightToken",
+    "method",
+    "thread",
+    "arguments",
+  ),
+  "thread-realtime-preflight": bodyFields(
     "workspace",
     "actionType",
     "preflightToken",
@@ -1027,6 +1060,13 @@ export const BROWSER_POST_BODY_CONTRACTS = Object.freeze({
     appServerTraffic: false,
   }),
   "/api/thread-resume-inject-preflight": bodyContract(
+    ["workspace", "method", "thread", "arguments"],
+    {
+      kind: "preflight",
+      appServerTraffic: false,
+    },
+  ),
+  "/api/thread-realtime-preflight": bodyContract(
     ["workspace", "method", "thread", "arguments"],
     {
       kind: "preflight",
@@ -4210,6 +4250,135 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
       "threadContentReturned",
       "fullIdsReturned",
       "pathsReturned",
+      "argumentTextReturned",
+      "rawPayloadsReturned",
+      "preflightImplemented",
+      "implemented",
+    ],
+    preflight: [
+      "token",
+      "tokenIssued",
+      "issuedAt",
+      "expiresAt",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseRequiredForMutation",
+      "consumed",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+  }),
+  "/api/thread-realtime-preflight": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    appServer: ["touched", "modelTraffic", "commandTraffic", "realtimeTraffic"],
+    action: [
+      "type",
+      "method",
+      "execution",
+      "wouldStartRealtime",
+      "wouldAppendAudio",
+      "wouldAppendText",
+      "wouldAppendSpeech",
+      "wouldStopRealtime",
+      "threadStateMutated",
+      "appServerTouched",
+      "modelTraffic",
+      "reason",
+    ],
+    thread: ["threadIdSuffix", "fullIdsReturned", "contentReturned", "pathsReturned"],
+    realtime: [
+      "method",
+      "argumentCharCount",
+      "argumentLineCount",
+      "argumentTopLevelKeyCount",
+      "argumentObjectAccepted",
+      "startRequested",
+      "appendAudioRequested",
+      "appendTextRequested",
+      "appendSpeechRequested",
+      "stopRequested",
+      "outputModalityPresent",
+      "outputModality",
+      "versionPresent",
+      "version",
+      "voicePresent",
+      "voice",
+      "modelOverridePresent",
+      "promptPresent",
+      "promptCharCount",
+      "promptLineCount",
+      "sessionIdPresent",
+      "sessionIdCharCount",
+      "transportPresent",
+      "transportType",
+      "websocketTransportRequested",
+      "webrtcTransportRequested",
+      "webrtcSdpPresent",
+      "webrtcSdpCharCount",
+      "clientManagedHandoffsRequested",
+      "codexResponsesAsItemsRequested",
+      "includeStartupContextDisabled",
+      "handoffPrefixPresent",
+      "handoffPrefixCharCount",
+      "responseItemPrefixPresent",
+      "responseItemPrefixCharCount",
+      "audioPresent",
+      "audioDataCharCount",
+      "audioItemIdPresent",
+      "audioItemIdCharCount",
+      "audioNumChannels",
+      "audioSampleRate",
+      "audioSamplesPerChannelPresent",
+      "audioSamplesPerChannel",
+      "textPresent",
+      "textCharCount",
+      "textLineCount",
+      "role",
+      "urlLikeArgumentCount",
+      "pathLikeArgumentCount",
+      "secretLikeArgumentCount",
+      "sensitiveKeyCount",
+      "appServerTraffic",
+      "modelTraffic",
+      "threadContentReturned",
+      "fullIdsReturned",
+      "pathsReturned",
+      "audioDataReturned",
+      "textReturned",
+      "promptReturned",
+      "sdpReturned",
+      "sessionIdsReturned",
+      "argumentTextReturned",
+      "rawPayloadReturned",
+    ],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "modelTraffic",
+      "commandTraffic",
+      "realtimeTraffic",
+      "threadStateMutated",
+      "realtimeStarted",
+      "audioAppended",
+      "textAppended",
+      "speechAppended",
+      "realtimeStopped",
+      "executionRouteImplemented",
+      "dedicatedExecutionRouteImplemented",
+      "executionGateEnabled",
+      "requiresApprovalPipeline",
+      "requiresExplicitEnablement",
+      "requiresExperimentalApi",
+      "browserMethodCallsAccepted",
+      "threadContentReturned",
+      "fullIdsReturned",
+      "pathsReturned",
+      "audioDataReturned",
+      "textReturned",
+      "promptReturned",
+      "sdpReturned",
+      "sessionIdsReturned",
       "argumentTextReturned",
       "rawPayloadsReturned",
       "preflightImplemented",
@@ -11480,6 +11649,11 @@ const BROWSER_POST_RESPONSE_ROUTE_TOP_LEVEL_KEYS = Object.freeze({
     "thread",
     "request",
   ),
+  "/api/thread-realtime-preflight": routeResponseTopLevelKeys(
+    ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
+    "thread",
+    "realtime",
+  ),
   "/api/fs-read-file-preflight": routeResponseTopLevelKeys(
     ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
     "target",
@@ -13412,6 +13586,41 @@ export async function handleRequest(request, response, options) {
         error:
           cleanDisplayText(error.message, 200) ??
           "Invalid thread resume/inject preflight request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/thread-realtime-preflight") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, [
+        "workspace",
+        "method",
+        "thread",
+        "arguments",
+      ]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const payload = buildThreadRealtimePreflight(body, { workspace });
+      sendJson(response, 200, attachActionPreflight(payload, { body, workspace, options }));
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error:
+          cleanDisplayText(error.message, 200) ??
+          "Invalid thread realtime preflight request",
       });
     }
     return;
@@ -18961,6 +19170,10 @@ async function buildConfirmableActionPreflightPayload(actionType, body, { worksp
       return buildThreadResumeInjectPreflight(body, {
         workspace,
       });
+    case "thread-realtime-preflight":
+      return buildThreadRealtimePreflight(body, {
+        workspace,
+      });
     case "thread-rollback-preflight":
       return buildThreadRollbackPreflight(body, {
         workspace,
@@ -19282,6 +19495,7 @@ function isIntegrationPreflightActionType(actionType) {
     actionType === "experimental-feature-preflight" ||
     actionType === "plugin-enablement-preflight" ||
     actionType === "thread-resume-inject-preflight" ||
+    actionType === "thread-realtime-preflight" ||
     actionType === "mcp-resource-preflight" ||
     actionType === "plugin-read-preflight" ||
     actionType === "plugin-install-preflight" ||
@@ -33748,6 +33962,188 @@ export function buildThreadResumeInjectPreflight(body, { workspace } = {}) {
   };
 }
 
+export function buildThreadRealtimePreflight(body, { workspace } = {}) {
+  const threadIdSuffix = validateThreadSuffix(body?.thread);
+  const methodAudit = integrationMethodAudit();
+  const method = validateThreadRealtimePreflightMethod(body?.method, methodAudit);
+  const realtimeSummary = summarizeThreadRealtimeArguments(method, body?.arguments);
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: publicWorkspaces([workspace])[0],
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      realtimeTraffic: false,
+    },
+    action: {
+      type: "thread-realtime-preflight",
+      method,
+      execution: "blocked",
+      wouldStartRealtime: false,
+      wouldAppendAudio: false,
+      wouldAppendText: false,
+      wouldAppendSpeech: false,
+      wouldStopRealtime: false,
+      threadStateMutated: false,
+      appServerTouched: false,
+      modelTraffic: false,
+      reason: "thread-realtime-execution-not-implemented",
+    },
+    thread: {
+      threadIdSuffix,
+      fullIdsReturned: false,
+      contentReturned: false,
+      pathsReturned: false,
+    },
+    realtime: {
+      method,
+      ...realtimeSummary,
+      appServerTraffic: false,
+      modelTraffic: false,
+      threadContentReturned: false,
+      fullIdsReturned: false,
+      pathsReturned: false,
+      audioDataReturned: false,
+      textReturned: false,
+      promptReturned: false,
+      sdpReturned: false,
+      sessionIdsReturned: false,
+      argumentTextReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      realtimeTraffic: false,
+      threadStateMutated: false,
+      realtimeStarted: false,
+      audioAppended: false,
+      textAppended: false,
+      speechAppended: false,
+      realtimeStopped: false,
+      executionRouteImplemented: false,
+      dedicatedExecutionRouteImplemented: false,
+      executionGateEnabled: false,
+      requiresApprovalPipeline: true,
+      requiresExplicitEnablement: true,
+      requiresExperimentalApi: true,
+      browserMethodCallsAccepted: false,
+      threadContentReturned: false,
+      fullIdsReturned: false,
+      pathsReturned: false,
+      audioDataReturned: false,
+      textReturned: false,
+      promptReturned: false,
+      sdpReturned: false,
+      sessionIdsReturned: false,
+      argumentTextReturned: false,
+      rawPayloadsReturned: false,
+      preflightImplemented: true,
+      implemented: true,
+    },
+  };
+}
+
+function summarizeThreadRealtimeArguments(method, value) {
+  const args = validateMcpArguments(value);
+  const argumentObject = parseIntegrationRiskArguments(value);
+  if (args.present && !argumentObject) {
+    throwRequestError("Thread realtime arguments must be a JSON object", 400);
+  }
+  const input = argumentObject ?? {};
+  const topLevelKeys = Object.keys(input);
+  validateThreadRealtimeArguments(method, input, topLevelKeys);
+  const shape = summarizeIntegrationRiskArgumentShape(input);
+  const transport =
+    input.transport && typeof input.transport === "object" && !Array.isArray(input.transport)
+      ? input.transport
+      : null;
+  const audio =
+    input.audio && typeof input.audio === "object" && !Array.isArray(input.audio)
+      ? input.audio
+      : null;
+  const text = typeof input.text === "string" ? input.text : null;
+  const prompt = typeof input.prompt === "string" ? input.prompt : null;
+  const sdp = typeof transport?.sdp === "string" ? transport.sdp : null;
+  const role =
+    method === "thread/realtime/appendText" && hasNonEmptyString(input.role)
+      ? input.role
+      : method === "thread/realtime/appendText"
+        ? "user"
+        : null;
+  return {
+    argumentCharCount: safeCount(args.charCount),
+    argumentLineCount: safeCount(args.lineCount),
+    argumentTopLevelKeyCount: topLevelKeys.length,
+    argumentObjectAccepted: !args.present || args.validJsonObject,
+    startRequested: method === "thread/realtime/start",
+    appendAudioRequested: method === "thread/realtime/appendAudio",
+    appendTextRequested: method === "thread/realtime/appendText",
+    appendSpeechRequested: method === "thread/realtime/appendSpeech",
+    stopRequested: method === "thread/realtime/stop",
+    outputModalityPresent: hasNonEmptyString(input.outputModality),
+    outputModality: THREAD_REALTIME_OUTPUT_MODALITIES.includes(input.outputModality)
+      ? input.outputModality
+      : null,
+    versionPresent: hasNonEmptyString(input.version),
+    version: THREAD_REALTIME_VERSIONS.includes(input.version) ? input.version : null,
+    voicePresent: hasNonEmptyString(input.voice),
+    voice: sanitizeRealtimeVoice(input.voice),
+    modelOverridePresent: hasNonEmptyString(input.model),
+    promptPresent: typeof input.prompt === "string",
+    promptCharCount: safeCount(prompt?.length),
+    promptLineCount: prompt === null ? 0 : countTextLines(prompt),
+    sessionIdPresent: hasNonEmptyString(input.realtimeSessionId),
+    sessionIdCharCount:
+      typeof input.realtimeSessionId === "string" ? input.realtimeSessionId.length : 0,
+    transportPresent: hasOwnObjectProperty(input, "transport") && input.transport !== null,
+    transportType: THREAD_REALTIME_TRANSPORT_TYPES.includes(transport?.type)
+      ? transport.type
+      : null,
+    websocketTransportRequested: transport?.type === "websocket",
+    webrtcTransportRequested: transport?.type === "webrtc",
+    webrtcSdpPresent: typeof sdp === "string",
+    webrtcSdpCharCount: safeCount(sdp?.length),
+    clientManagedHandoffsRequested: input.clientManagedHandoffs === true,
+    codexResponsesAsItemsRequested: input.codexResponsesAsItems === true,
+    includeStartupContextDisabled: input.includeStartupContext === false,
+    handoffPrefixPresent: typeof input.codexResponseHandoffPrefix === "string",
+    handoffPrefixCharCount:
+      typeof input.codexResponseHandoffPrefix === "string"
+        ? input.codexResponseHandoffPrefix.length
+        : 0,
+    responseItemPrefixPresent: typeof input.codexResponseItemPrefix === "string",
+    responseItemPrefixCharCount:
+      typeof input.codexResponseItemPrefix === "string"
+        ? input.codexResponseItemPrefix.length
+        : 0,
+    audioPresent: Boolean(audio),
+    audioDataCharCount: typeof audio?.data === "string" ? audio.data.length : 0,
+    audioItemIdPresent: typeof audio?.itemId === "string",
+    audioItemIdCharCount: typeof audio?.itemId === "string" ? audio.itemId.length : 0,
+    audioNumChannels: Number.isSafeInteger(audio?.numChannels)
+      ? safeCount(audio.numChannels)
+      : 0,
+    audioSampleRate: Number.isSafeInteger(audio?.sampleRate) ? safeCount(audio.sampleRate) : 0,
+    audioSamplesPerChannelPresent: Number.isSafeInteger(audio?.samplesPerChannel),
+    audioSamplesPerChannel: Number.isSafeInteger(audio?.samplesPerChannel)
+      ? safeCount(audio.samplesPerChannel)
+      : 0,
+    textPresent: typeof text === "string",
+    textCharCount: safeCount(text?.length),
+    textLineCount: text === null ? 0 : countTextLines(text),
+    role,
+    urlLikeArgumentCount: shape.urlLikeArgumentCount,
+    pathLikeArgumentCount: shape.pathLikeArgumentCount,
+    secretLikeArgumentCount: shape.secretLikeArgumentCount,
+    sensitiveKeyCount: shape.sensitiveKeyCount,
+  };
+}
+
 function summarizeThreadResumeInjectArguments(method, value) {
   const args = validateMcpArguments(value);
   const argumentObject = parseIntegrationRiskArguments(value);
@@ -33873,6 +34269,185 @@ function validateThreadInjectItemsArguments(input, topLevelKeys) {
       `Thread inject_items items must include ${MAX_THREAD_INJECT_ITEM_COUNT} entries or fewer`,
       400,
     );
+  }
+}
+
+function validateThreadRealtimeArguments(method, input, topLevelKeys) {
+  const allowedByMethod = {
+    "thread/realtime/start": new Set(THREAD_REALTIME_START_ARGUMENT_KEYS),
+    "thread/realtime/appendAudio": new Set(["audio"]),
+    "thread/realtime/appendText": new Set(["role", "text"]),
+    "thread/realtime/appendSpeech": new Set(["text"]),
+    "thread/realtime/stop": new Set(),
+  };
+  const allowed = allowedByMethod[method];
+  for (const key of topLevelKeys) {
+    if (key === "threadId") {
+      throwRequestError("Thread realtime arguments must not include browser threadId", 400);
+    }
+    if (!allowed?.has(key)) {
+      throwRequestError("Thread realtime arguments contain unsupported keys", 400);
+    }
+  }
+  switch (method) {
+    case "thread/realtime/start":
+      validateThreadRealtimeStartArguments(input);
+      break;
+    case "thread/realtime/appendAudio":
+      validateThreadRealtimeAppendAudioArguments(input);
+      break;
+    case "thread/realtime/appendText":
+      validateThreadRealtimeTextArguments(input, { roleAllowed: true });
+      break;
+    case "thread/realtime/appendSpeech":
+      validateThreadRealtimeTextArguments(input, { roleAllowed: false });
+      break;
+    case "thread/realtime/stop":
+      break;
+    default:
+      throwRequestError("Thread realtime method is unsupported", 400);
+  }
+}
+
+function validateThreadRealtimeStartArguments(input) {
+  if (!THREAD_REALTIME_OUTPUT_MODALITIES.includes(input.outputModality)) {
+    throwRequestError("Thread realtime start outputModality is unsupported", 400);
+  }
+  for (const key of [
+    "clientManagedHandoffs",
+    "codexResponsesAsItems",
+    "includeStartupContext",
+  ]) {
+    if (
+      hasOwnObjectProperty(input, key) &&
+      input[key] !== null &&
+      typeof input[key] !== "boolean"
+    ) {
+      throwRequestError(`Thread realtime start ${key} must be a boolean or null`, 400);
+    }
+  }
+  for (const key of [
+    "codexResponseHandoffPrefix",
+    "codexResponseItemPrefix",
+    "model",
+    "realtimeSessionId",
+  ]) {
+    validateThreadRealtimeNullableString(input[key], key, hasOwnObjectProperty(input, key), {
+      maxChars: MAX_INTEGRATION_TARGET_CHARS,
+    });
+  }
+  validateThreadRealtimeNullableString(input.prompt, "prompt", hasOwnObjectProperty(input, "prompt"), {
+    maxChars: MAX_TURN_PROMPT_CHARS,
+  });
+  if (
+    hasOwnObjectProperty(input, "version") &&
+    input.version !== null &&
+    !THREAD_REALTIME_VERSIONS.includes(input.version)
+  ) {
+    throwRequestError("Thread realtime start version is unsupported", 400);
+  }
+  if (
+    hasOwnObjectProperty(input, "voice") &&
+    input.voice !== null &&
+    sanitizeRealtimeVoice(input.voice) !== input.voice
+  ) {
+    throwRequestError("Thread realtime start voice is unsupported", 400);
+  }
+  validateThreadRealtimeTransport(input.transport, hasOwnObjectProperty(input, "transport"));
+}
+
+function validateThreadRealtimeTransport(value, present) {
+  if (!present || value === null) {
+    return;
+  }
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throwRequestError("Thread realtime transport must be an object or null", 400);
+  }
+  if (!THREAD_REALTIME_TRANSPORT_TYPES.includes(value.type)) {
+    throwRequestError("Thread realtime transport type is unsupported", 400);
+  }
+  const allowedKeys = value.type === "webrtc" ? new Set(["type", "sdp"]) : new Set(["type"]);
+  for (const key of Object.keys(value)) {
+    if (!allowedKeys.has(key)) {
+      throwRequestError("Thread realtime transport contains unsupported keys", 400);
+    }
+  }
+  if (value.type === "webrtc") {
+    validateThreadRealtimeNullableString(value.sdp, "transport.sdp", true, {
+      maxChars: MAX_TURN_PROMPT_CHARS,
+      allowNull: false,
+    });
+  }
+}
+
+function validateThreadRealtimeAppendAudioArguments(input) {
+  if (!input.audio || typeof input.audio !== "object" || Array.isArray(input.audio)) {
+    throwRequestError("Thread realtime appendAudio must include an audio object", 400);
+  }
+  for (const key of Object.keys(input.audio)) {
+    if (!["data", "itemId", "numChannels", "sampleRate", "samplesPerChannel"].includes(key)) {
+      throwRequestError("Thread realtime audio contains unsupported keys", 400);
+    }
+  }
+  validateThreadRealtimeNullableString(input.audio.data, "audio.data", true, {
+    maxChars: MAX_MCP_ARGUMENT_CHARS,
+    allowNull: false,
+  });
+  validateThreadRealtimeNullableString(
+    input.audio.itemId,
+    "audio.itemId",
+    hasOwnObjectProperty(input.audio, "itemId"),
+    { maxChars: MAX_INTEGRATION_TARGET_CHARS },
+  );
+  for (const key of ["numChannels", "sampleRate"]) {
+    if (!Number.isSafeInteger(input.audio[key]) || input.audio[key] < 0) {
+      throwRequestError(`Thread realtime audio ${key} must be a non-negative integer`, 400);
+    }
+  }
+  if (
+    hasOwnObjectProperty(input.audio, "samplesPerChannel") &&
+    input.audio.samplesPerChannel !== null &&
+    (!Number.isSafeInteger(input.audio.samplesPerChannel) || input.audio.samplesPerChannel < 0)
+  ) {
+    throwRequestError("Thread realtime audio samplesPerChannel must be a non-negative integer or null", 400);
+  }
+}
+
+function validateThreadRealtimeTextArguments(input, { roleAllowed }) {
+  validateThreadRealtimeNullableString(input.text, "text", true, {
+    maxChars: MAX_TURN_PROMPT_CHARS,
+    allowNull: false,
+  });
+  if (roleAllowed) {
+    if (
+      hasOwnObjectProperty(input, "role") &&
+      !THREAD_REALTIME_TEXT_ROLES.includes(input.role)
+    ) {
+      throwRequestError("Thread realtime text role is unsupported", 400);
+    }
+  }
+}
+
+function validateThreadRealtimeNullableString(
+  value,
+  key,
+  present,
+  { maxChars = MAX_INTEGRATION_TARGET_CHARS, allowNull = true } = {},
+) {
+  if (!present) {
+    return;
+  }
+  if (value === null && allowNull) {
+    return;
+  }
+  if (typeof value !== "string") {
+    throwRequestError(`Thread realtime ${key} must be a string${allowNull ? " or null" : ""}`, 400);
+  }
+  if (value.includes("\0")) {
+    throwRequestError(`Thread realtime ${key} contains unsupported text`, 400);
+  }
+  if (value.length > maxChars) {
+    throwRequestError(`Thread realtime ${key} must be ${maxChars} characters or fewer`, 400);
   }
 }
 
@@ -45536,6 +46111,17 @@ function validateThreadResumeInjectPreflightMethod(value, methodAudit = integrat
   }
   if (!methodAudit.some((entry) => entry.method === method && entry.status === "blocked")) {
     throwRequestError("Thread resume/inject method is not available", 400);
+  }
+  return method;
+}
+
+function validateThreadRealtimePreflightMethod(value, methodAudit = integrationMethodAudit()) {
+  const method = cleanDisplayText(value, 100);
+  if (!method || !THREAD_REALTIME_PREFLIGHT_METHODS.includes(method)) {
+    throwRequestError("Thread realtime method is unsupported", 400);
+  }
+  if (!methodAudit.some((entry) => entry.method === method && entry.status === "blocked")) {
+    throwRequestError("Thread realtime method is not available", 400);
   }
   return method;
 }

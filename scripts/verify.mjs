@@ -68,6 +68,7 @@ async function main() {
   await checkThreadTurnsApi();
   await checkThreadTurnItemsApi();
   await checkThreadResumeInjectPreflightApi();
+  await checkThreadRealtimePreflightApi();
   await checkThreadTranscriptApi();
   await checkThreadChangesApi();
   await checkEventStreamApi();
@@ -1004,6 +1005,14 @@ async function checkStrictBrowserPostBodies() {
           method: "thread/resume",
           thread: "12345678",
           arguments: "{\"excludeTurns\":true}",
+        },
+      ],
+      [
+        "/api/thread-realtime-preflight",
+        {
+          method: "thread/realtime/start",
+          thread: "12345678",
+          arguments: "{\"outputModality\":\"text\"}",
         },
       ],
       ["/api/thread-rollback-preflight", { thread: "12345678", numTurns: 1 }],
@@ -2533,6 +2542,21 @@ function assertBrowserPostBodyContracts(cases) {
   ) {
     throw new Error("thread-resume-inject-preflight response contract is missing nested schemas");
   }
+  const threadRealtimePreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-realtime-preflight"];
+  if (
+    threadRealtimePreflightContract.usesRouteSpecificNestedKeySchemas !== true ||
+    !Object.isFrozen(threadRealtimePreflightContract.nestedKeySchemas.policy) ||
+    !threadRealtimePreflightContract.nestedKeySchemas.realtime?.includes("audioDataReturned") ||
+    !threadRealtimePreflightContract.nestedKeySchemas.realtime?.includes("sdpReturned") ||
+    !threadRealtimePreflightContract.nestedKeySchemas.policy?.includes(
+      "requiresExperimentalApi",
+    ) ||
+    !threadRealtimePreflightContract.nestedKeySchemas.policy?.includes("rawPayloadsReturned") ||
+    threadRealtimePreflightContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("thread-realtime-preflight response contract is missing nested schemas");
+  }
   const fsReadFilePreflightContract =
     BROWSER_POST_RESPONSE_CONTRACTS["/api/fs-read-file-preflight"];
   if (
@@ -3221,6 +3245,148 @@ function assertBrowserPostBodyContracts(cases) {
   });
   if (allowedThreadResumeInjectPreflightShape.statusCode !== 200) {
     throw new Error("browser POST response contract rejected an allowed thread resume/inject preflight shape");
+  }
+  const allowedThreadRealtimePreflightShape = applyBrowserPostResponseContract({
+    method: "POST",
+    pathname: "/api/thread-realtime-preflight",
+    statusCode: 200,
+    payload: {
+      ok: true,
+      appServer: {
+        touched: false,
+        modelTraffic: false,
+        commandTraffic: false,
+        realtimeTraffic: false,
+      },
+      action: {
+        type: "thread-realtime-preflight",
+        method: "thread/realtime/start",
+        execution: "blocked",
+        wouldStartRealtime: false,
+        wouldAppendAudio: false,
+        wouldAppendText: false,
+        wouldAppendSpeech: false,
+        wouldStopRealtime: false,
+        threadStateMutated: false,
+        appServerTouched: false,
+        modelTraffic: false,
+        reason: "thread-realtime-execution-not-implemented",
+      },
+      thread: {
+        threadIdSuffix: "thread1234",
+        fullIdsReturned: false,
+        contentReturned: false,
+        pathsReturned: false,
+      },
+      realtime: {
+        method: "thread/realtime/start",
+        argumentCharCount: 25,
+        argumentLineCount: 1,
+        argumentTopLevelKeyCount: 1,
+        argumentObjectAccepted: true,
+        startRequested: true,
+        appendAudioRequested: false,
+        appendTextRequested: false,
+        appendSpeechRequested: false,
+        stopRequested: false,
+        outputModalityPresent: true,
+        outputModality: "text",
+        versionPresent: false,
+        version: null,
+        voicePresent: false,
+        voice: null,
+        modelOverridePresent: false,
+        promptPresent: false,
+        promptCharCount: 0,
+        promptLineCount: 0,
+        sessionIdPresent: false,
+        sessionIdCharCount: 0,
+        transportPresent: false,
+        transportType: null,
+        websocketTransportRequested: false,
+        webrtcTransportRequested: false,
+        webrtcSdpPresent: false,
+        webrtcSdpCharCount: 0,
+        clientManagedHandoffsRequested: false,
+        codexResponsesAsItemsRequested: false,
+        includeStartupContextDisabled: false,
+        handoffPrefixPresent: false,
+        handoffPrefixCharCount: 0,
+        responseItemPrefixPresent: false,
+        responseItemPrefixCharCount: 0,
+        audioPresent: false,
+        audioDataCharCount: 0,
+        audioItemIdPresent: false,
+        audioItemIdCharCount: 0,
+        audioNumChannels: 0,
+        audioSampleRate: 0,
+        audioSamplesPerChannelPresent: false,
+        audioSamplesPerChannel: 0,
+        textPresent: false,
+        textCharCount: 0,
+        textLineCount: 0,
+        role: null,
+        urlLikeArgumentCount: 0,
+        pathLikeArgumentCount: 0,
+        secretLikeArgumentCount: 0,
+        sensitiveKeyCount: 0,
+        appServerTraffic: false,
+        modelTraffic: false,
+        threadContentReturned: false,
+        fullIdsReturned: false,
+        pathsReturned: false,
+        audioDataReturned: false,
+        textReturned: false,
+        promptReturned: false,
+        sdpReturned: false,
+        sessionIdsReturned: false,
+        argumentTextReturned: false,
+        rawPayloadReturned: false,
+      },
+      preflight: {
+        token: "preflight-1234567890abcdef",
+        tokenIssued: true,
+        scope: {
+          kind: "thread-realtime-preflight",
+          workspaceId: "default",
+        },
+      },
+      policy: {
+        readOnly: true,
+        appServerTraffic: false,
+        modelTraffic: false,
+        commandTraffic: false,
+        realtimeTraffic: false,
+        threadStateMutated: false,
+        realtimeStarted: false,
+        audioAppended: false,
+        textAppended: false,
+        speechAppended: false,
+        realtimeStopped: false,
+        executionRouteImplemented: false,
+        dedicatedExecutionRouteImplemented: false,
+        executionGateEnabled: false,
+        requiresApprovalPipeline: true,
+        requiresExplicitEnablement: true,
+        requiresExperimentalApi: true,
+        browserMethodCallsAccepted: false,
+        threadContentReturned: false,
+        fullIdsReturned: false,
+        pathsReturned: false,
+        audioDataReturned: false,
+        textReturned: false,
+        promptReturned: false,
+        sdpReturned: false,
+        sessionIdsReturned: false,
+        argumentTextReturned: false,
+        rawPayloadsReturned: false,
+        preflightImplemented: true,
+        implemented: true,
+      },
+    },
+  });
+  if (allowedThreadRealtimePreflightShape.statusCode !== 200) {
+    throw new Error("browser POST response contract rejected an allowed thread realtime preflight shape");
   }
   const allowedNestedIntegrationShape = applyBrowserPostResponseContract({
     method: "POST",
@@ -10304,6 +10470,28 @@ function assertBrowserPostBodyContracts(cases) {
     }
   }
   for (const [payload, marker] of [
+    [{ ok: true, realtime: { argumentCharCount: 12, leakedArgumentText: "private argument" } }, "private"],
+    [{ ok: true, realtime: { audioDataReturned: false, leakedSdp: "private sdp" } }, "private"],
+    [{ ok: true, thread: { threadIdSuffix: "thread1234", leakedFullThreadId: "private id" } }, "private"],
+    [{ ok: true, policy: { realtimeStarted: false, leakedRealtimePolicy: "private policy" } }, "private"],
+  ]) {
+    const unexpectedThreadRealtimePreflightNestedKeyResponse =
+      applyBrowserPostResponseContract({
+        method: "POST",
+        pathname: "/api/thread-realtime-preflight",
+        statusCode: 200,
+        payload,
+      });
+    if (
+      unexpectedThreadRealtimePreflightNestedKeyResponse.statusCode !== 500 ||
+      JSON.stringify(unexpectedThreadRealtimePreflightNestedKeyResponse.payload).includes(marker)
+    ) {
+      throw new Error(
+        "browser POST response contract did not block an unexpected thread realtime preflight nested key",
+      );
+    }
+  }
+  for (const [payload, marker] of [
     [{ ok: true, target: { threadIdSuffix: "thread1234", leakedThreadId: "private id" } }, "private"],
     [
       {
@@ -13052,6 +13240,350 @@ async function checkThreadResumeInjectPreflightApi() {
     await closeServer(server);
   }
   pass("dev server thread resume/inject preflight stays local and sanitized");
+}
+
+async function checkThreadRealtimePreflightApi() {
+  let probeCalled = false;
+  const server = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    probeFn: async () => {
+      probeCalled = true;
+      return { ok: true };
+    },
+  });
+  const port = await listenWithFallback(server, { host: "127.0.0.1", port: 0 });
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  try {
+    const token = await readUiSessionToken(baseUrl);
+    const getResponse = await fetch(`${baseUrl}/api/thread-realtime-preflight`, {
+      headers: apiHeaders(token),
+    });
+    if (getResponse.status !== 405) {
+      throw new Error(`thread realtime GET returned HTTP ${getResponse.status}`);
+    }
+
+    const rejectedField = await fetch(`${baseUrl}/api/thread-realtime-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/realtime/start",
+        thread: "abcd1234",
+        arguments: JSON.stringify({ outputModality: "text", prompt: "secret realtime prompt" }),
+        target: "/tmp/codex-app-port-verify/private-realtime",
+      }),
+    });
+    if (rejectedField.status !== 400) {
+      throw new Error(`thread realtime unsupported field returned HTTP ${rejectedField.status}`);
+    }
+    const rejectedFieldText = await rejectedField.text();
+    if (
+      rejectedFieldText.includes("secret realtime prompt") ||
+      rejectedFieldText.includes("/tmp/codex-app-port-verify")
+    ) {
+      throw new Error("thread realtime unsupported-field response leaked private data");
+    }
+
+    const invalidMethod = await fetch(`${baseUrl}/api/thread-realtime-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/realtime/listVoices",
+        thread: "abcd1234",
+        arguments: "{}",
+      }),
+    });
+    if (invalidMethod.status !== 400) {
+      throw new Error(`thread realtime invalid method returned HTTP ${invalidMethod.status}`);
+    }
+
+    const rejectedThreadId = await fetch(`${baseUrl}/api/thread-realtime-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/realtime/start",
+        thread: "abcd1234",
+        arguments: JSON.stringify({
+          threadId: "verify-private-full-thread-id",
+          outputModality: "text",
+        }),
+      }),
+    });
+    if (rejectedThreadId.status !== 400) {
+      throw new Error(`thread realtime browser threadId returned HTTP ${rejectedThreadId.status}`);
+    }
+    if ((await rejectedThreadId.text()).includes("verify-private-full-thread-id")) {
+      throw new Error("thread realtime invalid argument response leaked private thread id");
+    }
+
+    const missingOutput = await fetch(`${baseUrl}/api/thread-realtime-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/realtime/start",
+        thread: "abcd1234",
+        arguments: "{}",
+      }),
+    });
+    if (missingOutput.status !== 400) {
+      throw new Error(`thread realtime start without output modality returned HTTP ${missingOutput.status}`);
+    }
+
+    const missingAudio = await fetch(`${baseUrl}/api/thread-realtime-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/realtime/appendAudio",
+        thread: "abcd1234",
+        arguments: "{}",
+      }),
+    });
+    if (missingAudio.status !== 400) {
+      throw new Error(`thread realtime appendAudio without audio returned HTTP ${missingAudio.status}`);
+    }
+
+    const startArgs = JSON.stringify({
+      outputModality: "audio",
+      voice: "cedar",
+      version: "v2",
+      model: "private-realtime-model",
+      prompt: "secret realtime prompt\nwith /tmp/codex-app-port-verify/private",
+      realtimeSessionId: "private-realtime-session",
+      transport: { type: "webrtc", sdp: "secret-offer-sdp" },
+      clientManagedHandoffs: true,
+      codexResponsesAsItems: true,
+      includeStartupContext: false,
+      codexResponseHandoffPrefix: "private-handoff-prefix",
+      codexResponseItemPrefix: "private-item-prefix",
+    });
+    const startResponse = await fetch(`${baseUrl}/api/thread-realtime-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/realtime/start",
+        thread: "abcd1234",
+        arguments: startArgs,
+      }),
+    });
+    if (!startResponse.ok) {
+      throw new Error(`thread realtime start preflight returned HTTP ${startResponse.status}`);
+    }
+    const startPayload = await startResponse.json();
+    assertSanitizedThreadRealtimePreflight(startPayload, {
+      method: "thread/realtime/start",
+      argumentsText: startArgs,
+      forbiddenMarkers: [
+        "secret realtime prompt",
+        "/tmp/codex-app-port-verify",
+        "private-realtime-model",
+        "private-realtime-session",
+        "secret-offer-sdp",
+        "private-handoff-prefix",
+        "private-item-prefix",
+      ],
+    });
+    if (
+      startPayload.realtime?.startRequested !== true ||
+      startPayload.realtime?.outputModality !== "audio" ||
+      startPayload.realtime?.version !== "v2" ||
+      startPayload.realtime?.voice !== "cedar" ||
+      startPayload.realtime?.modelOverridePresent !== true ||
+      startPayload.realtime?.promptLineCount !== 2 ||
+      startPayload.realtime?.transportType !== "webrtc" ||
+      startPayload.realtime?.webrtcSdpCharCount !== "secret-offer-sdp".length ||
+      startPayload.realtime?.clientManagedHandoffsRequested !== true ||
+      startPayload.realtime?.codexResponsesAsItemsRequested !== true ||
+      startPayload.realtime?.includeStartupContextDisabled !== true
+    ) {
+      throw new Error("thread realtime start preflight did not preserve sanitized start metadata");
+    }
+
+    const confirm = await fetch(`${baseUrl}/api/action-preflight-confirm`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        actionType: "thread-realtime-preflight",
+        preflightToken: startPayload.preflight.token,
+        method: "thread/realtime/start",
+        thread: "abcd1234",
+        arguments: startArgs,
+      }),
+    });
+    if (!confirm.ok) {
+      throw new Error(`thread realtime preflight confirmation returned HTTP ${confirm.status}`);
+    }
+    const confirmPayload = await confirm.json();
+    assertSanitizedActionPreflightConfirmation(
+      confirmPayload,
+      "thread-realtime-preflight",
+      "default",
+      startPayload.preflight.token,
+    );
+    if (confirmPayload.action?.method !== "thread/realtime/start") {
+      throw new Error("thread realtime preflight confirmation lost method metadata");
+    }
+    const confirmSerialized = JSON.stringify(confirmPayload);
+    for (const marker of [
+      "secret realtime prompt",
+      "private-realtime-session",
+      "secret-offer-sdp",
+      "private-realtime-model",
+    ]) {
+      if (confirmSerialized.includes(marker)) {
+        throw new Error(`thread realtime preflight confirmation leaked ${marker}`);
+      }
+    }
+
+    const audioArgs = JSON.stringify({
+      audio: {
+        data: "secret-audio-base64",
+        itemId: "private-audio-item",
+        numChannels: 2,
+        sampleRate: 24000,
+        samplesPerChannel: 160,
+      },
+    });
+    const audioResponse = await fetch(`${baseUrl}/api/thread-realtime-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/realtime/appendAudio",
+        thread: "abcd1234",
+        arguments: audioArgs,
+      }),
+    });
+    if (!audioResponse.ok) {
+      throw new Error(`thread realtime appendAudio preflight returned HTTP ${audioResponse.status}`);
+    }
+    const audioPayload = await audioResponse.json();
+    assertSanitizedThreadRealtimePreflight(audioPayload, {
+      method: "thread/realtime/appendAudio",
+      argumentsText: audioArgs,
+      forbiddenMarkers: ["secret-audio-base64", "private-audio-item"],
+    });
+    if (
+      audioPayload.realtime?.appendAudioRequested !== true ||
+      audioPayload.realtime?.audioDataCharCount !== "secret-audio-base64".length ||
+      audioPayload.realtime?.audioItemIdCharCount !== "private-audio-item".length ||
+      audioPayload.realtime?.audioNumChannels !== 2 ||
+      audioPayload.realtime?.audioSampleRate !== 24000 ||
+      audioPayload.realtime?.audioSamplesPerChannel !== 160
+    ) {
+      throw new Error("thread realtime appendAudio preflight did not preserve sanitized audio counts");
+    }
+
+    const textArgs = JSON.stringify({
+      role: "developer",
+      text: "secret realtime text",
+    });
+    const textResponse = await fetch(`${baseUrl}/api/thread-realtime-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/realtime/appendText",
+        thread: "abcd1234",
+        arguments: textArgs,
+      }),
+    });
+    if (!textResponse.ok) {
+      throw new Error(`thread realtime appendText preflight returned HTTP ${textResponse.status}`);
+    }
+    const textPayload = await textResponse.json();
+    assertSanitizedThreadRealtimePreflight(textPayload, {
+      method: "thread/realtime/appendText",
+      argumentsText: textArgs,
+      forbiddenMarkers: ["secret realtime text"],
+    });
+    if (
+      textPayload.realtime?.appendTextRequested !== true ||
+      textPayload.realtime?.textCharCount !== "secret realtime text".length ||
+      textPayload.realtime?.role !== "developer"
+    ) {
+      throw new Error("thread realtime appendText preflight did not preserve sanitized text counts");
+    }
+
+    const speechArgs = JSON.stringify({ text: "secret speech text" });
+    const speechResponse = await fetch(`${baseUrl}/api/thread-realtime-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/realtime/appendSpeech",
+        thread: "abcd1234",
+        arguments: speechArgs,
+      }),
+    });
+    if (!speechResponse.ok) {
+      throw new Error(`thread realtime appendSpeech preflight returned HTTP ${speechResponse.status}`);
+    }
+    const speechPayload = await speechResponse.json();
+    assertSanitizedThreadRealtimePreflight(speechPayload, {
+      method: "thread/realtime/appendSpeech",
+      argumentsText: speechArgs,
+      forbiddenMarkers: ["secret speech text"],
+    });
+    if (
+      speechPayload.realtime?.appendSpeechRequested !== true ||
+      speechPayload.realtime?.textCharCount !== "secret speech text".length
+    ) {
+      throw new Error("thread realtime appendSpeech preflight did not preserve sanitized text counts");
+    }
+
+    const stopArgs = "{}";
+    const stopResponse = await fetch(`${baseUrl}/api/thread-realtime-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/realtime/stop",
+        thread: "abcd1234",
+        arguments: stopArgs,
+      }),
+    });
+    if (!stopResponse.ok) {
+      throw new Error(`thread realtime stop preflight returned HTTP ${stopResponse.status}`);
+    }
+    const stopPayload = await stopResponse.json();
+    assertSanitizedThreadRealtimePreflight(stopPayload, {
+      method: "thread/realtime/stop",
+      argumentsText: stopArgs,
+      forbiddenMarkers: [],
+    });
+    if (stopPayload.realtime?.stopRequested !== true) {
+      throw new Error("thread realtime stop preflight did not preserve stop intent");
+    }
+
+    const actionRoute = await fetch(`${baseUrl}/api/thread-realtime-action`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/realtime/start",
+        thread: "abcd1234",
+        arguments: startArgs,
+        preflightToken: startPayload.preflight.token,
+      }),
+    });
+    if (actionRoute.status !== 405) {
+      throw new Error(`thread realtime action route returned HTTP ${actionRoute.status}`);
+    }
+
+    if (probeCalled) {
+      throw new Error("thread realtime preflight called the app-server probe");
+    }
+  } finally {
+    await closeServer(server);
+  }
+  pass("dev server thread realtime preflight stays local and sanitized");
 }
 
 async function checkThreadTranscriptApi() {
@@ -40242,6 +40774,105 @@ function assertSanitizedThreadResumeInjectPreflight(
     throw new Error("thread resume/inject preflight did not preserve local-only safety flags");
   }
   assertActionPreflight(payload, "thread-resume-inject-preflight", "default");
+}
+
+function assertSanitizedThreadRealtimePreflight(
+  payload,
+  { method, argumentsText, forbiddenMarkers },
+) {
+  if (!payload.ok) {
+    throw new Error("thread realtime preflight payload is not ok");
+  }
+  const serialized = JSON.stringify(payload);
+  for (const marker of [
+    ...forbiddenMarkers,
+    "verify-sensitive-agent",
+    "codexHome",
+    "userAgent",
+    "\"threadContentReturned\":true",
+    "\"fullIdsReturned\":true",
+    "\"pathsReturned\":true",
+    "\"audioDataReturned\":true",
+    "\"textReturned\":true",
+    "\"promptReturned\":true",
+    "\"sdpReturned\":true",
+    "\"sessionIdsReturned\":true",
+    "\"argumentTextReturned\":true",
+    "\"rawPayloadReturned\":true",
+    "\"rawPayloadsReturned\":true",
+  ]) {
+    if (serialized.includes(marker)) {
+      throw new Error(`thread realtime preflight leaked ${marker}`);
+    }
+  }
+  if (
+    payload.appServer?.touched !== false ||
+    payload.appServer?.modelTraffic !== false ||
+    payload.appServer?.commandTraffic !== false ||
+    payload.appServer?.realtimeTraffic !== false ||
+    payload.action?.type !== "thread-realtime-preflight" ||
+    payload.action?.method !== method ||
+    payload.action?.execution !== "blocked" ||
+    payload.action?.wouldStartRealtime !== false ||
+    payload.action?.wouldAppendAudio !== false ||
+    payload.action?.wouldAppendText !== false ||
+    payload.action?.wouldAppendSpeech !== false ||
+    payload.action?.wouldStopRealtime !== false ||
+    payload.action?.threadStateMutated !== false ||
+    payload.action?.appServerTouched !== false ||
+    payload.thread?.threadIdSuffix !== "abcd1234" ||
+    payload.thread?.fullIdsReturned !== false ||
+    payload.thread?.contentReturned !== false ||
+    payload.thread?.pathsReturned !== false ||
+    payload.realtime?.method !== method ||
+    payload.realtime?.argumentCharCount !== argumentsText.length ||
+    payload.realtime?.argumentObjectAccepted !== true ||
+    payload.realtime?.appServerTraffic !== false ||
+    payload.realtime?.modelTraffic !== false ||
+    payload.realtime?.threadContentReturned !== false ||
+    payload.realtime?.fullIdsReturned !== false ||
+    payload.realtime?.pathsReturned !== false ||
+    payload.realtime?.audioDataReturned !== false ||
+    payload.realtime?.textReturned !== false ||
+    payload.realtime?.promptReturned !== false ||
+    payload.realtime?.sdpReturned !== false ||
+    payload.realtime?.sessionIdsReturned !== false ||
+    payload.realtime?.argumentTextReturned !== false ||
+    payload.realtime?.rawPayloadReturned !== false ||
+    payload.policy?.readOnly !== true ||
+    payload.policy?.appServerTraffic !== false ||
+    payload.policy?.modelTraffic !== false ||
+    payload.policy?.commandTraffic !== false ||
+    payload.policy?.realtimeTraffic !== false ||
+    payload.policy?.threadStateMutated !== false ||
+    payload.policy?.realtimeStarted !== false ||
+    payload.policy?.audioAppended !== false ||
+    payload.policy?.textAppended !== false ||
+    payload.policy?.speechAppended !== false ||
+    payload.policy?.realtimeStopped !== false ||
+    payload.policy?.executionRouteImplemented !== false ||
+    payload.policy?.dedicatedExecutionRouteImplemented !== false ||
+    payload.policy?.executionGateEnabled !== false ||
+    payload.policy?.requiresApprovalPipeline !== true ||
+    payload.policy?.requiresExplicitEnablement !== true ||
+    payload.policy?.requiresExperimentalApi !== true ||
+    payload.policy?.browserMethodCallsAccepted !== false ||
+    payload.policy?.threadContentReturned !== false ||
+    payload.policy?.fullIdsReturned !== false ||
+    payload.policy?.pathsReturned !== false ||
+    payload.policy?.audioDataReturned !== false ||
+    payload.policy?.textReturned !== false ||
+    payload.policy?.promptReturned !== false ||
+    payload.policy?.sdpReturned !== false ||
+    payload.policy?.sessionIdsReturned !== false ||
+    payload.policy?.argumentTextReturned !== false ||
+    payload.policy?.rawPayloadsReturned !== false ||
+    payload.policy?.preflightImplemented !== true ||
+    payload.policy?.implemented !== true
+  ) {
+    throw new Error("thread realtime preflight did not preserve local-only safety flags");
+  }
+  assertActionPreflight(payload, "thread-realtime-preflight", "default");
 }
 
 function assertSanitizedThreadTranscript(payload) {

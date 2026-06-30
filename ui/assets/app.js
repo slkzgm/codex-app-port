@@ -424,6 +424,10 @@ const elements = {
     "#thread-resume-inject-preflight-button",
   ),
   threadResumeInjectStatus: document.querySelector("#thread-resume-inject-status"),
+  threadRealtimeMethodSelect: document.querySelector("#thread-realtime-method-select"),
+  threadRealtimeArgumentsInput: document.querySelector("#thread-realtime-arguments-input"),
+  threadRealtimePreflightButton: document.querySelector("#thread-realtime-preflight-button"),
+  threadRealtimeStatus: document.querySelector("#thread-realtime-status"),
   threadRollbackTurnsInput: document.querySelector("#thread-rollback-turns-input"),
   threadRollbackPreflightButton: document.querySelector("#thread-rollback-preflight-button"),
   threadRollbackButton: document.querySelector("#thread-rollback-button"),
@@ -1179,6 +1183,22 @@ for (const input of [
 
 elements.threadResumeInjectPreflightButton.addEventListener("click", () => {
   runThreadResumeInjectPreflight();
+});
+
+for (const input of [
+  elements.threadRealtimeMethodSelect,
+  elements.threadRealtimeArgumentsInput,
+]) {
+  input.addEventListener("input", () => {
+    updateThreadRealtimeState();
+  });
+  input.addEventListener("change", () => {
+    updateThreadRealtimeState();
+  });
+}
+
+elements.threadRealtimePreflightButton.addEventListener("click", () => {
+  runThreadRealtimePreflight();
 });
 
 elements.threadRollbackTurnsInput.addEventListener("input", () => {
@@ -2019,6 +2039,10 @@ function threadMetadataUpdatePreflightEndpoint() {
 
 function threadResumeInjectPreflightEndpoint() {
   return "/api/thread-resume-inject-preflight";
+}
+
+function threadRealtimePreflightEndpoint() {
+  return "/api/thread-realtime-preflight";
 }
 
 function threadRollbackPreflightEndpoint() {
@@ -6086,6 +6110,7 @@ async function loadThreadDetail(threadIdSuffix, { archived = false } = {}) {
   elements.threadMemoryModeStatus.textContent = "Memory mode requires preflight.";
   elements.threadMetadataUpdateStatus.textContent = "Metadata update check ready.";
   elements.threadResumeInjectStatus.textContent = "Resume/inject check ready.";
+  elements.threadRealtimeStatus.textContent = "Realtime check ready.";
   elements.threadTurnsButton.disabled = false;
   elements.threadTurnsStatus.textContent = "Turns page not loaded.";
   elements.threadTurnItemsInput.value = "";
@@ -6099,6 +6124,7 @@ async function loadThreadDetail(threadIdSuffix, { archived = false } = {}) {
   updateThreadMemoryModeState();
   updateThreadMetadataUpdateState();
   updateThreadResumeInjectState();
+  updateThreadRealtimeState();
   updateThreadRollbackState();
   updateThreadSafetyLockState();
   updateThreadDeleteState();
@@ -6972,6 +6998,42 @@ async function runThreadResumeInjectPreflight() {
     renderError(error);
   } finally {
     setThreadResumeInjectLoading(false);
+  }
+}
+
+async function runThreadRealtimePreflight() {
+  if (!selectedThreadIdSuffix) {
+    elements.threadRealtimeStatus.textContent = "Select a thread first";
+    return;
+  }
+
+  setThreadRealtimeLoading(true);
+  hideError();
+
+  const body = {
+    workspace: selectedWorkspaceId,
+    method: elements.threadRealtimeMethodSelect.value,
+    thread: selectedThreadIdSuffix,
+    arguments: elements.threadRealtimeArgumentsInput.value,
+  };
+
+  try {
+    const response = await fetch(threadRealtimePreflightEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify(body),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderThreadRealtimePreflight(payload);
+  } catch (error) {
+    elements.threadRealtimeStatus.textContent = "Realtime check failed";
+    renderError(error);
+  } finally {
+    setThreadRealtimeLoading(false);
   }
 }
 
@@ -7994,6 +8056,22 @@ function renderThreadResumeInjectPreflight(payload) {
   })`;
 }
 
+function renderThreadRealtimePreflight(payload) {
+  const realtime = payload.realtime ?? {};
+  const method = String(realtime.method ?? "").replace("thread/realtime/", "") || "realtime";
+  const detail = [
+    realtime.outputModality ? `mode:${realtime.outputModality}` : null,
+    realtime.voice ? `voice:${realtime.voice}` : null,
+    realtime.transportType ? realtime.transportType : null,
+    realtime.audioPresent ? `${realtime.audioDataCharCount ?? 0} audio chars` : null,
+    realtime.textPresent ? `${realtime.textCharCount ?? 0} text chars` : null,
+    realtime.promptPresent ? `${realtime.promptCharCount ?? 0} prompt chars` : null,
+  ].filter(Boolean);
+  elements.threadRealtimeStatus.textContent = `${method} blocked${
+    detail.length > 0 ? ` (${detail.join(", ")})` : ""
+  }`;
+}
+
 function renderThreadRollbackPreflight(payload) {
   const count = Number.isSafeInteger(payload.thread?.numTurns) ? payload.thread.numTurns : 0;
   elements.threadRollbackStatus.textContent = payload.policy?.executionGateEnabled
@@ -8574,6 +8652,11 @@ function clearThreadDetail() {
   elements.threadResumeInjectArgumentsInput.value = "";
   elements.threadResumeInjectArgumentsInput.disabled = true;
   elements.threadResumeInjectPreflightButton.disabled = true;
+  elements.threadRealtimeMethodSelect.value = "thread/realtime/start";
+  elements.threadRealtimeMethodSelect.disabled = true;
+  elements.threadRealtimeArgumentsInput.value = "";
+  elements.threadRealtimeArgumentsInput.disabled = true;
+  elements.threadRealtimePreflightButton.disabled = true;
   elements.threadTurnItemsInput.value = "";
   elements.threadTurnItemsInput.disabled = true;
   elements.threadTurnItemsButton.disabled = true;
@@ -8593,6 +8676,7 @@ function clearThreadDetail() {
   elements.threadMemoryModeStatus.textContent = "Select a thread to update memory mode.";
   elements.threadMetadataUpdateStatus.textContent = "Select a thread to check metadata updates.";
   elements.threadResumeInjectStatus.textContent = "Select a thread to check resume or inject intent.";
+  elements.threadRealtimeStatus.textContent = "Select a thread to check realtime intent.";
   elements.threadTurnsStatus.textContent = "Select a thread to inspect paged turn metadata.";
   elements.threadTurnsButton.disabled = true;
   elements.threadTurnItemsStatus.textContent = "Select a thread and turn to inspect paged item metadata.";
@@ -8608,6 +8692,7 @@ function clearThreadDetail() {
   updateThreadMemoryModeState();
   updateThreadMetadataUpdateState();
   updateThreadResumeInjectState();
+  updateThreadRealtimeState();
   updateThreadRollbackState();
   updateThreadSafetyLockState();
   updateThreadDeleteState();
@@ -8756,6 +8841,16 @@ function updateThreadResumeInjectState() {
   if (!hasThread) {
     elements.threadResumeInjectStatus.textContent =
       "Select a thread to check resume or inject intent.";
+  }
+}
+
+function updateThreadRealtimeState() {
+  const hasThread = Boolean(selectedThreadIdSuffix);
+  elements.threadRealtimeMethodSelect.disabled = !hasThread;
+  elements.threadRealtimeArgumentsInput.disabled = !hasThread;
+  elements.threadRealtimePreflightButton.disabled = !hasThread;
+  if (!hasThread) {
+    elements.threadRealtimeStatus.textContent = "Select a thread to check realtime intent.";
   }
 }
 
@@ -13303,6 +13398,17 @@ function setThreadResumeInjectLoading(isLoading) {
   elements.threadResumeInjectPreflightButton.textContent = isLoading ? "Checking" : "Resume Check";
   if (isLoading) {
     elements.threadResumeInjectStatus.textContent = "Checking resume/inject";
+  }
+}
+
+function setThreadRealtimeLoading(isLoading) {
+  const hasThread = Boolean(selectedThreadIdSuffix);
+  elements.threadRealtimeMethodSelect.disabled = isLoading || !hasThread;
+  elements.threadRealtimeArgumentsInput.disabled = isLoading || !hasThread;
+  elements.threadRealtimePreflightButton.disabled = isLoading || !hasThread;
+  elements.threadRealtimePreflightButton.textContent = isLoading ? "Checking" : "Realtime Check";
+  if (isLoading) {
+    elements.threadRealtimeStatus.textContent = "Checking realtime";
   }
 }
 

@@ -23,6 +23,10 @@ The server binds to `127.0.0.1` by default and serves:
 - `/api/thread-resume-inject-preflight`: local-only `thread/resume` and
   `thread/inject_items` validation for selected threads, with execution blocked
   and thread content, paths, full ids, argument text, and raw payloads omitted
+- `/api/thread-realtime-preflight`: local-only `thread/realtime/start`,
+  `appendAudio`, `appendText`, `appendSpeech`, and `stop` validation for
+  selected threads, with execution blocked and prompt text, audio data, text,
+  SDP, session ids, paths, full ids, and raw payloads omitted
 - `/api/thread-turn-items`: disabled-by-default paged turn-item metadata with
   text, commands, output, patches, paths, cursors, and full ids omitted
 - `/api/git-worktree`: sanitized read-only Git metadata for the selected
@@ -1442,6 +1446,16 @@ keys, returns blocked policy metadata, and omits full ids, thread content, cwd,
 paths, item text, argument text, secrets, raw app-server payloads, and raw
 request payloads.
 
+The thread realtime preflight endpoint validates selected-thread
+`thread/realtime/start`, `thread/realtime/appendAudio`,
+`thread/realtime/appendText`, `thread/realtime/appendSpeech`, and
+`thread/realtime/stop` intent locally and has no matching execution route. It
+accepts only the explicit official method name plus JSON-object arguments,
+rejects browser-supplied full `threadId` and unsupported keys, returns blocked
+policy metadata, and omits full ids, thread content, prompt text, audio data,
+text, SDP, realtime session ids, paths, secrets, raw app-server payloads, and raw
+request payloads.
+
 The thread compact preflight endpoint validates only a selected thread suffix
 and returns a local token without touching app-server. The matching
 `/api/thread-compact-start` route is disabled unless both
@@ -2016,6 +2030,10 @@ that `/api/thread-resume-inject-preflight` validates `thread/resume` and
 `thread/inject_items` locally without app-server traffic, thread resume, or item
 injection and omits full ids, thread content, paths, secrets, argument text, and
 raw payloads,
+that `/api/thread-realtime-preflight` validates realtime start/audio/text/speech
+and stop intent locally without app-server traffic, realtime execution, audio or
+text append, or model traffic and omits full ids, thread content, prompt text,
+audio data, text, SDP, session ids, paths, secrets, arguments, and raw payloads,
 that opt-in terminal-background cleanup and file actions also write sanitized
 action audit records without terminal output, session ids, paths, basenames, or
 file contents, that `/api/git-worktree` returns read-only Git metadata

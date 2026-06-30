@@ -1684,6 +1684,30 @@
             <button id="thread-resume-inject-preflight-button" class="secondary-button" type="button" disabled>
               Resume Check
             </button>
+            <label class="workspace-control" for="thread-realtime-method-select">
+              <span>Realtime</span>
+              <select id="thread-realtime-method-select" disabled>
+                <option value="thread/realtime/start">thread/realtime/start</option>
+                <option value="thread/realtime/appendText">thread/realtime/appendText</option>
+                <option value="thread/realtime/appendSpeech">thread/realtime/appendSpeech</option>
+                <option value="thread/realtime/appendAudio">thread/realtime/appendAudio</option>
+                <option value="thread/realtime/stop">thread/realtime/stop</option>
+              </select>
+            </label>
+            <label class="search-control" for="thread-realtime-arguments-input">
+              <span>Args</span>
+              <input
+                id="thread-realtime-arguments-input"
+                type="text"
+                autocomplete="off"
+                maxlength="8000"
+                placeholder='{"outputModality":"text"}'
+                disabled
+              />
+            </label>
+            <button id="thread-realtime-preflight-button" class="secondary-button" type="button" disabled>
+              Realtime Check
+            </button>
             <label class="search-control" for="thread-turn-items-input">
               <span>Turn</span>
               <input id="thread-turn-items-input" type="text" autocomplete="off" maxlength="8" disabled />
@@ -1727,6 +1751,7 @@
           <p id="thread-memory-mode-status" class="empty-state">Select a thread to update memory mode.</p>
           <p id="thread-metadata-update-status" class="empty-state">Select a thread to check metadata updates.</p>
           <p id="thread-resume-inject-status" class="empty-state">Select a thread to check resume or inject intent.</p>
+          <p id="thread-realtime-status" class="empty-state">Select a thread to check realtime intent.</p>
           <p id="thread-turns-status" class="empty-state">Select a thread to inspect paged turn metadata.</p>
           <p id="thread-turn-items-status" class="empty-state">Select a thread and turn to inspect paged item metadata.</p>
           <dl id="thread-detail-meta" class="agent-grid"></dl>

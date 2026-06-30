@@ -849,6 +849,14 @@ browser-supplied full `threadId`, and never touches app-server, resumes a
 thread, or injects items. The browser receives only counts and presence
 booleans, never full ids, thread content, cwd, paths, item text, argument text,
 secrets, raw payloads, or an execution route.
+Realtime thread start/audio/text/speech/stop intents are preflight-only as
+well. `/api/thread-realtime-preflight` validates selected-thread
+`thread/realtime/start`, `appendAudio`, `appendText`, `appendSpeech`, and `stop`
+argument shapes locally, rejects browser-supplied full `threadId`, and never
+touches app-server, starts realtime, sends audio/text/speech, stops realtime, or
+creates model traffic. Responses expose only enum/count/presence metadata and
+redaction flags, never full ids, thread content, prompt text, audio data, text,
+SDP, realtime session ids, paths, raw payloads, or an execution route.
 Thread compaction is more sensitive because it can trigger model traffic.
 `/api/thread-compact-preflight` validates a selected thread suffix locally and
 returns a one-time token without app-server traffic. `/api/thread-compact-start`

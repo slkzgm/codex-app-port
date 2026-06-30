@@ -112,6 +112,15 @@ Target parity with the Codex desktop workflow:
   parameter object and returns only voice names that match the official schema
   enum plus default voice names, not unknown strings, SDP, audio, transcript
   content, thread content, ids, paths, model traffic, or raw payloads.
+- `thread/realtime/start`, `thread/realtime/appendAudio`,
+  `thread/realtime/appendText`, `thread/realtime/appendSpeech`, and
+  `thread/realtime/stop` have only a local-only
+  `POST /api/thread-realtime-preflight` path; it validates selected-thread
+  intent and official argument shapes without app-server traffic, realtime
+  execution, model traffic, audio/text/speech append, or stop side effects, and
+  returns only enum/count/presence metadata with no full ids, thread content,
+  prompt text, audio data, text, SDP, session ids, paths, secrets, or raw
+  payloads.
 - `fs/getMetadata` and `fs/readDirectory` have a separate disabled-by-default
   `GET /api/fs-directory` path behind `CODEX_APP_PORT_ALLOW_FS_DIRECTORY=1`;
   it accepts only workspace-relative non-hidden directory selectors, rejects

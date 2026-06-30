@@ -138,6 +138,18 @@ app-server or model traffic, resumes no thread, injects no items, and returns
 only counts/presence metadata with no full ids, thread content, paths,
 argument text, secrets, or raw payloads.
 
+`thread/realtime/start`, `thread/realtime/appendAudio`,
+`thread/realtime/appendText`, `thread/realtime/appendSpeech`, and
+`thread/realtime/stop` remain blocked as browser mutations and are exposed only
+through `/api/thread-realtime-preflight` for local validation. The route accepts
+a selected thread suffix, an explicit official method name, and JSON-object
+arguments, rejects unsupported keys such as browser-supplied full `threadId`,
+has no execution route, performs no app-server, realtime, or model traffic,
+starts no realtime session, sends no audio/text/speech, stops no session, and
+returns only enum/count/presence metadata with no full ids, thread content,
+prompt text, audio data, text, SDP, realtime session ids, paths, secrets, or raw
+payloads.
+
 Current local status: `permissionProfile/list`, `account/usage/read`,
 `account/workspaceMessages/read`, `externalAgentConfig/import/readHistories`,
 `plugin/installed`, and `remoteControl/status/read` are exposed only through the
@@ -165,6 +177,9 @@ patches, paths, cursor values, full ids, timestamps, or raw payloads.
 object and filters the response to the generated official voice enum, returning
 only known voice names/defaults and never unknown strings, SDP, audio,
 transcript content, thread content, ids, paths, model traffic, or raw payloads.
+The other realtime methods are covered only by the local-only
+`POST /api/thread-realtime-preflight` path above and still have no execution
+route.
 `fs/getMetadata` and `fs/readDirectory` have a separate disabled-by-default
 `GET /api/fs-directory` path behind `CODEX_APP_PORT_ALLOW_FS_DIRECTORY=1`; it
 accepts only workspace-relative non-hidden directory selectors, rejects
@@ -440,6 +455,18 @@ overrides or inject item counts, issues only a local confirmation token for the
 blocked intent, and has no matching execution route. Browser responses return
 only counts and safety flags, not full ids, thread content, paths, argument
 text, secrets, raw app-server payloads, or raw request payloads.
+
+`/api/thread-realtime-preflight` validates selected-thread
+`thread/realtime/start`, `thread/realtime/appendAudio`,
+`thread/realtime/appendText`, `thread/realtime/appendSpeech`, and
+`thread/realtime/stop` intent locally without app-server traffic. It summarizes
+official argument shapes such as output modality, voice/version enums,
+transport kind, SDP size, audio sizes, text size, role, and stop intent, issues
+only a local confirmation token for the blocked intent, and has no matching
+execution route. Browser responses return only enum/count/presence metadata and
+safety flags, not full ids, thread content, prompt text, audio data, text, SDP,
+realtime session ids, paths, secrets, raw app-server payloads, or raw request
+payloads.
 
 When the server is started with `CODEX_APP_PORT_ALLOW_THREAD_TURNS=1`,
 `/api/thread-turns` may call `thread/list` to resolve the selected suffix and

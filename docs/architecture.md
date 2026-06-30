@@ -276,6 +276,16 @@ Current M1 status:
   app-server traffic, no model traffic, no thread resume or item injection, and
   sanitized count/presence metadata without full ids, thread content, cwd,
   paths, item text, arguments, secrets, or raw payloads
+- done: local-only `/api/thread-realtime-preflight` path for
+  `thread/realtime/start`, `thread/realtime/appendAudio`,
+  `thread/realtime/appendText`, `thread/realtime/appendSpeech`, and
+  `thread/realtime/stop`, with route-specific nested response schemas,
+  selected-thread suffix validation, official method allowlisting, realtime
+  argument shape validation, no execution route, no app-server traffic, no
+  model traffic, no realtime start/audio/text/speech/stop side effects, and
+  sanitized enum/count/presence metadata without full ids, thread content,
+  prompt text, audio data, text, SDP, realtime session ids, paths, arguments,
+  secrets, or raw payloads
 - done: opt-in `/api/thread-compact-start` path behind both
   `CODEX_APP_PORT_ALLOW_THREAD_COMPACT=1` and
   `CODEX_APP_PORT_ALLOW_SESSION_MANAGER=1`, with matching one-time

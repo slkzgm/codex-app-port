@@ -381,10 +381,16 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /thread-resume-inject-arguments-input/);
     assert.match(html, /thread-resume-inject-preflight-button/);
     assert.match(html, /thread-resume-inject-status/);
+    assert.match(html, /thread-realtime-method-select/);
+    assert.match(html, /thread-realtime-arguments-input/);
+    assert.match(html, /thread-realtime-preflight-button/);
+    assert.match(html, /thread-realtime-status/);
     assert.match(appScript, /runThreadMetadataUpdatePreflight/);
     assert.match(appScript, /renderThreadMetadataUpdatePreflight/);
     assert.match(appScript, /runThreadResumeInjectPreflight/);
     assert.match(appScript, /renderThreadResumeInjectPreflight/);
+    assert.match(appScript, /runThreadRealtimePreflight/);
+    assert.match(appScript, /renderThreadRealtimePreflight/);
     assert.match(html, /thread-safety-lock-preflight-button/);
     assert.match(html, /thread-safety-lock-button/);
     assert.match(html, /thread-safety-lock-status/);
@@ -448,6 +454,7 @@ test("browser POST body contracts are centralized and immutable", () => {
     "/api/thread-memory-mode-set-action",
     "/api/thread-metadata-update-preflight",
     "/api/thread-resume-inject-preflight",
+    "/api/thread-realtime-preflight",
     "/api/thread-rollback-preflight",
     "/api/thread-rollback-action",
     "/api/thread-safety-lock-preflight",
@@ -623,6 +630,12 @@ test("browser POST body contracts are centralized and immutable", () => {
     "arguments",
   ]);
   assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/thread-resume-inject-preflight"].allowedFields], [
+    "workspace",
+    "method",
+    "thread",
+    "arguments",
+  ]);
+  assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/thread-realtime-preflight"].allowedFields], [
     "workspace",
     "method",
     "thread",
@@ -1881,6 +1894,29 @@ test("browser POST response contracts block unsafe response values", () => {
   );
   assert.equal(
     threadResumeInjectPreflightContract.nestedKeySchemas.policy.includes("unexpected"),
+    false,
+  );
+  const threadRealtimePreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-realtime-preflight"];
+  assert.equal(threadRealtimePreflightContract.usesRouteSpecificNestedKeySchemas, true);
+  assert.equal(
+    threadRealtimePreflightContract.nestedKeySchemas.realtime.includes("audioDataReturned"),
+    true,
+  );
+  assert.equal(
+    threadRealtimePreflightContract.nestedKeySchemas.realtime.includes("sdpReturned"),
+    true,
+  );
+  assert.equal(
+    threadRealtimePreflightContract.nestedKeySchemas.policy.includes("requiresExperimentalApi"),
+    true,
+  );
+  assert.equal(
+    threadRealtimePreflightContract.nestedKeySchemas.policy.includes("rawPayloadsReturned"),
+    true,
+  );
+  assert.equal(
+    threadRealtimePreflightContract.nestedKeySchemas.policy.includes("unexpected"),
     false,
   );
   const fsReadFilePreflightContract =
@@ -12061,6 +12097,342 @@ test("dev server preflights thread resume and item injection without app-server 
         thread: "abcd1234",
         arguments: injectArgs,
         preflightToken: injectPayload.preflight.token,
+      }),
+    });
+    assert.equal(actionRoute.status, 405);
+    assert.equal(probeCalled, false);
+  } finally {
+    await closeServer(server);
+  }
+});
+
+test("dev server preflights thread realtime intents without app-server traffic", async () => {
+  let probeCalled = false;
+  const { server, url } = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    probeFn: async () => {
+      probeCalled = true;
+      return { ok: true };
+    },
+  });
+
+  try {
+    const getResponse = await fetch(`${url}/api/thread-realtime-preflight`, {
+      headers: apiHeaders(server),
+    });
+    assert.equal(getResponse.status, 405);
+
+    const rejectedField = await fetch(`${url}/api/thread-realtime-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/realtime/start",
+        thread: "abcd1234",
+        arguments: JSON.stringify({ outputModality: "text", prompt: "secret realtime prompt" }),
+        target: "/tmp/default-workspace/private-realtime",
+      }),
+    });
+    assert.equal(rejectedField.status, 400);
+    const rejectedFieldSerialized = await rejectedField.text();
+    assert.equal(rejectedFieldSerialized.includes("secret realtime prompt"), false);
+    assert.equal(rejectedFieldSerialized.includes("/tmp/default-workspace"), false);
+
+    const invalidMethod = await fetch(`${url}/api/thread-realtime-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/realtime/listVoices",
+        thread: "abcd1234",
+        arguments: "{}",
+      }),
+    });
+    assert.equal(invalidMethod.status, 400);
+
+    const rejectedThreadId = await fetch(`${url}/api/thread-realtime-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/realtime/start",
+        thread: "abcd1234",
+        arguments: JSON.stringify({
+          threadId: "thread-full-private-id",
+          outputModality: "text",
+        }),
+      }),
+    });
+    assert.equal(rejectedThreadId.status, 400);
+    assert.equal((await rejectedThreadId.text()).includes("thread-full-private-id"), false);
+
+    const missingOutput = await fetch(`${url}/api/thread-realtime-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/realtime/start",
+        thread: "abcd1234",
+        arguments: "{}",
+      }),
+    });
+    assert.equal(missingOutput.status, 400);
+
+    const missingAudio = await fetch(`${url}/api/thread-realtime-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/realtime/appendAudio",
+        thread: "abcd1234",
+        arguments: "{}",
+      }),
+    });
+    assert.equal(missingAudio.status, 400);
+
+    const startArgs = JSON.stringify({
+      outputModality: "audio",
+      voice: "cedar",
+      version: "v2",
+      model: "private-realtime-model",
+      prompt: "secret realtime prompt\nwith /tmp/default-workspace/private",
+      realtimeSessionId: "private-realtime-session",
+      transport: { type: "webrtc", sdp: "secret-offer-sdp" },
+      clientManagedHandoffs: true,
+      codexResponsesAsItems: true,
+      includeStartupContext: false,
+      codexResponseHandoffPrefix: "private-handoff-prefix",
+      codexResponseItemPrefix: "private-item-prefix",
+    });
+    const startResponse = await fetch(`${url}/api/thread-realtime-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/realtime/start",
+        thread: "abcd1234",
+        arguments: startArgs,
+      }),
+    });
+    assert.equal(startResponse.status, 200);
+    const startPayload = await startResponse.json();
+    const startSerialized = JSON.stringify(startPayload);
+    assert.equal(startPayload.ok, true);
+    assert.equal(startPayload.appServer.touched, false);
+    assert.equal(startPayload.appServer.modelTraffic, false);
+    assert.equal(startPayload.appServer.commandTraffic, false);
+    assert.equal(startPayload.appServer.realtimeTraffic, false);
+    assert.equal(startPayload.action.type, "thread-realtime-preflight");
+    assert.equal(startPayload.action.method, "thread/realtime/start");
+    assert.equal(startPayload.action.execution, "blocked");
+    assert.equal(startPayload.action.threadStateMutated, false);
+    assert.equal(startPayload.action.appServerTouched, false);
+    assert.equal(startPayload.thread.threadIdSuffix, "abcd1234");
+    assert.equal(startPayload.thread.fullIdsReturned, false);
+    assert.equal(startPayload.thread.contentReturned, false);
+    assert.equal(startPayload.thread.pathsReturned, false);
+    assert.equal(startPayload.realtime.method, "thread/realtime/start");
+    assert.equal(startPayload.realtime.argumentCharCount, startArgs.length);
+    assert.equal(startPayload.realtime.argumentObjectAccepted, true);
+    assert.equal(startPayload.realtime.startRequested, true);
+    assert.equal(startPayload.realtime.appendAudioRequested, false);
+    assert.equal(startPayload.realtime.outputModalityPresent, true);
+    assert.equal(startPayload.realtime.outputModality, "audio");
+    assert.equal(startPayload.realtime.version, "v2");
+    assert.equal(startPayload.realtime.voice, "cedar");
+    assert.equal(startPayload.realtime.modelOverridePresent, true);
+    assert.equal(startPayload.realtime.promptPresent, true);
+    assert.equal(
+      startPayload.realtime.promptCharCount,
+      "secret realtime prompt\nwith /tmp/default-workspace/private".length,
+    );
+    assert.equal(startPayload.realtime.promptLineCount, 2);
+    assert.equal(startPayload.realtime.sessionIdPresent, true);
+    assert.equal(startPayload.realtime.transportType, "webrtc");
+    assert.equal(startPayload.realtime.webrtcSdpPresent, true);
+    assert.equal(startPayload.realtime.webrtcSdpCharCount, "secret-offer-sdp".length);
+    assert.equal(startPayload.realtime.clientManagedHandoffsRequested, true);
+    assert.equal(startPayload.realtime.codexResponsesAsItemsRequested, true);
+    assert.equal(startPayload.realtime.includeStartupContextDisabled, true);
+    assert.equal(startPayload.realtime.handoffPrefixPresent, true);
+    assert.equal(startPayload.realtime.responseItemPrefixPresent, true);
+    assert.equal(startPayload.realtime.pathLikeArgumentCount, 0);
+    assert.equal(startPayload.realtime.audioDataReturned, false);
+    assert.equal(startPayload.realtime.textReturned, false);
+    assert.equal(startPayload.realtime.promptReturned, false);
+    assert.equal(startPayload.realtime.sdpReturned, false);
+    assert.equal(startPayload.realtime.sessionIdsReturned, false);
+    assert.equal(startPayload.realtime.rawPayloadReturned, false);
+    assert.equal(startPayload.policy.readOnly, true);
+    assert.equal(startPayload.policy.appServerTraffic, false);
+    assert.equal(startPayload.policy.modelTraffic, false);
+    assert.equal(startPayload.policy.realtimeTraffic, false);
+    assert.equal(startPayload.policy.realtimeStarted, false);
+    assert.equal(startPayload.policy.audioAppended, false);
+    assert.equal(startPayload.policy.textAppended, false);
+    assert.equal(startPayload.policy.speechAppended, false);
+    assert.equal(startPayload.policy.realtimeStopped, false);
+    assert.equal(startPayload.policy.executionRouteImplemented, false);
+    assert.equal(startPayload.policy.requiresExperimentalApi, true);
+    assert.equal(startPayload.policy.audioDataReturned, false);
+    assert.equal(startPayload.policy.textReturned, false);
+    assert.equal(startPayload.policy.promptReturned, false);
+    assert.equal(startPayload.policy.sdpReturned, false);
+    assert.equal(startPayload.policy.sessionIdsReturned, false);
+    assert.equal(startPayload.policy.rawPayloadsReturned, false);
+    assert.equal(startPayload.policy.preflightImplemented, true);
+    assertActionPreflight(startPayload, "thread-realtime-preflight", "default");
+    assert.equal(probeCalled, false);
+    for (const marker of [
+      "secret realtime prompt",
+      "/tmp/default-workspace",
+      "private-realtime-model",
+      "private-realtime-session",
+      "secret-offer-sdp",
+      "private-handoff-prefix",
+      "private-item-prefix",
+      "codexHome",
+      "userAgent",
+      "\"audioDataReturned\":true",
+      "\"textReturned\":true",
+      "\"promptReturned\":true",
+      "\"sdpReturned\":true",
+      "\"sessionIdsReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]) {
+      assert.equal(startSerialized.includes(marker), false, `realtime start leaked ${marker}`);
+    }
+
+    const confirm = await fetch(`${url}/api/action-preflight-confirm`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        actionType: "thread-realtime-preflight",
+        preflightToken: startPayload.preflight.token,
+        method: "thread/realtime/start",
+        thread: "abcd1234",
+        arguments: startArgs,
+      }),
+    });
+    assert.equal(confirm.status, 200);
+    const confirmPayload = await confirm.json();
+    assertActionPreflightConfirmation(confirmPayload, "thread-realtime-preflight", "default");
+    assert.equal(confirmPayload.action.method, "thread/realtime/start");
+    const confirmSerialized = JSON.stringify(confirmPayload);
+    for (const marker of [
+      startPayload.preflight.token,
+      "secret realtime prompt",
+      "private-realtime-session",
+      "secret-offer-sdp",
+    ]) {
+      assert.equal(confirmSerialized.includes(marker), false, `realtime confirm leaked ${marker}`);
+    }
+
+    const audioArgs = JSON.stringify({
+      audio: {
+        data: "secret-audio-base64",
+        itemId: "private-audio-item",
+        numChannels: 2,
+        sampleRate: 24000,
+        samplesPerChannel: 160,
+      },
+    });
+    const audioResponse = await fetch(`${url}/api/thread-realtime-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/realtime/appendAudio",
+        thread: "abcd1234",
+        arguments: audioArgs,
+      }),
+    });
+    assert.equal(audioResponse.status, 200);
+    const audioPayload = await audioResponse.json();
+    const audioSerialized = JSON.stringify(audioPayload);
+    assert.equal(audioPayload.action.method, "thread/realtime/appendAudio");
+    assert.equal(audioPayload.realtime.appendAudioRequested, true);
+    assert.equal(audioPayload.realtime.audioPresent, true);
+    assert.equal(audioPayload.realtime.audioDataCharCount, "secret-audio-base64".length);
+    assert.equal(audioPayload.realtime.audioItemIdPresent, true);
+    assert.equal(audioPayload.realtime.audioItemIdCharCount, "private-audio-item".length);
+    assert.equal(audioPayload.realtime.audioNumChannels, 2);
+    assert.equal(audioPayload.realtime.audioSampleRate, 24000);
+    assert.equal(audioPayload.realtime.audioSamplesPerChannel, 160);
+    assert.equal(audioSerialized.includes("secret-audio-base64"), false);
+    assert.equal(audioSerialized.includes("private-audio-item"), false);
+    assertActionPreflight(audioPayload, "thread-realtime-preflight", "default");
+
+    const textArgs = JSON.stringify({
+      role: "developer",
+      text: "secret realtime text",
+    });
+    const textResponse = await fetch(`${url}/api/thread-realtime-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/realtime/appendText",
+        thread: "abcd1234",
+        arguments: textArgs,
+      }),
+    });
+    assert.equal(textResponse.status, 200);
+    const textPayload = await textResponse.json();
+    const textSerialized = JSON.stringify(textPayload);
+    assert.equal(textPayload.action.method, "thread/realtime/appendText");
+    assert.equal(textPayload.realtime.appendTextRequested, true);
+    assert.equal(textPayload.realtime.textPresent, true);
+    assert.equal(textPayload.realtime.textCharCount, "secret realtime text".length);
+    assert.equal(textPayload.realtime.role, "developer");
+    assert.equal(textPayload.realtime.textReturned, false);
+    assert.equal(textSerialized.includes("secret realtime text"), false);
+    assertActionPreflight(textPayload, "thread-realtime-preflight", "default");
+
+    const speechArgs = JSON.stringify({ text: "secret speech text" });
+    const speechResponse = await fetch(`${url}/api/thread-realtime-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/realtime/appendSpeech",
+        thread: "abcd1234",
+        arguments: speechArgs,
+      }),
+    });
+    assert.equal(speechResponse.status, 200);
+    const speechPayload = await speechResponse.json();
+    assert.equal(speechPayload.action.method, "thread/realtime/appendSpeech");
+    assert.equal(speechPayload.realtime.appendSpeechRequested, true);
+    assert.equal(JSON.stringify(speechPayload).includes("secret speech text"), false);
+    assertActionPreflight(speechPayload, "thread-realtime-preflight", "default");
+
+    const stopResponse = await fetch(`${url}/api/thread-realtime-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/realtime/stop",
+        thread: "abcd1234",
+        arguments: "{}",
+      }),
+    });
+    assert.equal(stopResponse.status, 200);
+    const stopPayload = await stopResponse.json();
+    assert.equal(stopPayload.action.method, "thread/realtime/stop");
+    assert.equal(stopPayload.realtime.stopRequested, true);
+    assertActionPreflight(stopPayload, "thread-realtime-preflight", "default");
+
+    const actionRoute = await fetch(`${url}/api/thread-realtime-action`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/realtime/start",
+        thread: "abcd1234",
+        arguments: startArgs,
+        preflightToken: startPayload.preflight.token,
       }),
     });
     assert.equal(actionRoute.status, 405);
