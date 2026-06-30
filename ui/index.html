@@ -1244,6 +1244,56 @@
               <dd id="external-config-import-text">Blocked</dd>
             </div>
           </dl>
+          <form id="review-feedback-form" class="turn-form">
+            <div class="thread-tools">
+              <label class="workspace-control" for="review-feedback-method-select">
+                <span>Review/Feedback</span>
+                <select id="review-feedback-method-select">
+                  <option value="review/start">review/start</option>
+                  <option value="feedback/upload">feedback/upload</option>
+                </select>
+              </label>
+              <label class="search-control" for="review-feedback-target-input">
+                <span>Target</span>
+                <input
+                  id="review-feedback-target-input"
+                  type="text"
+                  autocomplete="off"
+                  maxlength="500"
+                />
+              </label>
+            </div>
+            <textarea
+              id="review-feedback-arguments-input"
+              maxlength="8000"
+              rows="4"
+              placeholder="Review or feedback params JSON"
+            ></textarea>
+            <div class="turn-actions">
+              <button id="review-feedback-button" class="secondary-button" type="submit">
+                Review/Feedback Check
+              </button>
+              <span id="review-feedback-status" class="empty-state">Blocked</span>
+            </div>
+          </form>
+          <dl class="agent-grid">
+            <div>
+              <dt>Target chars</dt>
+              <dd id="review-feedback-target-chars">0</dd>
+            </div>
+            <div>
+              <dt>Arg keys</dt>
+              <dd id="review-feedback-arg-keys">0</dd>
+            </div>
+            <div>
+              <dt>Review</dt>
+              <dd id="review-feedback-review-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Logs</dt>
+              <dd id="review-feedback-logs-text">Hidden</dd>
+            </div>
+          </dl>
           <form id="integration-action-form" class="turn-form">
             <div class="thread-tools">
               <label class="workspace-control" for="integration-method-select">

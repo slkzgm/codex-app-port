@@ -298,6 +298,11 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /external-config-import-button/);
     assert.match(appScript, /runExternalConfigImportPreflight/);
     assert.match(appScript, /renderExternalConfigImportPreflight/);
+    assert.match(html, /review-feedback-form/);
+    assert.match(html, /review-feedback-status/);
+    assert.match(html, /review-feedback-button/);
+    assert.match(appScript, /runReviewFeedbackPreflight/);
+    assert.match(appScript, /renderReviewFeedbackPreflight/);
     assert.match(html, /config-value-form/);
     assert.match(html, /config-value-status/);
     assert.match(html, /config-value-run-button/);
@@ -463,6 +468,7 @@ test("browser POST body contracts are centralized and immutable", () => {
     "/api/plugin-share-checkout-preflight",
     "/api/plugin-share-action-preflight",
     "/api/external-config-import-preflight",
+    "/api/review-feedback-preflight",
     "/api/plugin-share-checkout",
     "/api/plugin-content-preflight",
     "/api/plugin-content-read",
@@ -764,6 +770,10 @@ test("browser POST body contracts are centralized and immutable", () => {
   assert.deepEqual(
     [...BROWSER_POST_BODY_CONTRACTS["/api/external-config-import-preflight"].allowedFields],
     ["workspace", "target", "arguments"],
+  );
+  assert.deepEqual(
+    [...BROWSER_POST_BODY_CONTRACTS["/api/review-feedback-preflight"].allowedFields],
+    ["workspace", "method", "target", "arguments"],
   );
   assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/plugin-share-checkout"].allowedFields], [
     "workspace",
@@ -1363,6 +1373,31 @@ test("browser POST response contracts block unsafe response values", () => {
   );
   assert.equal(
     externalConfigImportPreflightContract.nestedKeySchemas.policy.includes("unexpected"),
+    false,
+  );
+  const reviewFeedbackPreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/review-feedback-preflight"];
+  assert.equal(reviewFeedbackPreflightContract.usesRouteSpecificNestedKeySchemas, true);
+  assert.equal(
+    reviewFeedbackPreflightContract.nestedKeySchemas.reviewFeedback.includes(
+      "reviewExecutionBlocked",
+    ),
+    true,
+  );
+  assert.equal(
+    reviewFeedbackPreflightContract.nestedKeySchemas.reviewFeedback.includes(
+      "includeLogsRequested",
+    ),
+    true,
+  );
+  assert.equal(
+    reviewFeedbackPreflightContract.nestedKeySchemas.policy.includes(
+      "reviewFeedbackPreflightEnabled",
+    ),
+    true,
+  );
+  assert.equal(
+    reviewFeedbackPreflightContract.nestedKeySchemas.policy.includes("unexpected"),
     false,
   );
   const pluginShareCheckoutContract =
@@ -18619,7 +18654,7 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.integrationScope.state, "partial");
     assert.equal(payload.integrationScope.enabledReadMethodCount, 1);
     assert.deepEqual(payload.integrationScope.enabledReadMethods, ["config/read"]);
-    assert.equal(payload.integrationScope.enabledLocalGateCount, 16);
+    assert.equal(payload.integrationScope.enabledLocalGateCount, 17);
     assert.deepEqual(payload.integrationScope.enabledLocalGates, [
       "mcp-tool-preflight",
       "mcp-oauth-login-preflight",
@@ -18631,6 +18666,7 @@ test("dev server exposes settings and integration boundary without app-server tr
       "plugin-share-checkout-preflight",
       "plugin-share-action-preflight",
       "external-config-import-preflight",
+      "review-feedback-preflight",
       "plugin-content-preflight",
       "config-value-preflight",
       "config-batch-preflight",
@@ -18687,7 +18723,7 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.integrationLifecycle.partialSurfaceCount, 3);
     assert.equal(payload.integrationLifecycle.blockedSurfaceCount, 4);
     assert.equal(payload.integrationLifecycle.readMethodCount, 1);
-    assert.equal(payload.integrationLifecycle.localGateCount, 16);
+    assert.equal(payload.integrationLifecycle.localGateCount, 17);
     assert.equal(payload.integrationLifecycle.enabledMutationGateCount, 0);
     assert.equal(
       payload.integrationLifecycle.blockedMutationMethodCount,
@@ -18699,8 +18735,8 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.integrationLifecycle.integrationActions.returned, true);
     assert.equal(payload.integrationLifecycle.integrationActions.state, "preflight-only");
     assert.equal(payload.integrationLifecycle.integrationActions.readMethodCount, 1);
-    assert.equal(payload.integrationLifecycle.integrationActions.localGateCount, 16);
-    assert.equal(payload.integrationLifecycle.integrationActions.preflightOnlyGateCount, 16);
+    assert.equal(payload.integrationLifecycle.integrationActions.localGateCount, 17);
+    assert.equal(payload.integrationLifecycle.integrationActions.preflightOnlyGateCount, 17);
     assert.equal(payload.integrationLifecycle.integrationActions.executableActionCount, 0);
     assert.equal(payload.integrationLifecycle.integrationActions.enabledMutationGateCount, 0);
     assert.equal(
@@ -18724,8 +18760,8 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.integrationLifecycle.integrationManagement.partialSurfaceCount, 3);
     assert.equal(payload.integrationLifecycle.integrationManagement.blockedSurfaceCount, 4);
     assert.equal(payload.integrationLifecycle.integrationManagement.readMethodCount, 1);
-    assert.equal(payload.integrationLifecycle.integrationManagement.localGateCount, 16);
-    assert.equal(payload.integrationLifecycle.integrationManagement.preflightOnlyGateCount, 16);
+    assert.equal(payload.integrationLifecycle.integrationManagement.localGateCount, 17);
+    assert.equal(payload.integrationLifecycle.integrationManagement.preflightOnlyGateCount, 17);
     assert.equal(payload.integrationLifecycle.integrationManagement.executableActionCount, 0);
     assert.equal(payload.integrationLifecycle.integrationManagement.enabledMutationGateCount, 0);
     assert.equal(
@@ -18756,8 +18792,8 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.returned, true);
     assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.state, "preflight-only");
     assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.readMethodCount, 1);
-    assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.localGateCount, 16);
-    assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.preflightOnlyGateCount, 16);
+    assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.localGateCount, 17);
+    assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.preflightOnlyGateCount, 17);
     assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.executableActionCount, 0);
     assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.enabledActionFamilyCount, 0);
     assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.enabledMutationGateCount, 0);
@@ -18818,8 +18854,8 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.integrationLifecycle.integrationSafetyContract.returned, true);
     assert.equal(payload.integrationLifecycle.integrationSafetyContract.state, "preflight-only");
     assert.equal(payload.integrationLifecycle.integrationSafetyContract.readMethodCount, 1);
-    assert.equal(payload.integrationLifecycle.integrationSafetyContract.localGateCount, 16);
-    assert.equal(payload.integrationLifecycle.integrationSafetyContract.preflightOnlyGateCount, 16);
+    assert.equal(payload.integrationLifecycle.integrationSafetyContract.localGateCount, 17);
+    assert.equal(payload.integrationLifecycle.integrationSafetyContract.preflightOnlyGateCount, 17);
     assert.equal(payload.integrationLifecycle.integrationSafetyContract.executableActionCount, 0);
     assert.equal(payload.integrationLifecycle.integrationSafetyContract.enabledActionFamilyCount, 0);
     assert.equal(payload.integrationLifecycle.integrationSafetyContract.enabledMutationGateCount, 0);
@@ -18863,8 +18899,8 @@ test("dev server exposes settings and integration boundary without app-server tr
       state: "preflight-only",
       routingMode: "local-preflight-only",
       readMethodCount: 1,
-      localGateCount: 16,
-      preflightOnlyGateCount: 16,
+      localGateCount: 17,
+      preflightOnlyGateCount: 17,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -18893,8 +18929,8 @@ test("dev server exposes settings and integration boundary without app-server tr
       partialSurfaceCount: 3,
       blockedSurfaceCount: 4,
       readMethodCount: 1,
-      localGateCount: 16,
-      preflightOnlyGateCount: 16,
+      localGateCount: 17,
+      preflightOnlyGateCount: 17,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -18928,8 +18964,8 @@ test("dev server exposes settings and integration boundary without app-server tr
       workflowMode: "preflight-review",
       routingMode: "local-preflight-only",
       readMethodCount: 1,
-      localGateCount: 16,
-      preflightOnlyGateCount: 16,
+      localGateCount: 17,
+      preflightOnlyGateCount: 17,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -18961,8 +18997,8 @@ test("dev server exposes settings and integration boundary without app-server tr
       workflowMode: "preflight-review",
       routingMode: "local-preflight-only",
       readMethodCount: 1,
-      localGateCount: 16,
-      preflightOnlyGateCount: 16,
+      localGateCount: 17,
+      preflightOnlyGateCount: 17,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -18990,8 +19026,8 @@ test("dev server exposes settings and integration boundary without app-server tr
       workflowMode: "preflight-review",
       routingMode: "local-preflight-only",
       readMethodCount: 1,
-      localGateCount: 16,
-      preflightOnlyGateCount: 16,
+      localGateCount: 17,
+      preflightOnlyGateCount: 17,
       executableActionCount: 0,
       externalActionCount: 0,
       enabledMutationGateCount: 0,
@@ -19870,7 +19906,7 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
       "config/read",
       ...optInIntegrationReadMethods(),
     ]);
-    assert.equal(payload.integrationScope.enabledLocalGateCount, 16);
+    assert.equal(payload.integrationScope.enabledLocalGateCount, 17);
     assert.equal(
       payload.integrationScope.blockedMutationMethodCount,
       blockedIntegrationMutationMethods().length,
@@ -19894,8 +19930,8 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
       state: "preflight-only",
       routingMode: "local-preflight-only",
       readMethodCount: ["config/read", ...optInIntegrationReadMethods()].length,
-      localGateCount: 16,
-      preflightOnlyGateCount: 16,
+      localGateCount: 17,
+      preflightOnlyGateCount: 17,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -19928,8 +19964,8 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
         (surface) => surface?.state === "blocked",
       ).length,
       readMethodCount: ["config/read", ...optInIntegrationReadMethods()].length,
-      localGateCount: 16,
-      preflightOnlyGateCount: 16,
+      localGateCount: 17,
+      preflightOnlyGateCount: 17,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -19963,8 +19999,8 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
       workflowMode: "preflight-review",
       routingMode: "local-preflight-only",
       readMethodCount: ["config/read", ...optInIntegrationReadMethods()].length,
-      localGateCount: 16,
-      preflightOnlyGateCount: 16,
+      localGateCount: 17,
+      preflightOnlyGateCount: 17,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -19996,8 +20032,8 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
       workflowMode: "preflight-review",
       routingMode: "local-preflight-only",
       readMethodCount: ["config/read", ...optInIntegrationReadMethods()].length,
-      localGateCount: 16,
-      preflightOnlyGateCount: 16,
+      localGateCount: 17,
+      preflightOnlyGateCount: 17,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -20025,8 +20061,8 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
       workflowMode: "preflight-review",
       routingMode: "local-preflight-only",
       readMethodCount: ["config/read", ...optInIntegrationReadMethods()].length,
-      localGateCount: 16,
-      preflightOnlyGateCount: 16,
+      localGateCount: 17,
+      preflightOnlyGateCount: 17,
       executableActionCount: 0,
       externalActionCount: 0,
       enabledMutationGateCount: 0,
@@ -26088,6 +26124,310 @@ test("dev server preflights external config imports without app-server traffic",
       "/tmp/private-session.jsonl",
       "/tmp/private-subagent.md",
       "sk-proj-privatevalue",
+    ]) {
+      assert.equal(historySerialized.includes(marker), false, `history leaked ${marker}`);
+      assert.equal(confirmationSerialized.includes(marker), false, `confirmation leaked ${marker}`);
+    }
+  } finally {
+    await closeServer(server);
+  }
+});
+
+test("dev server preflights review and feedback actions without app-server traffic", async () => {
+  let probeCalled = false;
+  const { server, url } = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    workspaceInputs: ["/tmp/second-workspace"],
+    probeFn: async () => {
+      probeCalled = true;
+      return { ok: true };
+    },
+  });
+
+  try {
+    const getResponse = await fetch(`${url}/api/review-feedback-preflight`, {
+      headers: apiHeaders(server),
+    });
+    assert.equal(getResponse.status, 405);
+
+    const reviewTarget = "private-review-target";
+    const reviewArgs = JSON.stringify({
+      threadId: "private-review-thread",
+      delivery: "detached",
+      target: {
+        type: "baseBranch",
+        branch: "private/base-branch",
+      },
+      token: "sk-proj-reviewsecret",
+    });
+    const reviewResponse = await fetch(`${url}/api/review-feedback-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        method: "review/start",
+        target: reviewTarget,
+        arguments: reviewArgs,
+      }),
+    });
+    assert.equal(reviewResponse.status, 200);
+    const reviewPayload = await reviewResponse.json();
+    const reviewSerialized = JSON.stringify(reviewPayload);
+    assert.equal(reviewPayload.ok, true);
+    assert.deepEqual(reviewPayload.workspace, {
+      id: "workspace-2",
+      label: "second-workspace",
+      isDefault: false,
+    });
+    assert.equal(reviewPayload.appServer.touched, false);
+    assert.equal(reviewPayload.appServer.modelTraffic, false);
+    assert.equal(reviewPayload.appServer.reviewTraffic, false);
+    assert.equal(reviewPayload.appServer.feedbackTraffic, false);
+    assert.equal(reviewPayload.action.type, "review-feedback-preflight");
+    assert.equal(reviewPayload.action.method, "review/start");
+    assert.equal(reviewPayload.action.category, "review");
+    assert.equal(reviewPayload.action.execution, "blocked");
+    assert.equal(reviewPayload.action.wouldStartReview, false);
+    assert.equal(reviewPayload.action.wouldUploadFeedback, false);
+    assert.equal(reviewPayload.action.wouldIncludeLogs, false);
+    assert.equal(reviewPayload.action.appServerTouched, false);
+    assertActionPreflight(reviewPayload, "review-feedback-preflight", "workspace-2");
+    assert.equal(reviewPayload.integrationAction.method, "review/start");
+    assert.equal(reviewPayload.integrationAction.category, "review");
+    assert.equal(reviewPayload.integrationAction.target.charCount, reviewTarget.length);
+    assert.equal(reviewPayload.integrationAction.target.textReturned, false);
+    assert.equal(reviewPayload.integrationAction.arguments.charCount, reviewArgs.length);
+    assert.equal(reviewPayload.integrationAction.arguments.validJsonObject, true);
+    assert.equal(reviewPayload.integrationAction.arguments.topLevelKeyCount, 4);
+    assert.equal(reviewPayload.integrationAction.arguments.textReturned, false);
+    assert.equal(reviewPayload.integrationAction.methodAllowedByAudit, true);
+    assert.equal(reviewPayload.reviewFeedback.method, "review/start");
+    assert.equal(reviewPayload.reviewFeedback.reviewRequested, true);
+    assert.equal(reviewPayload.reviewFeedback.feedbackRequested, false);
+    assert.equal(reviewPayload.reviewFeedback.targetPresent, true);
+    assert.equal(reviewPayload.reviewFeedback.targetCharCount, reviewTarget.length);
+    assert.equal(reviewPayload.reviewFeedback.argumentCharCount, reviewArgs.length);
+    assert.equal(reviewPayload.reviewFeedback.argumentTopLevelKeyCount, 4);
+    assert.equal(reviewPayload.reviewFeedback.argumentObjectAccepted, true);
+    assert.equal(reviewPayload.reviewFeedback.secretLikeArgumentCount, 1);
+    assert.equal(reviewPayload.reviewFeedback.sensitiveKeyCount, 1);
+    assert.equal(reviewPayload.reviewFeedback.threadIdPresent, true);
+    assert.equal(reviewPayload.reviewFeedback.threadIdCharCount, "private-review-thread".length);
+    assert.equal(reviewPayload.reviewFeedback.reviewDeliveryDetached, true);
+    assert.equal(reviewPayload.reviewFeedback.reviewTargetBaseBranch, true);
+    assert.equal(reviewPayload.reviewFeedback.branchPresent, true);
+    assert.equal(reviewPayload.reviewFeedback.reviewExecutionBlocked, true);
+    assert.equal(reviewPayload.reviewFeedback.feedbackUploadBlocked, true);
+    assert.equal(reviewPayload.reviewFeedback.threadIdsReturned, false);
+    assert.equal(reviewPayload.reviewFeedback.branchReturned, false);
+    assert.equal(reviewPayload.reviewFeedback.secretsReturned, false);
+    assert.equal(reviewPayload.reviewFeedback.rawPayloadReturned, false);
+    assert.equal(reviewPayload.policy.appServerTraffic, false);
+    assert.equal(reviewPayload.policy.modelTraffic, false);
+    assert.equal(reviewPayload.policy.reviewFeedbackPreflightEnabled, true);
+    assert.equal(reviewPayload.policy.reviewStartEnabled, false);
+    assert.equal(reviewPayload.policy.feedbackUploadEnabled, false);
+    assert.equal(reviewPayload.policy.mutationExecutionBlocked, true);
+    assert.equal(reviewPayload.policy.executionRouteImplemented, false);
+    assert.equal(reviewPayload.policy.dedicatedExecutionRouteImplemented, false);
+    assert.equal(reviewPayload.policy.executionGateEnabled, false);
+    assert.equal(reviewPayload.policy.requiresIntegrationProvenance, true);
+    assert.equal(reviewPayload.policy.threadIdsReturned, false);
+    assert.equal(reviewPayload.policy.instructionsReturned, false);
+    assert.equal(reviewPayload.policy.feedbackReasonReturned, false);
+    assert.equal(reviewPayload.policy.logsReturned, false);
+    assert.equal(reviewPayload.policy.tagsReturned, false);
+    assert.equal(reviewPayload.policy.targetReturned, false);
+    assert.equal(reviewPayload.policy.argumentTextReturned, false);
+    assert.equal(reviewPayload.policy.pathsReturned, false);
+    assert.equal(reviewPayload.policy.urlsReturned, false);
+    assert.equal(reviewPayload.policy.secretsReturned, false);
+    assert.equal(probeCalled, false);
+    for (const marker of [
+      "private-review-target",
+      "private-review-thread",
+      "private/base-branch",
+      "sk-proj-reviewsecret",
+      "/tmp/second-workspace",
+      "codexHome",
+      "userAgent",
+    ]) {
+      assert.equal(reviewSerialized.includes(marker), false, `review preflight leaked ${marker}`);
+    }
+
+    const reviewConfirm = await fetch(`${url}/api/action-preflight-confirm`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        actionType: "review-feedback-preflight",
+        preflightToken: reviewPayload.preflight.token,
+        method: "review/start",
+        target: reviewTarget,
+        arguments: reviewArgs,
+      }),
+    });
+    assert.equal(reviewConfirm.status, 200);
+    const reviewConfirmPayload = await reviewConfirm.json();
+    assertActionPreflightConfirmation(
+      reviewConfirmPayload,
+      "review-feedback-preflight",
+      "workspace-2",
+    );
+    assert.equal(reviewConfirmPayload.action.method, "review/start");
+    assert.equal(reviewConfirmPayload.action.mutationExecuted, false);
+    assert.equal(JSON.stringify(reviewConfirmPayload).includes(reviewPayload.preflight.token), false);
+    assert.equal(JSON.stringify(reviewConfirmPayload).includes("private/base-branch"), false);
+
+    const feedbackTarget = "private-feedback-target";
+    const feedbackArgs = JSON.stringify({
+      classification: "bug",
+      reason: "private feedback reason",
+      threadId: "private-feedback-thread",
+      includeLogs: true,
+      extraLogFiles: ["/tmp/private-feedback.log"],
+      tags: {
+        ticket: "private-ticket",
+        account: "private-account",
+      },
+      token: "sk-proj-feedbacksecret",
+    });
+    const feedbackResponse = await fetch(`${url}/api/review-feedback-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        method: "feedback/upload",
+        target: feedbackTarget,
+        arguments: feedbackArgs,
+      }),
+    });
+    assert.equal(feedbackResponse.status, 200);
+    const feedbackPayload = await feedbackResponse.json();
+    const feedbackSerialized = JSON.stringify(feedbackPayload);
+    assert.equal(feedbackPayload.ok, true);
+    assert.equal(feedbackPayload.action.method, "feedback/upload");
+    assert.equal(feedbackPayload.action.category, "feedback");
+    assert.equal(feedbackPayload.appServer.feedbackTraffic, false);
+    assertActionPreflight(feedbackPayload, "review-feedback-preflight", "workspace-2");
+    assert.equal(feedbackPayload.integrationAction.method, "feedback/upload");
+    assert.equal(feedbackPayload.integrationAction.category, "feedback");
+    assert.equal(feedbackPayload.integrationAction.arguments.topLevelKeyCount, 7);
+    assert.equal(feedbackPayload.reviewFeedback.method, "feedback/upload");
+    assert.equal(feedbackPayload.reviewFeedback.reviewRequested, false);
+    assert.equal(feedbackPayload.reviewFeedback.feedbackRequested, true);
+    assert.equal(feedbackPayload.reviewFeedback.threadIdPresent, true);
+    assert.equal(
+      feedbackPayload.reviewFeedback.threadIdCharCount,
+      "private-feedback-thread".length,
+    );
+    assert.equal(feedbackPayload.reviewFeedback.classificationPresent, true);
+    assert.equal(
+      feedbackPayload.reviewFeedback.reasonCharCount,
+      "private feedback reason".length,
+    );
+    assert.equal(feedbackPayload.reviewFeedback.includeLogsRequested, true);
+    assert.equal(feedbackPayload.reviewFeedback.extraLogFileCount, 1);
+    assert.equal(feedbackPayload.reviewFeedback.tagCount, 2);
+    assert.equal(feedbackPayload.reviewFeedback.pathLikeArgumentCount, 1);
+    assert.equal(feedbackPayload.reviewFeedback.secretLikeArgumentCount, 1);
+    assert.equal(feedbackPayload.reviewFeedback.sensitiveKeyCount, 1);
+    assert.equal(feedbackPayload.reviewFeedback.feedbackUploadBlocked, true);
+    assert.equal(feedbackPayload.reviewFeedback.feedbackReasonReturned, false);
+    assert.equal(feedbackPayload.reviewFeedback.logPathsReturned, false);
+    assert.equal(feedbackPayload.reviewFeedback.tagsReturned, false);
+    assert.equal(feedbackPayload.reviewFeedback.rawPayloadReturned, false);
+    assert.equal(feedbackPayload.policy.feedbackUploadEnabled, false);
+    assert.equal(feedbackPayload.policy.logsReturned, false);
+    assert.equal(feedbackPayload.policy.tagsReturned, false);
+    for (const marker of [
+      "private-feedback-target",
+      "private feedback reason",
+      "private-feedback-thread",
+      "/tmp/private-feedback.log",
+      "private-ticket",
+      "private-account",
+      "sk-proj-feedbacksecret",
+      "/tmp/second-workspace",
+      "codexHome",
+      "userAgent",
+    ]) {
+      assert.equal(feedbackSerialized.includes(marker), false, `feedback preflight leaked ${marker}`);
+    }
+
+    const feedbackConfirm = await fetch(`${url}/api/action-preflight-confirm`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        actionType: "review-feedback-preflight",
+        preflightToken: feedbackPayload.preflight.token,
+        method: "feedback/upload",
+        target: feedbackTarget,
+        arguments: feedbackArgs,
+      }),
+    });
+    assert.equal(feedbackConfirm.status, 200);
+    const feedbackConfirmPayload = await feedbackConfirm.json();
+    assertActionPreflightConfirmation(
+      feedbackConfirmPayload,
+      "review-feedback-preflight",
+      "workspace-2",
+    );
+    assert.equal(feedbackConfirmPayload.action.method, "feedback/upload");
+    assert.equal(feedbackConfirmPayload.action.mutationExecuted, false);
+
+    const historyResponse = await fetch(`${url}/api/settings-integrations?workspace=workspace-2`, {
+      headers: apiHeaders(server),
+    });
+    assert.equal(historyResponse.status, 200);
+    const historyPayload = await historyResponse.json();
+    const historySerialized = JSON.stringify(historyPayload.preflightHistory);
+    const confirmationSerialized = JSON.stringify(historyPayload.preflightConfirmationHistory);
+    assert.equal(historyPayload.integrationScope.reviewFeedbackPreflightEnabled, true);
+    assert.equal(historyPayload.integrationScope.reviewStartEnabled, false);
+    assert.equal(historyPayload.integrationScope.feedbackUploadEnabled, false);
+    assert.equal(
+      historyPayload.integrationScope.enabledLocalGates.includes("review-feedback-preflight"),
+      true,
+    );
+    assert.equal(historyPayload.preflightHistory.count, 2);
+    assert.equal(historyPayload.preflightHistory.targetReturned, false);
+    assert.equal(historyPayload.preflightHistory.argumentTextReturned, false);
+    assert.equal(historyPayload.preflightConfirmationHistory.count, 2);
+    assert.equal(historyPayload.preflightConfirmationHistory.preflightTokensReturned, false);
+    assert.equal(historyPayload.preflightConfirmationHistory.argumentTextReturned, false);
+    assert.equal(
+      historyPayload.preflightHistory.items.some(
+        (item) =>
+          item.action.type === "review-feedback-preflight" &&
+          item.action.method === "feedback/upload",
+      ),
+      true,
+    );
+    assert.equal(
+      historyPayload.preflightConfirmationHistory.items.some(
+        (item) =>
+          item.action.type === "review-feedback-preflight" &&
+          item.action.method === "review/start" &&
+          item.preflight.tokenConsumed === true,
+      ),
+      true,
+    );
+    for (const marker of [
+      reviewPayload.preflight.token,
+      feedbackPayload.preflight.token,
+      "private-review-target",
+      "private-review-thread",
+      "private/base-branch",
+      "sk-proj-reviewsecret",
+      "private-feedback-target",
+      "private feedback reason",
+      "private-feedback-thread",
+      "/tmp/private-feedback.log",
+      "private-ticket",
+      "private-account",
+      "sk-proj-feedbacksecret",
     ]) {
       assert.equal(historySerialized.includes(marker), false, `history leaked ${marker}`);
       assert.equal(confirmationSerialized.includes(marker), false, `confirmation leaked ${marker}`);

@@ -177,6 +177,7 @@ const PLUGIN_SHARE_ACTION_METHODS = Object.freeze([
   "plugin/share/updateTargets",
   "plugin/share/delete",
 ]);
+const REVIEW_FEEDBACK_PREFLIGHT_METHODS = Object.freeze(["review/start", "feedback/upload"]);
 const STATIC_ROOT = new URL("../../ui/", import.meta.url);
 const SESSION_TOKEN_PLACEHOLDER = "__CODEX_APP_PORT_SESSION_TOKEN__";
 const TERMINAL_COMMAND_ARGV = Symbol("terminalCommandArgv");
@@ -728,6 +729,14 @@ export const ACTION_PREFLIGHT_CONFIRMATION_FIELD_CONTRACTS = Object.freeze({
     "target",
     "arguments",
   ),
+  "review-feedback-preflight": bodyFields(
+    "workspace",
+    "actionType",
+    "preflightToken",
+    "method",
+    "target",
+    "arguments",
+  ),
   "plugin-share-checkout": bodyFields(
     "workspace",
     "target",
@@ -1206,6 +1215,13 @@ export const BROWSER_POST_BODY_CONTRACTS = Object.freeze({
     kind: "preflight",
     appServerTraffic: false,
   }),
+  "/api/review-feedback-preflight": bodyContract(
+    ["workspace", "method", "target", "arguments"],
+    {
+      kind: "preflight",
+      appServerTraffic: false,
+    },
+  ),
   "/api/plugin-share-checkout": bodyContract(["workspace", "target", "preflightToken"], {
     kind: "mutation",
     requiresPreflightToken: true,
@@ -8078,6 +8094,125 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
     ],
     "preflight.scope": ["kind", "workspaceId"],
   }),
+  "/api/review-feedback-preflight": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    appServer: ["touched", "modelTraffic", "commandTraffic", "reviewTraffic", "feedbackTraffic"],
+    action: [
+      "type",
+      "method",
+      "category",
+      "execution",
+      "wouldStartReview",
+      "wouldUploadFeedback",
+      "wouldIncludeLogs",
+      "appServerTouched",
+      "modelTraffic",
+      "reason",
+    ],
+    integrationAction: ["method", "category", "target", "arguments", "methodAllowedByAudit"],
+    "integrationAction.target": ["present", "charCount", "lineCount", "textReturned"],
+    "integrationAction.arguments": [
+      "present",
+      "charCount",
+      "lineCount",
+      "validJsonObject",
+      "topLevelKeyCount",
+      "textReturned",
+    ],
+    reviewFeedback: [
+      "method",
+      "targetPresent",
+      "targetCharCount",
+      "targetUrlLike",
+      "targetPathLike",
+      "argumentCharCount",
+      "argumentTopLevelKeyCount",
+      "argumentObjectAccepted",
+      "stringArgumentCount",
+      "urlLikeArgumentCount",
+      "pathLikeArgumentCount",
+      "secretLikeArgumentCount",
+      "sensitiveKeyCount",
+      "reviewRequested",
+      "feedbackRequested",
+      "threadIdPresent",
+      "threadIdCharCount",
+      "reviewDeliveryInline",
+      "reviewDeliveryDetached",
+      "reviewTargetUncommitted",
+      "reviewTargetBaseBranch",
+      "reviewTargetCommit",
+      "reviewTargetCustom",
+      "branchPresent",
+      "shaPresent",
+      "titlePresent",
+      "instructionsCharCount",
+      "classificationPresent",
+      "reasonCharCount",
+      "includeLogsRequested",
+      "extraLogFileCount",
+      "tagCount",
+      "reviewExecutionBlocked",
+      "feedbackUploadBlocked",
+      "appServerTraffic",
+      "modelTraffic",
+      "threadIdsReturned",
+      "instructionsReturned",
+      "feedbackReasonReturned",
+      "logPathsReturned",
+      "tagsReturned",
+      "branchReturned",
+      "shaReturned",
+      "titleReturned",
+      "pathsReturned",
+      "urlsReturned",
+      "secretsReturned",
+      "rawPayloadReturned",
+    ],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "modelTraffic",
+      "reviewStart",
+      "feedbackUpload",
+      "reviewFeedbackPreflightEnabled",
+      "reviewStartEnabled",
+      "feedbackUploadEnabled",
+      "mutationExecutionBlocked",
+      "executionRouteImplemented",
+      "dedicatedExecutionRouteImplemented",
+      "executionGateEnabled",
+      "requiresApprovalPipeline",
+      "requiresIntegrationProvenance",
+      "requiresExplicitEnablement",
+      "browserMethodCallsAccepted",
+      "threadIdsReturned",
+      "instructionsReturned",
+      "feedbackReasonReturned",
+      "logsReturned",
+      "tagsReturned",
+      "targetReturned",
+      "argumentTextReturned",
+      "pathsReturned",
+      "urlsReturned",
+      "secretsReturned",
+      "rawPayloadsReturned",
+      "implemented",
+    ],
+    preflight: [
+      "token",
+      "tokenIssued",
+      "issuedAt",
+      "expiresAt",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseRequiredForMutation",
+      "consumed",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+  }),
   "/api/plugin-share-checkout": responseNestedKeySchemas({
     workspace: ["id", "label", "isDefault"],
     initialize: ["platformFamily", "platformOs"],
@@ -10724,6 +10859,11 @@ const BROWSER_POST_RESPONSE_ROUTE_TOP_LEVEL_KEYS = Object.freeze({
     ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
     "integrationAction",
     "externalConfigImport",
+  ),
+  "/api/review-feedback-preflight": routeResponseTopLevelKeys(
+    ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
+    "integrationAction",
+    "reviewFeedback",
   ),
   "/api/plugin-share-checkout": routeResponseTopLevelKeys(
     ...RESPONSE_APP_SERVER_MUTATION_TOP_LEVEL_KEYS,
@@ -15508,6 +15648,41 @@ export async function handleRequest(request, response, options) {
     return;
   }
 
+  if (url.pathname === "/api/review-feedback-preflight") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, [
+        "workspace",
+        "method",
+        "target",
+        "arguments",
+      ]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const payload = buildReviewFeedbackPreflight(body, { workspace });
+      const attached = attachActionPreflight(payload, { body, workspace, options });
+      options.integrationPreflightLedger?.record(attached);
+      sendJson(response, 200, attached);
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid review feedback preflight request",
+      });
+    }
+    return;
+  }
+
   if (url.pathname === "/api/plugin-share-checkout") {
     if (request.method !== "POST") {
       sendJson(response, 405, { ok: false, error: "Method not allowed" });
@@ -17518,6 +17693,10 @@ async function buildConfirmableActionPreflightPayload(actionType, body, { worksp
       return buildExternalConfigImportPreflight(body, {
         workspace,
       });
+    case "review-feedback-preflight":
+      return buildReviewFeedbackPreflight(body, {
+        workspace,
+      });
     case "plugin-content-preflight":
       return buildPluginContentPreflight(body, {
         workspace,
@@ -17630,6 +17809,7 @@ function isIntegrationPreflightActionType(actionType) {
     actionType === "plugin-share-checkout-preflight" ||
     actionType === "plugin-share-action-preflight" ||
     actionType === "external-config-import-preflight" ||
+    actionType === "review-feedback-preflight" ||
     actionType === "plugin-content-preflight" ||
     actionType === "skills-config-preflight" ||
     actionType === "skills-extra-roots-clear-preflight" ||
@@ -26527,6 +26707,134 @@ export function buildExternalConfigImportPreflight(body, { workspace } = {}) {
   };
 }
 
+export function buildReviewFeedbackPreflight(body, { workspace } = {}) {
+  const methodAudit = integrationMethodAudit();
+  const method = validateReviewFeedbackPreflightMethod(body?.method, methodAudit);
+  const auditEntry = methodAudit.find((entry) => entry.method === method);
+  const category = auditEntry?.category ?? (method === "review/start" ? "review" : "feedback");
+  const target = validateIntegrationTarget(body?.target);
+  const args = validateMcpArguments(body?.arguments);
+  const risk = summarizeBlockedIntegrationActionRisk({
+    method,
+    category,
+    target,
+    argumentsValue: body?.arguments,
+  });
+  const reviewFeedback = summarizeReviewFeedbackRisk(method, parseIntegrationRiskArguments(body?.arguments));
+  const targetText = typeof body?.target === "string" ? body.target.trim() : "";
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: publicWorkspaces([workspace])[0],
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      reviewTraffic: false,
+      feedbackTraffic: false,
+    },
+    action: {
+      type: "review-feedback-preflight",
+      method,
+      category,
+      execution: "blocked",
+      wouldStartReview: false,
+      wouldUploadFeedback: false,
+      wouldIncludeLogs: false,
+      appServerTouched: false,
+      modelTraffic: false,
+      reason: "review-feedback-execution-not-implemented",
+    },
+    integrationAction: {
+      method,
+      category,
+      target,
+      arguments: args,
+      methodAllowedByAudit: auditEntry?.status === "blocked",
+    },
+    reviewFeedback: {
+      method,
+      targetPresent: target.present,
+      targetCharCount: target.charCount,
+      targetUrlLike: isUrlLikeArgument(targetText),
+      targetPathLike: isPathLikeArgument(targetText),
+      argumentCharCount: args.charCount,
+      argumentTopLevelKeyCount: args.topLevelKeyCount,
+      argumentObjectAccepted: risk.argumentObjectAccepted,
+      stringArgumentCount: risk.stringArgumentCount,
+      urlLikeArgumentCount: risk.urlLikeArgumentCount,
+      pathLikeArgumentCount: risk.pathLikeArgumentCount,
+      secretLikeArgumentCount: risk.secretLikeArgumentCount,
+      sensitiveKeyCount: risk.sensitiveKeyCount,
+      reviewRequested: method === "review/start",
+      feedbackRequested: method === "feedback/upload",
+      threadIdPresent: reviewFeedback.threadIdPresent,
+      threadIdCharCount: reviewFeedback.threadIdCharCount,
+      reviewDeliveryInline: reviewFeedback.reviewDeliveryInline,
+      reviewDeliveryDetached: reviewFeedback.reviewDeliveryDetached,
+      reviewTargetUncommitted: reviewFeedback.reviewTargetUncommitted,
+      reviewTargetBaseBranch: reviewFeedback.reviewTargetBaseBranch,
+      reviewTargetCommit: reviewFeedback.reviewTargetCommit,
+      reviewTargetCustom: reviewFeedback.reviewTargetCustom,
+      branchPresent: reviewFeedback.branchPresent,
+      shaPresent: reviewFeedback.shaPresent,
+      titlePresent: reviewFeedback.titlePresent,
+      instructionsCharCount: reviewFeedback.instructionsCharCount,
+      classificationPresent: reviewFeedback.classificationPresent,
+      reasonCharCount: reviewFeedback.reasonCharCount,
+      includeLogsRequested: reviewFeedback.includeLogsRequested,
+      extraLogFileCount: reviewFeedback.extraLogFileCount,
+      tagCount: reviewFeedback.tagCount,
+      reviewExecutionBlocked: true,
+      feedbackUploadBlocked: true,
+      appServerTraffic: false,
+      modelTraffic: false,
+      threadIdsReturned: false,
+      instructionsReturned: false,
+      feedbackReasonReturned: false,
+      logPathsReturned: false,
+      tagsReturned: false,
+      branchReturned: false,
+      shaReturned: false,
+      titleReturned: false,
+      pathsReturned: false,
+      urlsReturned: false,
+      secretsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: false,
+      modelTraffic: false,
+      reviewStart: false,
+      feedbackUpload: false,
+      reviewFeedbackPreflightEnabled: true,
+      reviewStartEnabled: false,
+      feedbackUploadEnabled: false,
+      mutationExecutionBlocked: true,
+      executionRouteImplemented: false,
+      dedicatedExecutionRouteImplemented: false,
+      executionGateEnabled: false,
+      requiresApprovalPipeline: true,
+      requiresIntegrationProvenance: true,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: false,
+      threadIdsReturned: false,
+      instructionsReturned: false,
+      feedbackReasonReturned: false,
+      logsReturned: false,
+      tagsReturned: false,
+      targetReturned: false,
+      argumentTextReturned: false,
+      pathsReturned: false,
+      urlsReturned: false,
+      secretsReturned: false,
+      rawPayloadsReturned: false,
+      implemented: true,
+    },
+  };
+}
+
 function buildPluginShareCheckoutBlocked(preflightPayload) {
   const checkout = preflightPayload.pluginShareCheckout ?? {};
   return {
@@ -28874,6 +29182,42 @@ function summarizeExternalConfigImportRisk(argumentObject) {
       : 0;
   }
   return summary;
+}
+
+function summarizeReviewFeedbackRisk(method, argumentObject) {
+  const reviewTarget =
+    argumentObject?.target && typeof argumentObject.target === "object" && !Array.isArray(argumentObject.target)
+      ? argumentObject.target
+      : {};
+  const reviewTargetType =
+    typeof reviewTarget.type === "string" ? reviewTarget.type.trim() : "";
+  const tags =
+    argumentObject?.tags && typeof argumentObject.tags === "object" && !Array.isArray(argumentObject.tags)
+      ? argumentObject.tags
+      : {};
+  return {
+    threadIdPresent: hasNonEmptyString(argumentObject?.threadId),
+    threadIdCharCount:
+      typeof argumentObject?.threadId === "string" ? argumentObject.threadId.length : 0,
+    reviewDeliveryInline: method === "review/start" && argumentObject?.delivery === "inline",
+    reviewDeliveryDetached: method === "review/start" && argumentObject?.delivery === "detached",
+    reviewTargetUncommitted: method === "review/start" && reviewTargetType === "uncommittedChanges",
+    reviewTargetBaseBranch: method === "review/start" && reviewTargetType === "baseBranch",
+    reviewTargetCommit: method === "review/start" && reviewTargetType === "commit",
+    reviewTargetCustom: method === "review/start" && reviewTargetType === "custom",
+    branchPresent: hasNonEmptyString(reviewTarget.branch),
+    shaPresent: hasNonEmptyString(reviewTarget.sha),
+    titlePresent: hasNonEmptyString(reviewTarget.title),
+    instructionsCharCount:
+      typeof reviewTarget.instructions === "string" ? reviewTarget.instructions.length : 0,
+    classificationPresent: method === "feedback/upload" && hasNonEmptyString(argumentObject?.classification),
+    reasonCharCount: typeof argumentObject?.reason === "string" ? argumentObject.reason.length : 0,
+    includeLogsRequested: method === "feedback/upload" && argumentObject?.includeLogs === true,
+    extraLogFileCount: Array.isArray(argumentObject?.extraLogFiles)
+      ? argumentObject.extraLogFiles.length
+      : 0,
+    tagCount: method === "feedback/upload" ? Object.keys(tags).length : 0,
+  };
 }
 
 function sanitizeIntegrationActionRisk(risk) {
@@ -36307,6 +36651,7 @@ function buildIntegrationActionScope({
     "plugin-share-checkout-preflight",
     "plugin-share-action-preflight",
     "external-config-import-preflight",
+    "review-feedback-preflight",
     "plugin-content-preflight",
     "config-value-preflight",
     "config-batch-preflight",
@@ -36376,6 +36721,9 @@ function buildIntegrationActionScope({
     appAuthLinkingEnabled: false,
     externalConfigImportPreflightEnabled: true,
     externalConfigImportEnabled: false,
+    reviewFeedbackPreflightEnabled: true,
+    reviewStartEnabled: false,
+    feedbackUploadEnabled: false,
     skillsConfigWriteEnabled: Boolean(skillsConfigWriteEnabled),
     skillsExtraRootsClearEnabled: Boolean(skillsExtraRootsClearEnabled),
     pluginReadEnabled: Boolean(pluginReadEnabled),
@@ -42071,6 +42419,17 @@ function validatePluginShareActionMethod(value, methodAudit = integrationMethodA
   }
   if (!methodAudit.some((entry) => entry.method === method && entry.status === "blocked")) {
     throwRequestError("Plugin share method is not available", 400);
+  }
+  return method;
+}
+
+function validateReviewFeedbackPreflightMethod(value, methodAudit = integrationMethodAudit()) {
+  const method = cleanDisplayText(value, 100);
+  if (!method || !REVIEW_FEEDBACK_PREFLIGHT_METHODS.includes(method)) {
+    throwRequestError("Review feedback method is unsupported", 400);
+  }
+  if (!methodAudit.some((entry) => entry.method === method && entry.status === "blocked")) {
+    throwRequestError("Review feedback method is not available", 400);
   }
   return method;
 }

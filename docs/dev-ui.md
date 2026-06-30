@@ -121,6 +121,13 @@ The server binds to `127.0.0.1` by default and serves:
   route, and no migration item echo, plugin names, marketplace names, session
   titles, commands, hook commands, MCP server names, subagent names, paths,
   URLs, secrets, target/argument text, or raw payloads
+- `/api/review-feedback-preflight`: local-only validation for `review/start`
+  and `feedback/upload`; it returns only target/argument counts, review
+  target/delivery/thread-id presence, feedback classification/reason/log/tag
+  counters, and URL/path/secret-like counters, with no app-server traffic, no
+  review or feedback route, and no thread ids, branches, SHAs, titles,
+  instructions, feedback reason, log paths, tags, URLs, secrets,
+  target/argument text, or raw payloads
 - `/api/plugin-content-preflight`: local plugin skill/share-list validation
   with skill text, sharing state, plugin/marketplace text, and app-server reads
   blocked
@@ -896,6 +903,17 @@ import execution route. It does not import, write config, install plugins, touch
 app-server, or return migration items, plugin names, marketplace names, session
 titles, commands, hook commands, MCP server names, subagent names, paths, URLs,
 secrets, target text, argument text, or raw payloads.
+
+The review-feedback-preflight endpoint accepts draft `review/start` and
+`feedback/upload` intent for local validation behind a route-specific nested
+response schema. It returns only target length, argument length/key counts,
+review target/delivery/thread-id presence, feedback classification/reason/log/
+tag counters, and URL/path/secret-like counters. It issues a short-lived local
+preflight token for confirmation and history, but there is no review or
+feedback execution route. It does not start review, upload feedback or logs,
+touch app-server, or return thread ids, branch names, SHAs, titles,
+instructions, feedback reason, log paths, tags, URLs, secrets, target text,
+argument text, or raw payloads.
 
 The plugin-content-preflight endpoint accepts only audited blocked
 `plugin/skill/read` and `plugin/share/list` intent for local validation behind a
@@ -1896,6 +1914,10 @@ schema-backed `/api/external-config-import-preflight` blocks external config
 imports without migration items, plugin names, marketplace names, session
 titles, commands, hook commands, MCP server names, subagent names, paths, URLs,
 secrets, target/argument echo, or app-server traffic, that
+schema-backed `/api/review-feedback-preflight` blocks review and feedback
+actions without thread ids, branches, SHAs, titles, instructions, feedback
+reason, log paths, tags, URLs, secrets, target/argument echo, or app-server
+traffic, that
 schema-backed `/api/plugin-content-preflight` blocks plugin skill/share-list
 reads without skill text, sharing URLs/principals, plugin/marketplace/path
 echo, that schema-backed `/api/plugin-content-read` can execute only as

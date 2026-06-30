@@ -672,6 +672,14 @@ Current M1 status:
   app-server traffic, migration item echo, plugin names, marketplace names,
   session titles, commands, hook commands, MCP server names, subagent names,
   paths, URLs, secrets, or raw payloads
+- done: local-only `/api/review-feedback-preflight` for audited
+  `review/start` and `feedback/upload` intent, with route-specific nested
+  response schemas, target/argument counts, review target/delivery/thread-id
+  presence, feedback classification/reason/log/tag counters, URL/path/secret
+  counters, short-lived preflight confirmation/history, and no review or
+  feedback execution route, app-server traffic, thread ids, branches, SHAs,
+  titles, instructions, feedback reason, log paths, tags, URLs, secrets, or raw
+  payloads
 - done: opt-in `/api/plugin-content-read` behind
   `CODEX_APP_PORT_ALLOW_PLUGIN_CONTENT_READ=1` for `plugin/skill/read` and
   `CODEX_APP_PORT_ALLOW_PLUGIN_SHARE_LIST=1` for `plugin/share/list`, with

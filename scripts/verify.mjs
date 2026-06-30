@@ -1177,6 +1177,10 @@ async function checkStrictBrowserPostBodies() {
         { target: "safe-external-config", arguments: "{}" },
       ],
       [
+        "/api/review-feedback-preflight",
+        { method: "review/start", target: "safe-review", arguments: "{}" },
+      ],
+      [
         "/api/plugin-share-checkout",
         {
           target: "safe-remote-plugin",
@@ -1924,6 +1928,24 @@ function assertBrowserPostBodyContracts(cases) {
     externalConfigImportPreflightContract.nestedKeySchemas.policy?.includes("unexpected")
   ) {
     throw new Error("external-config-import-preflight response contract is missing nested schemas");
+  }
+  const reviewFeedbackPreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/review-feedback-preflight"];
+  if (
+    reviewFeedbackPreflightContract.usesRouteSpecificNestedKeySchemas !== true ||
+    !Object.isFrozen(reviewFeedbackPreflightContract.nestedKeySchemas.policy) ||
+    !reviewFeedbackPreflightContract.nestedKeySchemas.reviewFeedback?.includes(
+      "reviewExecutionBlocked",
+    ) ||
+    !reviewFeedbackPreflightContract.nestedKeySchemas.reviewFeedback?.includes(
+      "includeLogsRequested",
+    ) ||
+    !reviewFeedbackPreflightContract.nestedKeySchemas.policy?.includes(
+      "reviewFeedbackPreflightEnabled",
+    ) ||
+    reviewFeedbackPreflightContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("review-feedback-preflight response contract is missing nested schemas");
   }
   const pluginShareCheckoutContract =
     BROWSER_POST_RESPONSE_CONTRACTS["/api/plugin-share-checkout"];
@@ -24854,7 +24876,7 @@ function assertSanitizedAccountLoginHistory(payload, { token, workspaceId = "def
     partialSurfaceCount: 4,
     blockedSurfaceCount: 3,
     readMethodCount: 1,
-    localGateCount: 17,
+    localGateCount: 18,
     enabledMutationGateCount: 1,
     historyCount: 1,
     appServerTouched: false,
@@ -25345,7 +25367,7 @@ function assertSanitizedAccountLogoutHistory(payload, { token, workspaceId = "de
     partialSurfaceCount: 4,
     blockedSurfaceCount: 3,
     readMethodCount: 1,
-    localGateCount: 17,
+    localGateCount: 18,
     enabledMutationGateCount: 1,
     historyCount: 1,
     appServerTouched: false,
@@ -29753,7 +29775,7 @@ function assertSanitizedSettingsIntegrations(payload) {
     payload.integrationScope?.enabledReadMethodCount !== 1 ||
     JSON.stringify(payload.integrationScope?.enabledReadMethods ?? []) !==
       JSON.stringify(["config/read"]) ||
-    payload.integrationScope?.enabledLocalGateCount !== 16 ||
+    payload.integrationScope?.enabledLocalGateCount !== 17 ||
     !payload.integrationScope?.enabledLocalGates?.includes("mcp-tool-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("mcp-oauth-login-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("mcp-resource-preflight") ||
@@ -29764,6 +29786,7 @@ function assertSanitizedSettingsIntegrations(payload) {
     !payload.integrationScope?.enabledLocalGates?.includes("plugin-share-checkout-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("plugin-share-action-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("external-config-import-preflight") ||
+    !payload.integrationScope?.enabledLocalGates?.includes("review-feedback-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("plugin-content-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("config-value-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("config-batch-preflight") ||
@@ -29791,6 +29814,9 @@ function assertSanitizedSettingsIntegrations(payload) {
     payload.integrationScope?.appAuthLinkingEnabled !== false ||
     payload.integrationScope?.externalConfigImportPreflightEnabled !== true ||
     payload.integrationScope?.externalConfigImportEnabled !== false ||
+    payload.integrationScope?.reviewFeedbackPreflightEnabled !== true ||
+    payload.integrationScope?.reviewStartEnabled !== false ||
+    payload.integrationScope?.feedbackUploadEnabled !== false ||
     payload.integrationScope?.skillsConfigWriteEnabled !== false ||
     payload.integrationScope?.pluginInstallEnabled !== false ||
     payload.integrationScope?.pluginUninstallEnabled !== false ||
@@ -29817,7 +29843,7 @@ function assertSanitizedSettingsIntegrations(payload) {
     partialSurfaceCount: 3,
     blockedSurfaceCount: 4,
     readMethodCount: 1,
-    localGateCount: 16,
+    localGateCount: 17,
     enabledMutationGateCount: 0,
     historyCount: 0,
     appServerTouched: false,
@@ -31344,11 +31370,12 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
       ["config/read", ...optInIntegrationReadMethods()].length ||
     JSON.stringify(payload.integrationScope?.enabledReadMethods ?? []) !==
       JSON.stringify(["config/read", ...optInIntegrationReadMethods()]) ||
-    payload.integrationScope?.enabledLocalGateCount !== 16 ||
+    payload.integrationScope?.enabledLocalGateCount !== 17 ||
     !payload.integrationScope?.enabledLocalGates?.includes("plugin-install-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("marketplace-action-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("plugin-share-action-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("external-config-import-preflight") ||
+    !payload.integrationScope?.enabledLocalGates?.includes("review-feedback-preflight") ||
     payload.integrationScope?.blockedMutationMethodCount !==
       blockedIntegrationMutationMethods().length ||
     payload.integrationScope?.accountLoginEnabled !== false ||
@@ -31362,6 +31389,9 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
     payload.integrationScope?.mcpToolInvocationEnabled !== false ||
     payload.integrationScope?.pluginInstallEnabled !== false ||
     payload.integrationScope?.externalConfigImportPreflightEnabled !== true ||
+    payload.integrationScope?.reviewFeedbackPreflightEnabled !== true ||
+    payload.integrationScope?.reviewStartEnabled !== false ||
+    payload.integrationScope?.feedbackUploadEnabled !== false ||
     payload.integrationScope?.pluginUninstallEnabled !== false ||
     payload.integrationScope?.pluginContentReadEnabled !== false ||
     payload.integrationScope?.pluginShareListEnabled !== false ||
@@ -31380,7 +31410,7 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
     partialSurfaceCount: 7,
     blockedSurfaceCount: 0,
     readMethodCount: ["config/read", ...optInIntegrationReadMethods()].length,
-    localGateCount: 16,
+    localGateCount: 17,
     enabledMutationGateCount: 0,
     historyCount: 0,
     appServerTouched: true,

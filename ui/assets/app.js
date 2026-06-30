@@ -126,6 +126,16 @@ const elements = {
   externalConfigImportArgKeys: document.querySelector("#external-config-import-arg-keys"),
   externalConfigImportItemsText: document.querySelector("#external-config-import-items-text"),
   externalConfigImportText: document.querySelector("#external-config-import-text"),
+  reviewFeedbackForm: document.querySelector("#review-feedback-form"),
+  reviewFeedbackMethodSelect: document.querySelector("#review-feedback-method-select"),
+  reviewFeedbackTargetInput: document.querySelector("#review-feedback-target-input"),
+  reviewFeedbackArgumentsInput: document.querySelector("#review-feedback-arguments-input"),
+  reviewFeedbackButton: document.querySelector("#review-feedback-button"),
+  reviewFeedbackStatus: document.querySelector("#review-feedback-status"),
+  reviewFeedbackTargetChars: document.querySelector("#review-feedback-target-chars"),
+  reviewFeedbackArgKeys: document.querySelector("#review-feedback-arg-keys"),
+  reviewFeedbackReviewText: document.querySelector("#review-feedback-review-text"),
+  reviewFeedbackLogsText: document.querySelector("#review-feedback-logs-text"),
   skillsStateText: document.querySelector("#skills-state-text"),
   pluginsStateText: document.querySelector("#plugins-state-text"),
   installedPluginsStateText: document.querySelector("#installed-plugins-state-text"),
@@ -1567,6 +1577,28 @@ elements.externalConfigImportForm.addEventListener("submit", (event) => {
   runExternalConfigImportPreflight();
 });
 
+elements.reviewFeedbackForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  runReviewFeedbackPreflight();
+});
+
+for (const input of [
+  elements.reviewFeedbackMethodSelect,
+  elements.reviewFeedbackTargetInput,
+  elements.reviewFeedbackArgumentsInput,
+]) {
+  input.addEventListener("input", () => {
+    elements.reviewFeedbackStatus.textContent = "Blocked";
+    elements.reviewFeedbackReviewText.textContent = "Blocked";
+    elements.reviewFeedbackLogsText.textContent = "Hidden";
+  });
+  input.addEventListener("change", () => {
+    elements.reviewFeedbackStatus.textContent = "Blocked";
+    elements.reviewFeedbackReviewText.textContent = "Blocked";
+    elements.reviewFeedbackLogsText.textContent = "Hidden";
+  });
+}
+
 elements.accountLoginPreflightButton.addEventListener("click", () => {
   runAccountLoginPreflight();
 });
@@ -1969,6 +2001,10 @@ function integrationActionPreflightEndpoint() {
 
 function externalConfigImportPreflightEndpoint() {
   return "/api/external-config-import-preflight";
+}
+
+function reviewFeedbackPreflightEndpoint() {
+  return "/api/review-feedback-preflight";
 }
 
 function accountLoginPreflightEndpoint() {
@@ -3768,6 +3804,36 @@ async function runExternalConfigImportPreflight() {
     renderError(error);
   } finally {
     setExternalConfigImportLoading(false);
+  }
+}
+
+async function runReviewFeedbackPreflight() {
+  setReviewFeedbackLoading(true);
+  hideError();
+
+  try {
+    const response = await fetch(reviewFeedbackPreflightEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify({
+        workspace: selectedWorkspaceId,
+        method: elements.reviewFeedbackMethodSelect.value,
+        target: elements.reviewFeedbackTargetInput.value,
+        arguments: elements.reviewFeedbackArgumentsInput.value,
+      }),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderReviewFeedbackPreflight(payload);
+    await refreshSettingsIntegrations().catch(() => {});
+  } catch (error) {
+    elements.reviewFeedbackStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    setReviewFeedbackLoading(false);
   }
 }
 
@@ -9992,6 +10058,12 @@ function renderIntegrationPreflightHistory(history) {
         `${item.integrationAction?.argumentTopLevelKeyCount ?? 0} arg keys`,
         "import details omitted",
       ]);
+    } else if (item.action?.type === "review-feedback-preflight") {
+      detail.textContent = joinParts([
+        `${item.integrationAction?.targetCharCount ?? 0} target chars`,
+        `${item.integrationAction?.argumentTopLevelKeyCount ?? 0} arg keys`,
+        "review feedback details omitted",
+      ]);
     } else if (
       item.action?.type === "plugin-read-preflight" ||
       item.action?.type === "plugin-content-preflight" ||
@@ -10116,6 +10188,12 @@ function renderIntegrationConfirmationHistory(history) {
         `${item.integrationAction?.targetCharCount ?? 0} target chars`,
         `${item.integrationAction?.argumentTopLevelKeyCount ?? 0} arg keys`,
         "import details omitted",
+      ]);
+    } else if (item.action?.type === "review-feedback-preflight") {
+      detail.textContent = joinParts([
+        `${item.integrationAction?.targetCharCount ?? 0} target chars`,
+        `${item.integrationAction?.argumentTopLevelKeyCount ?? 0} arg keys`,
+        "review feedback details omitted",
       ]);
     } else if (
       item.action?.type === "plugin-read-preflight" ||
@@ -10758,6 +10836,31 @@ function renderExternalConfigImportPreflight(payload) {
   elements.externalConfigStateText.textContent = payload.policy?.externalConfigImportPreflightEnabled
     ? "Import check"
     : "Blocked";
+}
+
+function renderReviewFeedbackPreflight(payload) {
+  const reviewFeedback = payload.reviewFeedback ?? {};
+  elements.reviewFeedbackStatus.textContent = payload.action?.execution ?? "blocked";
+  elements.reviewFeedbackTargetChars.textContent = String(
+    reviewFeedback.targetCharCount ?? 0,
+  );
+  elements.reviewFeedbackArgKeys.textContent = String(
+    reviewFeedback.argumentTopLevelKeyCount ?? 0,
+  );
+  elements.reviewFeedbackReviewText.textContent = reviewFeedback.reviewRequested
+    ? joinParts([
+        "Review blocked",
+        reviewFeedback.reviewTargetBaseBranch ? "base branch" : null,
+        reviewFeedback.reviewTargetCommit ? "commit" : null,
+        reviewFeedback.reviewTargetCustom ? "custom" : null,
+        reviewFeedback.reviewDeliveryDetached ? "detached" : null,
+      ])
+    : "Feedback blocked";
+  elements.reviewFeedbackLogsText.textContent = joinParts([
+    reviewFeedback.includeLogsRequested ? "logs requested" : "logs hidden",
+    `${reviewFeedback.extraLogFileCount ?? 0} files`,
+    `${reviewFeedback.tagCount ?? 0} tags`,
+  ]);
 }
 
 function renderAccountLoginPreflight(payload) {
@@ -12759,6 +12862,14 @@ function setExternalConfigImportLoading(isLoading) {
   elements.externalConfigImportButton.textContent = isLoading ? "Checking" : "Import Check";
   if (isLoading) {
     elements.externalConfigImportStatus.textContent = "Checking";
+  }
+}
+
+function setReviewFeedbackLoading(isLoading) {
+  elements.reviewFeedbackButton.disabled = isLoading;
+  elements.reviewFeedbackButton.textContent = isLoading ? "Checking" : "Review/Feedback Check";
+  if (isLoading) {
+    elements.reviewFeedbackStatus.textContent = "Checking";
   }
 }
 
