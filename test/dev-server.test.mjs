@@ -20489,10 +20489,10 @@ test("dev server exposes settings and integration boundary without app-server tr
     );
     assertSettingsServerBoundaries(payload);
     assertCodexAppSettingsParity(payload, {
-      availableSectionCount: 7,
-      partialSectionCount: 6,
+      availableSectionCount: 8,
+      partialSectionCount: 7,
       preflightOnlySectionCount: 1,
-      blockedSectionCount: 8,
+      blockedSectionCount: 7,
       profileState: "blocked",
     });
     assert.equal(payload.surfaces.settings.state, "partial");
@@ -22761,10 +22761,10 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
     );
     assertSettingsServerBoundaries(payload);
     assertCodexAppSettingsParity(payload, {
-      availableSectionCount: 8,
-      partialSectionCount: 7,
+      availableSectionCount: 9,
+      partialSectionCount: 8,
       preflightOnlySectionCount: 1,
-      blockedSectionCount: 7,
+      blockedSectionCount: 6,
       profileState: "partial",
     });
     assert.equal(payload.appServer.auditedReadMethods.includes("configRequirements/read"), true);
@@ -34969,6 +34969,10 @@ function assertCodexAppSettingsParity(
     summary.sections.find((section) => section.key === "keyboardShortcuts")?.state,
     "partial",
   );
+  assert.equal(
+    summary.sections.find((section) => section.key === "notifications")?.state,
+    "partial",
+  );
   assert.equal(summary.sections.find((section) => section.key === "browser")?.state, "blocked");
   assert.equal(
     summary.sections.find((section) => section.key === "computerUse")?.state,
@@ -35041,6 +35045,58 @@ function assertCodexAppSettingsParity(
     ),
     true,
   );
+  assert.equal(summary.notifications?.returned, true);
+  assert.equal(summary.notifications.state, "partial");
+  assert.equal(summary.notifications.settingCount, 4);
+  assert.equal(summary.notifications.officialSettingCount, 2);
+  assert.equal(summary.notifications.boundaryOnlySettingCount, 2);
+  assert.equal(summary.notifications.blockedSettingCount, 2);
+  assert.equal(summary.notifications.enabledSettingCount, 0);
+  assert.equal(summary.notifications.serverBoundaryReturned, true);
+  assert.equal(summary.notifications.serverBoundaryMethodCount, serverNotificationMethodNames().length);
+  assert.equal(
+    summary.notifications.serverBoundaryBlockedMethodCount,
+    serverNotificationMethodNames().length,
+  );
+  assert.equal(summary.notifications.turnCompletionNotificationsAvailable, false);
+  assert.equal(summary.notifications.permissionPromptAvailable, false);
+  assert.equal(summary.notifications.permissionPromptExecuted, false);
+  assert.equal(summary.notifications.browserNotificationApiTouched, false);
+  assert.equal(summary.notifications.notificationPermissionReturned, false);
+  assert.equal(summary.notifications.notificationSubscriptionsReturned, false);
+  assert.equal(summary.notifications.notificationPayloadsReturned, false);
+  assert.equal(summary.notifications.settingValuesReturned, false);
+  assert.equal(summary.notifications.localSettingValuesReturned, false);
+  assert.equal(summary.notifications.mutationEnabled, false);
+  assert.equal(summary.notifications.pathsReturned, false);
+  assert.equal(summary.notifications.urlsReturned, false);
+  assert.equal(summary.notifications.secretsReturned, false);
+  assert.equal(summary.notifications.rawPayloadsReturned, false);
+  assert.equal(summary.notifications.appServerTraffic, false);
+  assert.deepEqual(
+    summary.notifications.settings.map((setting) => setting.key),
+    [
+      "turnCompletionNotifications",
+      "notificationPermissionPrompt",
+      "serverNotificationBoundary",
+      "realtimeNotificationBoundary",
+    ],
+  );
+  assert.equal(
+    summary.notifications.settings.every(
+      (setting) =>
+        setting.settingValueReturned === false &&
+        setting.permissionStateReturned === false &&
+        setting.notificationPayloadsReturned === false &&
+        setting.pathsReturned === false &&
+        setting.urlsReturned === false &&
+        setting.secretsReturned === false &&
+        setting.rawPayloadsReturned === false &&
+        setting.browserNotificationApiTouched === false &&
+        setting.appServerTraffic === false,
+    ),
+    true,
+  );
   assert.equal(
     summary.sections.every(
       (section) =>
@@ -35067,6 +35123,13 @@ function assertCodexAppSettingsParity(
   assert.equal(payload.policy?.codexAppKeyboardShortcutCommandLabelsReturned, false);
   assert.equal(payload.policy?.codexAppKeyboardShortcutCustomBindingsReturned, false);
   assert.equal(payload.policy?.codexAppKeyboardShortcutMutationsEnabled, false);
+  assert.equal(payload.policy?.codexAppNotificationSettingsReturned, true);
+  assert.equal(payload.policy?.codexAppNotificationSettingValuesReturned, false);
+  assert.equal(payload.policy?.codexAppNotificationPermissionStateReturned, false);
+  assert.equal(payload.policy?.codexAppNotificationPermissionPromptExecuted, false);
+  assert.equal(payload.policy?.codexAppNotificationPayloadsReturned, false);
+  assert.equal(payload.policy?.codexAppNotificationBrowserApiTouched, false);
+  assert.equal(payload.policy?.codexAppNotificationMutationsEnabled, false);
 }
 
 function assertTurnSessionRoutingContract(payload, expected) {

@@ -76,6 +76,12 @@ Target parity with the Codex desktop workflow:
   and counts only; custom/user bindings, command labels, keystroke search,
   reset/edit mutations, paths, URLs, secrets, raw payloads, and app-server
   traffic remain blocked.
+- The same summary now includes a read-only Notifications settings catalog for
+  the official turn-completion and permission-prompt controls plus the local
+  server-notification boundary. It returns only keys, groups, states, sources,
+  and counts; notification values, browser permission state, subscriptions,
+  notification payloads, browser Notification API prompts, paths, URLs, secrets,
+  raw payloads, and app-server traffic remain blocked.
 - `permissionProfile/list` has an opt-in, counts-only inventory path; it
   returns profile counts and allowed/blocked totals only, not profile ids or
   descriptions.

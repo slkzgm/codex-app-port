@@ -17,6 +17,8 @@ const elements = {
   appSettingsValuesText: document.querySelector("#app-settings-values-text"),
   appShortcutsText: document.querySelector("#app-shortcuts-text"),
   appShortcutsEditingText: document.querySelector("#app-shortcuts-editing-text"),
+  appNotificationsText: document.querySelector("#app-notifications-text"),
+  appNotificationsPermissionText: document.querySelector("#app-notifications-permission-text"),
   realtimeVoicesButton: document.querySelector("#realtime-voices-button"),
   realtimeVoicesStateText: document.querySelector("#realtime-voices-state-text"),
   settingsSourceText: document.querySelector("#settings-source-text"),
@@ -355,6 +357,7 @@ const elements = {
   integrationsDetailList: document.querySelector("#integrations-detail-list"),
   appSettingsParityList: document.querySelector("#app-settings-parity-list"),
   appKeyboardShortcutsList: document.querySelector("#app-keyboard-shortcuts-list"),
+  appNotificationsList: document.querySelector("#app-notifications-list"),
   gitButton: document.querySelector("#git-button"),
   gitSwitchButton: document.querySelector("#git-switch-button"),
   gitDeleteButton: document.querySelector("#git-delete-button"),
@@ -10411,6 +10414,16 @@ function renderSettingsIntegrations(payload) {
     keyboardShortcuts.customBindingEditorAvailable || keyboardShortcuts.resetCustomBindingsAvailable
       ? "Enabled"
       : "Blocked";
+  const notifications = codexAppSettings.notifications ?? {};
+  elements.appNotificationsText.textContent = notifications.returned
+    ? `${notifications.boundaryOnlySettingCount ?? 0} boundary / ${
+        notifications.settingCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.appNotificationsPermissionText.textContent =
+    notifications.permissionPromptAvailable || notifications.permissionPromptExecuted
+      ? "Enabled"
+      : "Blocked";
   elements.requirementsStateText.textContent = settings.requirementsAvailable
     ? `${inventory.requirements?.featureRequirementCount ?? 0} features`
     : "Blocked";
@@ -10552,6 +10565,7 @@ function renderSettingsIntegrations(payload) {
   renderIntegrationDetails(inventory);
   renderCodexAppSettingsParity(codexAppSettings);
   renderCodexAppKeyboardShortcuts(keyboardShortcuts);
+  renderCodexAppNotificationSettings(notifications);
   renderUpstreamDrift(upstreamDrift);
   renderIntegrationMethodAudit(methodAudit);
 }
@@ -12152,6 +12166,53 @@ function renderCodexAppKeyboardShortcuts(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.appKeyboardShortcutsList.append(row);
+  }
+}
+
+function renderCodexAppNotificationSettings(summary) {
+  elements.appNotificationsList.replaceChildren();
+  const settings = Array.isArray(summary?.settings) ? summary.settings : [];
+  if (settings.length === 0) {
+    elements.appNotificationsList.append(emptyState("No notification settings catalog returned."));
+    return;
+  }
+  for (const setting of settings) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = setting.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = setting.group ?? "notifications";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      setting.state ?? "blocked",
+      setting.source ?? null,
+      setting.settingValueReturned ? "value returned" : "value hidden",
+      setting.permissionStateReturned ? "permission returned" : "permission hidden",
+      setting.notificationPayloadsReturned ? "payloads returned" : "payloads hidden",
+      setting.browserNotificationApiTouched ? "browser API touched" : "browser API untouched",
+      setting.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.appNotificationsList.append(row);
   }
 }
 

@@ -33198,6 +33198,86 @@ function buildCodexAppKeyboardShortcutsSummary() {
   };
 }
 
+const CODEX_APP_NOTIFICATION_SETTINGS = Object.freeze([
+  {
+    key: "turnCompletionNotifications",
+    group: "turns",
+    state: "blocked",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "notificationPermissionPrompt",
+    group: "permissions",
+    state: "blocked",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "serverNotificationBoundary",
+    group: "server-boundary",
+    state: "boundary-only",
+    source: "server-notification-boundary",
+  },
+  {
+    key: "realtimeNotificationBoundary",
+    group: "server-boundary",
+    state: "boundary-only",
+    source: "server-notification-boundary",
+  },
+]);
+
+function buildCodexAppNotificationSettingsSummary(payload = {}) {
+  const serverNotificationBoundary = payload.serverNotificationBoundary ?? {};
+  const settings = CODEX_APP_NOTIFICATION_SETTINGS.map((setting) => ({
+    ...setting,
+    settingValueReturned: false,
+    permissionStateReturned: false,
+    notificationPayloadsReturned: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+    rawPayloadsReturned: false,
+    browserNotificationApiTouched: false,
+    appServerTraffic: false,
+  }));
+  const boundaryOnlySettingCount = settings.filter(
+    (setting) => setting.state === "boundary-only",
+  ).length;
+  const blockedSettingCount = settings.filter((setting) => setting.state === "blocked").length;
+
+  return {
+    returned: true,
+    state: boundaryOnlySettingCount > 0 ? "partial" : "blocked",
+    settingCount: settings.length,
+    officialSettingCount: settings.filter(
+      (setting) => setting.source === "official-codex-app-docs",
+    ).length,
+    boundaryOnlySettingCount,
+    blockedSettingCount,
+    enabledSettingCount: 0,
+    settings,
+    serverBoundaryReturned: serverNotificationBoundary.returned === true,
+    serverBoundaryMethodCount: safeCount(serverNotificationBoundary.methodCount),
+    serverBoundaryBlockedMethodCount: safeCount(
+      serverNotificationBoundary.blockedMethodCount,
+    ),
+    turnCompletionNotificationsAvailable: false,
+    permissionPromptAvailable: false,
+    permissionPromptExecuted: false,
+    browserNotificationApiTouched: false,
+    notificationPermissionReturned: false,
+    notificationSubscriptionsReturned: false,
+    notificationPayloadsReturned: false,
+    settingValuesReturned: false,
+    localSettingValuesReturned: false,
+    mutationEnabled: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+    rawPayloadsReturned: false,
+    appServerTraffic: false,
+  };
+}
+
 function codexAppSettingsSection(key, group, state, source) {
   return {
     key,
@@ -33226,6 +33306,7 @@ function buildCodexAppSettingsParity(payload = {}) {
   const plugins = surfaces.plugins ?? {};
   const integrationScope = payload.integrationScope ?? {};
   const keyboardShortcuts = buildCodexAppKeyboardShortcutsSummary();
+  const notifications = buildCodexAppNotificationSettingsSummary(payload);
   const hasOptInAuthAction = Boolean(
     auth.loginEnabled ||
       auth.loginCancelEnabled ||
@@ -33258,8 +33339,8 @@ function buildCodexAppSettingsParity(payload = {}) {
     codexAppSettingsSection(
       "notifications",
       "interface",
-      "blocked",
-      "server-notification-boundary",
+      notifications.state,
+      "notification-settings-catalog",
     ),
     codexAppSettingsSection(
       "agentConfiguration",
@@ -33317,6 +33398,7 @@ function buildCodexAppSettingsParity(payload = {}) {
     blockedSectionCount,
     sections,
     keyboardShortcuts,
+    notifications,
     sectionKeysReturned: true,
     sectionLabelsReturned: false,
     localSettingValuesReturned: false,
@@ -33712,6 +33794,13 @@ export function sanitizeSettingsIntegrationsPayload(
       codexAppKeyboardShortcutCommandLabelsReturned: false,
       codexAppKeyboardShortcutCustomBindingsReturned: false,
       codexAppKeyboardShortcutMutationsEnabled: false,
+      codexAppNotificationSettingsReturned: true,
+      codexAppNotificationSettingValuesReturned: false,
+      codexAppNotificationPermissionStateReturned: false,
+      codexAppNotificationPermissionPromptExecuted: false,
+      codexAppNotificationPayloadsReturned: false,
+      codexAppNotificationBrowserApiTouched: false,
+      codexAppNotificationMutationsEnabled: false,
       serverRequestHandlersEnabled: false,
       serverRequestPayloadsReturned: false,
       serverRequestSchemasReturned: false,
@@ -41233,6 +41322,13 @@ export function buildSettingsIntegrations({
       codexAppKeyboardShortcutCommandLabelsReturned: false,
       codexAppKeyboardShortcutCustomBindingsReturned: false,
       codexAppKeyboardShortcutMutationsEnabled: false,
+      codexAppNotificationSettingsReturned: true,
+      codexAppNotificationSettingValuesReturned: false,
+      codexAppNotificationPermissionStateReturned: false,
+      codexAppNotificationPermissionPromptExecuted: false,
+      codexAppNotificationPayloadsReturned: false,
+      codexAppNotificationBrowserApiTouched: false,
+      codexAppNotificationMutationsEnabled: false,
       serverRequestHandlersEnabled: false,
       serverRequestPayloadsReturned: false,
       serverRequestSchemasReturned: false,

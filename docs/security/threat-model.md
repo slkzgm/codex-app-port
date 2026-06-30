@@ -402,7 +402,13 @@
   handlers, or settings writes. Its keyboard-shortcuts catalog may expose only
   static shortcut keys, groups, bindings, states, sources, and counts; it must
   not expose command labels, custom or user bindings, paths, URLs, secrets, raw
-  payloads, app-server payloads, or shortcut editing/reset mutations.
+  payloads, app-server payloads, or shortcut editing/reset mutations. Its
+  Notifications settings catalog may expose only static setting keys, groups,
+  states, sources, and counts plus local server-notification boundary counts;
+  it must not return notification setting values, browser permission state,
+  subscriptions, notification payloads, paths, URLs, secrets, raw payloads,
+  app-server payloads, browser Notification API prompts, or notification
+  mutations.
   Browser-side approval queue filters must operate only on the already sanitized
   queue payload, and visible-subset deny/accept actions must still submit the
   bounded tokenized decision batch through the normal approval route. They must

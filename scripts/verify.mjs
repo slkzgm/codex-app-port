@@ -32690,10 +32690,10 @@ function assertSanitizedSettingsIntegrations(payload) {
   }
   assertSettingsServerBoundaries(payload);
   assertCodexAppSettingsParity(payload, {
-    availableSectionCount: 7,
-    partialSectionCount: 6,
+    availableSectionCount: 8,
+    partialSectionCount: 7,
     preflightOnlySectionCount: 1,
-    blockedSectionCount: 8,
+    blockedSectionCount: 7,
     profileState: "blocked",
   });
   if (
@@ -33137,6 +33137,8 @@ function assertCodexAppSettingsParity(
     summary.sections?.find((section) => section.key === "profile")?.state !== profileState ||
     summary.sections?.find((section) => section.key === "keyboardShortcuts")?.state !==
       "partial" ||
+    summary.sections?.find((section) => section.key === "notifications")?.state !==
+      "partial" ||
     summary.sections?.find((section) => section.key === "browser")?.state !== "blocked" ||
     summary.sections?.find((section) => section.key === "computerUse")?.state !== "blocked" ||
     summary.sections?.find((section) => section.key === "memories")?.state !== "preflight-only"
@@ -33202,6 +33204,51 @@ function assertCodexAppSettingsParity(
         shortcut.rawPayloadsReturned === false &&
         shortcut.appServerTraffic === false,
     ) ||
+    summary.notifications?.returned !== true ||
+    summary.notifications.state !== "partial" ||
+    summary.notifications.settingCount !== 4 ||
+    summary.notifications.officialSettingCount !== 2 ||
+    summary.notifications.boundaryOnlySettingCount !== 2 ||
+    summary.notifications.blockedSettingCount !== 2 ||
+    summary.notifications.enabledSettingCount !== 0 ||
+    summary.notifications.serverBoundaryReturned !== true ||
+    summary.notifications.serverBoundaryMethodCount !== serverNotificationMethodNames().length ||
+    summary.notifications.serverBoundaryBlockedMethodCount !==
+      serverNotificationMethodNames().length ||
+    summary.notifications.turnCompletionNotificationsAvailable !== false ||
+    summary.notifications.permissionPromptAvailable !== false ||
+    summary.notifications.permissionPromptExecuted !== false ||
+    summary.notifications.browserNotificationApiTouched !== false ||
+    summary.notifications.notificationPermissionReturned !== false ||
+    summary.notifications.notificationSubscriptionsReturned !== false ||
+    summary.notifications.notificationPayloadsReturned !== false ||
+    summary.notifications.settingValuesReturned !== false ||
+    summary.notifications.localSettingValuesReturned !== false ||
+    summary.notifications.mutationEnabled !== false ||
+    summary.notifications.pathsReturned !== false ||
+    summary.notifications.urlsReturned !== false ||
+    summary.notifications.secretsReturned !== false ||
+    summary.notifications.rawPayloadsReturned !== false ||
+    summary.notifications.appServerTraffic !== false ||
+    JSON.stringify((summary.notifications.settings ?? []).map((setting) => setting.key)) !==
+      JSON.stringify([
+        "turnCompletionNotifications",
+        "notificationPermissionPrompt",
+        "serverNotificationBoundary",
+        "realtimeNotificationBoundary",
+      ]) ||
+    !summary.notifications.settings?.every(
+      (setting) =>
+        setting.settingValueReturned === false &&
+        setting.permissionStateReturned === false &&
+        setting.notificationPayloadsReturned === false &&
+        setting.pathsReturned === false &&
+        setting.urlsReturned === false &&
+        setting.secretsReturned === false &&
+        setting.rawPayloadsReturned === false &&
+        setting.browserNotificationApiTouched === false &&
+        setting.appServerTraffic === false,
+    ) ||
     !summary.sections?.every(
       (section) =>
         section.tracked === true &&
@@ -33224,7 +33271,14 @@ function assertCodexAppSettingsParity(
     payload.policy?.codexAppKeyboardShortcutBindingsReturned !== true ||
     payload.policy?.codexAppKeyboardShortcutCommandLabelsReturned !== false ||
     payload.policy?.codexAppKeyboardShortcutCustomBindingsReturned !== false ||
-    payload.policy?.codexAppKeyboardShortcutMutationsEnabled !== false
+    payload.policy?.codexAppKeyboardShortcutMutationsEnabled !== false ||
+    payload.policy?.codexAppNotificationSettingsReturned !== true ||
+    payload.policy?.codexAppNotificationSettingValuesReturned !== false ||
+    payload.policy?.codexAppNotificationPermissionStateReturned !== false ||
+    payload.policy?.codexAppNotificationPermissionPromptExecuted !== false ||
+    payload.policy?.codexAppNotificationPayloadsReturned !== false ||
+    payload.policy?.codexAppNotificationBrowserApiTouched !== false ||
+    payload.policy?.codexAppNotificationMutationsEnabled !== false
   ) {
     throw new Error("Codex app settings parity did not preserve redaction policy");
   }
@@ -34867,10 +34921,10 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
   }
   assertSettingsServerBoundaries(payload);
   assertCodexAppSettingsParity(payload, {
-    availableSectionCount: 8,
-    partialSectionCount: 7,
+    availableSectionCount: 9,
+    partialSectionCount: 8,
     preflightOnlySectionCount: 1,
-    blockedSectionCount: 7,
+    blockedSectionCount: 6,
     profileState: "partial",
   });
   if (

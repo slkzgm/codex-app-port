@@ -719,6 +719,12 @@ catalog with official shortcut keys that still need Linux implementation plus
 local accessibility bindings that already exist in the UI. Custom binding
 editing, reset, keystroke search, command labels, user bindings, paths, URLs,
 raw payloads, and app-server traffic remain blocked.
+Within that same summary, `notifications` exposes a static review-only catalog
+for official turn-completion notification and permission-prompt settings plus
+the local server-notification boundary. The UI shows only setting keys, groups,
+state/source chips, boundary counts, and redaction chips; notification values,
+browser permission state, subscriptions, payloads, browser Notification API
+prompts, paths, URLs, raw payloads, and app-server traffic remain blocked.
 The same response also exposes static upstream-drift metadata for head-only
 app-server methods absent from the stable generated schema. It returns only
 method names, count/status metadata, and local blocked policy; it does not
