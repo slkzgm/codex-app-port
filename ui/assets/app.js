@@ -29,6 +29,8 @@ const elements = {
   appGitValuesText: document.querySelector("#app-git-values-text"),
   appIntegrationsMcpText: document.querySelector("#app-integrations-mcp-text"),
   appIntegrationsMcpValuesText: document.querySelector("#app-integrations-mcp-values-text"),
+  skillsPluginsCatalogText: document.querySelector("#skills-plugins-catalog-text"),
+  skillsPluginsCatalogValuesText: document.querySelector("#skills-plugins-catalog-values-text"),
   appBrowserText: document.querySelector("#app-browser-text"),
   appBrowserValuesText: document.querySelector("#app-browser-values-text"),
   appComputerUseText: document.querySelector("#app-computer-use-text"),
@@ -391,6 +393,7 @@ const elements = {
   appPetsList: document.querySelector("#app-pets-list"),
   appGitList: document.querySelector("#app-git-list"),
   appIntegrationsMcpList: document.querySelector("#app-integrations-mcp-list"),
+  skillsPluginsCatalogList: document.querySelector("#skills-plugins-catalog-list"),
   appBrowserList: document.querySelector("#app-browser-list"),
   appComputerUseList: document.querySelector("#app-computer-use-list"),
   appContextSuggestionsList: document.querySelector("#app-context-suggestions-list"),
@@ -10430,6 +10433,7 @@ function renderSettingsIntegrations(payload) {
   const integrationScope = payload.integrationScope ?? {};
   const integrationLifecycle = payload.integrationLifecycle ?? {};
   const codexAppSettings = payload.codexAppSettings ?? {};
+  const skillsPluginsCatalog = payload.skillsPluginsCatalog ?? {};
 
   elements.settingsStateText.textContent = settings.state ?? "blocked";
   elements.settingsSourceText.textContent = payload.appServer?.touched ? "Inventory" : "Config summary";
@@ -10443,6 +10447,53 @@ function renderSettingsIntegrations(payload) {
     : "Blocked";
   elements.appSettingsValuesText.textContent =
     codexAppSettings.localSettingValuesReturned || codexAppSettings.settingValuesReturned
+      ? "Returned"
+      : "Hidden";
+  elements.skillsPluginsCatalogText.textContent = skillsPluginsCatalog.returned
+    ? `${skillsPluginsCatalog.catalogOnlySettingCount ?? 0} catalog / ${
+        skillsPluginsCatalog.settingCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.skillsPluginsCatalogValuesText.textContent =
+    skillsPluginsCatalog.skillNamesReturned ||
+    skillsPluginsCatalog.skillDescriptionsReturned ||
+    skillsPluginsCatalog.skillPathsReturned ||
+    skillsPluginsCatalog.skillContentReturned ||
+    skillsPluginsCatalog.skillScriptsReturned ||
+    skillsPluginsCatalog.skillMetadataReturned ||
+    skillsPluginsCatalog.dependencyToolsReturned ||
+    skillsPluginsCatalog.pluginNamesReturned ||
+    skillsPluginsCatalog.pluginIdsReturned ||
+    skillsPluginsCatalog.pluginPathsReturned ||
+    skillsPluginsCatalog.pluginUrlsReturned ||
+    skillsPluginsCatalog.pluginDescriptionsReturned ||
+    skillsPluginsCatalog.pluginManifestsReturned ||
+    skillsPluginsCatalog.pluginDefaultPromptsReturned ||
+    skillsPluginsCatalog.pluginScreenshotsReturned ||
+    skillsPluginsCatalog.marketplaceNamesReturned ||
+    skillsPluginsCatalog.marketplaceSourcesReturned ||
+    skillsPluginsCatalog.appNamesReturned ||
+    skillsPluginsCatalog.appAuthStarted ||
+    skillsPluginsCatalog.mcpServerNamesReturned ||
+    skillsPluginsCatalog.hookCommandsReturned ||
+    skillsPluginsCatalog.shareLinksReturned ||
+    skillsPluginsCatalog.sharePrincipalsReturned ||
+    skillsPluginsCatalog.installExecuted ||
+    skillsPluginsCatalog.uninstallExecuted ||
+    skillsPluginsCatalog.enablementWritten ||
+    skillsPluginsCatalog.skillConfigWritten ||
+    skillsPluginsCatalog.extraRootsWritten ||
+    skillsPluginsCatalog.shareMutationExecuted ||
+    skillsPluginsCatalog.marketplaceMutationExecuted ||
+    skillsPluginsCatalog.externalCodeMaterialized ||
+    skillsPluginsCatalog.settingValuesReturned ||
+    skillsPluginsCatalog.localSettingValuesReturned ||
+    skillsPluginsCatalog.mutationEnabled ||
+    skillsPluginsCatalog.pathsReturned ||
+    skillsPluginsCatalog.urlsReturned ||
+    skillsPluginsCatalog.secretsReturned ||
+    skillsPluginsCatalog.rawPayloadsReturned ||
+    skillsPluginsCatalog.appServerTraffic
       ? "Returned"
       : "Hidden";
   const general = codexAppSettings.general ?? {};
@@ -10823,6 +10874,7 @@ function renderSettingsIntegrations(payload) {
   renderIntegrationConfirmationHistory(payload.preflightConfirmationHistory);
   renderIntegrationDetails(inventory);
   renderCodexAppSettingsParity(codexAppSettings);
+  renderSkillsPluginsCatalog(skillsPluginsCatalog);
   renderCodexAppGeneralSettings(general);
   renderCodexAppProfileSettings(profile);
   renderCodexAppAgentConfigurationSettings(agentConfiguration);
@@ -12347,6 +12399,99 @@ function remoteControlStatusText(remoteControlStatus) {
     })
     .filter(Boolean);
   return parts.length > 0 ? parts.join(" / ") : "0 statuses";
+}
+
+function renderSkillsPluginsCatalog(summary) {
+  elements.skillsPluginsCatalogList.replaceChildren();
+  const settings = Array.isArray(summary?.settings) ? summary.settings : [];
+  if (settings.length === 0) {
+    elements.skillsPluginsCatalogList.append(
+      emptyState("No Skills & Plugins catalog returned."),
+    );
+    return;
+  }
+
+  for (const setting of settings) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = setting.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = setting.group ?? "skills-plugins";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      setting.state ?? "blocked",
+      setting.source ?? null,
+      setting.settingValueReturned ? "value returned" : "value hidden",
+      setting.skillNameReturned ? "skill names returned" : "skill names hidden",
+      setting.skillDescriptionReturned
+        ? "skill descriptions returned"
+        : "skill descriptions hidden",
+      setting.skillPathReturned ? "skill paths returned" : "skill paths hidden",
+      setting.skillContentReturned ? "skill content returned" : "skill content hidden",
+      setting.skillScriptReturned ? "skill scripts returned" : "skill scripts hidden",
+      setting.skillMetadataReturned ? "skill metadata returned" : "skill metadata hidden",
+      setting.dependencyToolReturned ? "dependency tools returned" : "dependency tools hidden",
+      setting.pluginNameReturned ? "plugin names returned" : "plugin names hidden",
+      setting.pluginIdReturned ? "plugin ids returned" : "plugin ids hidden",
+      setting.pluginPathReturned ? "plugin paths returned" : "plugin paths hidden",
+      setting.pluginUrlReturned ? "plugin URLs returned" : "plugin URLs hidden",
+      setting.pluginDescriptionReturned
+        ? "plugin descriptions returned"
+        : "plugin descriptions hidden",
+      setting.pluginManifestReturned ? "manifests returned" : "manifests hidden",
+      setting.pluginDefaultPromptReturned ? "default prompts returned" : "default prompts hidden",
+      setting.pluginScreenshotReturned ? "screenshots returned" : "screenshots hidden",
+      setting.marketplaceNameReturned
+        ? "marketplace names returned"
+        : "marketplace names hidden",
+      setting.marketplaceSourceReturned
+        ? "marketplace sources returned"
+        : "marketplace sources hidden",
+      setting.appNameReturned ? "app names returned" : "app names hidden",
+      setting.appAuthStarted ? "app auth started" : "app auth blocked",
+      setting.mcpServerNameReturned ? "MCP names returned" : "MCP names hidden",
+      setting.hookCommandReturned ? "hook commands returned" : "hook commands hidden",
+      setting.shareLinkReturned ? "share links returned" : "share links hidden",
+      setting.sharePrincipalReturned ? "share principals returned" : "share principals hidden",
+      setting.installExecuted ? "install executed" : "install blocked",
+      setting.uninstallExecuted ? "uninstall executed" : "uninstall blocked",
+      setting.enablementWritten ? "enablement written" : "enablement write blocked",
+      setting.skillConfigWritten ? "skill config written" : "skill config write blocked",
+      setting.extraRootsWritten ? "extra roots written" : "extra roots write blocked",
+      setting.shareMutationExecuted ? "share mutation executed" : "share mutation blocked",
+      setting.marketplaceMutationExecuted
+        ? "marketplace mutation executed"
+        : "marketplace mutation blocked",
+      setting.externalCodeMaterialized ? "external code materialized" : "external code blocked",
+      setting.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      setting.pathsReturned ? "paths returned" : "paths hidden",
+      setting.urlsReturned ? "URLs returned" : "URLs hidden",
+      setting.secretsReturned ? "secrets returned" : "secrets hidden",
+      setting.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      setting.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.skillsPluginsCatalogList.append(row);
+  }
 }
 
 function renderCodexAppSettingsParity(summary) {

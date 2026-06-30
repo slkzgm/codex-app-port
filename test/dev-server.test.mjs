@@ -34924,6 +34924,279 @@ function assertSettingsServerBoundaries(payload) {
   assert.equal(payload.policy?.serverNotificationSdpReturned, false);
 }
 
+function expectedSkillsPluginsCatalogEntries(scope = {}) {
+  const entries = [
+    {
+      key: "skillProgressiveDisclosure",
+      group: "skills-runtime",
+      state: "catalog-only",
+      source: "official-codex-skills-docs",
+    },
+    {
+      key: "skillScopeLocations",
+      group: "skills-discovery",
+      state: "catalog-only",
+      source: "official-codex-skills-docs",
+    },
+    {
+      key: "skillEnablementConfig",
+      group: "skills-config",
+      state: "catalog-only",
+      source: "official-codex-skills-docs",
+    },
+    {
+      key: "skillOptionalAppMetadata",
+      group: "skills-metadata",
+      state: "catalog-only",
+      source: "official-codex-skills-docs",
+    },
+    {
+      key: "skillsConfigWriteBoundary",
+      group: "skills-config",
+      state: "blocked",
+      source: "local-skills-config-boundary",
+    },
+    {
+      key: "skillsExtraRootsClearBoundary",
+      group: "skills-config",
+      state: "blocked",
+      source: "local-skills-extra-roots-boundary",
+    },
+    {
+      key: "pluginDirectoryBrowse",
+      group: "plugin-directory",
+      state: "catalog-only",
+      source: "official-codex-plugins-docs",
+    },
+    {
+      key: "pluginBundledCapabilities",
+      group: "plugin-capabilities",
+      state: "catalog-only",
+      source: "official-codex-plugins-docs",
+    },
+    {
+      key: "pluginPermissionsAndDataSharing",
+      group: "plugin-safety",
+      state: "catalog-only",
+      source: "official-codex-plugins-docs",
+    },
+    {
+      key: "pluginDisableConfig",
+      group: "plugin-config",
+      state: "catalog-only",
+      source: "official-codex-plugins-docs",
+    },
+    {
+      key: "pluginInstallPreflight",
+      group: "plugin-lifecycle",
+      state: "preflight-only",
+      source: "local-plugin-install-boundary",
+    },
+    {
+      key: "pluginReadBoundary",
+      group: "plugin-content",
+      state: "blocked",
+      source: "local-plugin-read-boundary",
+    },
+    {
+      key: "pluginContentReadBoundary",
+      group: "plugin-content",
+      state: "blocked",
+      source: "local-plugin-content-boundary",
+    },
+    {
+      key: "pluginUninstallBoundary",
+      group: "plugin-lifecycle",
+      state: "blocked",
+      source: "local-plugin-uninstall-boundary",
+    },
+    {
+      key: "pluginEnablementBoundary",
+      group: "plugin-config",
+      state: "blocked",
+      source: "local-plugin-enablement-boundary",
+    },
+    {
+      key: "pluginShareCheckoutBoundary",
+      group: "plugin-sharing",
+      state: "blocked",
+      source: "local-plugin-share-checkout-boundary",
+    },
+    {
+      key: "pluginShareActionPreflight",
+      group: "plugin-sharing",
+      state: "preflight-only",
+      source: "local-plugin-share-boundary",
+    },
+    {
+      key: "marketplaceActionPreflight",
+      group: "plugin-marketplace",
+      state: "preflight-only",
+      source: "local-plugin-marketplace-boundary",
+    },
+  ];
+  const promote = (key, enabled) => {
+    if (!enabled) {
+      return;
+    }
+    const entry = entries.find((candidate) => candidate.key === key);
+    entry.state = "preflight-only";
+  };
+  promote("skillsConfigWriteBoundary", scope.skillsConfigWriteEnabled);
+  promote("skillsExtraRootsClearBoundary", scope.skillsExtraRootsClearEnabled);
+  promote("pluginReadBoundary", scope.pluginReadEnabled);
+  promote(
+    "pluginContentReadBoundary",
+    scope.pluginContentReadEnabled || scope.pluginShareListEnabled,
+  );
+  promote("pluginUninstallBoundary", scope.pluginUninstallEnabled);
+  promote("pluginEnablementBoundary", scope.pluginEnablementSetEnabled);
+  promote("pluginShareCheckoutBoundary", scope.pluginShareCheckoutEnabled);
+  return entries;
+}
+
+function assertSkillsPluginsCatalog(payload) {
+  const catalog = payload.skillsPluginsCatalog;
+  const expectedEntries = expectedSkillsPluginsCatalogEntries(payload.integrationScope ?? {});
+  const countState = (state) => expectedEntries.filter((entry) => entry.state === state).length;
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.settingCount, 18);
+  assert.equal(catalog.officialSettingCount, 8);
+  assert.equal(catalog.localBoundarySettingCount, 10);
+  assert.equal(catalog.catalogOnlySettingCount, countState("catalog-only"));
+  assert.equal(catalog.preflightOnlySettingCount, countState("preflight-only"));
+  assert.equal(catalog.blockedSettingCount, countState("blocked"));
+  assert.equal(catalog.enabledSettingCount, 0);
+  assert.deepEqual(
+    (catalog.settings ?? []).map(({ key, group, state, source }) => ({
+      key,
+      group,
+      state,
+      source,
+    })),
+    expectedEntries,
+  );
+
+  const settingRedactionFlags = [
+    "settingValueReturned",
+    "skillNameReturned",
+    "skillDescriptionReturned",
+    "skillPathReturned",
+    "skillContentReturned",
+    "skillScriptReturned",
+    "skillMetadataReturned",
+    "dependencyToolReturned",
+    "pluginNameReturned",
+    "pluginIdReturned",
+    "pluginPathReturned",
+    "pluginUrlReturned",
+    "pluginDescriptionReturned",
+    "pluginManifestReturned",
+    "pluginDefaultPromptReturned",
+    "pluginScreenshotReturned",
+    "marketplaceNameReturned",
+    "marketplaceSourceReturned",
+    "appNameReturned",
+    "appAuthStarted",
+    "mcpServerNameReturned",
+    "hookCommandReturned",
+    "shareLinkReturned",
+    "sharePrincipalReturned",
+    "installExecuted",
+    "uninstallExecuted",
+    "enablementWritten",
+    "skillConfigWritten",
+    "extraRootsWritten",
+    "shareMutationExecuted",
+    "marketplaceMutationExecuted",
+    "externalCodeMaterialized",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.settings.every((setting) =>
+      settingRedactionFlags.every((flag) => setting[flag] === false),
+    ),
+    true,
+  );
+
+  for (const flag of [
+    "skillsCatalogReturned",
+    "pluginsCatalogReturned",
+    "pluginDirectoryCatalogReturned",
+    "localPreflightBoundariesReturned",
+  ]) {
+    assert.equal(catalog[flag], true);
+  }
+  for (const flag of [
+    "skillNamesReturned",
+    "skillDescriptionsReturned",
+    "skillPathsReturned",
+    "skillContentReturned",
+    "skillScriptsReturned",
+    "skillMetadataReturned",
+    "dependencyToolsReturned",
+    "pluginNamesReturned",
+    "pluginIdsReturned",
+    "pluginPathsReturned",
+    "pluginUrlsReturned",
+    "pluginDescriptionsReturned",
+    "pluginManifestsReturned",
+    "pluginDefaultPromptsReturned",
+    "pluginScreenshotsReturned",
+    "marketplaceNamesReturned",
+    "marketplaceSourcesReturned",
+    "appNamesReturned",
+    "appAuthStarted",
+    "mcpServerNamesReturned",
+    "hookCommandsReturned",
+    "shareLinksReturned",
+    "sharePrincipalsReturned",
+    "installExecuted",
+    "uninstallExecuted",
+    "enablementWritten",
+    "skillConfigWritten",
+    "extraRootsWritten",
+    "shareMutationExecuted",
+    "marketplaceMutationExecuted",
+    "externalCodeMaterialized",
+    "settingValuesReturned",
+    "localSettingValuesReturned",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["skillsPluginsCatalogReturned", true],
+    ["skillsPluginsCatalogValuesReturned", false],
+    ["skillsPluginsCatalogNamesReturned", false],
+    ["skillsPluginsCatalogDescriptionsReturned", false],
+    ["skillsPluginsCatalogPathsReturned", false],
+    ["skillsPluginsCatalogUrlsReturned", false],
+    ["skillsPluginsCatalogManifestsReturned", false],
+    ["skillsPluginsCatalogSkillContentReturned", false],
+    ["skillsPluginsCatalogPluginContentReturned", false],
+    ["skillsPluginsCatalogAppAuthStarted", false],
+    ["skillsPluginsCatalogExternalCodeMaterialized", false],
+    ["skillsPluginsCatalogMutationsEnabled", false],
+    ["skillsPluginsCatalogRawPayloadsReturned", false],
+    ["skillsPluginsCatalogAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function assertCodexAppSettingsParity(
   payload,
   {
@@ -35025,6 +35298,7 @@ function assertCodexAppSettingsParity(
   assert.equal(summary.mutationsEnabled, false);
   assert.equal(summary.browserHandlersEnabled, false);
   assert.equal(summary.settingsWritesEnabled, false);
+  assertSkillsPluginsCatalog(payload);
   assert.equal(summary.general?.returned, true);
   assert.equal(summary.general.state, "partial");
   assert.equal(summary.general.settingCount, 5);

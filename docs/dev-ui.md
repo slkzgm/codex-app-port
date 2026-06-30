@@ -771,6 +771,20 @@ environment variables, bearer-token environment variables, OAuth URLs or
 tokens, `config.toml` content or paths, tool names, tool allowlists, server
 instructions, plugin ids, setting values, config writes, mutations, paths,
 URLs, raw payloads, and app-server traffic remain blocked.
+The same Settings & Integrations response also exposes `skillsPluginsCatalog`
+as a static review-only Skills & Plugins catalog. The UI shows only catalog
+counts, setting keys, groups, state/source chips, and redaction chips for
+official Skills runtime/discovery/config metadata, official Plugin directory/
+capability/permission/disable surfaces, and local preflight boundaries for
+plugin install/share/marketplace/read/content/uninstall/enablement/share
+checkout plus skills config/extra-roots writes. It does not show skill names,
+descriptions, paths, content, scripts, metadata, dependency tools, plugin
+names, ids, paths, URLs, descriptions, manifests, default prompts,
+screenshots, marketplace names or sources, app names, MCP server names, hook
+commands, share links or principals, setting values, external code, paths,
+URLs, raw payloads, app-server traffic, installs, uninstalls, enablement writes,
+skill config writes, extra-root writes, share mutations, or marketplace
+mutations.
 Within that same summary, `browser` exposes a static review-only catalog for
 the official Browser plugin, Chrome extension, site permission, ask-before-use,
 and full-CDP developer-mode controls. The UI shows only setting keys, groups,

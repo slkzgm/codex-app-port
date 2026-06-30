@@ -533,6 +533,18 @@ Current M1 status:
   tool allowlists, server instructions, plugin ids, setting values, config
   writes, mutations, paths, URLs, secrets, raw payloads, and app-server traffic
   blocked
+- done: read-only Skills & Plugins catalog in `/api/settings-integrations`,
+  exposing only static official Skills/Plugins documentation keys plus local
+  preflight boundary keys/groups/states/sources/counts/redaction flags for
+  progressive disclosure, scope locations, enablement config, optional app
+  metadata, plugin directory/capabilities/permissions/disable config, and
+  install/share/marketplace/read/uninstall/enablement/share-checkout/skills
+  config boundaries, with skill names/descriptions/paths/content/scripts/
+  metadata, dependency tools, plugin names/ids/paths/URLs/descriptions/
+  manifests/default prompts/screenshots, marketplace names/sources, app names,
+  MCP server names, hook commands, share links/principals, setting values,
+  installs, uninstalls, writes, mutations, external code, paths, URLs, secrets,
+  raw payloads, and app-server traffic blocked
 - done: read-only Browser settings catalog inside the settings parity summary,
   exposing only static Browser plugin, Chrome extension, site permission,
   ask-before-use, and full-CDP developer-mode control keys/groups/states/counts,

@@ -34789,6 +34789,247 @@ function buildCodexAppSettingsParity(payload = {}) {
   };
 }
 
+const CODEX_APP_SKILLS_PLUGINS_CATALOG = Object.freeze([
+  {
+    key: "skillProgressiveDisclosure",
+    group: "skills-runtime",
+    state: "catalog-only",
+    source: "official-codex-skills-docs",
+  },
+  {
+    key: "skillScopeLocations",
+    group: "skills-discovery",
+    state: "catalog-only",
+    source: "official-codex-skills-docs",
+  },
+  {
+    key: "skillEnablementConfig",
+    group: "skills-config",
+    state: "catalog-only",
+    source: "official-codex-skills-docs",
+  },
+  {
+    key: "skillOptionalAppMetadata",
+    group: "skills-metadata",
+    state: "catalog-only",
+    source: "official-codex-skills-docs",
+  },
+  {
+    key: "skillsConfigWriteBoundary",
+    group: "skills-config",
+    state: "blocked",
+    source: "local-skills-config-boundary",
+  },
+  {
+    key: "skillsExtraRootsClearBoundary",
+    group: "skills-config",
+    state: "blocked",
+    source: "local-skills-extra-roots-boundary",
+  },
+  {
+    key: "pluginDirectoryBrowse",
+    group: "plugin-directory",
+    state: "catalog-only",
+    source: "official-codex-plugins-docs",
+  },
+  {
+    key: "pluginBundledCapabilities",
+    group: "plugin-capabilities",
+    state: "catalog-only",
+    source: "official-codex-plugins-docs",
+  },
+  {
+    key: "pluginPermissionsAndDataSharing",
+    group: "plugin-safety",
+    state: "catalog-only",
+    source: "official-codex-plugins-docs",
+  },
+  {
+    key: "pluginDisableConfig",
+    group: "plugin-config",
+    state: "catalog-only",
+    source: "official-codex-plugins-docs",
+  },
+  {
+    key: "pluginInstallPreflight",
+    group: "plugin-lifecycle",
+    state: "preflight-only",
+    source: "local-plugin-install-boundary",
+  },
+  {
+    key: "pluginReadBoundary",
+    group: "plugin-content",
+    state: "blocked",
+    source: "local-plugin-read-boundary",
+  },
+  {
+    key: "pluginContentReadBoundary",
+    group: "plugin-content",
+    state: "blocked",
+    source: "local-plugin-content-boundary",
+  },
+  {
+    key: "pluginUninstallBoundary",
+    group: "plugin-lifecycle",
+    state: "blocked",
+    source: "local-plugin-uninstall-boundary",
+  },
+  {
+    key: "pluginEnablementBoundary",
+    group: "plugin-config",
+    state: "blocked",
+    source: "local-plugin-enablement-boundary",
+  },
+  {
+    key: "pluginShareCheckoutBoundary",
+    group: "plugin-sharing",
+    state: "blocked",
+    source: "local-plugin-share-checkout-boundary",
+  },
+  {
+    key: "pluginShareActionPreflight",
+    group: "plugin-sharing",
+    state: "preflight-only",
+    source: "local-plugin-share-boundary",
+  },
+  {
+    key: "marketplaceActionPreflight",
+    group: "plugin-marketplace",
+    state: "preflight-only",
+    source: "local-plugin-marketplace-boundary",
+  },
+]);
+
+function buildSkillsPluginsCatalog(integrationScope = {}) {
+  const stateFor = (setting) => {
+    switch (setting.key) {
+      case "skillsConfigWriteBoundary":
+        return integrationScope.skillsConfigWriteEnabled ? "preflight-only" : setting.state;
+      case "skillsExtraRootsClearBoundary":
+        return integrationScope.skillsExtraRootsClearEnabled ? "preflight-only" : setting.state;
+      case "pluginReadBoundary":
+        return integrationScope.pluginReadEnabled ? "preflight-only" : setting.state;
+      case "pluginContentReadBoundary":
+        return integrationScope.pluginContentReadEnabled || integrationScope.pluginShareListEnabled
+          ? "preflight-only"
+          : setting.state;
+      case "pluginUninstallBoundary":
+        return integrationScope.pluginUninstallEnabled ? "preflight-only" : setting.state;
+      case "pluginEnablementBoundary":
+        return integrationScope.pluginEnablementSetEnabled ? "preflight-only" : setting.state;
+      case "pluginShareCheckoutBoundary":
+        return integrationScope.pluginShareCheckoutEnabled ? "preflight-only" : setting.state;
+      default:
+        return setting.state;
+    }
+  };
+  const settings = CODEX_APP_SKILLS_PLUGINS_CATALOG.map((setting) => ({
+    ...setting,
+    state: stateFor(setting),
+    settingValueReturned: false,
+    skillNameReturned: false,
+    skillDescriptionReturned: false,
+    skillPathReturned: false,
+    skillContentReturned: false,
+    skillScriptReturned: false,
+    skillMetadataReturned: false,
+    dependencyToolReturned: false,
+    pluginNameReturned: false,
+    pluginIdReturned: false,
+    pluginPathReturned: false,
+    pluginUrlReturned: false,
+    pluginDescriptionReturned: false,
+    pluginManifestReturned: false,
+    pluginDefaultPromptReturned: false,
+    pluginScreenshotReturned: false,
+    marketplaceNameReturned: false,
+    marketplaceSourceReturned: false,
+    appNameReturned: false,
+    appAuthStarted: false,
+    mcpServerNameReturned: false,
+    hookCommandReturned: false,
+    shareLinkReturned: false,
+    sharePrincipalReturned: false,
+    installExecuted: false,
+    uninstallExecuted: false,
+    enablementWritten: false,
+    skillConfigWritten: false,
+    extraRootsWritten: false,
+    shareMutationExecuted: false,
+    marketplaceMutationExecuted: false,
+    externalCodeMaterialized: false,
+    mutationEnabled: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+    rawPayloadsReturned: false,
+    appServerTraffic: false,
+  }));
+  const catalogOnlySettingCount = settings.filter(
+    (setting) => setting.state === "catalog-only",
+  ).length;
+  const preflightOnlySettingCount = settings.filter(
+    (setting) => setting.state === "preflight-only",
+  ).length;
+  const blockedSettingCount = settings.filter((setting) => setting.state === "blocked").length;
+
+  return {
+    returned: true,
+    state: catalogOnlySettingCount > 0 || preflightOnlySettingCount > 0 ? "partial" : "blocked",
+    settingCount: settings.length,
+    officialSettingCount: settings.filter((setting) => setting.source.startsWith("official-")).length,
+    localBoundarySettingCount: settings.filter((setting) => setting.source.startsWith("local-")).length,
+    catalogOnlySettingCount,
+    preflightOnlySettingCount,
+    blockedSettingCount,
+    enabledSettingCount: 0,
+    settings,
+    skillsCatalogReturned: true,
+    pluginsCatalogReturned: true,
+    pluginDirectoryCatalogReturned: true,
+    localPreflightBoundariesReturned: true,
+    skillNamesReturned: false,
+    skillDescriptionsReturned: false,
+    skillPathsReturned: false,
+    skillContentReturned: false,
+    skillScriptsReturned: false,
+    skillMetadataReturned: false,
+    dependencyToolsReturned: false,
+    pluginNamesReturned: false,
+    pluginIdsReturned: false,
+    pluginPathsReturned: false,
+    pluginUrlsReturned: false,
+    pluginDescriptionsReturned: false,
+    pluginManifestsReturned: false,
+    pluginDefaultPromptsReturned: false,
+    pluginScreenshotsReturned: false,
+    marketplaceNamesReturned: false,
+    marketplaceSourcesReturned: false,
+    appNamesReturned: false,
+    appAuthStarted: false,
+    mcpServerNamesReturned: false,
+    hookCommandsReturned: false,
+    shareLinksReturned: false,
+    sharePrincipalsReturned: false,
+    installExecuted: false,
+    uninstallExecuted: false,
+    enablementWritten: false,
+    skillConfigWritten: false,
+    extraRootsWritten: false,
+    shareMutationExecuted: false,
+    marketplaceMutationExecuted: false,
+    externalCodeMaterialized: false,
+    settingValuesReturned: false,
+    localSettingValuesReturned: false,
+    mutationEnabled: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+    rawPayloadsReturned: false,
+    appServerTraffic: false,
+  };
+}
+
 export function sanitizeSettingsIntegrationsPayload(
   payload,
   {
@@ -35149,6 +35390,20 @@ export function sanitizeSettingsIntegrationsPayload(
       integrationAuditContractReturned: true,
       integrationProvenanceContractReturned: true,
       integrationExternalCodeContractReturned: true,
+      skillsPluginsCatalogReturned: true,
+      skillsPluginsCatalogValuesReturned: false,
+      skillsPluginsCatalogNamesReturned: false,
+      skillsPluginsCatalogDescriptionsReturned: false,
+      skillsPluginsCatalogPathsReturned: false,
+      skillsPluginsCatalogUrlsReturned: false,
+      skillsPluginsCatalogManifestsReturned: false,
+      skillsPluginsCatalogSkillContentReturned: false,
+      skillsPluginsCatalogPluginContentReturned: false,
+      skillsPluginsCatalogAppAuthStarted: false,
+      skillsPluginsCatalogExternalCodeMaterialized: false,
+      skillsPluginsCatalogMutationsEnabled: false,
+      skillsPluginsCatalogRawPayloadsReturned: false,
+      skillsPluginsCatalogAppServerTraffic: false,
       serverRequestBoundaryReturned: true,
       serverNotificationBoundaryReturned: true,
       upstreamDriftReturned: true,
@@ -35336,6 +35591,7 @@ export function sanitizeSettingsIntegrationsPayload(
     notifications: sanitizeNotificationCounts(payload?.notifications),
   };
   result.codexAppSettings = buildCodexAppSettingsParity(result);
+  result.skillsPluginsCatalog = buildSkillsPluginsCatalog(result.integrationScope);
   result.integrationLifecycle = summarizeIntegrationLifecycle(result);
   return result;
 }
@@ -42788,6 +43044,20 @@ export function buildSettingsIntegrations({
       integrationAuditContractReturned: true,
       integrationProvenanceContractReturned: true,
       integrationExternalCodeContractReturned: true,
+      skillsPluginsCatalogReturned: true,
+      skillsPluginsCatalogValuesReturned: false,
+      skillsPluginsCatalogNamesReturned: false,
+      skillsPluginsCatalogDescriptionsReturned: false,
+      skillsPluginsCatalogPathsReturned: false,
+      skillsPluginsCatalogUrlsReturned: false,
+      skillsPluginsCatalogManifestsReturned: false,
+      skillsPluginsCatalogSkillContentReturned: false,
+      skillsPluginsCatalogPluginContentReturned: false,
+      skillsPluginsCatalogAppAuthStarted: false,
+      skillsPluginsCatalogExternalCodeMaterialized: false,
+      skillsPluginsCatalogMutationsEnabled: false,
+      skillsPluginsCatalogRawPayloadsReturned: false,
+      skillsPluginsCatalogAppServerTraffic: false,
       serverRequestBoundaryReturned: true,
       serverNotificationBoundaryReturned: true,
       upstreamDriftReturned: true,
@@ -42974,6 +43244,7 @@ export function buildSettingsIntegrations({
     },
   };
   result.codexAppSettings = buildCodexAppSettingsParity(result);
+  result.skillsPluginsCatalog = buildSkillsPluginsCatalog(result.integrationScope);
   result.integrationLifecycle = summarizeIntegrationLifecycle(result);
   return result;
 }

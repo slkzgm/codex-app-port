@@ -440,7 +440,17 @@
   variables, OAuth URLs or tokens, `config.toml` content or paths, tool names,
   tool allowlists, server instructions, plugin ids, setting values, config
   writes, mutations, paths, URLs, secrets, raw payloads, app-server payloads, or
-  start OAuth/app-server traffic. Its Browser settings catalog may expose only
+  start OAuth/app-server traffic. Its Skills & Plugins catalog may expose only
+  static official-documentation keys plus local boundary keys, groups, states,
+  sources, counts, and redaction flags; it must not return skill names,
+  descriptions, paths, content, scripts, metadata, dependency tools, plugin
+  names, ids, paths, URLs, descriptions, manifests, default prompts,
+  screenshots, marketplace names or sources, app names, MCP server names, hook
+  commands, share links or principals, setting values, secrets, raw payloads,
+  app-server payloads, or app-server traffic, and must not materialize external
+  code, install or uninstall plugins, write plugin enablement, write skill
+  config, clear extra roots, mutate sharing, or mutate marketplaces. Its
+  Browser settings catalog may expose only
   static setting keys,
   groups, states, sources, and counts; it must not return Browser plugin or
   Chrome extension state, allowed or blocked site lists, origins, website

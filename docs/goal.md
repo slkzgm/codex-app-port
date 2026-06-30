@@ -127,6 +127,21 @@ Target parity with the Codex desktop workflow:
   `config.toml` content or paths, tool names, tool allowlists, server
   instructions, plugin ids, setting values, config writes, mutations, paths,
   URLs, secrets, raw payloads, and app-server traffic remain blocked.
+- `/api/settings-integrations` now also exposes a read-only Skills & Plugins
+  catalog aligned to the official Skills and Plugins documentation. It returns
+  only static keys, groups, states, sources, counts, and redaction flags for
+  skills progressive disclosure, skill scope locations, skill enablement
+  config, optional skill app metadata, plugin directory browsing, bundled
+  skills/apps/MCP capabilities, plugin permissions/data-sharing, plugin
+  disable config, and local install/share/marketplace/preflight plus opt-in
+  read/uninstall/enablement/share-checkout/skills-config boundaries. It does
+  not return skill names, descriptions, paths, content, scripts, metadata,
+  dependency tools, plugin names, ids, paths, URLs, descriptions, manifests,
+  default prompts, screenshots, marketplace names or sources, app names, MCP
+  server names, hook commands, share links or principals, setting values,
+  secrets, raw payloads, app-server traffic, external code, installs,
+  uninstalls, enablement writes, config writes, extra-root writes, share
+  mutations, or marketplace mutations.
 - The same summary now includes a read-only Browser settings catalog for the
   official Browser plugin, Chrome extension, site permission, ask-before-use,
   and full-CDP developer-mode controls. It returns only keys, groups, states,
