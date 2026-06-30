@@ -32690,10 +32690,10 @@ function assertSanitizedSettingsIntegrations(payload) {
   }
   assertSettingsServerBoundaries(payload);
   assertCodexAppSettingsParity(payload, {
-    availableSectionCount: 9,
-    partialSectionCount: 8,
+    availableSectionCount: 10,
+    partialSectionCount: 9,
     preflightOnlySectionCount: 1,
-    blockedSectionCount: 6,
+    blockedSectionCount: 5,
     profileState: "blocked",
   });
   if (
@@ -33139,6 +33139,8 @@ function assertCodexAppSettingsParity(
       "partial" ||
     summary.sections?.find((section) => section.key === "notifications")?.state !==
       "partial" ||
+    summary.sections?.find((section) => section.key === "appearance")?.state !==
+      "partial" ||
     summary.sections?.find((section) => section.key === "personalization")?.state !==
       "partial" ||
     summary.sections?.find((section) => section.key === "browser")?.state !== "blocked" ||
@@ -33205,6 +33207,52 @@ function assertCodexAppSettingsParity(
         shortcut.secretsReturned === false &&
         shortcut.rawPayloadsReturned === false &&
         shortcut.appServerTraffic === false,
+    ) ||
+    summary.appearance?.returned !== true ||
+    summary.appearance.state !== "partial" ||
+    summary.appearance.settingCount !== 7 ||
+    summary.appearance.officialSettingCount !== 7 ||
+    summary.appearance.catalogOnlySettingCount !== 6 ||
+    summary.appearance.blockedSettingCount !== 1 ||
+    summary.appearance.enabledSettingCount !== 0 ||
+    summary.appearance.appearanceControlsReturned !== true ||
+    summary.appearance.themeValuesReturned !== false ||
+    summary.appearance.colorValuesReturned !== false ||
+    summary.appearance.fontNamesReturned !== false ||
+    summary.appearance.customThemeReturned !== false ||
+    summary.appearance.sharingAvailable !== false ||
+    summary.appearance.sharingUrlsReturned !== false ||
+    summary.appearance.settingValuesReturned !== false ||
+    summary.appearance.localSettingValuesReturned !== false ||
+    summary.appearance.mutationEnabled !== false ||
+    summary.appearance.pathsReturned !== false ||
+    summary.appearance.urlsReturned !== false ||
+    summary.appearance.secretsReturned !== false ||
+    summary.appearance.rawPayloadsReturned !== false ||
+    summary.appearance.appServerTraffic !== false ||
+    JSON.stringify((summary.appearance.settings ?? []).map((setting) => setting.key)) !==
+      JSON.stringify([
+        "baseTheme",
+        "accentColor",
+        "backgroundColor",
+        "foregroundColor",
+        "uiFont",
+        "codeFont",
+        "shareCustomTheme",
+      ]) ||
+    !summary.appearance.settings?.every(
+      (setting) =>
+        setting.settingValueReturned === false &&
+        setting.themeValueReturned === false &&
+        setting.colorValueReturned === false &&
+        setting.fontNameReturned === false &&
+        setting.customThemeReturned === false &&
+        setting.sharingUrlReturned === false &&
+        setting.pathsReturned === false &&
+        setting.urlsReturned === false &&
+        setting.secretsReturned === false &&
+        setting.rawPayloadsReturned === false &&
+        setting.appServerTraffic === false,
     ) ||
     summary.notifications?.returned !== true ||
     summary.notifications.state !== "partial" ||
@@ -33317,6 +33365,13 @@ function assertCodexAppSettingsParity(
     payload.policy?.codexAppKeyboardShortcutCommandLabelsReturned !== false ||
     payload.policy?.codexAppKeyboardShortcutCustomBindingsReturned !== false ||
     payload.policy?.codexAppKeyboardShortcutMutationsEnabled !== false ||
+    payload.policy?.codexAppAppearanceSettingsReturned !== true ||
+    payload.policy?.codexAppAppearanceValuesReturned !== false ||
+    payload.policy?.codexAppAppearanceColorsReturned !== false ||
+    payload.policy?.codexAppAppearanceFontNamesReturned !== false ||
+    payload.policy?.codexAppAppearanceCustomThemeReturned !== false ||
+    payload.policy?.codexAppAppearanceSharingUrlsReturned !== false ||
+    payload.policy?.codexAppAppearanceMutationsEnabled !== false ||
     payload.policy?.codexAppNotificationSettingsReturned !== true ||
     payload.policy?.codexAppNotificationSettingValuesReturned !== false ||
     payload.policy?.codexAppNotificationPermissionStateReturned !== false ||
@@ -34972,10 +35027,10 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
   }
   assertSettingsServerBoundaries(payload);
   assertCodexAppSettingsParity(payload, {
-    availableSectionCount: 10,
-    partialSectionCount: 9,
+    availableSectionCount: 11,
+    partialSectionCount: 10,
     preflightOnlySectionCount: 1,
-    blockedSectionCount: 5,
+    blockedSectionCount: 4,
     profileState: "partial",
   });
   if (

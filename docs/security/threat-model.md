@@ -403,6 +403,10 @@
   static shortcut keys, groups, bindings, states, sources, and counts; it must
   not expose command labels, custom or user bindings, paths, URLs, secrets, raw
   payloads, app-server payloads, or shortcut editing/reset mutations. Its
+  Appearance settings catalog may expose only static setting keys, groups,
+  states, sources, and counts; it must not return active theme values, color
+  values, font names, custom theme payloads, sharing URLs, paths, secrets, raw
+  payloads, app-server payloads, or appearance mutations. Its
   Notifications settings catalog may expose only static setting keys, groups,
   states, sources, and counts plus local server-notification boundary counts;
   it must not return notification setting values, browser permission state,

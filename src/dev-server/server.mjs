@@ -33198,6 +33198,100 @@ function buildCodexAppKeyboardShortcutsSummary() {
   };
 }
 
+const CODEX_APP_APPEARANCE_SETTINGS = Object.freeze([
+  {
+    key: "baseTheme",
+    group: "theme",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "accentColor",
+    group: "colors",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "backgroundColor",
+    group: "colors",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "foregroundColor",
+    group: "colors",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "uiFont",
+    group: "fonts",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "codeFont",
+    group: "fonts",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "shareCustomTheme",
+    group: "sharing",
+    state: "blocked",
+    source: "official-codex-app-docs",
+  },
+]);
+
+function buildCodexAppAppearanceSettingsSummary() {
+  const settings = CODEX_APP_APPEARANCE_SETTINGS.map((setting) => ({
+    ...setting,
+    settingValueReturned: false,
+    themeValueReturned: false,
+    colorValueReturned: false,
+    fontNameReturned: false,
+    customThemeReturned: false,
+    sharingUrlReturned: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+    rawPayloadsReturned: false,
+    appServerTraffic: false,
+  }));
+  const catalogOnlySettingCount = settings.filter(
+    (setting) => setting.state === "catalog-only",
+  ).length;
+  const blockedSettingCount = settings.filter((setting) => setting.state === "blocked").length;
+
+  return {
+    returned: true,
+    state: catalogOnlySettingCount > 0 ? "partial" : "blocked",
+    settingCount: settings.length,
+    officialSettingCount: settings.filter(
+      (setting) => setting.source === "official-codex-app-docs",
+    ).length,
+    catalogOnlySettingCount,
+    blockedSettingCount,
+    enabledSettingCount: 0,
+    settings,
+    appearanceControlsReturned: true,
+    themeValuesReturned: false,
+    colorValuesReturned: false,
+    fontNamesReturned: false,
+    customThemeReturned: false,
+    sharingAvailable: false,
+    sharingUrlsReturned: false,
+    settingValuesReturned: false,
+    localSettingValuesReturned: false,
+    mutationEnabled: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+    rawPayloadsReturned: false,
+    appServerTraffic: false,
+  };
+}
+
 const CODEX_APP_NOTIFICATION_SETTINGS = Object.freeze([
   {
     key: "turnCompletionNotifications",
@@ -33387,6 +33481,7 @@ function buildCodexAppSettingsParity(payload = {}) {
   const plugins = surfaces.plugins ?? {};
   const integrationScope = payload.integrationScope ?? {};
   const keyboardShortcuts = buildCodexAppKeyboardShortcutsSummary();
+  const appearance = buildCodexAppAppearanceSettingsSummary();
   const notifications = buildCodexAppNotificationSettingsSummary(payload);
   const personalization = buildCodexAppPersonalizationSettingsSummary();
   const hasOptInAuthAction = Boolean(
@@ -33430,7 +33525,12 @@ function buildCodexAppSettingsParity(payload = {}) {
       settings.readOnlySummaryAvailable ? "partial" : "blocked",
       "settings-summary",
     ),
-    codexAppSettingsSection("appearance", "interface", "blocked", "not-implemented"),
+    codexAppSettingsSection(
+      "appearance",
+      "interface",
+      appearance.state,
+      "appearance-settings-catalog",
+    ),
     codexAppSettingsSection("codexPets", "interface", "blocked", "not-implemented"),
     codexAppSettingsSection("git", "workspace", "partial", "read-only-git-panel"),
     codexAppSettingsSection(
@@ -33485,6 +33585,7 @@ function buildCodexAppSettingsParity(payload = {}) {
     blockedSectionCount,
     sections,
     keyboardShortcuts,
+    appearance,
     notifications,
     personalization,
     sectionKeysReturned: true,
@@ -33882,6 +33983,13 @@ export function sanitizeSettingsIntegrationsPayload(
       codexAppKeyboardShortcutCommandLabelsReturned: false,
       codexAppKeyboardShortcutCustomBindingsReturned: false,
       codexAppKeyboardShortcutMutationsEnabled: false,
+      codexAppAppearanceSettingsReturned: true,
+      codexAppAppearanceValuesReturned: false,
+      codexAppAppearanceColorsReturned: false,
+      codexAppAppearanceFontNamesReturned: false,
+      codexAppAppearanceCustomThemeReturned: false,
+      codexAppAppearanceSharingUrlsReturned: false,
+      codexAppAppearanceMutationsEnabled: false,
       codexAppNotificationSettingsReturned: true,
       codexAppNotificationSettingValuesReturned: false,
       codexAppNotificationPermissionStateReturned: false,
@@ -41416,6 +41524,13 @@ export function buildSettingsIntegrations({
       codexAppKeyboardShortcutCommandLabelsReturned: false,
       codexAppKeyboardShortcutCustomBindingsReturned: false,
       codexAppKeyboardShortcutMutationsEnabled: false,
+      codexAppAppearanceSettingsReturned: true,
+      codexAppAppearanceValuesReturned: false,
+      codexAppAppearanceColorsReturned: false,
+      codexAppAppearanceFontNamesReturned: false,
+      codexAppAppearanceCustomThemeReturned: false,
+      codexAppAppearanceSharingUrlsReturned: false,
+      codexAppAppearanceMutationsEnabled: false,
       codexAppNotificationSettingsReturned: true,
       codexAppNotificationSettingValuesReturned: false,
       codexAppNotificationPermissionStateReturned: false,

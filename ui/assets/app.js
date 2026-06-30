@@ -15,6 +15,8 @@ const elements = {
   appSettingsParityText: document.querySelector("#app-settings-parity-text"),
   appSettingsBlockedText: document.querySelector("#app-settings-blocked-text"),
   appSettingsValuesText: document.querySelector("#app-settings-values-text"),
+  appAppearanceText: document.querySelector("#app-appearance-text"),
+  appAppearanceValuesText: document.querySelector("#app-appearance-values-text"),
   appShortcutsText: document.querySelector("#app-shortcuts-text"),
   appShortcutsEditingText: document.querySelector("#app-shortcuts-editing-text"),
   appNotificationsText: document.querySelector("#app-notifications-text"),
@@ -358,6 +360,7 @@ const elements = {
   upstreamDriftList: document.querySelector("#upstream-drift-list"),
   integrationsDetailList: document.querySelector("#integrations-detail-list"),
   appSettingsParityList: document.querySelector("#app-settings-parity-list"),
+  appAppearanceList: document.querySelector("#app-appearance-list"),
   appKeyboardShortcutsList: document.querySelector("#app-keyboard-shortcuts-list"),
   appNotificationsList: document.querySelector("#app-notifications-list"),
   appPersonalizationList: document.querySelector("#app-personalization-list"),
@@ -10407,6 +10410,19 @@ function renderSettingsIntegrations(payload) {
     codexAppSettings.localSettingValuesReturned || codexAppSettings.settingValuesReturned
       ? "Returned"
       : "Hidden";
+  const appearance = codexAppSettings.appearance ?? {};
+  elements.appAppearanceText.textContent = appearance.returned
+    ? `${appearance.catalogOnlySettingCount ?? 0} catalog / ${
+        appearance.settingCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.appAppearanceValuesText.textContent =
+    appearance.themeValuesReturned ||
+    appearance.colorValuesReturned ||
+    appearance.fontNamesReturned ||
+    appearance.customThemeReturned
+      ? "Returned"
+      : "Hidden";
   const keyboardShortcuts = codexAppSettings.keyboardShortcuts ?? {};
   elements.appShortcutsText.textContent = keyboardShortcuts.returned
     ? `${keyboardShortcuts.localShortcutCount ?? 0} local / ${
@@ -10579,6 +10595,7 @@ function renderSettingsIntegrations(payload) {
   renderIntegrationConfirmationHistory(payload.preflightConfirmationHistory);
   renderIntegrationDetails(inventory);
   renderCodexAppSettingsParity(codexAppSettings);
+  renderCodexAppAppearanceSettings(appearance);
   renderCodexAppKeyboardShortcuts(keyboardShortcuts);
   renderCodexAppNotificationSettings(notifications);
   renderCodexAppPersonalizationSettings(personalization);
@@ -12136,6 +12153,55 @@ function renderCodexAppSettingsParity(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.appSettingsParityList.append(row);
+  }
+}
+
+function renderCodexAppAppearanceSettings(summary) {
+  elements.appAppearanceList.replaceChildren();
+  const settings = Array.isArray(summary?.settings) ? summary.settings : [];
+  if (settings.length === 0) {
+    elements.appAppearanceList.append(emptyState("No appearance settings catalog returned."));
+    return;
+  }
+  for (const setting of settings) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = setting.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = setting.group ?? "appearance";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      setting.state ?? "blocked",
+      setting.source ?? null,
+      setting.settingValueReturned ? "value returned" : "value hidden",
+      setting.themeValueReturned ? "theme returned" : "theme hidden",
+      setting.colorValueReturned ? "color returned" : "color hidden",
+      setting.fontNameReturned ? "font returned" : "font hidden",
+      setting.customThemeReturned ? "custom theme returned" : "custom theme hidden",
+      setting.sharingUrlReturned ? "share URL returned" : "share URL hidden",
+      setting.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.appAppearanceList.append(row);
   }
 }
 

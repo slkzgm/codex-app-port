@@ -20489,10 +20489,10 @@ test("dev server exposes settings and integration boundary without app-server tr
     );
     assertSettingsServerBoundaries(payload);
     assertCodexAppSettingsParity(payload, {
-      availableSectionCount: 9,
-      partialSectionCount: 8,
+      availableSectionCount: 10,
+      partialSectionCount: 9,
       preflightOnlySectionCount: 1,
-      blockedSectionCount: 6,
+      blockedSectionCount: 5,
       profileState: "blocked",
     });
     assert.equal(payload.surfaces.settings.state, "partial");
@@ -22761,10 +22761,10 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
     );
     assertSettingsServerBoundaries(payload);
     assertCodexAppSettingsParity(payload, {
-      availableSectionCount: 10,
-      partialSectionCount: 9,
+      availableSectionCount: 11,
+      partialSectionCount: 10,
       preflightOnlySectionCount: 1,
-      blockedSectionCount: 5,
+      blockedSectionCount: 4,
       profileState: "partial",
     });
     assert.equal(payload.appServer.auditedReadMethods.includes("configRequirements/read"), true);
@@ -34974,6 +34974,10 @@ function assertCodexAppSettingsParity(
     "partial",
   );
   assert.equal(
+    summary.sections.find((section) => section.key === "appearance")?.state,
+    "partial",
+  );
+  assert.equal(
     summary.sections.find((section) => section.key === "personalization")?.state,
     "partial",
   );
@@ -35046,6 +35050,57 @@ function assertCodexAppSettingsParity(
         shortcut.secretsReturned === false &&
         shortcut.rawPayloadsReturned === false &&
         shortcut.appServerTraffic === false,
+    ),
+    true,
+  );
+  assert.equal(summary.appearance?.returned, true);
+  assert.equal(summary.appearance.state, "partial");
+  assert.equal(summary.appearance.settingCount, 7);
+  assert.equal(summary.appearance.officialSettingCount, 7);
+  assert.equal(summary.appearance.catalogOnlySettingCount, 6);
+  assert.equal(summary.appearance.blockedSettingCount, 1);
+  assert.equal(summary.appearance.enabledSettingCount, 0);
+  assert.equal(summary.appearance.appearanceControlsReturned, true);
+  assert.equal(summary.appearance.themeValuesReturned, false);
+  assert.equal(summary.appearance.colorValuesReturned, false);
+  assert.equal(summary.appearance.fontNamesReturned, false);
+  assert.equal(summary.appearance.customThemeReturned, false);
+  assert.equal(summary.appearance.sharingAvailable, false);
+  assert.equal(summary.appearance.sharingUrlsReturned, false);
+  assert.equal(summary.appearance.settingValuesReturned, false);
+  assert.equal(summary.appearance.localSettingValuesReturned, false);
+  assert.equal(summary.appearance.mutationEnabled, false);
+  assert.equal(summary.appearance.pathsReturned, false);
+  assert.equal(summary.appearance.urlsReturned, false);
+  assert.equal(summary.appearance.secretsReturned, false);
+  assert.equal(summary.appearance.rawPayloadsReturned, false);
+  assert.equal(summary.appearance.appServerTraffic, false);
+  assert.deepEqual(
+    summary.appearance.settings.map((setting) => setting.key),
+    [
+      "baseTheme",
+      "accentColor",
+      "backgroundColor",
+      "foregroundColor",
+      "uiFont",
+      "codeFont",
+      "shareCustomTheme",
+    ],
+  );
+  assert.equal(
+    summary.appearance.settings.every(
+      (setting) =>
+        setting.settingValueReturned === false &&
+        setting.themeValueReturned === false &&
+        setting.colorValueReturned === false &&
+        setting.fontNameReturned === false &&
+        setting.customThemeReturned === false &&
+        setting.sharingUrlReturned === false &&
+        setting.pathsReturned === false &&
+        setting.urlsReturned === false &&
+        setting.secretsReturned === false &&
+        setting.rawPayloadsReturned === false &&
+        setting.appServerTraffic === false,
     ),
     true,
   );
@@ -35175,6 +35230,13 @@ function assertCodexAppSettingsParity(
   assert.equal(payload.policy?.codexAppKeyboardShortcutCommandLabelsReturned, false);
   assert.equal(payload.policy?.codexAppKeyboardShortcutCustomBindingsReturned, false);
   assert.equal(payload.policy?.codexAppKeyboardShortcutMutationsEnabled, false);
+  assert.equal(payload.policy?.codexAppAppearanceSettingsReturned, true);
+  assert.equal(payload.policy?.codexAppAppearanceValuesReturned, false);
+  assert.equal(payload.policy?.codexAppAppearanceColorsReturned, false);
+  assert.equal(payload.policy?.codexAppAppearanceFontNamesReturned, false);
+  assert.equal(payload.policy?.codexAppAppearanceCustomThemeReturned, false);
+  assert.equal(payload.policy?.codexAppAppearanceSharingUrlsReturned, false);
+  assert.equal(payload.policy?.codexAppAppearanceMutationsEnabled, false);
   assert.equal(payload.policy?.codexAppNotificationSettingsReturned, true);
   assert.equal(payload.policy?.codexAppNotificationSettingValuesReturned, false);
   assert.equal(payload.policy?.codexAppNotificationPermissionStateReturned, false);

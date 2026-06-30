@@ -76,6 +76,11 @@ Target parity with the Codex desktop workflow:
   and counts only; custom/user bindings, command labels, keystroke search,
   reset/edit mutations, paths, URLs, secrets, raw payloads, and app-server
   traffic remain blocked.
+- The same summary now includes a read-only Appearance settings catalog for the
+  official base theme, color, font, and custom-theme sharing controls. It
+  returns only keys, groups, states, sources, and counts; active theme values,
+  color values, font names, custom theme payloads, sharing URLs, paths, secrets,
+  raw payloads, mutations, and app-server traffic remain blocked.
 - The same summary now includes a read-only Notifications settings catalog for
   the official turn-completion and permission-prompt controls plus the local
   server-notification boundary. It returns only keys, groups, states, sources,

@@ -487,6 +487,11 @@ Current M1 status:
   shortcuts and local accessibility shortcuts, with command labels, custom/user
   bindings, keystroke search, reset/edit mutations, paths, URLs, secrets, raw
   payloads, and app-server traffic blocked
+- done: read-only Appearance settings catalog inside the settings parity
+  summary, exposing only static base-theme/color/font/sharing control
+  keys/groups/states/counts, with active theme values, color values, font names,
+  custom theme payloads, sharing URLs, paths, secrets, raw payloads, mutations,
+  and app-server traffic blocked
 - done: read-only Notifications settings catalog inside the settings parity
   summary, exposing only static notification setting keys/groups/states/counts
   plus local server-notification boundary counts, with setting values, browser
