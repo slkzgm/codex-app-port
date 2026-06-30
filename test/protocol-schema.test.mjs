@@ -9,6 +9,11 @@ import {
   serverRequestMethodNames,
 } from "../src/app-server/integration-policy.mjs";
 import { terminalActionMethodNames } from "../src/app-server/terminal-policy.mjs";
+import {
+  officialCodexSourceAudit,
+  upstreamHeadMethodDrift,
+  upstreamHeadMethodDriftNames,
+} from "../src/app-server/upstream-drift.mjs";
 
 const SCHEMA_ROOT = new URL("../src/app-server/generated-schemas/", import.meta.url).pathname;
 const JSON_ROOT = join(SCHEMA_ROOT, "json");
@@ -159,6 +164,26 @@ test("Codex 0.142 added client methods are classified by local policy", async ()
     assert.equal(clientMethods.has(method), true, `new upstream method missing from schema ${method}`);
     assert.equal(classifiedMethods.has(method), true, `new upstream method not classified ${method}`);
   }
+});
+
+test("known OpenAI head-only methods remain blocked until a stable schema exposes them", async () => {
+  const manifest = await readJson(join(SCHEMA_ROOT, "manifest.json"));
+  const clientMethods = enumValues(await readJson(join(JSON_ROOT, "ClientRequest.json")));
+  const sourceAudit = officialCodexSourceAudit();
+
+  assert.equal(manifest.codexVersion, sourceAudit.stableCodexVersion);
+  assert.equal(manifest.schemaCount, sourceAudit.stableSchemaCount);
+  assert.equal(clientMethods.has("thread/turns/items/list"), true);
+
+  for (const entry of upstreamHeadMethodDrift()) {
+    assert.equal(clientMethods.has(entry.method), false, `head-only method entered schema: ${entry.method}`);
+    assert.equal(entry.stableSchemaStatus, "absent-from-codex-cli-0.142.4");
+    assert.equal(entry.localPolicy, "blocked-until-stable-schema");
+    assert.equal(entry.sourcePaths.length > 0, true);
+    assert.equal(entry.requiredBeforeExposure.length > 0, true);
+  }
+
+  assert.deepEqual(upstreamHeadMethodDriftNames(), ["environment/info", "thread/items/list"]);
 });
 
 test("generated turn and approval schemas expose the unsafe fields that must stay gated", async () => {

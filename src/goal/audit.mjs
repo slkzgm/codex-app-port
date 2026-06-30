@@ -2386,11 +2386,12 @@ const CHECKS = [
     requirement: "Generate or maintain typed app-server protocol contracts.",
     status: "met",
     evidence: [
-      "Official generated JSON Schema snapshot is versioned alongside dependency-free runtime contracts for methods used by the prototype; the snapshot was refreshed to local codex-cli 0.142.4 with 335 schema files and identifies new remote-control, permission-profile, account-usage, account-message, environment, plugin, skill-root, thread, attestation, current-time, import-progress, model-safety, and moderation surfaces. `permissionProfile/list`, `account/usage/read`, `account/workspaceMessages/read`, `externalAgentConfig/import/readHistories`, `plugin/installed`, and `remoteControl/status/read` now have counts-only opt-in inventory coverage; `thread/search` has a dedicated opt-in runtime contract and browser route that returns suffix/count metadata only; `thread/goal/get` has a dedicated opt-in runtime contract and browser route that returns goal status/usage/count metadata without objective text; `thread/goal/set` and `thread/goal/clear` now have dedicated opt-in runtime contracts and browser routes that return suffix/status/count metadata only; `thread/memoryMode/set` now has a dedicated opt-in runtime contract and browser route that returns suffix/mode/status metadata only; `thread/turns/list` has a dedicated opt-in runtime contract and browser route that returns turn status/count/cursor-presence metadata only with `itemsView:notLoaded`; `thread/turns/items/list` has a dedicated opt-in runtime contract and browser route that returns item suffix/type/status/count metadata only without message text, commands, output, patches, paths, cursor values, full ids, timestamps, or raw payloads; `thread/realtime/listVoices` has a dedicated opt-in runtime contract and browser route that returns official enum-only voice names/defaults without realtime params, model traffic, SDP, audio, transcript content, thread content, ids, paths, unknown strings, or raw payloads; `fs/getMetadata` and `fs/readDirectory` have dedicated opt-in runtime constants plus a browser route that returns bounded workspace-relative directory entry names and type/count metadata only; `thread/delete` has a dedicated opt-in runtime contract and destructive browser route that returns suffix/state/method metadata only; `thread/fork` has a dedicated opt-in runtime contract and browser route that returns source/fork suffix/status metadata only; `thread/name/set` has a dedicated opt-in runtime contract and browser route that returns suffix/name-count/method metadata only; `thread/rollback` has a dedicated opt-in runtime contract and browser route that returns suffix/count/status metadata only; the rest remain blocked until separately audited.",
+      "Official generated JSON Schema snapshot is versioned alongside dependency-free runtime contracts for methods used by the prototype; the snapshot was refreshed to local codex-cli 0.142.4 with 335 schema files and identifies new remote-control, permission-profile, account-usage, account-message, environment, plugin, skill-root, thread, attestation, current-time, import-progress, model-safety, and moderation surfaces. A 2026-06-30 upstream source refresh checked OpenAI openai/codex HEAD cfead68e5d3984b247cf0758e3e53b19165de848 and confirmed stable npm @openai/codex latest remains 0.142.4; head-only methods `environment/info` and `thread/items/list` are tracked as blocked drift in src/app-server/upstream-drift.mjs until a stable generated schema exposes them and each receives a dedicated route audit. `permissionProfile/list`, `account/usage/read`, `account/workspaceMessages/read`, `externalAgentConfig/import/readHistories`, `plugin/installed`, and `remoteControl/status/read` now have counts-only opt-in inventory coverage; `thread/search` has a dedicated opt-in runtime contract and browser route that returns suffix/count metadata only; `thread/goal/get` has a dedicated opt-in runtime contract and browser route that returns goal status/usage/count metadata without objective text; `thread/goal/set` and `thread/goal/clear` now have dedicated opt-in runtime contracts and browser routes that return suffix/status/count metadata only; `thread/memoryMode/set` now has a dedicated opt-in runtime contract and browser route that returns suffix/mode/status metadata only; `thread/turns/list` has a dedicated opt-in runtime contract and browser route that returns turn status/count/cursor-presence metadata only with `itemsView:notLoaded`; `thread/turns/items/list` has a dedicated opt-in runtime contract and browser route that returns item suffix/type/status/count metadata only without message text, commands, output, patches, paths, cursor values, full ids, timestamps, or raw payloads; `thread/realtime/listVoices` has a dedicated opt-in runtime contract and browser route that returns official enum-only voice names/defaults without realtime params, model traffic, SDP, audio, transcript content, thread content, ids, paths, unknown strings, or raw payloads; `fs/getMetadata` and `fs/readDirectory` have dedicated opt-in runtime constants plus a browser route that returns bounded workspace-relative directory entry names and type/count metadata only; `thread/delete` has a dedicated opt-in runtime contract and destructive browser route that returns suffix/state/method metadata only; `thread/fork` has a dedicated opt-in runtime contract and browser route that returns source/fork suffix/status metadata only; `thread/name/set` has a dedicated opt-in runtime contract and browser route that returns suffix/name-count/method metadata only; `thread/rollback` has a dedicated opt-in runtime contract and browser route that returns suffix/count/status metadata only; the rest remain blocked until separately audited.",
     ],
     verify: allOf(
       allFiles([
         "src/app-server/protocol.mjs",
+        "src/app-server/upstream-drift.mjs",
         "src/app-server/generated-schemas/json/ClientRequest.json",
         "src/app-server/generated-schemas/json/ServerRequest.json",
         "src/app-server/generated-schemas/json/v2/TurnStartParams.json",
@@ -2401,6 +2402,9 @@ const CHECKS = [
         '"schemaCount": 335',
       ]),
       fileIncludes("docs/protocol-turns-approvals.md", [
+        "2026-06-30 Upstream HEAD Drift",
+        "environment/info",
+        "thread/items/list",
         "2026-06-29 Recalibration",
         "remoteControl/enable",
         "permissionProfile/list",
@@ -2413,6 +2417,13 @@ const CHECKS = [
         "model/safetyBuffering/updated",
         "turn/moderationMetadata",
         "thread/realtime/sdp",
+      ]),
+      fileIncludes("src/app-server/upstream-drift.mjs", [
+        "cfead68e5d3984b247cf0758e3e53b19165de848",
+        "0.143.0-alpha.31",
+        "environment/info",
+        "thread/items/list",
+        "blocked-until-stable-schema",
       ]),
     ),
   },

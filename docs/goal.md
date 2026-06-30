@@ -30,14 +30,26 @@ Target parity with the Codex desktop workflow:
 - Install global npm packages or auto-update binaries without user-visible,
   pinned provenance.
 
-## Facts Checked On 2026-06-29
+## Facts Checked On 2026-06-30
 
-- The official Codex app documentation says the desktop app is available on
-  macOS and Windows, with Linux as a notification option.
+- The official Codex app documentation describes macOS and Windows desktop
+  app features. Linux is still not listed as a desktop app target in the
+  checked docs, so this repo remains a native Omarchy/Linux port effort rather
+  than a repackaged official Linux client.
 - OpenAI documents Codex App Server as the interface for rich clients.
 - OpenAI lists Codex CLI, SDK, and App Server as open-source components.
+- The stable npm `@openai/codex` latest dist-tag is `0.142.4`; the available
+  `0.143.0-alpha.31` alpha dist-tag was not executed or used as a baseline.
+- The OpenAI `openai/codex` HEAD checked for source drift is
+  `cfead68e5d3984b247cf0758e3e53b19165de848`.
 - The local official `codex-cli 0.142.4` app-server schema snapshot contains
   335 JSON Schema files, up from the prior `0.130.0` snapshot of 286.
+- The local schema was regenerated into a temporary directory and still
+  produced 335 files, matching the committed stable manifest.
+- OpenAI HEAD includes `environment/info` and renames/extends the persisted
+  item page surface as `thread/items/list`; neither method exists in the
+  stable `0.142.4` generated schema, so both are tracked as blocked
+  upstream drift until a stable schema exposes them.
 - The refreshed protocol adds remote control, permission profiles, account
   usage/credits/messages, remote environments, plugin checkout/install,
   skills extra roots, thread name set/delete/search/settings/background terminal,

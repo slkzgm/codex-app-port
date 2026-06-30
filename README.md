@@ -23,12 +23,18 @@ Why:
 
 ## Checked Sources
 
-- OpenAI Codex app documentation, checked 2026-06-29.
-- OpenAI Codex changelog, checked 2026-06-29.
-- OpenAI Codex open-source documentation, checked 2026-06-29.
-- OpenAI `openai/codex` repository at `ccdfb4f342a2e659be7ab878309cc5d81683d737`.
+- OpenAI Codex app documentation, checked 2026-06-30.
+- OpenAI Codex changelog, checked 2026-06-30.
+- OpenAI Codex open-source documentation, checked 2026-06-30.
+- OpenAI `openai/codex` repository at `cfead68e5d3984b247cf0758e3e53b19165de848`.
 - Local official `codex app-server` schema snapshot from `codex-cli 0.142.4`
   with 335 JSON Schema files.
+- Stable npm `@openai/codex` latest is `0.142.4`; `0.143.0-alpha.31` exists
+  as an alpha dist-tag but is not executed or used as a protocol baseline.
+- HEAD-only app-server drift is tracked in
+  `src/app-server/upstream-drift.mjs`; `environment/info` and
+  `thread/items/list` stay blocked until a stable generated schema exposes
+  them and each receives a dedicated route audit.
 - Unofficial `areu01or00/Codex-App-Linux` repository at
   `9fde221c2dca49282a453c815a273658ff709ca7`.
 

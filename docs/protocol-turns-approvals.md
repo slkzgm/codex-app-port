@@ -21,6 +21,37 @@ Generated evidence:
 
 No real turn was started during this audit.
 
+## 2026-06-30 Upstream HEAD Drift
+
+Official source refresh:
+
+- OpenAI `openai/codex` HEAD:
+  `cfead68e5d3984b247cf0758e3e53b19165de848`
+- stable npm `@openai/codex` latest: `0.142.4`
+- alpha npm dist-tag observed: `0.143.0-alpha.31`
+- local stable schema regeneration check: 335 JSON Schema files, matching the
+  committed `codex-cli 0.142.4` manifest
+
+The HEAD source contains app-server protocol methods that are not present in
+the stable local schema:
+
+- `environment/info`: connects to a configured execution environment and
+  returns shell metadata plus a default cwd file URI. This stays blocked until
+  a stable generated schema exposes it, then it needs an exact environment
+  allowlist, disabled-by-default gate, no raw cwd URI, no environment id, no
+  paths, and no raw app-server payloads.
+- `thread/items/list`: HEAD successor/extension for persisted item paging.
+  Stable `0.142.4` still exposes `thread/turns/items/list`, which this port
+  already gates through the item-count/suffix/type/status-only route. The HEAD
+  method stays blocked until schema regeneration, route versioning, and a
+  fresh response contract prove that no message text, commands, output,
+  patches, full ids, timestamps, paths, cursors, or raw payloads cross the
+  browser boundary.
+
+Tracking lives in `src/app-server/upstream-drift.mjs` and is asserted by
+`test/protocol-schema.test.mjs`. The browser must not silently alias HEAD-only
+methods to stable methods.
+
 ## 2026-06-29 Recalibration
 
 The local official schema snapshot moved from `codex-cli 0.130.0` to
