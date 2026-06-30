@@ -476,6 +476,12 @@ Current M1 status:
   status that reuses the same sanitized endpoint without adding API fields,
   tokens, names, targets, argument text, resource content, skill content, URLs,
   paths, secrets, or raw payloads
+- done: browser-facing `/api/settings-integrations` Codex app settings parity
+  summary aligned to the current official Settings section list, returning only
+  static section keys, section states, and counts while keeping local setting
+  values, profile names, paths, URLs, secrets, raw payloads, app-server payloads,
+  browser handlers, and settings writes omitted; unimplemented sections stay
+  explicitly blocked
 - done: opt-in `/api/account-login-start` path behind
   `CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN=1`, with matching one-time
   account-login-preflight token consumption, `account/login/start` device-code

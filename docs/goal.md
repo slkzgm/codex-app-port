@@ -66,6 +66,11 @@ Target parity with the Codex desktop workflow:
   attestation tokens, current-time values, realtime transcripts/audio/SDP,
   moderation/progress details, paths, URLs, raw requests, raw notifications, or
   raw app-server payloads.
+- `/api/settings-integrations` now also exposes a read-only Codex app Settings
+  parity summary aligned to the current official Settings section list, with
+  static section keys/states/counts only and no local setting values, profile
+  names, paths, URLs, secrets, raw payloads, app-server payloads, browser
+  handlers, or settings writes.
 - `permissionProfile/list` has an opt-in, counts-only inventory path; it
   returns profile counts and allowed/blocked totals only, not profile ids or
   descriptions.

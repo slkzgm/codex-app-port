@@ -20488,6 +20488,13 @@ test("dev server exposes settings and integration boundary without app-server tr
       serverNotificationMethodNames().length,
     );
     assertSettingsServerBoundaries(payload);
+    assertCodexAppSettingsParity(payload, {
+      availableSectionCount: 6,
+      partialSectionCount: 5,
+      preflightOnlySectionCount: 1,
+      blockedSectionCount: 9,
+      profileState: "blocked",
+    });
     assert.equal(payload.surfaces.settings.state, "partial");
     assert.equal(payload.surfaces.settings.readOnlySummaryAvailable, true);
     assert.equal(payload.surfaces.settings.secretsReturned, false);
@@ -22753,6 +22760,13 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
       serverNotificationMethodNames().length,
     );
     assertSettingsServerBoundaries(payload);
+    assertCodexAppSettingsParity(payload, {
+      availableSectionCount: 7,
+      partialSectionCount: 6,
+      preflightOnlySectionCount: 1,
+      blockedSectionCount: 8,
+      profileState: "partial",
+    });
     assert.equal(payload.appServer.auditedReadMethods.includes("configRequirements/read"), true);
     assert.equal(payload.appServer.auditedReadMethods.includes("model/list"), true);
     assert.equal(
@@ -34908,6 +34922,94 @@ function assertSettingsServerBoundaries(payload) {
   assert.equal(payload.policy?.serverNotificationTextReturned, false);
   assert.equal(payload.policy?.serverNotificationAudioReturned, false);
   assert.equal(payload.policy?.serverNotificationSdpReturned, false);
+}
+
+function assertCodexAppSettingsParity(
+  payload,
+  {
+    availableSectionCount,
+    partialSectionCount,
+    preflightOnlySectionCount,
+    blockedSectionCount,
+    profileState,
+  },
+) {
+  const summary = payload.codexAppSettings;
+  assert.equal(summary?.returned, true);
+  assert.equal(summary.state, "partial");
+  assert.equal(summary.officialSource, "openai-codex-app-settings-docs");
+  assert.equal(summary.officialSectionCount, 15);
+  assert.equal(summary.trackedSectionCount, 15);
+  assert.equal(summary.availableSectionCount, availableSectionCount);
+  assert.equal(summary.partialSectionCount, partialSectionCount);
+  assert.equal(summary.preflightOnlySectionCount, preflightOnlySectionCount);
+  assert.equal(summary.blockedSectionCount, blockedSectionCount);
+  assert.deepEqual(
+    summary.sections.map((section) => section.key),
+    [
+      "general",
+      "profile",
+      "keyboardShortcuts",
+      "notifications",
+      "agentConfiguration",
+      "appearance",
+      "codexPets",
+      "git",
+      "integrationsMcp",
+      "browser",
+      "computerUse",
+      "personalization",
+      "contextAwareSuggestions",
+      "memories",
+      "archivedThreads",
+    ],
+  );
+  assert.equal(summary.sections.find((section) => section.key === "profile")?.state, profileState);
+  assert.equal(summary.sections.find((section) => section.key === "browser")?.state, "blocked");
+  assert.equal(
+    summary.sections.find((section) => section.key === "computerUse")?.state,
+    "blocked",
+  );
+  assert.equal(
+    summary.sections.find((section) => section.key === "memories")?.state,
+    "preflight-only",
+  );
+  assert.equal(summary.sectionKeysReturned, true);
+  assert.equal(summary.sectionLabelsReturned, false);
+  assert.equal(summary.localSettingValuesReturned, false);
+  assert.equal(summary.settingValuesReturned, false);
+  assert.equal(summary.localNamesReturned, false);
+  assert.equal(summary.pathsReturned, false);
+  assert.equal(summary.urlsReturned, false);
+  assert.equal(summary.secretsReturned, false);
+  assert.equal(summary.rawPayloadsReturned, false);
+  assert.equal(summary.createdAppServerTraffic, false);
+  assert.equal(summary.appServerTraffic, false);
+  assert.equal(summary.appServerPayloadReturned, false);
+  assert.equal(summary.mutationsEnabled, false);
+  assert.equal(summary.browserHandlersEnabled, false);
+  assert.equal(summary.settingsWritesEnabled, false);
+  assert.equal(
+    summary.sections.every(
+      (section) =>
+        section.tracked === true &&
+        section.settingValuesReturned === false &&
+        section.localNamesReturned === false &&
+        section.pathsReturned === false &&
+        section.urlsReturned === false &&
+        section.secretsReturned === false &&
+        section.rawPayloadsReturned === false &&
+        section.appServerTraffic === false,
+    ),
+    true,
+  );
+  assert.equal(payload.policy?.codexAppSettingsParityReturned, true);
+  assert.equal(payload.policy?.codexAppSettingsSectionKeysReturned, true);
+  assert.equal(payload.policy?.codexAppSettingsValuesReturned, false);
+  assert.equal(payload.policy?.codexAppSettingsLocalNamesReturned, false);
+  assert.equal(payload.policy?.codexAppSettingsPathsReturned, false);
+  assert.equal(payload.policy?.codexAppSettingsUrlsReturned, false);
+  assert.equal(payload.policy?.codexAppSettingsRawPayloadsReturned, false);
 }
 
 function assertTurnSessionRoutingContract(payload, expected) {

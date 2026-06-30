@@ -12,6 +12,9 @@ const elements = {
   settingsStateText: document.querySelector("#settings-state-text"),
   settingsRefreshButton: document.querySelector("#settings-refresh-button"),
   settingsRefreshState: document.querySelector("#settings-refresh-state"),
+  appSettingsParityText: document.querySelector("#app-settings-parity-text"),
+  appSettingsBlockedText: document.querySelector("#app-settings-blocked-text"),
+  appSettingsValuesText: document.querySelector("#app-settings-values-text"),
   realtimeVoicesButton: document.querySelector("#realtime-voices-button"),
   realtimeVoicesStateText: document.querySelector("#realtime-voices-state-text"),
   settingsSourceText: document.querySelector("#settings-source-text"),
@@ -348,6 +351,7 @@ const elements = {
   integrationsMethodList: document.querySelector("#integrations-method-list"),
   upstreamDriftList: document.querySelector("#upstream-drift-list"),
   integrationsDetailList: document.querySelector("#integrations-detail-list"),
+  appSettingsParityList: document.querySelector("#app-settings-parity-list"),
   gitButton: document.querySelector("#git-button"),
   gitSwitchButton: document.querySelector("#git-switch-button"),
   gitDeleteButton: document.querySelector("#git-delete-button"),
@@ -10378,9 +10382,22 @@ function renderSettingsIntegrations(payload) {
   const inventory = payload.inventory ?? {};
   const integrationScope = payload.integrationScope ?? {};
   const integrationLifecycle = payload.integrationLifecycle ?? {};
+  const codexAppSettings = payload.codexAppSettings ?? {};
 
   elements.settingsStateText.textContent = settings.state ?? "blocked";
   elements.settingsSourceText.textContent = payload.appServer?.touched ? "Inventory" : "Config summary";
+  elements.appSettingsParityText.textContent = codexAppSettings.returned
+    ? `${codexAppSettings.availableSectionCount ?? 0} / ${
+        codexAppSettings.officialSectionCount ?? 0
+      }`
+    : "Blocked";
+  elements.appSettingsBlockedText.textContent = codexAppSettings.returned
+    ? `${codexAppSettings.blockedSectionCount ?? 0} blocked`
+    : "Blocked";
+  elements.appSettingsValuesText.textContent =
+    codexAppSettings.localSettingValuesReturned || codexAppSettings.settingValuesReturned
+      ? "Returned"
+      : "Hidden";
   elements.requirementsStateText.textContent = settings.requirementsAvailable
     ? `${inventory.requirements?.featureRequirementCount ?? 0} features`
     : "Blocked";
@@ -10520,6 +10537,7 @@ function renderSettingsIntegrations(payload) {
   renderIntegrationPreflightHistory(payload.preflightHistory);
   renderIntegrationConfirmationHistory(payload.preflightConfirmationHistory);
   renderIntegrationDetails(inventory);
+  renderCodexAppSettingsParity(codexAppSettings);
   renderUpstreamDrift(upstreamDrift);
   renderIntegrationMethodAudit(methodAudit);
 }
@@ -12029,6 +12047,52 @@ function remoteControlStatusText(remoteControlStatus) {
     })
     .filter(Boolean);
   return parts.length > 0 ? parts.join(" / ") : "0 statuses";
+}
+
+function renderCodexAppSettingsParity(summary) {
+  elements.appSettingsParityList.replaceChildren();
+  const sections = Array.isArray(summary?.sections) ? summary.sections : [];
+  if (sections.length === 0) {
+    elements.appSettingsParityList.append(emptyState("No app settings parity summary returned."));
+    return;
+  }
+  for (const section of sections) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = section.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = section.group ?? "settings";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      section.state ?? "blocked",
+      section.source ?? null,
+      section.settingValuesReturned ? "values returned" : "values hidden",
+      section.localNamesReturned ? "local names returned" : "local names hidden",
+      section.pathsReturned ? "paths returned" : "paths hidden",
+      section.appServerTraffic ? "app-server traffic" : "local parity",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.appSettingsParityList.append(row);
+  }
 }
 
 function renderIntegrationMethodAudit(methodAudit) {

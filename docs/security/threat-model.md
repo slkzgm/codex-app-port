@@ -396,6 +396,10 @@
   notifications, or raw app-server payloads. Approval summaries must not expose
   decision tokens, request keys, session identifiers, raw approval details,
   paths, patches, file contents, permission paths, or network grant details.
+  Its Codex app settings parity summary may expose only static official section
+  keys, states, and counts; it must not return local setting values, profile
+  names, paths, URLs, secrets, raw payloads, app-server payloads, browser
+  handlers, or settings writes.
   Browser-side approval queue filters must operate only on the already sanitized
   queue payload, and visible-subset deny/accept actions must still submit the
   bounded tokenized decision batch through the normal approval route. They must

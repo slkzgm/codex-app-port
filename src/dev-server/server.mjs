@@ -33078,6 +33078,159 @@ function sanitizeIntegrationPreflightConfirmationHistoryRecord(
   };
 }
 
+const CODEX_APP_SETTINGS_PARITY_SECTION_KEYS = Object.freeze([
+  "general",
+  "profile",
+  "keyboardShortcuts",
+  "notifications",
+  "agentConfiguration",
+  "appearance",
+  "codexPets",
+  "git",
+  "integrationsMcp",
+  "browser",
+  "computerUse",
+  "personalization",
+  "contextAwareSuggestions",
+  "memories",
+  "archivedThreads",
+]);
+
+function codexAppSettingsSection(key, group, state, source) {
+  return {
+    key,
+    group,
+    state,
+    source,
+    tracked: true,
+    settingValuesReturned: false,
+    localNamesReturned: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+    rawPayloadsReturned: false,
+    appServerTraffic: false,
+  };
+}
+
+function buildCodexAppSettingsParity(payload = {}) {
+  const surfaces = payload.surfaces ?? {};
+  const settings = surfaces.settings ?? {};
+  const auth = surfaces.auth ?? {};
+  const apps = surfaces.apps ?? {};
+  const externalAgentConfig = surfaces.externalAgentConfig ?? {};
+  const mcp = surfaces.mcp ?? {};
+  const skills = surfaces.skills ?? {};
+  const plugins = surfaces.plugins ?? {};
+  const integrationScope = payload.integrationScope ?? {};
+  const hasOptInAuthAction = Boolean(
+    auth.loginEnabled ||
+      auth.loginCancelEnabled ||
+      auth.creditsNudgeEnabled ||
+      auth.resetCreditConsumeEnabled ||
+      auth.logoutEnabled,
+  );
+  const integrationsVisible = [apps, externalAgentConfig, mcp, skills, plugins].some(
+    (surface) => surface.state === "partial",
+  );
+  const sections = [
+    codexAppSettingsSection(
+      "general",
+      "core",
+      settings.readOnlySummaryAvailable ? "partial" : "blocked",
+      "settings-summary",
+    ),
+    codexAppSettingsSection(
+      "profile",
+      "account",
+      auth.state === "partial" ? "partial" : hasOptInAuthAction ? "preflight-only" : "blocked",
+      "auth-boundary",
+    ),
+    codexAppSettingsSection(
+      "keyboardShortcuts",
+      "interface",
+      "blocked",
+      "not-implemented",
+    ),
+    codexAppSettingsSection(
+      "notifications",
+      "interface",
+      "blocked",
+      "server-notification-boundary",
+    ),
+    codexAppSettingsSection(
+      "agentConfiguration",
+      "agent",
+      settings.readOnlySummaryAvailable ? "partial" : "blocked",
+      "settings-summary",
+    ),
+    codexAppSettingsSection("appearance", "interface", "blocked", "not-implemented"),
+    codexAppSettingsSection("codexPets", "interface", "blocked", "not-implemented"),
+    codexAppSettingsSection("git", "workspace", "partial", "read-only-git-panel"),
+    codexAppSettingsSection(
+      "integrationsMcp",
+      "integrations",
+      integrationsVisible || safeCount(integrationScope.enabledLocalGateCount) > 0
+        ? "partial"
+        : "blocked",
+      "settings-integrations-boundary",
+    ),
+    codexAppSettingsSection("browser", "runtime", "blocked", "not-implemented"),
+    codexAppSettingsSection("computerUse", "runtime", "blocked", "not-implemented"),
+    codexAppSettingsSection("personalization", "agent", "blocked", "not-implemented"),
+    codexAppSettingsSection(
+      "contextAwareSuggestions",
+      "agent",
+      "blocked",
+      "not-implemented",
+    ),
+    codexAppSettingsSection(
+      "memories",
+      "agent",
+      integrationScope.memoryResetPreflightEnabled ? "preflight-only" : "blocked",
+      "memory-reset-preflight",
+    ),
+    codexAppSettingsSection(
+      "archivedThreads",
+      "threads",
+      "partial",
+      "thread-archive-boundary",
+    ),
+  ];
+  const blockedSectionCount = sections.filter((section) => section.state === "blocked").length;
+  const preflightOnlySectionCount = sections.filter(
+    (section) => section.state === "preflight-only",
+  ).length;
+  const partialSectionCount = sections.filter((section) => section.state === "partial").length;
+  return {
+    returned: true,
+    state: blockedSectionCount > 0 ? "partial" : "complete",
+    officialSource: "openai-codex-app-settings-docs",
+    officialSectionCount: CODEX_APP_SETTINGS_PARITY_SECTION_KEYS.length,
+    trackedSectionCount: sections.length,
+    availableSectionCount: sections.length - blockedSectionCount,
+    partialSectionCount,
+    preflightOnlySectionCount,
+    blockedSectionCount,
+    sections,
+    sectionKeysReturned: true,
+    sectionLabelsReturned: false,
+    localSettingValuesReturned: false,
+    settingValuesReturned: false,
+    localNamesReturned: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+    rawPayloadsReturned: false,
+    createdAppServerTraffic: false,
+    appServerTraffic: false,
+    appServerPayloadReturned: false,
+    mutationsEnabled: false,
+    browserHandlersEnabled: false,
+    settingsWritesEnabled: false,
+  };
+}
+
 export function sanitizeSettingsIntegrationsPayload(
   payload,
   {
@@ -33443,6 +33596,13 @@ export function sanitizeSettingsIntegrationsPayload(
       upstreamDriftReturned: true,
       upstreamDriftMethodsBrowserEnabled: false,
       upstreamDriftAppServerTraffic: false,
+      codexAppSettingsParityReturned: true,
+      codexAppSettingsSectionKeysReturned: true,
+      codexAppSettingsValuesReturned: false,
+      codexAppSettingsLocalNamesReturned: false,
+      codexAppSettingsPathsReturned: false,
+      codexAppSettingsUrlsReturned: false,
+      codexAppSettingsRawPayloadsReturned: false,
       serverRequestHandlersEnabled: false,
       serverRequestPayloadsReturned: false,
       serverRequestSchemasReturned: false,
@@ -33494,6 +33654,7 @@ export function sanitizeSettingsIntegrationsPayload(
     },
     notifications: sanitizeNotificationCounts(payload?.notifications),
   };
+  result.codexAppSettings = buildCodexAppSettingsParity(result);
   result.integrationLifecycle = summarizeIntegrationLifecycle(result);
   return result;
 }
@@ -40951,6 +41112,13 @@ export function buildSettingsIntegrations({
       upstreamDriftReturned: true,
       upstreamDriftMethodsBrowserEnabled: false,
       upstreamDriftAppServerTraffic: false,
+      codexAppSettingsParityReturned: true,
+      codexAppSettingsSectionKeysReturned: true,
+      codexAppSettingsValuesReturned: false,
+      codexAppSettingsLocalNamesReturned: false,
+      codexAppSettingsPathsReturned: false,
+      codexAppSettingsUrlsReturned: false,
+      codexAppSettingsRawPayloadsReturned: false,
       serverRequestHandlersEnabled: false,
       serverRequestPayloadsReturned: false,
       serverRequestSchemasReturned: false,
@@ -41001,6 +41169,7 @@ export function buildSettingsIntegrations({
       browserMethodCallsAccepted: false,
     },
   };
+  result.codexAppSettings = buildCodexAppSettingsParity(result);
   result.integrationLifecycle = summarizeIntegrationLifecycle(result);
   return result;
 }

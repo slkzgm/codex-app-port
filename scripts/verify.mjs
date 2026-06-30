@@ -32689,6 +32689,13 @@ function assertSanitizedSettingsIntegrations(payload) {
     throw new Error("settings integrations did not expose sanitized server-side method audit metadata");
   }
   assertSettingsServerBoundaries(payload);
+  assertCodexAppSettingsParity(payload, {
+    availableSectionCount: 6,
+    partialSectionCount: 5,
+    preflightOnlySectionCount: 1,
+    blockedSectionCount: 9,
+    profileState: "blocked",
+  });
   if (
     payload.surfaces?.settings?.state !== "partial" ||
     payload.surfaces?.settings?.readOnlySummaryAvailable !== true ||
@@ -33080,6 +33087,96 @@ function assertSettingsServerBoundaries(payload) {
     payload.policy?.serverNotificationSdpReturned !== false
   ) {
     throw new Error("settings integrations server boundary policy flags changed");
+  }
+}
+
+function assertCodexAppSettingsParity(
+  payload,
+  {
+    availableSectionCount,
+    partialSectionCount,
+    preflightOnlySectionCount,
+    blockedSectionCount,
+    profileState,
+  },
+) {
+  const summary = payload.codexAppSettings;
+  if (
+    summary?.returned !== true ||
+    summary.state !== "partial" ||
+    summary.officialSource !== "openai-codex-app-settings-docs" ||
+    summary.officialSectionCount !== 15 ||
+    summary.trackedSectionCount !== 15 ||
+    summary.availableSectionCount !== availableSectionCount ||
+    summary.partialSectionCount !== partialSectionCount ||
+    summary.preflightOnlySectionCount !== preflightOnlySectionCount ||
+    summary.blockedSectionCount !== blockedSectionCount
+  ) {
+    throw new Error("Codex app settings parity counts changed unexpectedly");
+  }
+  const sectionKeys = [
+    "general",
+    "profile",
+    "keyboardShortcuts",
+    "notifications",
+    "agentConfiguration",
+    "appearance",
+    "codexPets",
+    "git",
+    "integrationsMcp",
+    "browser",
+    "computerUse",
+    "personalization",
+    "contextAwareSuggestions",
+    "memories",
+    "archivedThreads",
+  ];
+  if (
+    JSON.stringify((summary.sections ?? []).map((section) => section.key)) !==
+      JSON.stringify(sectionKeys) ||
+    summary.sections?.find((section) => section.key === "profile")?.state !== profileState ||
+    summary.sections?.find((section) => section.key === "browser")?.state !== "blocked" ||
+    summary.sections?.find((section) => section.key === "computerUse")?.state !== "blocked" ||
+    summary.sections?.find((section) => section.key === "memories")?.state !== "preflight-only"
+  ) {
+    throw new Error("Codex app settings parity section mapping changed unexpectedly");
+  }
+  if (
+    summary.sectionKeysReturned !== true ||
+    summary.sectionLabelsReturned !== false ||
+    summary.localSettingValuesReturned !== false ||
+    summary.settingValuesReturned !== false ||
+    summary.localNamesReturned !== false ||
+    summary.pathsReturned !== false ||
+    summary.urlsReturned !== false ||
+    summary.secretsReturned !== false ||
+    summary.rawPayloadsReturned !== false ||
+    summary.createdAppServerTraffic !== false ||
+    summary.appServerTraffic !== false ||
+    summary.appServerPayloadReturned !== false ||
+    summary.mutationsEnabled !== false ||
+    summary.browserHandlersEnabled !== false ||
+    summary.settingsWritesEnabled !== false ||
+    !summary.sections?.every(
+      (section) =>
+        section.tracked === true &&
+        section.settingValuesReturned === false &&
+        section.localNamesReturned === false &&
+        section.pathsReturned === false &&
+        section.urlsReturned === false &&
+        section.secretsReturned === false &&
+        section.rawPayloadsReturned === false &&
+        section.appServerTraffic === false,
+    ) ||
+    payload.policy?.codexAppSettingsParityReturned !== true ||
+    payload.policy?.codexAppSettingsSectionKeysReturned !== true ||
+    payload.policy?.codexAppSettingsValuesReturned !== false ||
+    payload.policy?.codexAppSettingsLocalNamesReturned !== false ||
+    payload.policy?.codexAppSettingsPathsReturned !== false ||
+    payload.policy?.codexAppSettingsUrlsReturned !== false ||
+    payload.policy?.codexAppSettingsRawPayloadsReturned !== false
+  ) {
+    throw new Error("Codex app settings parity did not preserve redaction policy");
   }
 }
 
@@ -34719,6 +34816,13 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
     throw new Error("settings integrations inventory did not expose server-side method audit metadata");
   }
   assertSettingsServerBoundaries(payload);
+  assertCodexAppSettingsParity(payload, {
+    availableSectionCount: 7,
+    partialSectionCount: 6,
+    preflightOnlySectionCount: 1,
+    blockedSectionCount: 8,
+    profileState: "partial",
+  });
   if (
     payload.integrationScope?.returned !== true ||
     payload.integrationScope?.state !== "partial" ||

@@ -707,6 +707,13 @@ Manual/Ready/Refreshing/Failed status. That control calls only the existing
 sanitized `/api/settings-integrations` route and does not add API fields,
 tokens, names, targets, argument text, resource content, skill content, URLs,
 paths, secrets, or raw payloads.
+The same response now includes a read-only `codexAppSettings` parity summary
+for the current official Codex app Settings sections. It returns only static
+section keys, section states, and counts, and keeps local setting values,
+profile names, paths, URLs, secrets, raw payloads, app-server payloads, browser
+handlers, and settings writes omitted. Unimplemented sections such as
+Appearance, Browser, Computer Use, Personalization, and Context-aware
+Suggestions are reported as blocked.
 The same response also exposes static upstream-drift metadata for head-only
 app-server methods absent from the stable generated schema. It returns only
 method names, count/status metadata, and local blocked policy; it does not
