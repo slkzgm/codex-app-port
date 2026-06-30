@@ -883,6 +883,11 @@ Current M1 status:
   path-shape validation, with no execution route, no filesystem reads, no
   app-server traffic, no path or basename disclosure, and no file contents,
   `dataBase64`, or raw payloads returned
+- done: local-only `/api/fs-watch-preflight` for official `fs/watch` and
+  `fs/unwatch` shape validation, with no execution route, no watcher
+  creation/removal, no `fs/changed` subscription, no app-server traffic, no path
+  or canonical-path disclosure, no watch ids or handles returned, and no
+  notification/raw payload output
 - done: fail-closed action-preflight confirmation route that consumes local
   tokens once against the same hashed intent and still blocks all mutations
 - done: strict browser JSON POST body validation for preflight, confirmation,

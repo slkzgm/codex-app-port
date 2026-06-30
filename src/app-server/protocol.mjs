@@ -49,6 +49,8 @@ export const APP_SERVER_METHODS = Object.freeze({
   fsGetMetadata: "fs/getMetadata",
   fsReadDirectory: "fs/readDirectory",
   fsReadFile: "fs/readFile",
+  fsWatch: "fs/watch",
+  fsUnwatch: "fs/unwatch",
   configValueWrite: "config/value/write",
   configBatchWrite: "config/batchWrite",
   experimentalFeatureList: "experimentalFeature/list",

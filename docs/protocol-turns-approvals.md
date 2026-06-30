@@ -168,6 +168,12 @@ now. It validates workspace-relative visible path shape and creates a local
 confirmation token, but there is no execution route, filesystem read, app-server
 traffic, path or basename disclosure, file content, `dataBase64`, or raw
 payload output.
+`fs/watch` and `fs/unwatch` have only a local
+`POST /api/fs-watch-preflight` guard for now. It validates workspace-relative
+visible path shape for watch plus bounded safe watch-id shape for both methods,
+but there is no execution route, watcher creation/removal, `fs/changed`
+subscription, app-server traffic, path/canonical-path/basename disclosure,
+watch-id disclosure, watcher handle, notification output, or raw payload.
 `thread/delete` also has a
 separate disabled-by-default destructive path:
 `POST /api/thread-delete-preflight` validates only suffix and archived-state

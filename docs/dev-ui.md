@@ -51,6 +51,9 @@ The server binds to `127.0.0.1` by default and serves:
 - `/api/fs-read-file-preflight`: local-only blocked `fs/readFile` preflight
   that validates path shape without filesystem reads, app-server traffic,
   paths, basenames, contents, or `dataBase64`
+- `/api/fs-watch-preflight`: local-only blocked `fs/watch` / `fs/unwatch`
+  preflight that validates path/watch-id shape without watchers, app-server
+  traffic, canonical paths, watch ids, handles, or notifications
 - `/api/account-login-preflight` and `/api/account-login-start`: local auth
   login confirmation plus opt-in app-server `account/login/start` device-code
   flow behind `CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN=1` and a matching one-time
@@ -497,6 +500,18 @@ then returns only path character count, path depth, blocked execution flags,
 and content-redaction booleans. It does not resolve the path, check existence,
 follow symlinks, read file content, call app-server, or return the path,
 basename, file bytes, `dataBase64`, raw payload, or any execution route.
+
+`/api/fs-watch-preflight` is the intentionally blocked `fs/watch` /
+`fs/unwatch` surface. The browser can submit `fs/watch` with a
+workspace-relative visible path and a bounded safe watch id, or `fs/unwatch`
+with only the watch id. The route rejects absolute paths, drive roots,
+traversal, hidden paths, `.git`, lock files, path-bearing unwatch requests, and
+unsafe watch ids. It returns only path depth/count, watch-id length, blocked
+execution flags, and notification-redaction booleans. It does not resolve
+paths, check existence, follow symlinks, start or stop watchers, subscribe to
+`fs/changed`, call app-server, or return paths, canonical paths, basenames,
+watch ids, watcher handles, notifications, raw payloads, or any execution
+route.
 
 Every `/api/*` route also requires a per-process session token. The server
 injects this token into the served HTML and the browser sends it back in the
@@ -1278,6 +1293,11 @@ execution route, no app-server bridge, and no local filesystem read. Its UI
 shows only blocked status, path depth, path character count, hidden-content
 state, and no-traffic state so the route can be audited before any future
 `fs/readFile` enablement is considered.
+
+The filesystem-watch preflight follows the same blocked pattern for
+`fs/watch` and `fs/unwatch`: the UI shows blocked status, path depth, hidden
+watch-id state, notifications off, and no-traffic state. It never shows the
+watch id, path, canonical path, or any `fs/changed` notification state.
 
 The turn preflight endpoint accepts draft text so the UI can validate the
 future turn-start shape, but it does not call `codex app-server`, start a turn,

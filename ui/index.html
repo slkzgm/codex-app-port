@@ -2579,6 +2579,47 @@
               <dd id="fs-read-file-traffic">None</dd>
             </div>
           </dl>
+          <form id="fs-watch-form" class="turn-form">
+            <div class="thread-tools">
+              <label class="workspace-control" for="fs-watch-method">
+                <span>Watch</span>
+                <select id="fs-watch-method">
+                  <option value="fs/watch">Watch</option>
+                  <option value="fs/unwatch">Unwatch</option>
+                </select>
+              </label>
+              <label class="search-control" for="fs-watch-path">
+                <span>Path</span>
+                <input id="fs-watch-path" type="text" autocomplete="off" />
+              </label>
+              <label class="search-control" for="fs-watch-id">
+                <span>Watch ID</span>
+                <input id="fs-watch-id" type="text" autocomplete="off" />
+              </label>
+              <button id="fs-watch-button" class="secondary-button" type="submit">
+                Watch Check
+              </button>
+              <span id="fs-watch-status" class="empty-state">Blocked</span>
+            </div>
+          </form>
+          <dl class="agent-grid">
+            <div>
+              <dt>Path depth</dt>
+              <dd id="fs-watch-depth">0</dd>
+            </div>
+            <div>
+              <dt>Watch ID</dt>
+              <dd id="fs-watch-id-state">Hidden</dd>
+            </div>
+            <div>
+              <dt>Notifications</dt>
+              <dd id="fs-watch-notifications">Off</dd>
+            </div>
+            <div>
+              <dt>Traffic</dt>
+              <dd id="fs-watch-traffic">None</dd>
+            </div>
+          </dl>
           <form id="file-action-form" class="turn-form">
             <div class="thread-tools">
               <label class="workspace-control" for="file-action-select">

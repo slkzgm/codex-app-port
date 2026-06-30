@@ -272,6 +272,13 @@ blocked read/content redaction flags. It does not check file existence, follow
 symlinks, read the filesystem, call app-server, expose `/api/fs-read-file`
 execution, or return paths, basenames, file contents, `dataBase64`, raw
 payloads, or app-server data.
+`/api/fs-watch-preflight` is a local-only guard for official `fs/watch` and
+`fs/unwatch`. `fs/watch` accepts only a workspace-relative visible path plus a
+bounded safe watch id for validation; `fs/unwatch` accepts only the watch id.
+The route creates a local preflight token but never starts or stops a watcher,
+subscribes to `fs/changed`, calls app-server, exposes `/api/fs-watch`
+execution, or returns paths, canonical paths, basenames, watch ids, watcher
+handles, notifications, raw payloads, or app-server data.
 `/api/terminal-command` is disabled unless
 `CODEX_APP_PORT_ALLOW_TERMINAL_COMMAND=1` and
 `CODEX_APP_PORT_TERMINAL_COMMAND_ALLOWLIST=cmd1,cmd2` are set before startup.

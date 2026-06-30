@@ -74,6 +74,7 @@ async function main() {
   await checkThreadRealtimeVoicesApi();
   await checkFsDirectoryApi();
   await checkFsReadFilePreflightApi();
+  await checkFsWatchPreflightApi();
   await checkAccountLoginApi();
   await checkAccountLoginCancelApi();
   await checkAccountCreditsNudgeApi();
@@ -1078,6 +1079,7 @@ async function checkStrictBrowserPostBodies() {
       ],
       ["/api/file-action-preflight", { action: "writeFile", path: "safe.txt", content: "ok" }],
       ["/api/fs-read-file-preflight", { path: "src/private.txt" }],
+      ["/api/fs-watch-preflight", { method: "fs/watch", path: "src/private.txt", watchId: "watch-alpha-1" }],
       [
         "/api/file-action",
         {
@@ -2443,6 +2445,20 @@ function assertBrowserPostBodyContracts(cases) {
     fsReadFilePreflightContract.nestedKeySchemas.policy?.includes("unexpected")
   ) {
     throw new Error("fs-read-file-preflight response contract is missing nested schemas");
+  }
+  const fsWatchPreflightContract = BROWSER_POST_RESPONSE_CONTRACTS["/api/fs-watch-preflight"];
+  if (
+    fsWatchPreflightContract.usesRouteSpecificNestedKeySchemas !== true ||
+    !Object.isFrozen(fsWatchPreflightContract.nestedKeySchemas.policy) ||
+    !fsWatchPreflightContract.nestedKeySchemas.target?.includes("canonicalPathReturned") ||
+    !fsWatchPreflightContract.nestedKeySchemas.watch?.includes("watchIdReturned") ||
+    !fsWatchPreflightContract.nestedKeySchemas.watch?.includes("watchStarted") ||
+    !fsWatchPreflightContract.nestedKeySchemas.watch?.includes("fsChangedNotificationsReturned") ||
+    !fsWatchPreflightContract.nestedKeySchemas.policy?.includes("fsWatchPreflightEnabled") ||
+    !fsWatchPreflightContract.nestedKeySchemas.policy?.includes("watchIdsReturned") ||
+    fsWatchPreflightContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("fs-watch-preflight response contract is missing nested schemas");
   }
   const threadRollbackPreflightContract =
     BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-rollback-preflight"];
@@ -15068,6 +15084,171 @@ async function checkFsReadFilePreflightApi() {
     await closeServer(server);
   }
   pass("dev server fs readFile preflight validates without filesystem reads");
+}
+
+async function checkFsWatchPreflightApi() {
+  let probeCalled = false;
+  const server = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    probeFn: async () => {
+      probeCalled = true;
+      return { ok: true };
+    },
+  });
+  const port = await listenWithFallback(server, { host: "127.0.0.1", port: 0 });
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  try {
+    const token = await readUiSessionToken(baseUrl);
+
+    const extraField = await fetch(`${baseUrl}/api/fs-watch-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "fs/watch",
+        path: "src/private.txt",
+        watchId: "watch-alpha-1",
+        content: "secret watch content",
+      }),
+    });
+    if (extraField.status !== 400) {
+      throw new Error(`fs watch preflight extra-field request returned HTTP ${extraField.status}`);
+    }
+    assertNoMarkers(await extraField.text(), [
+      "src/private.txt",
+      "watch-alpha-1",
+      "secret watch content",
+    ]);
+
+    const invalidPath = await fetch(`${baseUrl}/api/fs-watch-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "fs/watch",
+        path: "/tmp/codex-app-port-verify/src/private.txt",
+        watchId: "watch-alpha-1",
+      }),
+    });
+    if (invalidPath.status !== 400) {
+      throw new Error(`fs watch preflight invalid-path request returned HTTP ${invalidPath.status}`);
+    }
+    assertNoMarkers(await invalidPath.text(), ["/tmp/codex-app-port-verify", "private.txt"]);
+
+    const invalidWatchId = await fetch(`${baseUrl}/api/fs-watch-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "fs/watch",
+        path: "src/private.txt",
+        watchId: "watch/private",
+      }),
+    });
+    if (invalidWatchId.status !== 400) {
+      throw new Error(`fs watch preflight invalid-watch-id request returned HTTP ${invalidWatchId.status}`);
+    }
+    assertNoMarkers(await invalidWatchId.text(), ["src/private.txt", "watch/private"]);
+
+    const response = await fetch(`${baseUrl}/api/fs-watch-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "fs/watch",
+        path: "src/private.txt",
+        watchId: "watch-alpha-1",
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(`fs watch preflight returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    assertSanitizedFsWatchPreflight(payload, {
+      workspaceId: "default",
+      method: "fs/watch",
+      pathCharCount: 15,
+      pathDepth: 2,
+      watchIdCharCount: 13,
+    });
+
+    const confirm = await fetch(`${baseUrl}/api/action-preflight-confirm`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        actionType: "fs-watch-preflight",
+        preflightToken: payload.preflight.token,
+        method: "fs/watch",
+        path: "src/private.txt",
+        watchId: "watch-alpha-1",
+      }),
+    });
+    if (!confirm.ok) {
+      throw new Error(`fs watch preflight confirmation returned HTTP ${confirm.status}`);
+    }
+    const confirmPayload = await confirm.json();
+    if (
+      confirmPayload.action?.type !== "fs-watch-preflight" ||
+      confirmPayload.action?.preflightConfirmed !== true ||
+      confirmPayload.action?.mutationExecuted !== false ||
+      confirmPayload.preflight?.tokenConsumed !== true ||
+      confirmPayload.preflight?.tokenReturned !== false ||
+      confirmPayload.policy?.mutationExecuted !== false
+    ) {
+      throw new Error("fs watch preflight confirmation did not preserve blocked confirmation");
+    }
+    assertNoMarkers(JSON.stringify(confirmPayload), [
+      "src/private.txt",
+      "watch-alpha-1",
+      payload.preflight.token,
+    ]);
+
+    const unwatchResponse = await fetch(`${baseUrl}/api/fs-watch-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "fs/unwatch",
+        path: "",
+        watchId: "watch-beta-2",
+      }),
+    });
+    if (!unwatchResponse.ok) {
+      throw new Error(`fs unwatch preflight returned HTTP ${unwatchResponse.status}`);
+    }
+    assertSanitizedFsWatchPreflight(await unwatchResponse.json(), {
+      workspaceId: "default",
+      method: "fs/unwatch",
+      pathCharCount: 0,
+      pathDepth: 0,
+      watchIdCharCount: 12,
+    });
+
+    const action = await fetch(`${baseUrl}/api/fs-watch`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "fs/watch",
+        path: "src/private.txt",
+        watchId: "watch-alpha-1",
+        preflightToken: payload.preflight.token,
+      }),
+    });
+    if (action.status !== 405) {
+      throw new Error(`fs watch execution route returned HTTP ${action.status}`);
+    }
+    assertNoMarkers(await action.text(), ["src/private.txt", "watch-alpha-1", payload.preflight.token]);
+
+    if (probeCalled) {
+      throw new Error("fs watch preflight unexpectedly touched app-server");
+    }
+  } finally {
+    await closeServer(server);
+  }
+  pass("dev server fs watch preflight validates without watchers");
 }
 
 async function checkAccountLoginApi() {
@@ -31573,6 +31754,78 @@ function assertSanitizedFsReadFilePreflight(payload, { workspaceId, pathCharCoun
     throw new Error("fs readFile preflight payload did not preserve blocked redaction policy");
   }
   assertActionPreflight(payload, "fs-read-file-preflight", workspaceId);
+}
+
+function assertSanitizedFsWatchPreflight(
+  payload,
+  { workspaceId, method, pathCharCount, pathDepth, watchIdCharCount },
+) {
+  if (!payload.ok) {
+    throw new Error("fs watch preflight payload is not ok");
+  }
+  const serialized = JSON.stringify(payload);
+  assertNoMarkers(serialized, [
+    "src/private.txt",
+    "private.txt",
+    "watch-alpha-1",
+    "watch-beta-2",
+    "/tmp/codex-app-port-verify",
+    "/tmp/verify-private-home",
+    "secret watch content",
+    "verify-sensitive-agent",
+    "codexHome",
+    "userAgent",
+    "\"watchIdReturned\":true",
+    "\"watchStarted\":true",
+    "\"pathsReturned\":true",
+    "\"canonicalPathReturned\":true",
+  ]);
+  const isWatch = method === "fs/watch";
+  if (
+    payload.appServer?.touched !== false ||
+    payload.appServer?.filesystemTraffic !== false ||
+    payload.action?.type !== "fs-watch-preflight" ||
+    payload.action?.method !== method ||
+    payload.action?.execution !== "blocked" ||
+    payload.action?.wouldStartWatch !== isWatch ||
+    payload.action?.wouldStopWatch !== !isWatch ||
+    payload.action?.watcherCreated !== false ||
+    payload.action?.watcherStopped !== false ||
+    payload.action?.filesystemTraffic !== false ||
+    payload.target?.pathRequired !== isWatch ||
+    payload.target?.pathAccepted !== isWatch ||
+    payload.target?.pathCharCount !== pathCharCount ||
+    payload.target?.pathDepth !== pathDepth ||
+    payload.target?.workspaceRelativeOnly !== true ||
+    payload.target?.pathReturned !== false ||
+    payload.target?.basenameReturned !== false ||
+    payload.target?.canonicalPathReturned !== false ||
+    payload.target?.existsChecked !== false ||
+    payload.target?.symlinkChecked !== false ||
+    payload.watch?.watchIdRequired !== true ||
+    payload.watch?.watchIdAccepted !== true ||
+    payload.watch?.watchIdCharCount !== watchIdCharCount ||
+    payload.watch?.watchIdReturned !== false ||
+    payload.watch?.watchHandleReturned !== false ||
+    payload.watch?.watchNotificationsEnabled !== false ||
+    payload.watch?.watchStarted !== false ||
+    payload.watch?.watchStopped !== false ||
+    payload.watch?.fsChangedNotificationsReturned !== false ||
+    payload.policy?.fsWatchPreflightEnabled !== true ||
+    payload.policy?.fsWatchEnabled !== false ||
+    payload.policy?.fsUnwatchEnabled !== false ||
+    payload.policy?.executionRouteImplemented !== false ||
+    payload.policy?.appServerTraffic !== false ||
+    payload.policy?.filesystemWatch !== false ||
+    payload.policy?.filesystemUnwatch !== false ||
+    payload.policy?.pathsReturned !== false ||
+    payload.policy?.basenamesReturned !== false ||
+    payload.policy?.watchIdsReturned !== false ||
+    payload.policy?.fsChangedNotificationsReturned !== false
+  ) {
+    throw new Error("fs watch preflight payload did not preserve blocked redaction policy");
+  }
+  assertActionPreflight(payload, "fs-watch-preflight", workspaceId);
 }
 
 function assertSanitizedSettingsIntegrationsInventory(payload) {

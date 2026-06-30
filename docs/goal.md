@@ -123,6 +123,12 @@ Target parity with the Codex desktop workflow:
   confirmation token, and keeps execution blocked without filesystem reads,
   app-server traffic, path/basename disclosure, file contents, `dataBase64`, or
   raw payloads.
+- `fs/watch` and `fs/unwatch` have only a local
+  `POST /api/fs-watch-preflight` guard for now. It validates
+  workspace-relative visible path shape for watch, safe watch-id shape for both
+  methods, and keeps execution blocked without watcher creation/removal,
+  `fs/changed` subscriptions, app-server traffic, path/canonical-path/basename
+  disclosure, watch-id disclosure, handles, notifications, or raw payloads.
 - `thread/delete` has a separate disabled-by-default destructive
   `POST /api/thread-delete-action` path behind
   `CODEX_APP_PORT_ALLOW_THREAD_DELETE=1`; it consumes a matching one-time

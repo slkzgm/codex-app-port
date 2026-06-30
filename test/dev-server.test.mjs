@@ -188,6 +188,9 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /fs-read-file-form/);
     assert.match(html, /fs-read-file-status/);
     assert.match(html, /fs-read-file-content/);
+    assert.match(html, /fs-watch-form/);
+    assert.match(html, /fs-watch-status/);
+    assert.match(html, /fs-watch-notifications/);
     const appResponse = await fetch(`${url}/assets/app.js`);
     assert.equal(appResponse.status, 200);
     const appScript = await appResponse.text();
@@ -201,6 +204,8 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(appScript, /approvalAuditContractText/);
     assert.match(appScript, /manualRefreshApprovalDecisions/);
     assert.match(appScript, /setApprovalRefreshState/);
+    assert.match(appScript, /runFsWatchPreflight/);
+    assert.match(appScript, /renderFsWatchPreflight/);
     assert.match(html, /approval-authority-contract/);
     assert.match(html, /approval-interaction-contract/);
     assert.match(appScript, /approvalAuthorityContractText/);
@@ -468,6 +473,7 @@ test("browser POST body contracts are centralized and immutable", () => {
     "/api/thread-shell-command",
     "/api/file-action-preflight",
     "/api/fs-read-file-preflight",
+    "/api/fs-watch-preflight",
     "/api/file-action",
     "/api/mcp-tool-preflight",
     "/api/mcp-tool-call",
@@ -696,6 +702,12 @@ test("browser POST body contracts are centralized and immutable", () => {
   assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/fs-read-file-preflight"].allowedFields], [
     "workspace",
     "path",
+  ]);
+  assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/fs-watch-preflight"].allowedFields], [
+    "workspace",
+    "method",
+    "path",
+    "watchId",
   ]);
   assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/mcp-tool-preflight"].allowedFields], [
     "workspace",
@@ -1791,6 +1803,18 @@ test("browser POST response contracts block unsafe response values", () => {
     true,
   );
   assert.equal(fsReadFilePreflightContract.nestedKeySchemas.policy.includes("unexpected"), false);
+  const fsWatchPreflightContract = BROWSER_POST_RESPONSE_CONTRACTS["/api/fs-watch-preflight"];
+  assert.equal(fsWatchPreflightContract.usesRouteSpecificNestedKeySchemas, true);
+  assert.equal(fsWatchPreflightContract.nestedKeySchemas.target.includes("canonicalPathReturned"), true);
+  assert.equal(fsWatchPreflightContract.nestedKeySchemas.watch.includes("watchIdReturned"), true);
+  assert.equal(fsWatchPreflightContract.nestedKeySchemas.watch.includes("watchStarted"), true);
+  assert.equal(
+    fsWatchPreflightContract.nestedKeySchemas.watch.includes("fsChangedNotificationsReturned"),
+    true,
+  );
+  assert.equal(fsWatchPreflightContract.nestedKeySchemas.policy.includes("fsWatchPreflightEnabled"), true);
+  assert.equal(fsWatchPreflightContract.nestedKeySchemas.policy.includes("watchIdsReturned"), true);
+  assert.equal(fsWatchPreflightContract.nestedKeySchemas.policy.includes("unexpected"), false);
   const threadRollbackPreflightContract =
     BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-rollback-preflight"];
   assert.equal(threadRollbackPreflightContract.usesRouteSpecificNestedKeySchemas, true);
@@ -19897,6 +19921,211 @@ test("dev server preflights fs readFile without reading files or leaking paths",
     });
     assert.equal(action.status, 405);
     assert.equal((await action.text()).includes("src/private.txt"), false);
+    assert.equal(probeCalled, false);
+  } finally {
+    await closeServer(server);
+  }
+});
+
+test("dev server preflights fs watch without starting watchers or leaking identifiers", async () => {
+  let probeCalled = false;
+  const { server, url } = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    probeFn: async () => {
+      probeCalled = true;
+      return { ok: true };
+    },
+  });
+
+  try {
+    const getResponse = await fetch(`${url}/api/fs-watch-preflight`, {
+      headers: apiHeaders(server),
+    });
+    assert.equal(getResponse.status, 405);
+
+    const extraField = await fetch(`${url}/api/fs-watch-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "fs/watch",
+        path: "src/private.txt",
+        watchId: "watch-alpha-1",
+        content: "secret watch content",
+      }),
+    });
+    assert.equal(extraField.status, 400);
+    const extraFieldText = await extraField.text();
+    assert.equal(extraFieldText.includes("src/private.txt"), false);
+    assert.equal(extraFieldText.includes("watch-alpha-1"), false);
+    assert.equal(extraFieldText.includes("secret watch content"), false);
+
+    const invalidPath = await fetch(`${url}/api/fs-watch-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "fs/watch",
+        path: "/tmp/default-workspace/src/private.txt",
+        watchId: "watch-alpha-1",
+      }),
+    });
+    assert.equal(invalidPath.status, 400);
+    assert.equal((await invalidPath.text()).includes("/tmp/default-workspace"), false);
+
+    const invalidWatchId = await fetch(`${url}/api/fs-watch-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "fs/watch",
+        path: "src/private.txt",
+        watchId: "watch/private",
+      }),
+    });
+    assert.equal(invalidWatchId.status, 400);
+    assert.equal((await invalidWatchId.text()).includes("watch/private"), false);
+
+    const response = await fetch(`${url}/api/fs-watch-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "fs/watch",
+        path: "src/private.txt",
+        watchId: "watch-alpha-1",
+      }),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, false);
+    assert.equal(payload.appServer.filesystemTraffic, false);
+    assert.equal(payload.action.type, "fs-watch-preflight");
+    assert.equal(payload.action.method, "fs/watch");
+    assert.equal(payload.action.execution, "blocked");
+    assert.equal(payload.action.wouldStartWatch, true);
+    assert.equal(payload.action.wouldStopWatch, false);
+    assert.equal(payload.action.watcherCreated, false);
+    assert.equal(payload.action.filesystemTraffic, false);
+    assert.equal(payload.target.pathRequired, true);
+    assert.equal(payload.target.pathAccepted, true);
+    assert.equal(payload.target.pathCharCount, 15);
+    assert.equal(payload.target.pathDepth, 2);
+    assert.equal(payload.target.pathReturned, false);
+    assert.equal(payload.target.basenameReturned, false);
+    assert.equal(payload.target.canonicalPathReturned, false);
+    assert.equal(payload.target.existsChecked, false);
+    assert.equal(payload.target.symlinkChecked, false);
+    assert.equal(payload.watch.watchIdRequired, true);
+    assert.equal(payload.watch.watchIdAccepted, true);
+    assert.equal(payload.watch.watchIdCharCount, 13);
+    assert.equal(payload.watch.watchIdReturned, false);
+    assert.equal(payload.watch.watchHandleReturned, false);
+    assert.equal(payload.watch.watchNotificationsEnabled, false);
+    assert.equal(payload.watch.watchStarted, false);
+    assert.equal(payload.watch.fsChangedNotificationsReturned, false);
+    assert.equal(payload.policy.fsWatchPreflightEnabled, true);
+    assert.equal(payload.policy.fsWatchEnabled, false);
+    assert.equal(payload.policy.fsUnwatchEnabled, false);
+    assert.equal(payload.policy.executionRouteImplemented, false);
+    assert.equal(payload.policy.appServerTraffic, false);
+    assert.equal(payload.policy.filesystemWatch, false);
+    assert.equal(payload.policy.filesystemUnwatch, false);
+    assert.equal(payload.policy.pathsReturned, false);
+    assert.equal(payload.policy.basenamesReturned, false);
+    assert.equal(payload.policy.watchIdsReturned, false);
+    assert.equal(payload.policy.fsChangedNotificationsReturned, false);
+    assertActionPreflight(payload, "fs-watch-preflight", "default");
+    for (const marker of [
+      "src/private.txt",
+      "private.txt",
+      "watch-alpha-1",
+      "/tmp/default-workspace",
+      "secret watch content",
+      "codexHome",
+      "userAgent",
+      "\"watchIdReturned\":true",
+      "\"watchStarted\":true",
+      "\"pathsReturned\":true",
+      "\"canonicalPathReturned\":true",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+
+    const confirm = await fetch(`${url}/api/action-preflight-confirm`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        actionType: "fs-watch-preflight",
+        preflightToken: payload.preflight.token,
+        method: "fs/watch",
+        path: "src/private.txt",
+        watchId: "watch-alpha-1",
+      }),
+    });
+    assert.equal(confirm.status, 200);
+    const confirmPayload = await confirm.json();
+    const confirmSerialized = JSON.stringify(confirmPayload);
+    assertActionPreflightConfirmation(confirmPayload, "fs-watch-preflight", "default");
+    assert.equal(confirmSerialized.includes("src/private.txt"), false);
+    assert.equal(confirmSerialized.includes("watch-alpha-1"), false);
+
+    const unwatchResponse = await fetch(`${url}/api/fs-watch-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "fs/unwatch",
+        path: "",
+        watchId: "watch-beta-2",
+      }),
+    });
+    assert.equal(unwatchResponse.status, 200);
+    const unwatchPayload = await unwatchResponse.json();
+    const unwatchSerialized = JSON.stringify(unwatchPayload);
+    assert.equal(unwatchPayload.action.method, "fs/unwatch");
+    assert.equal(unwatchPayload.action.wouldStartWatch, false);
+    assert.equal(unwatchPayload.action.wouldStopWatch, true);
+    assert.equal(unwatchPayload.target.pathRequired, false);
+    assert.equal(unwatchPayload.target.pathAccepted, false);
+    assert.equal(unwatchPayload.target.pathCharCount, 0);
+    assert.equal(unwatchPayload.target.pathDepth, 0);
+    assert.equal(unwatchPayload.watch.watchIdCharCount, 12);
+    assert.equal(unwatchPayload.watch.watchStopped, false);
+    assertActionPreflight(unwatchPayload, "fs-watch-preflight", "default");
+    assert.equal(unwatchSerialized.includes("watch-beta-2"), false);
+
+    const unwatchWithPath = await fetch(`${url}/api/fs-watch-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "fs/unwatch",
+        path: "src/private.txt",
+        watchId: "watch-beta-2",
+      }),
+    });
+    assert.equal(unwatchWithPath.status, 400);
+    assert.equal((await unwatchWithPath.text()).includes("src/private.txt"), false);
+
+    const action = await fetch(`${url}/api/fs-watch`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "fs/watch",
+        path: "src/private.txt",
+        watchId: "watch-alpha-1",
+        preflightToken: payload.preflight.token,
+      }),
+    });
+    assert.equal(action.status, 405);
+    const actionText = await action.text();
+    assert.equal(actionText.includes("src/private.txt"), false);
+    assert.equal(actionText.includes("watch-alpha-1"), false);
     assert.equal(probeCalled, false);
   } finally {
     await closeServer(server);

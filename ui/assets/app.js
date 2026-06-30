@@ -649,6 +649,16 @@ const elements = {
   fsReadFileChars: document.querySelector("#fs-read-file-chars"),
   fsReadFileContent: document.querySelector("#fs-read-file-content"),
   fsReadFileTraffic: document.querySelector("#fs-read-file-traffic"),
+  fsWatchForm: document.querySelector("#fs-watch-form"),
+  fsWatchMethod: document.querySelector("#fs-watch-method"),
+  fsWatchPath: document.querySelector("#fs-watch-path"),
+  fsWatchId: document.querySelector("#fs-watch-id"),
+  fsWatchButton: document.querySelector("#fs-watch-button"),
+  fsWatchStatus: document.querySelector("#fs-watch-status"),
+  fsWatchDepth: document.querySelector("#fs-watch-depth"),
+  fsWatchIdState: document.querySelector("#fs-watch-id-state"),
+  fsWatchNotifications: document.querySelector("#fs-watch-notifications"),
+  fsWatchTraffic: document.querySelector("#fs-watch-traffic"),
   fileActionForm: document.querySelector("#file-action-form"),
   fileActionSelect: document.querySelector("#file-action-select"),
   fileActionPath: document.querySelector("#file-action-path"),
@@ -739,6 +749,7 @@ let lastGitBranchDeletePreflight = null;
 let lastGitCommitPreflight = null;
 let lastGitWorktreePreflight = null;
 let lastFsReadFilePreflight = null;
+let lastFsWatchPreflight = null;
 let lastFileActionPreflight = null;
 let lastLiveSessionControlPreflight = null;
 let lastLiveSessionBulkPreflight = null;
@@ -863,6 +874,12 @@ elements.workspaceSelect.addEventListener("change", () => {
   elements.fsReadFileChars.textContent = "0";
   elements.fsReadFileContent.textContent = "Hidden";
   elements.fsReadFileTraffic.textContent = "None";
+  lastFsWatchPreflight = null;
+  elements.fsWatchStatus.textContent = "Blocked";
+  elements.fsWatchDepth.textContent = "0";
+  elements.fsWatchIdState.textContent = "Hidden";
+  elements.fsWatchNotifications.textContent = "Off";
+  elements.fsWatchTraffic.textContent = "None";
   elements.fileActionButton.disabled = true;
   elements.liveSessionControlButton.disabled = true;
   elements.liveSessionBulkButton.disabled = true;
@@ -1315,6 +1332,11 @@ elements.fsReadFileForm.addEventListener("submit", (event) => {
   runFsReadFilePreflight();
 });
 
+elements.fsWatchForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  runFsWatchPreflight();
+});
+
 elements.fileActionForm.addEventListener("submit", (event) => {
   event.preventDefault();
   runFileActionPreflight();
@@ -1324,6 +1346,14 @@ elements.fsReadFilePath.addEventListener("input", () => {
   lastFsReadFilePreflight = null;
   elements.fsReadFileStatus.textContent = "Blocked";
 });
+
+for (const input of [elements.fsWatchMethod, elements.fsWatchPath, elements.fsWatchId]) {
+  input.addEventListener("input", () => {
+    lastFsWatchPreflight = null;
+    elements.fsWatchStatus.textContent = "Blocked";
+    elements.fsWatchNotifications.textContent = "Off";
+  });
+}
 
 for (const input of [
   elements.fileActionSelect,
@@ -2251,6 +2281,10 @@ function fsDirectoryEndpoint() {
 
 function fsReadFilePreflightEndpoint() {
   return "/api/fs-read-file-preflight";
+}
+
+function fsWatchPreflightEndpoint() {
+  return "/api/fs-watch-preflight";
 }
 
 function fileActionPreflightEndpoint() {
@@ -5071,6 +5105,41 @@ async function runFsReadFilePreflight() {
     renderError(error);
   } finally {
     setFsReadFileLoading(false);
+  }
+}
+
+async function runFsWatchPreflight() {
+  lastFsWatchPreflight = null;
+  setFsWatchLoading(true);
+  hideError();
+  const body = {
+    workspace: selectedWorkspaceId,
+    method: elements.fsWatchMethod.value,
+    path: elements.fsWatchPath.value,
+    watchId: elements.fsWatchId.value,
+  };
+
+  try {
+    const response = await fetch(fsWatchPreflightEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify(body),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    lastFsWatchPreflight = {
+      body,
+      token: payload.preflight?.token ?? null,
+    };
+    renderFsWatchPreflight(payload);
+  } catch (error) {
+    elements.fsWatchStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    setFsWatchLoading(false);
   }
 }
 
@@ -12132,6 +12201,20 @@ function renderFsReadFilePreflight(payload) {
   elements.fsReadFileTraffic.textContent = payload.appServer?.touched ? "App-server" : "None";
 }
 
+function renderFsWatchPreflight(payload) {
+  const target = payload.target ?? {};
+  const watch = payload.watch ?? {};
+  elements.fsWatchStatus.textContent = payload.action?.execution ?? "blocked";
+  elements.fsWatchDepth.textContent = String(target.pathDepth ?? 0);
+  elements.fsWatchIdState.textContent =
+    watch.watchIdReturned === false && watch.watchIdAccepted === true ? "Hidden" : "Unsafe";
+  elements.fsWatchNotifications.textContent =
+    watch.watchNotificationsEnabled === false && watch.fsChangedNotificationsReturned === false
+      ? "Off"
+      : "Unsafe";
+  elements.fsWatchTraffic.textContent = payload.appServer?.touched ? "App-server" : "None";
+}
+
 function renderTerminalBackgroundTerminatePreflight(payload) {
   elements.terminalBackgroundListStatus.textContent =
     payload.policy?.executionGateEnabled === true ? "Ready" : "Blocked";
@@ -13034,6 +13117,15 @@ function setFsReadFileLoading(isLoading) {
   elements.fsReadFileButton.textContent = isLoading ? "Checking" : "Read Check";
   if (isLoading) {
     elements.fsReadFileStatus.textContent = "Checking";
+  }
+}
+
+function setFsWatchLoading(isLoading) {
+  elements.fsWatchButton.disabled = isLoading;
+  elements.fsWatchMethod.disabled = isLoading;
+  elements.fsWatchButton.textContent = isLoading ? "Checking" : "Watch Check";
+  if (isLoading) {
+    elements.fsWatchStatus.textContent = "Checking";
   }
 }
 

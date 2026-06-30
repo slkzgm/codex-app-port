@@ -274,6 +274,11 @@ export const BROWSER_POST_FIELD_POLICIES = Object.freeze({
     returnedRawValue: false,
     sensitivity: "terminal-process-selector",
   }),
+  watchId: bodyFieldPolicy(["string", "null"], {
+    maxChars: 128,
+    returnedRawValue: false,
+    sensitivity: "filesystem-watch-selector",
+  }),
   remoteClientRef: bodyFieldPolicy(["string", "null"], {
     maxChars: 120,
     returnedRawValue: false,
@@ -500,6 +505,14 @@ export const ACTION_PREFLIGHT_CONFIRMATION_FIELD_CONTRACTS = Object.freeze({
     "actionType",
     "preflightToken",
     "path",
+  ),
+  "fs-watch-preflight": bodyFields(
+    "workspace",
+    "actionType",
+    "preflightToken",
+    "method",
+    "path",
+    "watchId",
   ),
   "thread-rollback-preflight": bodyFields(
     "workspace",
@@ -944,6 +957,10 @@ export const BROWSER_POST_BODY_CONTRACTS = Object.freeze({
     appServerTraffic: false,
   }),
   "/api/fs-read-file-preflight": bodyContract(["workspace", "path"], {
+    kind: "preflight",
+    appServerTraffic: false,
+  }),
+  "/api/fs-watch-preflight": bodyContract(["workspace", "method", "path", "watchId"], {
     kind: "preflight",
     appServerTraffic: false,
   }),
@@ -4088,6 +4105,92 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
       "rawPayloadReturned",
       "readFilePreflightEnabled",
       "readFileEnabled",
+      "executionRouteImplemented",
+      "dedicatedExecutionRouteImplemented",
+      "executionGateEnabled",
+      "requiresApprovalPipeline",
+      "requiresExplicitEnablement",
+      "browserMethodCallsAccepted",
+      "implemented",
+    ],
+    preflight: [
+      "token",
+      "tokenIssued",
+      "issuedAt",
+      "expiresAt",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseRequiredForMutation",
+      "consumed",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+  }),
+  "/api/fs-watch-preflight": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    appServer: ["touched", "modelTraffic", "commandTraffic", "filesystemTraffic"],
+    action: [
+      "type",
+      "method",
+      "execution",
+      "wouldStartWatch",
+      "wouldStopWatch",
+      "watcherCreated",
+      "watcherStopped",
+      "appServerTouched",
+      "filesystemTraffic",
+      "reason",
+    ],
+    target: [
+      "pathRequired",
+      "pathAccepted",
+      "pathCharCount",
+      "pathDepth",
+      "workspaceRelativeOnly",
+      "absolutePathReturned",
+      "pathReturned",
+      "canonicalPathReturned",
+      "basenameReturned",
+      "existsChecked",
+      "symlinkChecked",
+    ],
+    watch: [
+      "watchIdRequired",
+      "watchIdAccepted",
+      "watchIdCharCount",
+      "watchIdReturned",
+      "watchHandleReturned",
+      "watchNotificationsEnabled",
+      "watchStarted",
+      "watchStopped",
+      "fsChangedNotificationsReturned",
+    ],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "modelTraffic",
+      "commandTraffic",
+      "filesystemTraffic",
+      "filesystemWatch",
+      "filesystemUnwatch",
+      "workspaceRelativeOnly",
+      "hiddenPathsRejected",
+      "absolutePathsRejected",
+      "parentTraversalRejected",
+      "lockFilesRejected",
+      "gitPathsRejected",
+      "symlinksAllowed",
+      "canonicalPathsReturned",
+      "pathsReturned",
+      "basenamesReturned",
+      "watchIdsReturned",
+      "watchHandlesReturned",
+      "fsChangedNotificationsReturned",
+      "rawPayloadReturned",
+      "fsWatchPreflightEnabled",
+      "fsWatchEnabled",
+      "fsUnwatchEnabled",
       "executionRouteImplemented",
       "dedicatedExecutionRouteImplemented",
       "executionGateEnabled",
@@ -10931,6 +11034,11 @@ const BROWSER_POST_RESPONSE_ROUTE_TOP_LEVEL_KEYS = Object.freeze({
     "target",
     "content",
   ),
+  "/api/fs-watch-preflight": routeResponseTopLevelKeys(
+    ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
+    "target",
+    "watch",
+  ),
   "/api/thread-rollback-preflight": routeResponseTopLevelKeys(
     ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
     "thread",
@@ -15054,6 +15162,39 @@ export async function handleRequest(request, response, options) {
     return;
   }
 
+  if (url.pathname === "/api/fs-watch-preflight") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, [
+        "workspace",
+        "method",
+        "path",
+        "watchId",
+      ]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const payload = buildFsWatchPreflight(body, { workspace });
+      sendJson(response, 200, attachActionPreflight(payload, { body, workspace, options }));
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid filesystem watch preflight request",
+      });
+    }
+    return;
+  }
+
   if (url.pathname === "/api/file-action") {
     if (request.method !== "POST") {
       sendJson(response, 405, { ok: false, error: "Method not allowed" });
@@ -18270,6 +18411,8 @@ async function buildConfirmableActionPreflightPayload(actionType, body, { worksp
       });
     case "fs-read-file-preflight":
       return buildFsReadFilePreflight(body, { workspace });
+    case "fs-watch-preflight":
+      return buildFsWatchPreflight(body, { workspace });
     case "live-session-control-preflight":
       return buildLiveSessionControlPreflight(body, {
         workspace,
@@ -24272,6 +24415,100 @@ function fsReadFilePolicy() {
     rawPayloadReturned: false,
     readFilePreflightEnabled: true,
     readFileEnabled: false,
+    executionRouteImplemented: false,
+    dedicatedExecutionRouteImplemented: false,
+    executionGateEnabled: false,
+    requiresApprovalPipeline: true,
+    requiresExplicitEnablement: true,
+    browserMethodCallsAccepted: false,
+    implemented: true,
+  };
+}
+
+export function buildFsWatchPreflight(body, { workspace } = {}) {
+  const method = validateFsWatchMethod(body?.method);
+  const watchId = validateFsWatchId(body?.watchId);
+  const target =
+    method === "fs/watch"
+      ? validateFsWatchBrowserPath(body?.path)
+      : validateFsUnwatchBrowserPath(body?.path);
+  const isWatch = method === "fs/watch";
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: publicWorkspaces([workspace])[0],
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      filesystemTraffic: false,
+    },
+    action: {
+      type: "fs-watch-preflight",
+      method,
+      execution: "blocked",
+      wouldStartWatch: isWatch,
+      wouldStopWatch: !isWatch,
+      watcherCreated: false,
+      watcherStopped: false,
+      appServerTouched: false,
+      filesystemTraffic: false,
+      reason: "fs-watch-execution-not-implemented",
+    },
+    target: {
+      pathRequired: isWatch,
+      pathAccepted: isWatch,
+      pathCharCount: target.charCount,
+      pathDepth: target.depth,
+      workspaceRelativeOnly: true,
+      absolutePathReturned: false,
+      pathReturned: false,
+      canonicalPathReturned: false,
+      basenameReturned: false,
+      existsChecked: false,
+      symlinkChecked: false,
+    },
+    watch: {
+      watchIdRequired: true,
+      watchIdAccepted: true,
+      watchIdCharCount: watchId.charCount,
+      watchIdReturned: false,
+      watchHandleReturned: false,
+      watchNotificationsEnabled: false,
+      watchStarted: false,
+      watchStopped: false,
+      fsChangedNotificationsReturned: false,
+    },
+    policy: fsWatchPolicy(),
+  };
+}
+
+function fsWatchPolicy() {
+  return {
+    readOnly: true,
+    appServerTraffic: false,
+    modelTraffic: false,
+    commandTraffic: false,
+    filesystemTraffic: false,
+    filesystemWatch: false,
+    filesystemUnwatch: false,
+    workspaceRelativeOnly: true,
+    hiddenPathsRejected: true,
+    absolutePathsRejected: true,
+    parentTraversalRejected: true,
+    lockFilesRejected: true,
+    gitPathsRejected: true,
+    symlinksAllowed: false,
+    canonicalPathsReturned: false,
+    pathsReturned: false,
+    basenamesReturned: false,
+    watchIdsReturned: false,
+    watchHandlesReturned: false,
+    fsChangedNotificationsReturned: false,
+    rawPayloadReturned: false,
+    fsWatchPreflightEnabled: true,
+    fsWatchEnabled: false,
+    fsUnwatchEnabled: false,
     executionRouteImplemented: false,
     dedicatedExecutionRouteImplemented: false,
     executionGateEnabled: false,
@@ -43309,6 +43546,94 @@ function validateFsReadFileBrowserPath(value) {
   return {
     charCount: clean.length,
     depth: parts.length,
+  };
+}
+
+function validateFsWatchMethod(value) {
+  if (value !== "fs/watch" && value !== "fs/unwatch") {
+    throwRequestError("Filesystem watch method is invalid", 400);
+  }
+  return value;
+}
+
+function validateFsWatchId(value) {
+  if (typeof value !== "string") {
+    throwRequestError("Filesystem watch id must be a string", 400);
+  }
+  const clean = value.trim();
+  if (clean.length === 0) {
+    throwRequestError("Filesystem watch id is required", 400);
+  }
+  if (clean.length > 128 || !/^[A-Za-z0-9._:-]+$/.test(clean)) {
+    throwRequestError("Filesystem watch id is invalid", 400);
+  }
+  return {
+    charCount: clean.length,
+  };
+}
+
+function validateFsWatchBrowserPath(value) {
+  if (typeof value !== "string") {
+    throwRequestError("Filesystem watch path must be a string", 400);
+  }
+  const clean = value.trim().replace(/\\/g, "/");
+  if (clean.length === 0) {
+    throwRequestError("Filesystem watch path is required", 400);
+  }
+  if (clean.length > MAX_FILE_ACTION_PATH_CHARS) {
+    throwRequestError(
+      `Filesystem watch path must be ${MAX_FILE_ACTION_PATH_CHARS} characters or fewer`,
+      400,
+    );
+  }
+  if (
+    clean.startsWith("/") ||
+    /^[A-Za-z]:\//.test(clean) ||
+    clean.includes("\0") ||
+    clean.includes("//") ||
+    clean.includes("..")
+  ) {
+    throwRequestError("Filesystem watch path is invalid", 400);
+  }
+  const parts = clean.split("/").filter(Boolean);
+  if (
+    parts.length === 0 ||
+    parts.some(
+      (part) =>
+        part === "." ||
+        part.startsWith(".") ||
+        part === ".git" ||
+        part.startsWith(".git") ||
+        part.endsWith(".lock"),
+    )
+  ) {
+    throwRequestError("Filesystem watch path is invalid", 400);
+  }
+  if (!safeBasename(parts.at(-1))) {
+    throwRequestError("Filesystem watch path is invalid", 400);
+  }
+  return {
+    charCount: clean.length,
+    depth: parts.length,
+  };
+}
+
+function validateFsUnwatchBrowserPath(value) {
+  if (value == null || value === "") {
+    return {
+      charCount: 0,
+      depth: 0,
+    };
+  }
+  if (typeof value !== "string") {
+    throwRequestError("Filesystem unwatch path is invalid", 400);
+  }
+  if (value.trim().length > 0) {
+    throwRequestError("Filesystem unwatch path is not accepted", 400);
+  }
+  return {
+    charCount: 0,
+    depth: 0,
   };
 }
 
