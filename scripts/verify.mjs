@@ -71,6 +71,7 @@ async function main() {
   await checkThreadChangesApi();
   await checkEventStreamApi();
   await checkSettingsIntegrationsApi();
+  await checkThreadRealtimeVoicesApi();
   await checkAccountLoginApi();
   await checkAccountLoginCancelApi();
   await checkAccountCreditsNudgeApi();
@@ -14214,6 +14215,100 @@ async function checkSettingsIntegrationsApi() {
     await closeServer(server);
   }
   pass("dev server settings integrations boundary is blocked without app-server traffic");
+}
+
+async function checkThreadRealtimeVoicesApi() {
+  const blockedCalls = [];
+  const blocked = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    threadRealtimeVoicesFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+  const blockedPort = await listenWithFallback(blocked, { host: "127.0.0.1", port: 0 });
+  const blockedBaseUrl = `http://127.0.0.1:${blockedPort}`;
+
+  try {
+    const token = await readUiSessionToken(blockedBaseUrl);
+    const response = await fetch(`${blockedBaseUrl}/api/thread-realtime-voices`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`blocked realtime voices API returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (
+      payload.appServer?.touched !== false ||
+      payload.policy?.realtimeVoicesReadEnabled !== false ||
+      payload.probes?.threadRealtimeVoices?.totalKnownVoiceCount !== 0 ||
+      blockedCalls.length !== 0
+    ) {
+      throw new Error("blocked realtime voices API did not stay local and empty");
+    }
+  } finally {
+    await closeServer(blocked);
+  }
+
+  const calls = [];
+  const enabled = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    threadRealtimeVoicesEnabled: true,
+    threadRealtimeVoicesFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-06-30T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformOs: "linux",
+          platformFamily: "unix",
+          userAgent: "verify-sensitive-agent",
+          codexHome: "/tmp/verify-private-home",
+        },
+        probes: {
+          threadRealtimeVoices: {
+            method: "thread/realtime/listVoices",
+            defaultV1: "alloy",
+            defaultV2: "private-voice-/tmp/codex-app-port-verify",
+            v1: ["alloy", "echo", "private-voice-/tmp/codex-app-port-verify"],
+            v2: ["cedar", "verse", "https://private.example.test/voice"],
+            v1Count: 3,
+            v2Count: 3,
+            totalKnownVoiceCount: 6,
+            unknownVoiceCount: 2,
+            paramsAccepted: true,
+            modelTraffic: true,
+            threadContentReturned: true,
+            fullIdsReturned: true,
+            pathsReturned: true,
+            rawPayloadReturned: true,
+          },
+        },
+        notifications: {},
+      };
+    },
+  });
+  const enabledPort = await listenWithFallback(enabled, { host: "127.0.0.1", port: 0 });
+  const enabledBaseUrl = `http://127.0.0.1:${enabledPort}`;
+
+  try {
+    const token = await readUiSessionToken(enabledBaseUrl);
+    const response = await fetch(`${enabledBaseUrl}/api/thread-realtime-voices`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`realtime voices API returned HTTP ${response.status}`);
+    }
+    assertSanitizedThreadRealtimeVoices(await response.json());
+    if (calls.length !== 1 || calls[0].cwd !== "/tmp/codex-app-port-verify") {
+      throw new Error("realtime voices API did not call the configured probe once");
+    }
+  } finally {
+    await closeServer(enabled);
+  }
+  pass("dev server realtime voices API is opt-in and enum-only");
 }
 
 async function checkAccountLoginApi() {
@@ -30487,6 +30582,59 @@ function assertSanitizedIntegrationLifecycleLatestAction(latest, expected) {
     latest?.rawPayloadReturned !== false
   ) {
     throw new Error("integration lifecycle latest action did not preserve sanitized metadata");
+  }
+}
+
+function assertSanitizedThreadRealtimeVoices(payload) {
+  if (!payload.ok) {
+    throw new Error("thread realtime voices payload is not ok");
+  }
+  const serialized = JSON.stringify(payload);
+  for (const marker of [
+    "private-voice",
+    "private.example.test",
+    "verify-sensitive-agent",
+    "codexHome",
+    "userAgent",
+    "/tmp/codex-app-port-verify",
+    "/tmp/verify-private-home",
+  ]) {
+    if (serialized.includes(marker)) {
+      throw new Error(`thread realtime voices payload leaked ${marker}`);
+    }
+  }
+  const summary = payload.probes?.threadRealtimeVoices;
+  if (!summary) {
+    throw new Error("thread realtime voices payload is missing summary");
+  }
+  if (
+    summary.method !== "thread/realtime/listVoices" ||
+    summary.defaultV1 !== "alloy" ||
+    summary.defaultV2 !== null ||
+    JSON.stringify(summary.v1) !== JSON.stringify(["alloy", "echo"]) ||
+    JSON.stringify(summary.v2) !== JSON.stringify(["cedar", "verse"]) ||
+    summary.v1Count !== 2 ||
+    summary.v2Count !== 2 ||
+    summary.totalKnownVoiceCount !== 4 ||
+    summary.paramsAccepted !== false ||
+    summary.modelTraffic !== false ||
+    summary.threadContentReturned !== false ||
+    summary.fullIdsReturned !== false ||
+    summary.pathsReturned !== false ||
+    summary.rawPayloadReturned !== false
+  ) {
+    throw new Error("thread realtime voices payload did not preserve sanitized metadata");
+  }
+  if (
+    payload.policy?.realtimeVoicesReadEnabled !== true ||
+    payload.policy?.paramsAccepted !== false ||
+    payload.policy?.modelTraffic !== false ||
+    payload.policy?.threadContentReturned !== false ||
+    payload.policy?.fullIdsReturned !== false ||
+    payload.policy?.pathsReturned !== false ||
+    payload.policy?.rawPayloadReturned !== false
+  ) {
+    throw new Error("thread realtime voices policy did not preserve redaction flags");
   }
 }
 

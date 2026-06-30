@@ -266,7 +266,7 @@ export const INTEGRATION_METHOD_AUDIT = Object.freeze([
   integrationMethod(
     "thread/realtime/listVoices",
     "thread-realtime",
-    "Reads experimental realtime voice metadata that must not be exposed until display-name rules exist.",
+    "Reads experimental realtime voice metadata; generic integration calls stay blocked because the dedicated route is enum-only.",
     "blocked",
   ),
   integrationMethod(

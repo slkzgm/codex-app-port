@@ -39,6 +39,7 @@ test("protocol contracts name the app-server methods currently used", () => {
     APP_SERVER_METHODS.threadBackgroundTerminalsTerminate,
     "thread/backgroundTerminals/terminate",
   );
+  assert.equal(APP_SERVER_METHODS.threadRealtimeListVoices, "thread/realtime/listVoices");
   assert.equal(APP_SERVER_METHODS.commandExec, "command/exec");
   assert.equal(APP_SERVER_METHODS.commandExecWrite, "command/exec/write");
   assert.equal(APP_SERVER_METHODS.commandExecResize, "command/exec/resize");

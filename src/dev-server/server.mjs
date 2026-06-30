@@ -47,6 +47,7 @@ import {
   runThreadGoalSetProbe,
   runThreadMemoryModeSetProbe,
   runThreadRenameProbe,
+  runThreadRealtimeVoicesProbe,
   runThreadRollbackProbe,
   runThreadSafetyLockProbe,
   runThreadSearchProbe,
@@ -10317,6 +10318,7 @@ export function createDevServer({
   threadGoalSetFn = runThreadGoalSetProbe,
   threadMemoryModeSetFn = runThreadMemoryModeSetProbe,
   threadRenameFn = runThreadRenameProbe,
+  threadRealtimeVoicesFn = runThreadRealtimeVoicesProbe,
   threadRollbackFn = runThreadRollbackProbe,
   threadSafetyLockFn = runThreadSafetyLockProbe,
   accountLoginCancelFn = runAccountLoginCancelProbe,
@@ -10373,6 +10375,8 @@ export function createDevServer({
   threadGoalSetEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_GOAL_SET === "1",
   threadMemoryModeSetEnabled =
     process.env.CODEX_APP_PORT_ALLOW_THREAD_MEMORY_MODE_SET === "1",
+  threadRealtimeVoicesEnabled =
+    process.env.CODEX_APP_PORT_ALLOW_THREAD_REALTIME_VOICES === "1",
   threadTurnItemsEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_TURN_ITEMS === "1",
   threadTurnsEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_TURNS === "1",
   threadRenameEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_RENAME === "1",
@@ -10513,6 +10517,7 @@ export function createDevServer({
       threadGoalSetFn,
       threadMemoryModeSetFn,
       threadRenameFn,
+      threadRealtimeVoicesFn,
       threadRollbackFn,
       threadSafetyLockFn,
       accountLoginCancelFn,
@@ -10567,6 +10572,7 @@ export function createDevServer({
       threadGoalClearEnabled,
       threadGoalSetEnabled,
       threadMemoryModeSetEnabled,
+      threadRealtimeVoicesEnabled,
       threadTurnItemsEnabled,
       threadTurnsEnabled,
       threadRenameEnabled,
@@ -16040,6 +16046,43 @@ export async function handleRequest(request, response, options) {
     return;
   }
 
+  if (url.pathname === "/api/thread-realtime-voices") {
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        url.searchParams.get("workspace"),
+      );
+      if (!options.threadRealtimeVoicesEnabled) {
+        sendJson(response, 200, buildThreadRealtimeVoicesBlockedPayload({ workspace }));
+        return;
+      }
+      const payload = await options.threadRealtimeVoicesFn({
+        codexBin: options.codexBin,
+        cwd: workspace.cwd,
+        timeoutMs: options.timeoutMs,
+      });
+      sendJson(
+        response,
+        200,
+        sanitizeThreadRealtimeVoicesPayload(payload, {
+          workspace,
+          enabled: true,
+        }),
+      );
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 502, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Thread realtime voices request failed",
+      });
+    }
+    return;
+  }
+
   if (url.pathname === "/api/terminal-actions") {
     if (!hasValidApiToken(request, options.sessionToken)) {
       sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
@@ -18399,6 +18442,24 @@ function threadTurnItemsPolicy({ enabled = false, appServerTraffic = false } = {
   };
 }
 
+function threadRealtimeVoicesPolicy({ enabled = false, appServerTraffic = false } = {}) {
+  return {
+    readOnly: true,
+    appServerTraffic: Boolean(appServerTraffic),
+    modelTraffic: false,
+    commandTraffic: false,
+    realtimeVoicesReadEnabled: Boolean(enabled),
+    requiresExplicitEnablement: true,
+    paramsAccepted: false,
+    threadContentReturned: false,
+    fullIdsReturned: false,
+    pathsReturned: false,
+    rawPayloadReturned: false,
+    browserMethodCallsAccepted: Boolean(enabled),
+    implemented: Boolean(enabled),
+  };
+}
+
 export function buildThreadTurnsBlockedPayload({ workspace = null, threadIdSuffix = null } = {}) {
   return {
     ok: true,
@@ -18429,6 +18490,40 @@ export function buildThreadTurnsBlockedPayload({ workspace = null, threadIdSuffi
       }),
     },
     policy: threadTurnsPolicy({ enabled: false, appServerTraffic: false }),
+  };
+}
+
+export function buildThreadRealtimeVoicesBlockedPayload({ workspace = null } = {}) {
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["thread/realtime/listVoices"],
+    },
+    probes: {
+      threadRealtimeVoices: sanitizeThreadRealtimeVoicesSummary({
+        method: "thread/realtime/listVoices",
+        defaultV1: null,
+        defaultV2: null,
+        v1: [],
+        v2: [],
+        v1Count: 0,
+        v2Count: 0,
+        totalKnownVoiceCount: 0,
+        unknownVoiceCount: 0,
+        paramsAccepted: false,
+        modelTraffic: false,
+        threadContentReturned: false,
+        fullIdsReturned: false,
+        pathsReturned: false,
+        rawPayloadReturned: false,
+      }),
+    },
+    policy: threadRealtimeVoicesPolicy({ enabled: false, appServerTraffic: false }),
   };
 }
 
@@ -18497,6 +18592,33 @@ export function sanitizeThreadTurnsPayload(
     },
     notifications: sanitizeNotificationCounts(payload?.notifications),
     policy: threadTurnsPolicy({ enabled, appServerTraffic: true }),
+  };
+}
+
+export function sanitizeThreadRealtimeVoicesPayload(
+  payload,
+  { workspace = null, enabled = false } = {},
+) {
+  return {
+    ok: Boolean(payload?.ok),
+    generatedAt: payload?.generatedAt ?? new Date().toISOString(),
+    transport: cleanDisplayText(payload?.transport, 80),
+    protocol: cleanDisplayText(payload?.protocol, 80),
+    initialize: sanitizeInitialize(payload?.initialize),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: true,
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["thread/realtime/listVoices"],
+    },
+    probes: {
+      threadRealtimeVoices: payload?.probes?.threadRealtimeVoices
+        ? sanitizeThreadRealtimeVoicesSummary(payload.probes.threadRealtimeVoices)
+        : null,
+    },
+    notifications: sanitizeNotificationCounts(payload?.notifications),
+    policy: threadRealtimeVoicesPolicy({ enabled, appServerTraffic: true }),
   };
 }
 
@@ -36696,6 +36818,61 @@ function sanitizeThreadTurnItemsSummary(page) {
     patchReturned: false,
     rawPayloadReturned: false,
   };
+}
+
+function sanitizeThreadRealtimeVoicesSummary(summary) {
+  const v1 = sanitizeRealtimeVoiceList(summary?.v1);
+  const v2 = sanitizeRealtimeVoiceList(summary?.v2);
+  return {
+    method: cleanDisplayText(summary?.method, 80) ?? "thread/realtime/listVoices",
+    defaultV1: sanitizeRealtimeVoice(summary?.defaultV1),
+    defaultV2: sanitizeRealtimeVoice(summary?.defaultV2),
+    v1,
+    v2,
+    v1Count: v1.length,
+    v2Count: v2.length,
+    totalKnownVoiceCount: new Set([...v1, ...v2]).size,
+    unknownVoiceCount: safeCount(summary?.unknownVoiceCount),
+    paramsAccepted: false,
+    modelTraffic: false,
+    threadContentReturned: false,
+    fullIdsReturned: false,
+    pathsReturned: false,
+    rawPayloadReturned: false,
+  };
+}
+
+const SAFE_REALTIME_VOICES = new Set([
+  "alloy",
+  "arbor",
+  "ash",
+  "ballad",
+  "breeze",
+  "cedar",
+  "coral",
+  "cove",
+  "echo",
+  "ember",
+  "juniper",
+  "maple",
+  "marin",
+  "sage",
+  "shimmer",
+  "sol",
+  "spruce",
+  "vale",
+  "verse",
+]);
+
+function sanitizeRealtimeVoice(value) {
+  return SAFE_REALTIME_VOICES.has(value) ? value : null;
+}
+
+function sanitizeRealtimeVoiceList(value) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return [...new Set(value.filter((voice) => SAFE_REALTIME_VOICES.has(voice)))];
 }
 
 function sanitizeThreadTurnPageItemMetadata(item) {

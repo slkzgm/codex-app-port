@@ -159,6 +159,8 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /approval-preview-count/);
     assert.match(html, /settings-refresh-button/);
     assert.match(html, /settings-refresh-state/);
+    assert.match(html, /realtime-voices-button/);
+    assert.match(html, /realtime-voices-state-text/);
     assert.match(html, /approval-filter-summary/);
     assert.match(html, /approval-execution-readiness/);
     assert.match(html, /approval-decision-contract/);
@@ -200,6 +202,8 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(appScript, /renderThreadServerSearch/);
     assert.match(appScript, /loadThreadTurnItems/);
     assert.match(appScript, /renderThreadTurnItems/);
+    assert.match(appScript, /loadThreadRealtimeVoices/);
+    assert.match(appScript, /renderThreadRealtimeVoices/);
     assert.match(appScript, /manualRefreshSettingsIntegrations/);
     assert.match(appScript, /setSettingsRefreshState/);
     assert.match(appScript, /turnExecutionAuthorityText/);
@@ -18751,6 +18755,119 @@ test("dev server exposes settings and integration boundary without app-server tr
     );
     assert.equal(rejected.status, 404);
     assert.equal(probeCalled, false);
+  } finally {
+    await closeServer(server);
+  }
+});
+
+test("dev server exposes realtime voices only behind opt-in with enum-only names", async () => {
+  const blockedCalls = [];
+  const blockedServer = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    threadRealtimeVoicesFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+
+  try {
+    const response = await fetch(`${blockedServer.url}/api/thread-realtime-voices`, {
+      headers: apiHeaders(blockedServer.server),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, false);
+    assert.equal(payload.policy.realtimeVoicesReadEnabled, false);
+    assert.equal(payload.probes.threadRealtimeVoices.totalKnownVoiceCount, 0);
+    assert.equal(blockedCalls.length, 0);
+  } finally {
+    await closeServer(blockedServer.server);
+  }
+
+  const calls = [];
+  const { server, url } = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    threadRealtimeVoicesEnabled: true,
+    threadRealtimeVoicesFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-06-30T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/private-home",
+          userAgent: "mock/0.0.0",
+        },
+        probes: {
+          threadRealtimeVoices: {
+            method: "thread/realtime/listVoices",
+            defaultV1: "alloy",
+            defaultV2: "private-voice-/tmp/default-workspace",
+            v1: ["alloy", "echo", "private-voice-/tmp/default-workspace"],
+            v2: ["cedar", "verse", "https://private.example.test/voice"],
+            v1Count: 3,
+            v2Count: 3,
+            totalKnownVoiceCount: 6,
+            unknownVoiceCount: 2,
+            paramsAccepted: true,
+            modelTraffic: true,
+            threadContentReturned: true,
+            fullIdsReturned: true,
+            pathsReturned: true,
+            rawPayloadReturned: true,
+          },
+        },
+        notifications: {
+          "thread/realtime/started": 1,
+        },
+      };
+    },
+  });
+
+  try {
+    const response = await fetch(`${url}/api/thread-realtime-voices`, {
+      headers: apiHeaders(server),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].cwd, "/tmp/default-workspace");
+    assert.equal(payload.appServer.touched, true);
+    assert.deepEqual(payload.appServer.auditedMethods, ["thread/realtime/listVoices"]);
+    assert.equal(payload.policy.realtimeVoicesReadEnabled, true);
+    assert.equal(payload.policy.paramsAccepted, false);
+    assert.equal(payload.policy.modelTraffic, false);
+    assert.equal(payload.policy.threadContentReturned, false);
+    assert.equal(payload.policy.fullIdsReturned, false);
+    assert.equal(payload.policy.pathsReturned, false);
+    assert.equal(payload.policy.rawPayloadReturned, false);
+    assert.equal(payload.probes.threadRealtimeVoices.defaultV1, "alloy");
+    assert.equal(payload.probes.threadRealtimeVoices.defaultV2, null);
+    assert.deepEqual(payload.probes.threadRealtimeVoices.v1, ["alloy", "echo"]);
+    assert.deepEqual(payload.probes.threadRealtimeVoices.v2, ["cedar", "verse"]);
+    assert.equal(payload.probes.threadRealtimeVoices.totalKnownVoiceCount, 4);
+    assert.equal(payload.probes.threadRealtimeVoices.paramsAccepted, false);
+    assert.equal(payload.probes.threadRealtimeVoices.modelTraffic, false);
+    assert.equal(payload.probes.threadRealtimeVoices.threadContentReturned, false);
+    assert.equal(payload.probes.threadRealtimeVoices.fullIdsReturned, false);
+    assert.equal(payload.probes.threadRealtimeVoices.pathsReturned, false);
+    assert.equal(payload.probes.threadRealtimeVoices.rawPayloadReturned, false);
+    for (const marker of [
+      "private-voice",
+      "private.example.test",
+      "/tmp/default-workspace",
+      "/tmp/private-home",
+      "userAgent",
+      "codexHome",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
   } finally {
     await closeServer(server);
   }

@@ -93,6 +93,12 @@ Target parity with the Codex desktop workflow:
   with `itemsView:notLoaded`, and returns only item suffix/type/status/count
   metadata plus redaction flags, not message text, prompts, commands, output,
   patches, paths, cursor values, full ids, timestamps, or raw payloads.
+- `thread/realtime/listVoices` has a separate disabled-by-default
+  `GET /api/thread-realtime-voices` path behind
+  `CODEX_APP_PORT_ALLOW_THREAD_REALTIME_VOICES=1`; it sends an empty
+  parameter object and returns only voice names that match the official schema
+  enum plus default voice names, not unknown strings, SDP, audio, transcript
+  content, thread content, ids, paths, model traffic, or raw payloads.
 - `thread/delete` has a separate disabled-by-default destructive
   `POST /api/thread-delete-action` path behind
   `CODEX_APP_PORT_ALLOW_THREAD_DELETE=1`; it consumes a matching one-time

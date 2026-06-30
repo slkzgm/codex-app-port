@@ -65,6 +65,27 @@ const THREAD_GOAL_STATUSES = new Set([
   "complete",
 ]);
 const THREAD_MEMORY_MODES = new Set(["enabled", "disabled"]);
+const REALTIME_VOICES = new Set([
+  "alloy",
+  "arbor",
+  "ash",
+  "ballad",
+  "breeze",
+  "cedar",
+  "coral",
+  "cove",
+  "echo",
+  "ember",
+  "juniper",
+  "maple",
+  "marin",
+  "sage",
+  "shimmer",
+  "sol",
+  "spruce",
+  "vale",
+  "verse",
+]);
 const CHANGE_PATH_FIELDS = [
   "path",
   "file",
@@ -320,6 +341,53 @@ export function summarizeThreadTurnItemsPage(
     patchReturned: false,
     rawPayloadReturned: false,
   };
+}
+
+export function summarizeThreadRealtimeVoices(response) {
+  const voices = response?.voices && typeof response.voices === "object" ? response.voices : {};
+  const v1 = safeRealtimeVoices(voices.v1);
+  const v2 = safeRealtimeVoices(voices.v2);
+  const defaultV1 = safeRealtimeVoice(voices.defaultV1);
+  const defaultV2 = safeRealtimeVoice(voices.defaultV2);
+  return {
+    method: APP_SERVER_METHODS.threadRealtimeListVoices,
+    defaultV1,
+    defaultV2,
+    v1,
+    v2,
+    v1Count: v1.length,
+    v2Count: v2.length,
+    totalKnownVoiceCount: new Set([...v1, ...v2]).size,
+    unknownVoiceCount:
+      countUnknownRealtimeVoices(voices.v1) +
+      countUnknownRealtimeVoices(voices.v2) +
+      (voices.defaultV1 && !defaultV1 ? 1 : 0) +
+      (voices.defaultV2 && !defaultV2 ? 1 : 0),
+    paramsAccepted: false,
+    modelTraffic: false,
+    threadContentReturned: false,
+    fullIdsReturned: false,
+    pathsReturned: false,
+    rawPayloadReturned: false,
+  };
+}
+
+function safeRealtimeVoices(value) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return [...new Set(value.filter((voice) => REALTIME_VOICES.has(voice)))];
+}
+
+function safeRealtimeVoice(value) {
+  return REALTIME_VOICES.has(value) ? value : null;
+}
+
+function countUnknownRealtimeVoices(value) {
+  if (!Array.isArray(value)) {
+    return 0;
+  }
+  return value.filter((voice) => !REALTIME_VOICES.has(voice)).length;
 }
 
 function summarizeThreadTurnPageItem(item) {
@@ -1765,6 +1833,70 @@ export async function runThreadTurnItemsProbe({
           turnIdSuffix,
           limit: safeLimit,
         }),
+      },
+      notifications: notificationCounts(notifications),
+    };
+  } finally {
+    await client.close();
+  }
+}
+
+export async function runThreadRealtimeVoicesProbe({
+  codexBin = process.env.CODEX_BIN || "codex",
+  codexArgs = ["app-server", "--listen", "stdio://"],
+  cwd = process.cwd(),
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+  onNotification = null,
+} = {}) {
+  if (process.env.CODEX_APP_PORT_ALLOW_THREAD_REALTIME_VOICES !== "1") {
+    throw new Error(
+      "thread/realtime/listVoices requires CODEX_APP_PORT_ALLOW_THREAD_REALTIME_VOICES=1 because realtime voice metadata is experimental",
+    );
+  }
+
+  const notifications = [];
+  const client = new JsonlRpcClient({
+    command: codexBin,
+    args: codexArgs,
+    cwd,
+    timeoutMs,
+    onNotification(notification) {
+      notifications.push({
+        method: notification.method,
+      });
+      onNotification?.(notification);
+    },
+  });
+
+  await client.start();
+
+  try {
+    const initialize = normalizeInitializeResponse(
+      await client.request("initialize", {
+        clientInfo: {
+          name: "codex_app_port",
+          title: "Codex App Port",
+          version: "0.1.0",
+        },
+        capabilities: {
+          experimentalApi: false,
+          requestAttestation: false,
+        },
+      }),
+    );
+
+    client.notify("initialized");
+
+    const voices = await client.request(APP_SERVER_METHODS.threadRealtimeListVoices, {});
+
+    return {
+      ok: true,
+      generatedAt: new Date().toISOString(),
+      transport: "stdio-jsonl",
+      protocol: "json-rpc-2.0-without-jsonrpc-field",
+      initialize: summarizeInitialize(initialize),
+      probes: {
+        threadRealtimeVoices: summarizeThreadRealtimeVoices(voices),
       },
       notifications: notificationCounts(notifications),
     };

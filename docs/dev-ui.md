@@ -40,6 +40,8 @@ The server binds to `127.0.0.1` by default and serves:
   boundary; optional counts-only integration inventory when explicitly enabled;
   sanitized integration lifecycle state/count/latest-action metadata without
   tokens, names, targets, arguments, paths, URLs, or raw payloads
+- `/api/thread-realtime-voices`: disabled-by-default enum-only
+  `thread/realtime/listVoices` bridge for supported realtime voice names
 - `/api/account-login-preflight` and `/api/account-login-start`: local auth
   login confirmation plus opt-in app-server `account/login/start` device-code
   flow behind `CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN=1` and a matching one-time
@@ -404,6 +406,16 @@ labels, change counts, cursor-presence booleans, and redaction flags. It does
 not receive message text, user prompts, command text, stdout/stderr or
 aggregated output, patches, file paths, cursor values, full ids, timestamps,
 raw item payloads, raw thread payloads, or raw app-server payloads.
+
+`/api/thread-realtime-voices` is the separate realtime voice catalog surface.
+It is disabled unless `CODEX_APP_PORT_ALLOW_THREAD_REALTIME_VOICES=1` is set
+before server startup. When enabled, it calls only
+`thread/realtime/listVoices` with an empty parameter object and filters the
+response to the exact voice enum from the generated official schema. The
+browser may receive known voice names and default voice names only. It does not
+accept browser parameters, start realtime sessions, send audio/text/speech,
+touch threads, trigger model traffic, or return paths, ids, raw payloads, SDP,
+audio, transcript content, or unknown voice strings.
 
 Every `/api/*` route also requires a per-process session token. The server
 injects this token into the served HTML and the browser sends it back in the

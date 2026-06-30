@@ -105,6 +105,12 @@ through `thread/list`, resolves the turn suffix through `thread/turns/list`
 with `itemsView:notLoaded`, and returns only item suffix/type/status/count
 metadata plus redaction flags, never message text, prompts, commands, output,
 patches, paths, cursor values, full ids, timestamps, or raw payloads.
+`thread/realtime/listVoices` has a separate disabled-by-default
+`GET /api/thread-realtime-voices` path behind
+`CODEX_APP_PORT_ALLOW_THREAD_REALTIME_VOICES=1`; it sends an empty parameter
+object and filters the response to the generated official voice enum, returning
+only known voice names/defaults and never unknown strings, SDP, audio,
+transcript content, thread content, ids, paths, model traffic, or raw payloads.
 `thread/delete` also has a
 separate disabled-by-default destructive path:
 `POST /api/thread-delete-preflight` validates only suffix and archived-state

@@ -12,6 +12,8 @@ const elements = {
   settingsStateText: document.querySelector("#settings-state-text"),
   settingsRefreshButton: document.querySelector("#settings-refresh-button"),
   settingsRefreshState: document.querySelector("#settings-refresh-state"),
+  realtimeVoicesButton: document.querySelector("#realtime-voices-button"),
+  realtimeVoicesStateText: document.querySelector("#realtime-voices-state-text"),
   settingsSourceText: document.querySelector("#settings-source-text"),
   requirementsStateText: document.querySelector("#requirements-state-text"),
   modelInventoryStateText: document.querySelector("#model-inventory-state-text"),
@@ -1202,6 +1204,10 @@ elements.settingsRefreshButton.addEventListener("click", () => {
   manualRefreshSettingsIntegrations();
 });
 
+elements.realtimeVoicesButton.addEventListener("click", () => {
+  loadThreadRealtimeVoices();
+});
+
 elements.mcpToolForm.addEventListener("submit", (event) => {
   event.preventDefault();
   runMcpToolPreflight();
@@ -1697,6 +1703,16 @@ function settingsIntegrationsEndpoint() {
   const params = new URLSearchParams();
   params.set("workspace", selectedWorkspaceId);
   return `/api/settings-integrations?${params.toString()}`;
+}
+
+function threadRealtimeVoicesEndpoint() {
+  if (!selectedWorkspaceId) {
+    return "/api/thread-realtime-voices";
+  }
+
+  const params = new URLSearchParams();
+  params.set("workspace", selectedWorkspaceId);
+  return `/api/thread-realtime-voices?${params.toString()}`;
 }
 
 function mcpToolPreflightEndpoint() {
@@ -2369,6 +2385,32 @@ async function refreshSettingsIntegrations() {
   }
 
   renderSettingsIntegrations(payload);
+}
+
+async function loadThreadRealtimeVoices() {
+  elements.realtimeVoicesButton.disabled = true;
+  elements.realtimeVoicesStateText.textContent = "Loading";
+  hideError();
+
+  try {
+    const response = await fetch(threadRealtimeVoicesEndpoint(), {
+      method: "GET",
+      headers: apiHeaders(),
+      cache: "no-store",
+    });
+
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+
+    renderThreadRealtimeVoices(payload.probes?.threadRealtimeVoices ?? null, payload.policy ?? null);
+  } catch (error) {
+    elements.realtimeVoicesStateText.textContent = "Failed";
+    renderError(error);
+  } finally {
+    elements.realtimeVoicesButton.disabled = false;
+  }
 }
 
 async function manualRefreshSettingsIntegrations() {
@@ -9215,6 +9257,23 @@ function renderSettingsIntegrations(payload) {
   renderIntegrationConfirmationHistory(payload.preflightConfirmationHistory);
   renderIntegrationDetails(inventory);
   renderIntegrationMethodAudit(methodAudit);
+}
+
+function renderThreadRealtimeVoices(summary, policy) {
+  if (!summary) {
+    elements.realtimeVoicesStateText.textContent = "No metadata";
+    return;
+  }
+  if (policy?.realtimeVoicesReadEnabled !== true) {
+    elements.realtimeVoicesStateText.textContent = "Blocked";
+    return;
+  }
+  elements.realtimeVoicesStateText.textContent = joinParts([
+    `${summary.totalKnownVoiceCount ?? 0} voices`,
+    summary.defaultV1 ? `v1 ${summary.defaultV1}` : null,
+    summary.defaultV2 ? `v2 ${summary.defaultV2}` : null,
+    summary.paramsAccepted === false ? "no params" : null,
+  ]);
 }
 
 function latestIntegrationActionText(action) {

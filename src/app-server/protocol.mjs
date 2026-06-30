@@ -36,6 +36,7 @@ export const APP_SERVER_METHODS = Object.freeze({
   threadBackgroundTerminalsClean: "thread/backgroundTerminals/clean",
   threadBackgroundTerminalsList: "thread/backgroundTerminals/list",
   threadBackgroundTerminalsTerminate: "thread/backgroundTerminals/terminate",
+  threadRealtimeListVoices: "thread/realtime/listVoices",
   threadShellCommand: "thread/shellCommand",
   commandExec: "command/exec",
   commandExecWrite: "command/exec/write",

@@ -83,6 +83,13 @@ thread suffix through `thread/list`, resolves the turn suffix through
 and returns only item suffix/type/status/count metadata and redaction flags,
 never message text, prompts, commands, output, patches, paths, cursor values,
 full ids, timestamps, or raw payloads.
+`thread/realtime/listVoices` is promoted separately through a
+disabled-by-default GET route behind
+`CODEX_APP_PORT_ALLOW_THREAD_REALTIME_VOICES=1`; it sends no browser
+parameters, filters results to the official generated voice enum, and returns
+only known voice names/defaults without starting realtime sessions, sending
+audio/text/speech, triggering model traffic, or exposing SDP, transcript
+content, ids, paths, unknown strings, or raw payloads.
 `thread/delete` is promoted through a separate disabled-by-default destructive
 POST route behind `CODEX_APP_PORT_ALLOW_THREAD_DELETE=1`; it requires a
 matching one-time preflight token, resolves targets by suffix through

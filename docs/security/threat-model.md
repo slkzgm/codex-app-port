@@ -239,6 +239,15 @@
   aggregated output, patches, file paths, cursor values, full ids, exact
   timestamps, raw item payloads, raw thread payloads, or raw app-server
   payloads.
+- Browser-facing realtime voice catalog reads must be blocked by default and
+  opt-in only. When `CODEX_APP_PORT_ALLOW_THREAD_REALTIME_VOICES=1` is
+  enabled, `/api/thread-realtime-voices` may call only
+  `thread/realtime/listVoices` with an empty parameter object. Responses must
+  be filtered to the official generated voice enum and may expose only known
+  voice names plus default voice names. They must not accept browser realtime
+  parameters, start realtime sessions, send audio/text/speech, expose SDP,
+  audio, transcript content, prompt text, full ids, cwd, paths, unknown voice
+  strings, raw app-server payloads, or model traffic.
 - Browser-facing thread lifecycle histories must be process-local, capped, and
   sanitized. They may expose only action type/method, thread suffix, safe
   status/count metadata, token-consumed state, model-traffic booleans, and audit
