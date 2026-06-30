@@ -33629,6 +33629,97 @@ function buildCodexAppComputerUseSettingsSummary() {
   };
 }
 
+const CODEX_APP_CONTEXT_AWARE_SUGGESTION_SETTINGS = Object.freeze([
+  {
+    key: "followUpSuggestions",
+    group: "follow-ups",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "resumeTaskSuggestions",
+    group: "resume",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "startSurfaceSuggestions",
+    group: "entry-points",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "returnSurfaceSuggestions",
+    group: "entry-points",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "suggestionSourceContext",
+    group: "privacy",
+    state: "blocked",
+    source: "official-codex-app-docs",
+  },
+]);
+
+function buildCodexAppContextAwareSuggestionsSettingsSummary() {
+  const settings = CODEX_APP_CONTEXT_AWARE_SUGGESTION_SETTINGS.map((setting) => ({
+    ...setting,
+    settingValueReturned: false,
+    suggestionTextReturned: false,
+    taskContentReturned: false,
+    threadContentReturned: false,
+    threadIdReturned: false,
+    projectNameReturned: false,
+    workspaceNameReturned: false,
+    sourceContextReturned: false,
+    rankingSignalReturned: false,
+    resumeTargetReturned: false,
+    suggestionGenerationTriggered: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+    rawPayloadsReturned: false,
+    appServerTraffic: false,
+  }));
+  const catalogOnlySettingCount = settings.filter(
+    (setting) => setting.state === "catalog-only",
+  ).length;
+  const blockedSettingCount = settings.filter((setting) => setting.state === "blocked").length;
+
+  return {
+    returned: true,
+    state: catalogOnlySettingCount > 0 ? "partial" : "blocked",
+    settingCount: settings.length,
+    officialSettingCount: settings.filter(
+      (setting) => setting.source === "official-codex-app-docs",
+    ).length,
+    catalogOnlySettingCount,
+    blockedSettingCount,
+    enabledSettingCount: 0,
+    settings,
+    suggestionControlsReturned: true,
+    suggestionTextReturned: false,
+    taskContentReturned: false,
+    threadContentReturned: false,
+    threadIdsReturned: false,
+    projectNamesReturned: false,
+    workspaceNamesReturned: false,
+    sourceContextReturned: false,
+    rankingSignalsReturned: false,
+    resumeTargetsReturned: false,
+    suggestionGenerationTriggered: false,
+    settingValuesReturned: false,
+    localSettingValuesReturned: false,
+    mutationEnabled: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+    rawPayloadsReturned: false,
+    appServerTraffic: false,
+  };
+}
+
 const CODEX_APP_NOTIFICATION_SETTINGS = Object.freeze([
   {
     key: "turnCompletionNotifications",
@@ -33964,6 +34055,7 @@ function buildCodexAppSettingsParity(payload = {}) {
   const codexPets = buildCodexAppPetSettingsSummary();
   const browser = buildCodexAppBrowserSettingsSummary();
   const computerUse = buildCodexAppComputerUseSettingsSummary();
+  const contextAwareSuggestions = buildCodexAppContextAwareSuggestionsSettingsSummary();
   const notifications = buildCodexAppNotificationSettingsSummary(payload);
   const personalization = buildCodexAppPersonalizationSettingsSummary();
   const memories = buildCodexAppMemoriesSettingsSummary(integrationScope);
@@ -34045,8 +34137,8 @@ function buildCodexAppSettingsParity(payload = {}) {
     codexAppSettingsSection(
       "contextAwareSuggestions",
       "agent",
-      "blocked",
-      "not-implemented",
+      contextAwareSuggestions.state,
+      "context-aware-suggestions-catalog",
     ),
     codexAppSettingsSection(
       "memories",
@@ -34082,6 +34174,7 @@ function buildCodexAppSettingsParity(payload = {}) {
     codexPets,
     browser,
     computerUse,
+    contextAwareSuggestions,
     notifications,
     personalization,
     memories,
@@ -34524,6 +34617,13 @@ export function sanitizeSettingsIntegrationsPayload(
       codexAppPersonalizationAgentsMdContentReturned: false,
       codexAppPersonalizationAgentsMdPathsReturned: false,
       codexAppPersonalizationMutationsEnabled: false,
+      codexAppContextAwareSuggestionsReturned: true,
+      codexAppContextAwareSuggestionValuesReturned: false,
+      codexAppContextAwareSuggestionTextReturned: false,
+      codexAppContextAwareSuggestionSourceContextReturned: false,
+      codexAppContextAwareSuggestionTargetsReturned: false,
+      codexAppContextAwareSuggestionGenerationEnabled: false,
+      codexAppContextAwareSuggestionMutationsEnabled: false,
       codexAppMemoriesSettingsReturned: true,
       codexAppMemoriesValuesReturned: false,
       codexAppMemoriesConfigValuesReturned: false,
@@ -42099,6 +42199,13 @@ export function buildSettingsIntegrations({
       codexAppPersonalizationAgentsMdContentReturned: false,
       codexAppPersonalizationAgentsMdPathsReturned: false,
       codexAppPersonalizationMutationsEnabled: false,
+      codexAppContextAwareSuggestionsReturned: true,
+      codexAppContextAwareSuggestionValuesReturned: false,
+      codexAppContextAwareSuggestionTextReturned: false,
+      codexAppContextAwareSuggestionSourceContextReturned: false,
+      codexAppContextAwareSuggestionTargetsReturned: false,
+      codexAppContextAwareSuggestionGenerationEnabled: false,
+      codexAppContextAwareSuggestionMutationsEnabled: false,
       codexAppMemoriesSettingsReturned: true,
       codexAppMemoriesValuesReturned: false,
       codexAppMemoriesConfigValuesReturned: false,

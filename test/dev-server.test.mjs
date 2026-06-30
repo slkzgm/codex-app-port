@@ -20489,10 +20489,10 @@ test("dev server exposes settings and integration boundary without app-server tr
     );
     assertSettingsServerBoundaries(payload);
     assertCodexAppSettingsParity(payload, {
-      availableSectionCount: 13,
-      partialSectionCount: 13,
+      availableSectionCount: 14,
+      partialSectionCount: 14,
       preflightOnlySectionCount: 0,
-      blockedSectionCount: 2,
+      blockedSectionCount: 1,
       profileState: "blocked",
     });
     assert.equal(payload.surfaces.settings.state, "partial");
@@ -22761,10 +22761,10 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
     );
     assertSettingsServerBoundaries(payload);
     assertCodexAppSettingsParity(payload, {
-      availableSectionCount: 14,
-      partialSectionCount: 14,
+      availableSectionCount: 15,
+      partialSectionCount: 15,
       preflightOnlySectionCount: 0,
-      blockedSectionCount: 1,
+      blockedSectionCount: 0,
       profileState: "partial",
     });
     assert.equal(payload.appServer.auditedReadMethods.includes("configRequirements/read"), true);
@@ -34932,11 +34932,12 @@ function assertCodexAppSettingsParity(
     preflightOnlySectionCount,
     blockedSectionCount,
     profileState,
+    summaryState = blockedSectionCount > 0 ? "partial" : "complete",
   },
 ) {
   const summary = payload.codexAppSettings;
   assert.equal(summary?.returned, true);
-  assert.equal(summary.state, "partial");
+  assert.equal(summary.state, summaryState);
   assert.equal(summary.officialSource, "openai-codex-app-settings-docs");
   assert.equal(summary.officialSectionCount, 15);
   assert.equal(summary.trackedSectionCount, 15);
@@ -34985,6 +34986,10 @@ function assertCodexAppSettingsParity(
   );
   assert.equal(
     summary.sections.find((section) => section.key === "computerUse")?.state,
+    "partial",
+  );
+  assert.equal(
+    summary.sections.find((section) => section.key === "contextAwareSuggestions")?.state,
     "partial",
   );
   assert.equal(
@@ -35298,6 +35303,64 @@ function assertCodexAppSettingsParity(
     ),
     true,
   );
+  assert.equal(summary.contextAwareSuggestions?.returned, true);
+  assert.equal(summary.contextAwareSuggestions.state, "partial");
+  assert.equal(summary.contextAwareSuggestions.settingCount, 5);
+  assert.equal(summary.contextAwareSuggestions.officialSettingCount, 5);
+  assert.equal(summary.contextAwareSuggestions.catalogOnlySettingCount, 4);
+  assert.equal(summary.contextAwareSuggestions.blockedSettingCount, 1);
+  assert.equal(summary.contextAwareSuggestions.enabledSettingCount, 0);
+  assert.equal(summary.contextAwareSuggestions.suggestionControlsReturned, true);
+  assert.equal(summary.contextAwareSuggestions.suggestionTextReturned, false);
+  assert.equal(summary.contextAwareSuggestions.taskContentReturned, false);
+  assert.equal(summary.contextAwareSuggestions.threadContentReturned, false);
+  assert.equal(summary.contextAwareSuggestions.threadIdsReturned, false);
+  assert.equal(summary.contextAwareSuggestions.projectNamesReturned, false);
+  assert.equal(summary.contextAwareSuggestions.workspaceNamesReturned, false);
+  assert.equal(summary.contextAwareSuggestions.sourceContextReturned, false);
+  assert.equal(summary.contextAwareSuggestions.rankingSignalsReturned, false);
+  assert.equal(summary.contextAwareSuggestions.resumeTargetsReturned, false);
+  assert.equal(summary.contextAwareSuggestions.suggestionGenerationTriggered, false);
+  assert.equal(summary.contextAwareSuggestions.settingValuesReturned, false);
+  assert.equal(summary.contextAwareSuggestions.localSettingValuesReturned, false);
+  assert.equal(summary.contextAwareSuggestions.mutationEnabled, false);
+  assert.equal(summary.contextAwareSuggestions.pathsReturned, false);
+  assert.equal(summary.contextAwareSuggestions.urlsReturned, false);
+  assert.equal(summary.contextAwareSuggestions.secretsReturned, false);
+  assert.equal(summary.contextAwareSuggestions.rawPayloadsReturned, false);
+  assert.equal(summary.contextAwareSuggestions.appServerTraffic, false);
+  assert.deepEqual(
+    summary.contextAwareSuggestions.settings.map((setting) => setting.key),
+    [
+      "followUpSuggestions",
+      "resumeTaskSuggestions",
+      "startSurfaceSuggestions",
+      "returnSurfaceSuggestions",
+      "suggestionSourceContext",
+    ],
+  );
+  assert.equal(
+    summary.contextAwareSuggestions.settings.every(
+      (setting) =>
+        setting.settingValueReturned === false &&
+        setting.suggestionTextReturned === false &&
+        setting.taskContentReturned === false &&
+        setting.threadContentReturned === false &&
+        setting.threadIdReturned === false &&
+        setting.projectNameReturned === false &&
+        setting.workspaceNameReturned === false &&
+        setting.sourceContextReturned === false &&
+        setting.rankingSignalReturned === false &&
+        setting.resumeTargetReturned === false &&
+        setting.suggestionGenerationTriggered === false &&
+        setting.pathsReturned === false &&
+        setting.urlsReturned === false &&
+        setting.secretsReturned === false &&
+        setting.rawPayloadsReturned === false &&
+        setting.appServerTraffic === false,
+    ),
+    true,
+  );
   assert.equal(summary.notifications?.returned, true);
   assert.equal(summary.notifications.state, "partial");
   assert.equal(summary.notifications.settingCount, 4);
@@ -35538,6 +35601,13 @@ function assertCodexAppSettingsParity(
   assert.equal(payload.policy?.codexAppPersonalizationAgentsMdContentReturned, false);
   assert.equal(payload.policy?.codexAppPersonalizationAgentsMdPathsReturned, false);
   assert.equal(payload.policy?.codexAppPersonalizationMutationsEnabled, false);
+  assert.equal(payload.policy?.codexAppContextAwareSuggestionsReturned, true);
+  assert.equal(payload.policy?.codexAppContextAwareSuggestionValuesReturned, false);
+  assert.equal(payload.policy?.codexAppContextAwareSuggestionTextReturned, false);
+  assert.equal(payload.policy?.codexAppContextAwareSuggestionSourceContextReturned, false);
+  assert.equal(payload.policy?.codexAppContextAwareSuggestionTargetsReturned, false);
+  assert.equal(payload.policy?.codexAppContextAwareSuggestionGenerationEnabled, false);
+  assert.equal(payload.policy?.codexAppContextAwareSuggestionMutationsEnabled, false);
   assert.equal(payload.policy?.codexAppMemoriesSettingsReturned, true);
   assert.equal(payload.policy?.codexAppMemoriesValuesReturned, false);
   assert.equal(payload.policy?.codexAppMemoriesConfigValuesReturned, false);

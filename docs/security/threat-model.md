@@ -436,7 +436,12 @@
   setting keys, groups, states, sources, and counts; it must not return active
   personality values, custom instructions, personal `AGENTS.md` content or
   paths, paths, URLs, secrets, raw payloads, app-server payloads, or
-  personalization mutations. Its Memories settings catalog may expose only
+  personalization mutations. Its Context-aware Suggestions settings catalog may
+  expose only static setting keys, groups, states, sources, and counts; it must
+  not return suggestion text, task content, thread content or ids,
+  project/workspace names, source context, ranking signals, resume targets,
+  paths, URLs, secrets, raw payloads, or app-server payloads, and must not
+  trigger suggestion generation or suggestion mutations. Its Memories settings catalog may expose only
   static setting keys, groups, states, sources, and counts; it must not return
   current memory setting values, config values, memory files, memory content,
   memory paths, storage paths, thread-level choices, rate-limit values, model

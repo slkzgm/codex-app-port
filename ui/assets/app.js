@@ -23,6 +23,10 @@ const elements = {
   appBrowserValuesText: document.querySelector("#app-browser-values-text"),
   appComputerUseText: document.querySelector("#app-computer-use-text"),
   appComputerUseValuesText: document.querySelector("#app-computer-use-values-text"),
+  appContextSuggestionsText: document.querySelector("#app-context-suggestions-text"),
+  appContextSuggestionsValuesText: document.querySelector(
+    "#app-context-suggestions-values-text",
+  ),
   appShortcutsText: document.querySelector("#app-shortcuts-text"),
   appShortcutsEditingText: document.querySelector("#app-shortcuts-editing-text"),
   appNotificationsText: document.querySelector("#app-notifications-text"),
@@ -372,6 +376,7 @@ const elements = {
   appPetsList: document.querySelector("#app-pets-list"),
   appBrowserList: document.querySelector("#app-browser-list"),
   appComputerUseList: document.querySelector("#app-computer-use-list"),
+  appContextSuggestionsList: document.querySelector("#app-context-suggestions-list"),
   appKeyboardShortcutsList: document.querySelector("#app-keyboard-shortcuts-list"),
   appNotificationsList: document.querySelector("#app-notifications-list"),
   appPersonalizationList: document.querySelector("#app-personalization-list"),
@@ -10483,6 +10488,25 @@ function renderSettingsIntegrations(payload) {
     computerUse.desktopControlStarted
       ? "Returned"
       : "Blocked";
+  const contextAwareSuggestions = codexAppSettings.contextAwareSuggestions ?? {};
+  elements.appContextSuggestionsText.textContent = contextAwareSuggestions.returned
+    ? `${contextAwareSuggestions.catalogOnlySettingCount ?? 0} catalog / ${
+        contextAwareSuggestions.settingCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.appContextSuggestionsValuesText.textContent =
+    contextAwareSuggestions.settingValuesReturned ||
+    contextAwareSuggestions.suggestionTextReturned ||
+    contextAwareSuggestions.taskContentReturned ||
+    contextAwareSuggestions.threadContentReturned ||
+    contextAwareSuggestions.threadIdsReturned ||
+    contextAwareSuggestions.projectNamesReturned ||
+    contextAwareSuggestions.workspaceNamesReturned ||
+    contextAwareSuggestions.sourceContextReturned ||
+    contextAwareSuggestions.rankingSignalsReturned ||
+    contextAwareSuggestions.resumeTargetsReturned
+      ? "Returned"
+      : "Hidden";
   const keyboardShortcuts = codexAppSettings.keyboardShortcuts ?? {};
   elements.appShortcutsText.textContent = keyboardShortcuts.returned
     ? `${keyboardShortcuts.localShortcutCount ?? 0} local / ${
@@ -10675,6 +10699,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexAppPetSettings(codexPets);
   renderCodexAppBrowserSettings(browser);
   renderCodexAppComputerUseSettings(computerUse);
+  renderCodexAppContextAwareSuggestionsSettings(contextAwareSuggestions);
   renderCodexAppKeyboardShortcuts(keyboardShortcuts);
   renderCodexAppNotificationSettings(notifications);
   renderCodexAppPersonalizationSettings(personalization);
@@ -12440,6 +12465,59 @@ function renderCodexAppComputerUseSettings(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.appComputerUseList.append(row);
+  }
+}
+
+function renderCodexAppContextAwareSuggestionsSettings(summary) {
+  elements.appContextSuggestionsList.replaceChildren();
+  const settings = Array.isArray(summary?.settings) ? summary.settings : [];
+  if (settings.length === 0) {
+    elements.appContextSuggestionsList.append(
+      emptyState("No context-aware suggestions catalog returned."),
+    );
+    return;
+  }
+  for (const setting of settings) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = setting.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = setting.group ?? "suggestions";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      setting.state ?? "blocked",
+      setting.source ?? null,
+      setting.settingValueReturned ? "value returned" : "value hidden",
+      setting.suggestionTextReturned ? "suggestion text returned" : "suggestion text hidden",
+      setting.taskContentReturned ? "task content returned" : "task content hidden",
+      setting.threadContentReturned ? "thread content returned" : "thread content hidden",
+      setting.sourceContextReturned ? "source context returned" : "source context hidden",
+      setting.rankingSignalReturned ? "ranking returned" : "ranking hidden",
+      setting.resumeTargetReturned ? "resume target returned" : "resume target hidden",
+      setting.suggestionGenerationTriggered ? "generation triggered" : "generation blocked",
+      setting.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.appContextSuggestionsList.append(row);
   }
 }
 

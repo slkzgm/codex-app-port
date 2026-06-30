@@ -115,6 +115,13 @@ Target parity with the Codex desktop workflow:
   only keys, groups, states, sources, and counts; the active personality,
   custom instructions, personal `AGENTS.md` content or paths, paths, URLs,
   secrets, raw payloads, mutations, and app-server traffic remain blocked.
+- The same summary now includes a read-only Context-aware Suggestions settings
+  catalog for documented follow-up and resume suggestions when starting or
+  returning to Codex. It returns only keys, groups, states, sources, and counts;
+  suggestion text, task content, thread content or ids, project/workspace names,
+  source context, ranking signals, resume targets, paths, URLs, secrets, raw
+  payloads, mutations, generation triggers, and app-server traffic remain
+  blocked.
 - The same summary now includes a read-only Memories settings catalog for the
   official global enablement, config flag, generation/use controls,
   external-context privacy control, rate-limit threshold, extraction and

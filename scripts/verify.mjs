@@ -32690,10 +32690,10 @@ function assertSanitizedSettingsIntegrations(payload) {
   }
   assertSettingsServerBoundaries(payload);
   assertCodexAppSettingsParity(payload, {
-    availableSectionCount: 13,
-    partialSectionCount: 13,
+    availableSectionCount: 14,
+    partialSectionCount: 14,
     preflightOnlySectionCount: 0,
-    blockedSectionCount: 2,
+    blockedSectionCount: 1,
     profileState: "blocked",
   });
   if (
@@ -33098,12 +33098,13 @@ function assertCodexAppSettingsParity(
     preflightOnlySectionCount,
     blockedSectionCount,
     profileState,
+    summaryState = blockedSectionCount > 0 ? "partial" : "complete",
   },
 ) {
   const summary = payload.codexAppSettings;
   if (
     summary?.returned !== true ||
-    summary.state !== "partial" ||
+    summary.state !== summaryState ||
     summary.officialSource !== "openai-codex-app-settings-docs" ||
     summary.officialSectionCount !== 15 ||
     summary.trackedSectionCount !== 15 ||
@@ -33147,6 +33148,8 @@ function assertCodexAppSettingsParity(
     summary.sections?.find((section) => section.key === "personalization")?.state !==
       "partial" ||
     summary.sections?.find((section) => section.key === "computerUse")?.state !== "partial" ||
+    summary.sections?.find((section) => section.key === "contextAwareSuggestions")?.state !==
+      "partial" ||
     summary.sections?.find((section) => section.key === "memories")?.state !== "partial"
   ) {
     throw new Error("Codex app settings parity section mapping changed unexpectedly");
@@ -33434,6 +33437,61 @@ function assertCodexAppSettingsParity(
         setting.rawPayloadsReturned === false &&
         setting.appServerTraffic === false,
     ) ||
+    summary.contextAwareSuggestions?.returned !== true ||
+    summary.contextAwareSuggestions.state !== "partial" ||
+    summary.contextAwareSuggestions.settingCount !== 5 ||
+    summary.contextAwareSuggestions.officialSettingCount !== 5 ||
+    summary.contextAwareSuggestions.catalogOnlySettingCount !== 4 ||
+    summary.contextAwareSuggestions.blockedSettingCount !== 1 ||
+    summary.contextAwareSuggestions.enabledSettingCount !== 0 ||
+    summary.contextAwareSuggestions.suggestionControlsReturned !== true ||
+    summary.contextAwareSuggestions.suggestionTextReturned !== false ||
+    summary.contextAwareSuggestions.taskContentReturned !== false ||
+    summary.contextAwareSuggestions.threadContentReturned !== false ||
+    summary.contextAwareSuggestions.threadIdsReturned !== false ||
+    summary.contextAwareSuggestions.projectNamesReturned !== false ||
+    summary.contextAwareSuggestions.workspaceNamesReturned !== false ||
+    summary.contextAwareSuggestions.sourceContextReturned !== false ||
+    summary.contextAwareSuggestions.rankingSignalsReturned !== false ||
+    summary.contextAwareSuggestions.resumeTargetsReturned !== false ||
+    summary.contextAwareSuggestions.suggestionGenerationTriggered !== false ||
+    summary.contextAwareSuggestions.settingValuesReturned !== false ||
+    summary.contextAwareSuggestions.localSettingValuesReturned !== false ||
+    summary.contextAwareSuggestions.mutationEnabled !== false ||
+    summary.contextAwareSuggestions.pathsReturned !== false ||
+    summary.contextAwareSuggestions.urlsReturned !== false ||
+    summary.contextAwareSuggestions.secretsReturned !== false ||
+    summary.contextAwareSuggestions.rawPayloadsReturned !== false ||
+    summary.contextAwareSuggestions.appServerTraffic !== false ||
+    JSON.stringify(
+      (summary.contextAwareSuggestions.settings ?? []).map((setting) => setting.key),
+    ) !==
+      JSON.stringify([
+        "followUpSuggestions",
+        "resumeTaskSuggestions",
+        "startSurfaceSuggestions",
+        "returnSurfaceSuggestions",
+        "suggestionSourceContext",
+      ]) ||
+    !summary.contextAwareSuggestions.settings?.every(
+      (setting) =>
+        setting.settingValueReturned === false &&
+        setting.suggestionTextReturned === false &&
+        setting.taskContentReturned === false &&
+        setting.threadContentReturned === false &&
+        setting.threadIdReturned === false &&
+        setting.projectNameReturned === false &&
+        setting.workspaceNameReturned === false &&
+        setting.sourceContextReturned === false &&
+        setting.rankingSignalReturned === false &&
+        setting.resumeTargetReturned === false &&
+        setting.suggestionGenerationTriggered === false &&
+        setting.pathsReturned === false &&
+        setting.urlsReturned === false &&
+        setting.secretsReturned === false &&
+        setting.rawPayloadsReturned === false &&
+        setting.appServerTraffic === false,
+    ) ||
     summary.notifications?.returned !== true ||
     summary.notifications.state !== "partial" ||
     summary.notifications.settingCount !== 4 ||
@@ -33654,6 +33712,13 @@ function assertCodexAppSettingsParity(
     payload.policy?.codexAppPersonalizationAgentsMdContentReturned !== false ||
     payload.policy?.codexAppPersonalizationAgentsMdPathsReturned !== false ||
     payload.policy?.codexAppPersonalizationMutationsEnabled !== false ||
+    payload.policy?.codexAppContextAwareSuggestionsReturned !== true ||
+    payload.policy?.codexAppContextAwareSuggestionValuesReturned !== false ||
+    payload.policy?.codexAppContextAwareSuggestionTextReturned !== false ||
+    payload.policy?.codexAppContextAwareSuggestionSourceContextReturned !== false ||
+    payload.policy?.codexAppContextAwareSuggestionTargetsReturned !== false ||
+    payload.policy?.codexAppContextAwareSuggestionGenerationEnabled !== false ||
+    payload.policy?.codexAppContextAwareSuggestionMutationsEnabled !== false ||
     payload.policy?.codexAppMemoriesSettingsReturned !== true ||
     payload.policy?.codexAppMemoriesValuesReturned !== false ||
     payload.policy?.codexAppMemoriesConfigValuesReturned !== false ||
@@ -35306,10 +35371,10 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
   }
   assertSettingsServerBoundaries(payload);
   assertCodexAppSettingsParity(payload, {
-    availableSectionCount: 14,
-    partialSectionCount: 14,
+    availableSectionCount: 15,
+    partialSectionCount: 15,
     preflightOnlySectionCount: 0,
-    blockedSectionCount: 1,
+    blockedSectionCount: 0,
     profileState: "partial",
   });
   if (

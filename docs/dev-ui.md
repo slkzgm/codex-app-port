@@ -755,6 +755,13 @@ the local server-notification boundary. The UI shows only setting keys, groups,
 state/source chips, boundary counts, and redaction chips; notification values,
 browser permission state, subscriptions, payloads, browser Notification API
 prompts, paths, URLs, raw payloads, and app-server traffic remain blocked.
+Within that same summary, `contextAwareSuggestions` exposes a static
+review-only catalog for documented follow-up and resume suggestions when
+starting or returning to Codex. The UI shows only setting keys, groups,
+state/source chips, catalog counts, and redaction chips; suggestion text, task
+content, thread content or ids, project/workspace names, source context,
+ranking signals, resume targets, generation triggers, paths, URLs, raw
+payloads, mutations, and app-server traffic remain blocked.
 Within that same summary, `memories` exposes a static review-only catalog for
 global memory enablement, the `features.memories` config flag,
 generation/use controls, external-context privacy, rate-limit threshold,

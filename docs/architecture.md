@@ -525,6 +525,12 @@ Current M1 status:
   boundary keys/groups/states/counts, with active personality, custom
   instructions, personal `AGENTS.md` content or paths, paths, URLs, secrets,
   raw payloads, mutations, and app-server traffic blocked
+- done: read-only Context-aware Suggestions settings catalog inside the
+  settings parity summary, exposing only static follow-up/resume suggestion
+  keys/groups/states/counts, with suggestion text, task content, thread content
+  or ids, project/workspace names, source context, ranking signals, resume
+  targets, generation triggers, paths, URLs, secrets, raw payloads, mutations,
+  and app-server traffic blocked
 - done: read-only Memories settings catalog inside the settings parity summary,
   exposing only static global enablement, config flag, generation/use,
   external-context privacy, rate-limit threshold, extraction/consolidation
