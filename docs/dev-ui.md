@@ -391,12 +391,13 @@ The turn-start and approval-decision routes plus high-risk MCP tool-call
 preflight/execution, MCP resource-read execution, MCP OAuth-login
 preflight/execution, MCP server-reload preflight/execution, skills-config
 preflight/execution, config-value preflight/execution, config-batch
-preflight/execution, experimental-feature preflight/execution, and generic
-integration mutation preflight routes
+preflight/execution, experimental-feature preflight/execution,
+Git branch/commit/worktree preflight/execution, and generic integration
+mutation preflight routes
 additionally have route-specific nested key schemas for their sanitized
 turn/probe/event, decision/queue/history, target, argument/risk, result, policy,
-and preflight objects so unexpected sanitized-looking fields fail closed before
-the response reaches the browser.
+Git status/safety/subprocess, and preflight objects so unexpected
+sanitized-looking fields fail closed before the response reaches the browser.
 App-server responses are first normalized through local runtime protocol
 contracts for the methods this prototype uses, then reduced again by
 browser-facing sanitizers.
@@ -1874,6 +1875,8 @@ Current UI scope:
 - opt-in Git worktree create/remove behind one-time preflight token,
   workspace-relative path policy, zero hook/filter/attribute risk for create,
   and no path/stdout/stderr/argv disclosure
+- route-specific nested response schemas on all Git branch, commit, and worktree
+  POST routes
 - Settings/Auth/Apps/MCP/Skills/Plugins boundary with opt-in counts-only
   inventory, including config requirement, app, external config migration,
   account rate-limit, and hook metadata counts, plus integration scope and

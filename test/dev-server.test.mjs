@@ -1071,6 +1071,88 @@ test("browser POST response contracts block unsafe response values", () => {
     assert.equal(Object.isFrozen(contract.nestedKeySchemas), true, path);
     assert.equal(Object.isFrozen(contract.allowedPreflightTokenPaths), true, path);
   }
+  const gitResponseContractPaths = [
+    "/api/git-branch-preflight",
+    "/api/git-branch-switch",
+    "/api/git-branch-create-preflight",
+    "/api/git-branch-create",
+    "/api/git-branch-delete-preflight",
+    "/api/git-branch-delete",
+    "/api/git-commit-preflight",
+    "/api/git-commit",
+    "/api/git-worktree-preflight",
+    "/api/git-worktree-action",
+  ];
+  for (const path of gitResponseContractPaths) {
+    assert.equal(BROWSER_POST_RESPONSE_CONTRACTS[path].usesRouteSpecificNestedKeySchemas, true);
+  }
+  const gitBranchPreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/git-branch-preflight"];
+  assert.deepEqual(gitBranchPreflightContract.nestedKeySchemas.target, [
+    "branch",
+    "current",
+    "commitShort",
+  ]);
+  assert.equal(
+    gitBranchPreflightContract.nestedKeySchemas.policy.includes(
+      "requiresHookFilterAttributeAudit",
+    ),
+    true,
+  );
+  const gitBranchSwitchContract = BROWSER_POST_RESPONSE_CONTRACTS["/api/git-branch-switch"];
+  assert.equal(gitBranchSwitchContract.nestedKeySchemas["status.before"].includes("changedCount"), true);
+  assert.equal(gitBranchSwitchContract.nestedKeySchemas.subprocess.includes("argvReturned"), true);
+  assert.equal(gitBranchSwitchContract.nestedKeySchemas.policy.includes("unexpected"), false);
+  const gitBranchCreatePreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/git-branch-create-preflight"];
+  assert.equal(gitBranchCreatePreflightContract.nestedKeySchemas.target.includes("exists"), true);
+  assert.equal(
+    gitBranchCreatePreflightContract.nestedKeySchemas.policy.includes("directRefWrite"),
+    true,
+  );
+  const gitBranchCreateContract = BROWSER_POST_RESPONSE_CONTRACTS["/api/git-branch-create"];
+  assert.deepEqual(gitBranchCreateContract.nestedKeySchemas["status.before"], [
+    "localBranchCount",
+  ]);
+  const gitBranchDeletePreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/git-branch-delete-preflight"];
+  assert.equal(
+    gitBranchDeletePreflightContract.nestedKeySchemas.policy.includes("directRefDelete"),
+    true,
+  );
+  const gitBranchDeleteContract = BROWSER_POST_RESPONSE_CONTRACTS["/api/git-branch-delete"];
+  assert.equal(gitBranchDeleteContract.nestedKeySchemas.target.includes("commitShort"), true);
+  assert.equal(gitBranchDeleteContract.nestedKeySchemas.policy.includes("branchDeleted"), true);
+  const gitCommitPreflightContract = BROWSER_POST_RESPONSE_CONTRACTS["/api/git-commit-preflight"];
+  assert.equal(gitCommitPreflightContract.nestedKeySchemas.message.includes("subjectCharCount"), true);
+  assert.equal(gitCommitPreflightContract.nestedKeySchemas.status.includes("stagedStateKnown"), true);
+  assert.equal(gitCommitPreflightContract.nestedKeySchemas.safety.includes("riskPresent"), true);
+  assert.equal(
+    gitCommitPreflightContract.nestedKeySchemas.policy.includes("requiresIdentityPolicy"),
+    true,
+  );
+  const gitCommitContract = BROWSER_POST_RESPONSE_CONTRACTS["/api/git-commit"];
+  assert.equal(gitCommitContract.nestedKeySchemas.result.includes("previousCommitShort"), true);
+  assert.equal(gitCommitContract.nestedKeySchemas.subprocess.includes("stdinReturned"), true);
+  assert.equal(gitCommitContract.nestedKeySchemas.policy.includes("unexpected"), false);
+  const gitWorktreePreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/git-worktree-preflight"];
+  assert.equal(gitWorktreePreflightContract.nestedKeySchemas.target.includes("pathReturned"), true);
+  assert.equal(
+    gitWorktreePreflightContract.nestedKeySchemas.status.includes("returnedLinkedWorktreeCount"),
+    true,
+  );
+  assert.equal(
+    gitWorktreePreflightContract.nestedKeySchemas.policy.includes("requiresWorkspacePathPolicy"),
+    true,
+  );
+  const gitWorktreeActionContract = BROWSER_POST_RESPONSE_CONTRACTS["/api/git-worktree-action"];
+  assert.equal(
+    gitWorktreeActionContract.nestedKeySchemas["status.after"].includes("linkedWorktreeCount"),
+    true,
+  );
+  assert.equal(gitWorktreeActionContract.nestedKeySchemas.policy.includes("worktreeRemoved"), true);
+  assert.equal(gitWorktreeActionContract.nestedKeySchemas.policy.includes("unexpected"), false);
   const integrationPreflightContract =
     BROWSER_POST_RESPONSE_CONTRACTS["/api/integration-action-preflight"];
   assert.equal(integrationPreflightContract.usesRouteSpecificNestedKeySchemas, true);
@@ -2279,6 +2361,112 @@ test("browser POST response contracts block unsafe response values", () => {
   });
   assert.equal(wrongRouteTopLevelKey.statusCode, 500);
   assert.equal(JSON.stringify(wrongRouteTopLevelKey.payload).includes("mcpToolCall"), false);
+
+  const allowedNestedGitCommitPreflightShape = applyBrowserPostResponseContract({
+    method: "POST",
+    pathname: "/api/git-commit-preflight",
+    statusCode: 200,
+    payload: {
+      ok: true,
+      appServer: {
+        touched: false,
+        modelTraffic: false,
+        commandTraffic: false,
+      },
+      action: {
+        type: "git-commit",
+        execution: "blocked",
+        wouldCreateCommit: false,
+        gitSubprocess: false,
+        objectWrites: false,
+        refWrites: false,
+        filesystemWrites: false,
+        appServerTouched: false,
+        reason: "git-commit-requires-opt-in",
+      },
+      source: {
+        branch: "main",
+        headKind: "branch",
+        commitShort: "abc1234",
+      },
+      message: {
+        charCount: 12,
+        lineCount: 1,
+        subjectCharCount: 12,
+        textReturned: false,
+      },
+      status: {
+        statusAvailable: true,
+        changedCount: 1,
+        modifiedTrackedCount: 1,
+        missingTrackedCount: 0,
+        untrackedTopLevelCount: 0,
+        statusTruncated: false,
+        stagedStateKnown: false,
+      },
+      safety: {
+        hookFileCount: 0,
+        filterConfigCount: 0,
+        attributesFileCount: 0,
+        configExecutionCount: 0,
+        hooksPresent: false,
+        filtersPresent: false,
+        attributesPresent: false,
+        configExecutionPresent: false,
+        riskPresent: false,
+        scanTruncated: false,
+      },
+      policy: {
+        readOnly: true,
+        gitSubprocess: false,
+        filesystemWrites: false,
+        objectWrites: false,
+        refWrites: false,
+        commitCreated: false,
+        requiresExplicitConfirmation: true,
+        requiresIndexPolicy: true,
+        requiresHookPolicy: true,
+        requiresIdentityPolicy: true,
+        executionRouteImplemented: true,
+        executionGateEnabled: false,
+        browserMethodCallsAccepted: false,
+        implemented: false,
+      },
+      preflight: {
+        token: "preflight-1234567890abcdef",
+        tokenIssued: true,
+        issuedAt: "2026-06-30T00:00:00.000Z",
+        expiresAt: "2026-06-30T00:05:00.000Z",
+        scope: {
+          kind: "git-commit",
+          workspaceId: "default",
+        },
+        rawIntentStored: false,
+        rawIntentReturned: false,
+        intentHashReturned: false,
+        oneTimeUseRequiredForMutation: true,
+        consumed: false,
+      },
+    },
+  });
+  assert.equal(allowedNestedGitCommitPreflightShape.statusCode, 200);
+
+  const unexpectedGitNestedKey = applyBrowserPostResponseContract({
+    method: "POST",
+    pathname: "/api/git-commit",
+    statusCode: 200,
+    payload: {
+      ok: true,
+      status: {
+        before: {
+          statusAvailable: true,
+          leakedGitStatus: "private git status",
+        },
+      },
+    },
+  });
+  assert.equal(unexpectedGitNestedKey.statusCode, 500);
+  assert.equal(JSON.stringify(unexpectedGitNestedKey.payload).includes("private git status"), false);
 
   const allowedNestedIntegrationShape = applyBrowserPostResponseContract({
     method: "POST",

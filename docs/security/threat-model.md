@@ -67,9 +67,10 @@
   preflight/execution, MCP server-reload preflight/execution, skills-config
   preflight/execution, environment-add preflight/execution, config-value
   preflight/execution, config-batch preflight/execution, experimental-feature
-  preflight/execution, and generic integration mutation preflights already
-  enforce these schemas for their sanitized turn/probe/event, decision, queue,
-  history, target, argument/risk summary, result, auth, policy, and preflight
+  preflight/execution, Git branch/commit/worktree preflight/execution, and
+  generic integration mutation preflights already enforce these schemas for their
+  sanitized turn/probe/event, decision, queue, history, target, argument/risk
+  summary, Git status/safety/subprocess, result, auth, policy, and preflight
   objects.
 - Do not expose unbounded local streams; streaming endpoints need a duration or
   resource cap and must project events through a sanitizer.
@@ -976,6 +977,11 @@
   symlinked targets or parents, require zero hook/filter/attribute risk for
   creation, avoid forced removal, and never return full paths, stdout, stderr,
   argv, unknown branch inputs, or app-server traffic.
+- Browser-facing Git branch, commit, and worktree POST responses must remain
+  constrained by route-specific nested response schemas for workspace,
+  app-server, action, target/source/branch, status, safety, subprocess, policy,
+  result/message, and preflight scope summaries, so unexpected sanitized-looking
+  Git metadata fails closed before reaching the browser.
 - Project discovery must be opt-in, capped, shallow, and server-side only. The
   browser may receive opaque workspace ids and basename labels, but never
   arbitrary path selection or discovered absolute paths.

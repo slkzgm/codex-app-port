@@ -1554,6 +1554,81 @@ function assertBrowserPostBodyContracts(cases) {
       throw new Error(`${path} browser POST response contract has mutable nested schemas`);
     }
   }
+  const gitResponseContractPaths = [
+    "/api/git-branch-preflight",
+    "/api/git-branch-switch",
+    "/api/git-branch-create-preflight",
+    "/api/git-branch-create",
+    "/api/git-branch-delete-preflight",
+    "/api/git-branch-delete",
+    "/api/git-commit-preflight",
+    "/api/git-commit",
+    "/api/git-worktree-preflight",
+    "/api/git-worktree-action",
+  ];
+  for (const path of gitResponseContractPaths) {
+    if (BROWSER_POST_RESPONSE_CONTRACTS[path]?.usesRouteSpecificNestedKeySchemas !== true) {
+      throw new Error(`${path} response contract is missing Git nested schemas`);
+    }
+  }
+  const gitBranchSwitchContract = BROWSER_POST_RESPONSE_CONTRACTS["/api/git-branch-switch"];
+  if (
+    !gitBranchSwitchContract.nestedKeySchemas["status.before"]?.includes("changedCount") ||
+    !gitBranchSwitchContract.nestedKeySchemas.subprocess?.includes("argvReturned") ||
+    gitBranchSwitchContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("git-branch-switch response contract is missing nested schemas");
+  }
+  const gitBranchCreatePreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/git-branch-create-preflight"];
+  if (
+    !gitBranchCreatePreflightContract.nestedKeySchemas.target?.includes("exists") ||
+    !gitBranchCreatePreflightContract.nestedKeySchemas.policy?.includes("directRefWrite")
+  ) {
+    throw new Error("git-branch-create-preflight response contract is missing nested schemas");
+  }
+  const gitBranchDeletePreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/git-branch-delete-preflight"];
+  if (
+    !gitBranchDeletePreflightContract.nestedKeySchemas.target?.includes("commitShort") ||
+    !gitBranchDeletePreflightContract.nestedKeySchemas.policy?.includes("directRefDelete")
+  ) {
+    throw new Error("git-branch-delete-preflight response contract is missing nested schemas");
+  }
+  const gitCommitPreflightContract = BROWSER_POST_RESPONSE_CONTRACTS["/api/git-commit-preflight"];
+  if (
+    !gitCommitPreflightContract.nestedKeySchemas.message?.includes("subjectCharCount") ||
+    !gitCommitPreflightContract.nestedKeySchemas.status?.includes("stagedStateKnown") ||
+    !gitCommitPreflightContract.nestedKeySchemas.safety?.includes("riskPresent") ||
+    !gitCommitPreflightContract.nestedKeySchemas.policy?.includes("requiresIdentityPolicy")
+  ) {
+    throw new Error("git-commit-preflight response contract is missing nested schemas");
+  }
+  const gitCommitContract = BROWSER_POST_RESPONSE_CONTRACTS["/api/git-commit"];
+  if (
+    !gitCommitContract.nestedKeySchemas.result?.includes("previousCommitShort") ||
+    !gitCommitContract.nestedKeySchemas.subprocess?.includes("stdinReturned") ||
+    gitCommitContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("git-commit response contract is missing nested schemas");
+  }
+  const gitWorktreePreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/git-worktree-preflight"];
+  if (
+    !gitWorktreePreflightContract.nestedKeySchemas.target?.includes("pathReturned") ||
+    !gitWorktreePreflightContract.nestedKeySchemas.status?.includes("returnedLinkedWorktreeCount") ||
+    !gitWorktreePreflightContract.nestedKeySchemas.policy?.includes("requiresWorkspacePathPolicy")
+  ) {
+    throw new Error("git-worktree-preflight response contract is missing nested schemas");
+  }
+  const gitWorktreeActionContract = BROWSER_POST_RESPONSE_CONTRACTS["/api/git-worktree-action"];
+  if (
+    !gitWorktreeActionContract.nestedKeySchemas["status.after"]?.includes("linkedWorktreeCount") ||
+    !gitWorktreeActionContract.nestedKeySchemas.policy?.includes("worktreeRemoved") ||
+    gitWorktreeActionContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("git-worktree-action response contract is missing nested schemas");
+  }
   const integrationPreflightContract =
     BROWSER_POST_RESPONSE_CONTRACTS["/api/integration-action-preflight"];
   if (
@@ -3169,6 +3244,116 @@ function assertBrowserPostBodyContracts(cases) {
     JSON.stringify(wrongRouteTopLevelResponse.payload).includes("mcpToolCall")
   ) {
     throw new Error("browser POST response contract did not block a wrong-route top-level key");
+  }
+  const allowedNestedGitCommitPreflightResponse = applyBrowserPostResponseContract({
+    method: "POST",
+    pathname: "/api/git-commit-preflight",
+    statusCode: 200,
+    payload: {
+      ok: true,
+      appServer: {
+        touched: false,
+        modelTraffic: false,
+        commandTraffic: false,
+      },
+      action: {
+        type: "git-commit",
+        execution: "blocked",
+        wouldCreateCommit: false,
+        gitSubprocess: false,
+        objectWrites: false,
+        refWrites: false,
+        filesystemWrites: false,
+        appServerTouched: false,
+        reason: "git-commit-requires-opt-in",
+      },
+      source: {
+        branch: "main",
+        headKind: "branch",
+        commitShort: "abc1234",
+      },
+      message: {
+        charCount: 12,
+        lineCount: 1,
+        subjectCharCount: 12,
+        textReturned: false,
+      },
+      status: {
+        statusAvailable: true,
+        changedCount: 1,
+        modifiedTrackedCount: 1,
+        missingTrackedCount: 0,
+        untrackedTopLevelCount: 0,
+        statusTruncated: false,
+        stagedStateKnown: false,
+      },
+      safety: {
+        hookFileCount: 0,
+        filterConfigCount: 0,
+        attributesFileCount: 0,
+        configExecutionCount: 0,
+        hooksPresent: false,
+        filtersPresent: false,
+        attributesPresent: false,
+        configExecutionPresent: false,
+        riskPresent: false,
+        scanTruncated: false,
+      },
+      policy: {
+        readOnly: true,
+        gitSubprocess: false,
+        filesystemWrites: false,
+        objectWrites: false,
+        refWrites: false,
+        commitCreated: false,
+        requiresExplicitConfirmation: true,
+        requiresIndexPolicy: true,
+        requiresHookPolicy: true,
+        requiresIdentityPolicy: true,
+        executionRouteImplemented: true,
+        executionGateEnabled: false,
+        browserMethodCallsAccepted: false,
+        implemented: false,
+      },
+      preflight: {
+        token: "preflight-1234567890abcdef",
+        tokenIssued: true,
+        issuedAt: "2026-06-30T00:00:00.000Z",
+        expiresAt: "2026-06-30T00:05:00.000Z",
+        scope: {
+          kind: "git-commit",
+          workspaceId: "default",
+        },
+        rawIntentStored: false,
+        rawIntentReturned: false,
+        intentHashReturned: false,
+        oneTimeUseRequiredForMutation: true,
+        consumed: false,
+      },
+    },
+  });
+  if (allowedNestedGitCommitPreflightResponse.statusCode !== 200) {
+    throw new Error("browser POST response contract rejected an allowed Git preflight shape");
+  }
+  const unexpectedGitNestedKeyResponse = applyBrowserPostResponseContract({
+    method: "POST",
+    pathname: "/api/git-commit",
+    statusCode: 200,
+    payload: {
+      ok: true,
+      status: {
+        before: {
+          statusAvailable: true,
+          leakedGitStatus: "private git status",
+        },
+      },
+    },
+  });
+  if (
+    unexpectedGitNestedKeyResponse.statusCode !== 500 ||
+    JSON.stringify(unexpectedGitNestedKeyResponse.payload).includes("private git status")
+  ) {
+    throw new Error("browser POST response contract did not block an unexpected Git nested key");
   }
   const allowedThreadResumeInjectPreflightShape = applyBrowserPostResponseContract({
     method: "POST",

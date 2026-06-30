@@ -970,12 +970,14 @@ Current M1 status:
   preflight/execution, plugin-install preflight, plugin-share-checkout
   preflight, plugin-share-action preflight, marketplace-action preflight, plugin-uninstall
   preflight/execution, plugin-enablement preflight/execution, skills-config preflight/execution, config-value preflight/execution, config-batch
-  preflight/execution, experimental-feature preflight/execution, and generic
-  integration mutation preflight routes,
+  preflight/execution, experimental-feature preflight/execution,
+  Git branch/commit/worktree preflight/execution, and generic integration
+  mutation preflight routes,
   fail-closing unexpected keys inside
   sanitized turn/probe/event, decision, queue, history, target, argument/risk,
-  result, method-specific risk summary, `policy`, and `preflight` objects before
-  turn/approval/MCP/auth/settings/plugin responses reach the browser
+  Git status/safety/subprocess, result, method-specific risk summary, `policy`,
+  and `preflight` objects before
+  turn/approval/MCP/auth/settings/plugin/Git responses reach the browser
 - done: method-specific high-risk summaries for generic integration mutation
   preflights, classifying auth callbacks/mutations, MCP OAuth/tool calls,
   settings writes/mutations, plugin installs, plugin sharing, marketplace
@@ -1021,6 +1023,10 @@ Current M1 status:
   token consumption, workspace-relative path policy, symlink target/parent
   rejection, zero hook/filter/attribute risk for create, no forced removal,
   sanitized response metadata, and no path/stdout/stderr/argv disclosure
+- done: route-specific nested response-key schemas for all Git branch,
+  commit, and worktree POST routes, fail-closing unexpected keys inside
+  workspace, app-server, action, target, source, branch, status, safety,
+  subprocess, policy, result/message, and preflight scope summaries
 - done: blocked file action preflight for write/remove/copy/create-directory
   intent with workspace-relative path validation, basename/count-only metadata,
   no file contents returned, no filesystem writes, no app-server traffic, and a
@@ -1148,8 +1154,9 @@ Current M1 status:
   summaries, gate flags, execution-readiness state, managed-client state,
   loaded-session suffixes, latest suffix/status/event metadata, and
   recent-control metadata
-- pending: expand per-route nested object-shape validation beyond the generic
-  integration mutation preflight route before broadening enabled mutations
+- pending: finish per-route nested object-shape validation for the remaining
+  `file-action` and dynamic action-preflight confirmation response surfaces
+  before broadening additional enabled mutations
 
 M2: Omarchy desktop shell.
 
