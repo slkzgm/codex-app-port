@@ -800,6 +800,12 @@ permissions, service tier, summary, sandbox, and arbitrary settings are not
 accepted. Responses and action audit records return suffix/status/policy-count
 metadata only, never full ids, cwd, paths, settings payloads, raw app-server
 payloads, or the preflight token.
+Thread metadata updates are still preflight-only. `/api/thread-metadata-update-preflight`
+validates a selected thread suffix plus optional `gitInfo` branch/origin/SHA
+shape locally, rejects unsupported keys or unsafe values, and never touches
+app-server or mutates thread metadata. The browser receives only counts and
+presence booleans, never full ids, branch names, origin URLs, SHAs, cwd, paths,
+argument text, secrets, raw payloads, or an execution route.
 Thread compaction is more sensitive because it can trigger model traffic.
 `/api/thread-compact-preflight` validates a selected thread suffix locally and
 returns a one-time token without app-server traffic. `/api/thread-compact-start`

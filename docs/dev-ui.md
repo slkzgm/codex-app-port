@@ -17,6 +17,9 @@ The server binds to `127.0.0.1` by default and serves:
   previews for one thread
 - `/api/thread-search`: disabled-by-default server-side search with
   suffix/count-only results when explicitly enabled
+- `/api/thread-metadata-update-preflight`: local-only metadata update
+  validation for selected threads, with execution blocked and branch/origin/SHA
+  values omitted
 - `/api/thread-turn-items`: disabled-by-default paged turn-item metadata with
   text, commands, output, patches, paths, cursors, and full ids omitted
 - `/api/git-worktree`: sanitized read-only Git metadata for the selected
@@ -430,6 +433,13 @@ The thread panel also exposes `Memory Check` and `Set Memory` controls for
 It requires a one-time preflight token, accepts only `enabled` or `disabled`,
 resolves the selected thread by suffix through `thread/list`, and displays only
 mode/status metadata.
+
+The same panel exposes `Metadata Check` for `thread/metadata/update`. It is
+local-only: the route validates only a selected thread suffix and optional
+`gitInfo` branch/origin/SHA JSON shape, rejects unsupported keys and unsafe
+values, keeps execution blocked, and displays only count/presence metadata.
+It does not touch app-server, mutate metadata, or return full ids, branch
+names, origin URLs, SHAs, paths, secrets, argument text, or raw payloads.
 
 `/api/thread-turns` is the separate paged-turn metadata surface for selected
 threads. It is disabled unless `CODEX_APP_PORT_ALLOW_THREAD_TURNS=1` is set
@@ -1339,6 +1349,13 @@ payloads, raw app-server payloads, or preflight tokens. Browser bodies cannot
 provide cwd, model, permissions, service tier, summary, sandbox policy, or
 arbitrary settings.
 
+The thread metadata-update preflight endpoint validates selected-thread metadata
+intent locally and has no matching execution route. It accepts only optional
+`gitInfo` with `branch`, `originUrl`, and `sha` string-or-null fields, returns
+blocked policy metadata, and omits full ids, branch/origin/SHA values, cwd,
+paths, argument text, secrets, raw app-server payloads, and raw request
+payloads.
+
 The thread compact preflight endpoint validates only a selected thread suffix
 and returns a local token without touching app-server. The matching
 `/api/thread-compact-start` route is disabled unless both
@@ -1906,6 +1923,9 @@ that `/api/live-session-bulk-control` is separately gated by the persistent
 session manager plus `CODEX_APP_PORT_ALLOW_LIVE_SESSION_BULK_CONTROL=1` and
 returns/logs only count metadata after a matching one-time preflight token while
 enforcing route-specific nested response schemas,
+that `/api/thread-metadata-update-preflight` validates `thread/metadata/update`
+locally without app-server traffic or metadata mutation and omits full ids,
+branch names, origin URLs, SHAs, paths, secrets, argument text, and raw payloads,
 that opt-in terminal-background cleanup and file actions also write sanitized
 action audit records without terminal output, session ids, paths, basenames, or
 file contents, that `/api/git-worktree` returns read-only Git metadata

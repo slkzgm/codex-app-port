@@ -958,6 +958,13 @@ async function checkStrictBrowserPostBodies() {
           preflightToken: "preflight-1234567890abcdef",
         },
       ],
+      [
+        "/api/thread-metadata-update-preflight",
+        {
+          thread: "12345678",
+          arguments: "{\"gitInfo\":{\"branch\":\"main\"}}",
+        },
+      ],
       ["/api/thread-rollback-preflight", { thread: "12345678", numTurns: 1 }],
       [
         "/api/thread-rollback-action",
@@ -2402,6 +2409,24 @@ function assertBrowserPostBodyContracts(cases) {
     threadMemoryModeActionContract.nestedKeySchemas.policy?.includes("unexpected")
   ) {
     throw new Error("thread-memory-mode-set-action response contract is missing nested schemas");
+  }
+  const threadMetadataUpdatePreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-metadata-update-preflight"];
+  if (
+    threadMetadataUpdatePreflightContract.usesRouteSpecificNestedKeySchemas !== true ||
+    !Object.isFrozen(threadMetadataUpdatePreflightContract.nestedKeySchemas.policy) ||
+    !threadMetadataUpdatePreflightContract.nestedKeySchemas.metadataUpdate?.includes(
+      "metadataExecutionBlocked",
+    ) ||
+    !threadMetadataUpdatePreflightContract.nestedKeySchemas.metadataUpdate?.includes(
+      "originUrlReturned",
+    ) ||
+    !threadMetadataUpdatePreflightContract.nestedKeySchemas.policy?.includes(
+      "metadataUpdatePreflightEnabled",
+    ) ||
+    threadMetadataUpdatePreflightContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("thread-metadata-update-preflight response contract is missing nested schemas");
   }
   const threadRollbackPreflightContract =
     BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-rollback-preflight"];

@@ -352,6 +352,11 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /thread-memory-mode-status/);
     assert.match(appScript, /runThreadMemoryModePreflight/);
     assert.match(appScript, /runThreadMemoryModeAction/);
+    assert.match(html, /thread-metadata-arguments-input/);
+    assert.match(html, /thread-metadata-update-preflight-button/);
+    assert.match(html, /thread-metadata-update-status/);
+    assert.match(appScript, /runThreadMetadataUpdatePreflight/);
+    assert.match(appScript, /renderThreadMetadataUpdatePreflight/);
     assert.match(html, /thread-safety-lock-preflight-button/);
     assert.match(html, /thread-safety-lock-button/);
     assert.match(html, /thread-safety-lock-status/);
@@ -413,6 +418,7 @@ test("browser POST body contracts are centralized and immutable", () => {
     "/api/thread-goal-clear-action",
     "/api/thread-memory-mode-set-preflight",
     "/api/thread-memory-mode-set-action",
+    "/api/thread-metadata-update-preflight",
     "/api/thread-rollback-preflight",
     "/api/thread-rollback-action",
     "/api/thread-safety-lock-preflight",
@@ -576,6 +582,11 @@ test("browser POST body contracts are centralized and immutable", () => {
     "thread",
     "mode",
     "preflightToken",
+  ]);
+  assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/thread-metadata-update-preflight"].allowedFields], [
+    "workspace",
+    "thread",
+    "arguments",
   ]);
   assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/thread-rollback-preflight"].allowedFields], [
     "workspace",
@@ -1733,6 +1744,31 @@ test("browser POST response contracts block unsafe response values", () => {
   assert.equal(threadMemoryModeActionContract.nestedKeySchemas.result.includes("memoryModeSet"), true);
   assert.equal(threadMemoryModeActionContract.nestedKeySchemas.policy.includes("requiresExplicitExecutionGate"), true);
   assert.equal(threadMemoryModeActionContract.nestedKeySchemas.policy.includes("unexpected"), false);
+  const threadMetadataUpdatePreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-metadata-update-preflight"];
+  assert.equal(threadMetadataUpdatePreflightContract.usesRouteSpecificNestedKeySchemas, true);
+  assert.equal(
+    threadMetadataUpdatePreflightContract.nestedKeySchemas.metadataUpdate.includes(
+      "metadataExecutionBlocked",
+    ),
+    true,
+  );
+  assert.equal(
+    threadMetadataUpdatePreflightContract.nestedKeySchemas.metadataUpdate.includes(
+      "originUrlReturned",
+    ),
+    true,
+  );
+  assert.equal(
+    threadMetadataUpdatePreflightContract.nestedKeySchemas.policy.includes(
+      "metadataUpdatePreflightEnabled",
+    ),
+    true,
+  );
+  assert.equal(
+    threadMetadataUpdatePreflightContract.nestedKeySchemas.policy.includes("unexpected"),
+    false,
+  );
   const threadRollbackPreflightContract =
     BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-rollback-preflight"];
   assert.equal(threadRollbackPreflightContract.usesRouteSpecificNestedKeySchemas, true);
@@ -11426,6 +11462,199 @@ test("dev server rolls back threads only behind explicit opt-in and preflight to
   } finally {
     await closeServer(server);
     await rm(actionAuditDir, { recursive: true, force: true });
+  }
+});
+
+test("dev server preflights thread metadata updates without app-server traffic", async () => {
+  let probeCalled = false;
+  const { server, url } = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    probeFn: async () => {
+      probeCalled = true;
+      return { ok: true };
+    },
+  });
+
+  try {
+    const getResponse = await fetch(`${url}/api/thread-metadata-update-preflight`, {
+      headers: apiHeaders(server),
+    });
+    assert.equal(getResponse.status, 405);
+
+    const rejectedField = await fetch(`${url}/api/thread-metadata-update-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        thread: "abcd1234",
+        arguments: JSON.stringify({
+          gitInfo: {
+            branch: "private/main",
+            originUrl: "https://token@example.test/private/repo",
+            sha: "abc123private",
+          },
+        }),
+        target: "/tmp/default-workspace/private-metadata",
+      }),
+    });
+    assert.equal(rejectedField.status, 400);
+    const rejectedFieldSerialized = await rejectedField.text();
+    assert.equal(rejectedFieldSerialized.includes("private/main"), false);
+    assert.equal(rejectedFieldSerialized.includes("token@example"), false);
+    assert.equal(rejectedFieldSerialized.includes("abc123private"), false);
+    assert.equal(rejectedFieldSerialized.includes("/tmp/default-workspace"), false);
+
+    const rejectedArgument = await fetch(`${url}/api/thread-metadata-update-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        thread: "abcd1234",
+        arguments: JSON.stringify({
+          gitInfo: {
+            branch: "private/main",
+            originUrl: "https://token@example.test/private/repo",
+            sha: "abc123private",
+            privatePath: "/tmp/default-workspace/private-metadata",
+          },
+        }),
+      }),
+    });
+    assert.equal(rejectedArgument.status, 400);
+    const rejectedArgumentSerialized = await rejectedArgument.text();
+    assert.equal(rejectedArgumentSerialized.includes("private/main"), false);
+    assert.equal(rejectedArgumentSerialized.includes("token@example"), false);
+    assert.equal(rejectedArgumentSerialized.includes("abc123private"), false);
+    assert.equal(rejectedArgumentSerialized.includes("/tmp/default-workspace"), false);
+
+    const args = JSON.stringify({
+      gitInfo: {
+        branch: "private/main",
+        originUrl: "https://token@example.test/private/repo",
+        sha: "abc123private",
+      },
+    });
+    const response = await fetch(`${url}/api/thread-metadata-update-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        thread: "abcd1234",
+        arguments: args,
+      }),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, false);
+    assert.equal(payload.appServer.modelTraffic, false);
+    assert.equal(payload.appServer.commandTraffic, false);
+    assert.equal(payload.appServer.metadataTraffic, false);
+    assert.equal(payload.action.type, "thread-metadata-update-preflight");
+    assert.equal(payload.action.method, "thread/metadata/update");
+    assert.equal(payload.action.execution, "blocked");
+    assert.equal(payload.action.wouldUpdateMetadata, false);
+    assert.equal(payload.action.metadataUpdated, false);
+    assert.equal(payload.action.threadStateMutated, false);
+    assert.equal(payload.action.appServerTouched, false);
+    assert.equal(payload.thread.threadIdSuffix, "abcd1234");
+    assert.equal(payload.thread.fullIdsReturned, false);
+    assert.equal(payload.metadataUpdate.method, "thread/metadata/update");
+    assert.equal(payload.metadataUpdate.argumentCharCount, args.length);
+    assert.equal(payload.metadataUpdate.argumentTopLevelKeyCount, 1);
+    assert.equal(payload.metadataUpdate.argumentObjectAccepted, true);
+    assert.equal(payload.metadataUpdate.gitInfoPresent, true);
+    assert.equal(payload.metadataUpdate.gitInfoObjectAccepted, true);
+    assert.equal(payload.metadataUpdate.branchPresent, true);
+    assert.equal(payload.metadataUpdate.branchCharCount, "private/main".length);
+    assert.equal(payload.metadataUpdate.originUrlPresent, true);
+    assert.equal(
+      payload.metadataUpdate.originUrlCharCount,
+      "https://token@example.test/private/repo".length,
+    );
+    assert.equal(payload.metadataUpdate.shaPresent, true);
+    assert.equal(payload.metadataUpdate.shaCharCount, "abc123private".length);
+    assert.equal(payload.metadataUpdate.urlLikeArgumentCount >= 1, true);
+    assert.equal(payload.metadataUpdate.metadataExecutionBlocked, true);
+    assert.equal(payload.metadataUpdate.appServerTraffic, false);
+    assert.equal(payload.metadataUpdate.fullIdsReturned, false);
+    assert.equal(payload.metadataUpdate.branchReturned, false);
+    assert.equal(payload.metadataUpdate.originUrlReturned, false);
+    assert.equal(payload.metadataUpdate.shaReturned, false);
+    assert.equal(payload.metadataUpdate.pathsReturned, false);
+    assert.equal(payload.metadataUpdate.secretsReturned, false);
+    assert.equal(payload.metadataUpdate.argumentTextReturned, false);
+    assert.equal(payload.metadataUpdate.rawPayloadReturned, false);
+    assert.equal(payload.policy.metadataUpdatePreflightEnabled, true);
+    assert.equal(payload.policy.metadataUpdateEnabled, false);
+    assert.equal(payload.policy.executionRouteImplemented, false);
+    assert.equal(payload.policy.dedicatedExecutionRouteImplemented, false);
+    assert.equal(payload.policy.executionGateEnabled, false);
+    assert.equal(payload.policy.threadStateMutated, false);
+    assert.equal(payload.policy.metadataUpdated, false);
+    assert.equal(payload.policy.branchReturned, false);
+    assert.equal(payload.policy.originUrlReturned, false);
+    assert.equal(payload.policy.shaReturned, false);
+    assert.equal(payload.policy.argumentTextReturned, false);
+    assertActionPreflight(payload, "thread-metadata-update-preflight", "default");
+    assert.equal(probeCalled, false);
+    for (const marker of [
+      "private/main",
+      "token@example",
+      "abc123private",
+      "/tmp/default-workspace",
+      "codexHome",
+      "userAgent",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `metadata preflight leaked ${marker}`);
+    }
+
+    const confirm = await fetch(`${url}/api/action-preflight-confirm`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        actionType: "thread-metadata-update-preflight",
+        preflightToken: payload.preflight.token,
+        thread: "abcd1234",
+        arguments: args,
+      }),
+    });
+    assert.equal(confirm.status, 200);
+    const confirmPayload = await confirm.json();
+    const confirmSerialized = JSON.stringify(confirmPayload);
+    assertActionPreflightConfirmation(
+      confirmPayload,
+      "thread-metadata-update-preflight",
+      "default",
+    );
+    assert.equal(confirmPayload.action.method, "thread/metadata/update");
+    assert.equal(confirmPayload.action.mutationExecuted, false);
+    for (const marker of [
+      payload.preflight.token,
+      "private/main",
+      "token@example",
+      "abc123private",
+      "/tmp/default-workspace",
+    ]) {
+      assert.equal(confirmSerialized.includes(marker), false, `metadata confirm leaked ${marker}`);
+    }
+
+    const actionRoute = await fetch(`${url}/api/thread-metadata-update-action`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        thread: "abcd1234",
+        arguments: args,
+        preflightToken: payload.preflight.token,
+      }),
+    });
+    assert.equal(actionRoute.status, 405);
+    assert.equal(probeCalled, false);
+  } finally {
+    await closeServer(server);
   }
 });
 

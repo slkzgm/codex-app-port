@@ -121,6 +121,14 @@ browser params, requires the official null-params shape, has no execution route,
 deletes no memories, performs no app-server traffic, and returns no memory
 files, memory content, memory paths, secrets, or raw payloads.
 
+`thread/metadata/update` remains blocked as a browser mutation and is exposed
+only through `/api/thread-metadata-update-preflight` for local validation. The
+route accepts a selected thread suffix plus optional `gitInfo` branch/origin/SHA
+shape, rejects unsupported keys and unsafe values, has no execution route,
+performs no app-server traffic, mutates no thread metadata, and returns no full
+ids, branch names, origin URLs, SHAs, paths, secrets, arguments, or raw
+payloads.
+
 Current local status: `permissionProfile/list`, `account/usage/read`,
 `account/workspaceMessages/read`, `externalAgentConfig/import/readHistories`,
 `plugin/installed`, and `remoteControl/status/read` are exposed only through the
@@ -383,6 +391,15 @@ suffix through `thread/list`, accepts only `enabled` or `disabled`, writes a
 sanitized action-audit record, and returns only suffix/mode/status metadata.
 It does not return full ids, cwd, paths, thread content, raw app-server
 payloads, or preflight tokens.
+
+`/api/thread-metadata-update-preflight` validates a selected thread suffix and
+optional `gitInfo` branch/origin/SHA arguments locally without app-server
+traffic. It rejects unsupported keys or unsafe values, issues only a local
+confirmation token for the blocked intent, and has no matching execution route.
+Browser responses return only count/presence metadata plus explicit blocked
+policy flags, not full ids, branch names, origin URLs, SHAs, cwd, paths,
+argument text, secrets, raw app-server payloads, or preflight tokens outside the
+standard protected token field.
 
 When the server is started with `CODEX_APP_PORT_ALLOW_THREAD_TURNS=1`,
 `/api/thread-turns` may call `thread/list` to resolve the selected suffix and

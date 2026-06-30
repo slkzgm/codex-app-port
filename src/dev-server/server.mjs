@@ -488,6 +488,13 @@ export const ACTION_PREFLIGHT_CONFIRMATION_FIELD_CONTRACTS = Object.freeze({
     "thread",
     "mode",
   ),
+  "thread-metadata-update-preflight": bodyFields(
+    "workspace",
+    "actionType",
+    "preflightToken",
+    "thread",
+    "arguments",
+  ),
   "thread-rollback-preflight": bodyFields(
     "workspace",
     "actionType",
@@ -926,6 +933,10 @@ export const BROWSER_POST_BODY_CONTRACTS = Object.freeze({
       requiresPreflightToken: true,
     },
   ),
+  "/api/thread-metadata-update-preflight": bodyContract(["workspace", "thread", "arguments"], {
+    kind: "preflight",
+    appServerTraffic: false,
+  }),
   "/api/thread-rollback-preflight": bodyContract(["workspace", "thread", "numTurns"], {
     kind: "preflight",
     appServerTraffic: false,
@@ -3922,6 +3933,95 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
       "implemented",
       "requiresExplicitExecutionGate",
     ],
+  }),
+  "/api/thread-metadata-update-preflight": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    appServer: ["touched", "modelTraffic", "commandTraffic", "metadataTraffic"],
+    action: [
+      "type",
+      "method",
+      "execution",
+      "wouldUpdateMetadata",
+      "metadataUpdated",
+      "threadStateMutated",
+      "appServerTouched",
+      "modelTraffic",
+      "reason",
+    ],
+    thread: ["threadIdSuffix", "fullIdsReturned", "contentReturned", "pathsReturned"],
+    metadataUpdate: [
+      "method",
+      "argumentCharCount",
+      "argumentLineCount",
+      "argumentTopLevelKeyCount",
+      "argumentObjectAccepted",
+      "gitInfoPresent",
+      "gitInfoNullRequested",
+      "gitInfoObjectAccepted",
+      "branchPresent",
+      "branchNullRequested",
+      "branchCharCount",
+      "originUrlPresent",
+      "originUrlNullRequested",
+      "originUrlCharCount",
+      "shaPresent",
+      "shaNullRequested",
+      "shaCharCount",
+      "urlLikeArgumentCount",
+      "pathLikeArgumentCount",
+      "secretLikeArgumentCount",
+      "sensitiveKeyCount",
+      "metadataExecutionBlocked",
+      "appServerTraffic",
+      "modelTraffic",
+      "fullIdsReturned",
+      "branchReturned",
+      "originUrlReturned",
+      "shaReturned",
+      "pathsReturned",
+      "secretsReturned",
+      "argumentTextReturned",
+      "rawPayloadReturned",
+    ],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "modelTraffic",
+      "commandTraffic",
+      "threadStateMutated",
+      "metadataUpdated",
+      "metadataUpdatePreflightEnabled",
+      "metadataUpdateEnabled",
+      "executionRouteImplemented",
+      "dedicatedExecutionRouteImplemented",
+      "executionGateEnabled",
+      "requiresApprovalPipeline",
+      "requiresExplicitEnablement",
+      "browserMethodCallsAccepted",
+      "threadContentReturned",
+      "fullIdsReturned",
+      "branchReturned",
+      "originUrlReturned",
+      "shaReturned",
+      "pathsReturned",
+      "secretsReturned",
+      "argumentTextReturned",
+      "rawPayloadsReturned",
+      "implemented",
+    ],
+    preflight: [
+      "token",
+      "tokenIssued",
+      "issuedAt",
+      "expiresAt",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseRequiredForMutation",
+      "consumed",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
   }),
   "/api/thread-rollback-preflight": responseNestedKeySchemas({
     workspace: ["id", "label", "isDefault"],
@@ -10734,6 +10834,11 @@ const BROWSER_POST_RESPONSE_ROUTE_TOP_LEVEL_KEYS = Object.freeze({
     "memory",
     "result",
   ),
+  "/api/thread-metadata-update-preflight": routeResponseTopLevelKeys(
+    ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
+    "thread",
+    "metadataUpdate",
+  ),
   "/api/thread-rollback-preflight": routeResponseTopLevelKeys(
     ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
     "thread",
@@ -12566,6 +12671,36 @@ export async function handleRequest(request, response, options) {
       sendJson(response, error.statusCode ?? 400, {
         ok: false,
         error: cleanDisplayText(error.message, 200) ?? "Invalid thread memory mode request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/thread-metadata-update-preflight") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, ["workspace", "thread", "arguments"]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const payload = buildThreadMetadataUpdatePreflight(body, { workspace });
+      sendJson(response, 200, attachActionPreflight(payload, { body, workspace, options }));
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error:
+          cleanDisplayText(error.message, 200) ??
+          "Invalid thread metadata update preflight request",
       });
     }
     return;
@@ -17906,6 +18041,10 @@ async function buildConfirmableActionPreflightPayload(actionType, body, { worksp
       return buildThreadMemoryModeSetPreflight(body, {
         workspace,
         threadMemoryModeSetEnabled: options.threadMemoryModeSetEnabled,
+      });
+    case "thread-metadata-update-preflight":
+      return buildThreadMetadataUpdatePreflight(body, {
+        workspace,
       });
     case "thread-rollback-preflight":
       return buildThreadRollbackPreflight(body, {
@@ -31887,6 +32026,137 @@ export function buildThreadMemoryModeSetBlocked(preflightPayload) {
   };
 }
 
+export function buildThreadMetadataUpdatePreflight(body, { workspace } = {}) {
+  const threadIdSuffix = validateThreadSuffix(body?.thread);
+  const methodAudit = integrationMethodAudit();
+  const auditEntry = methodAudit.find((entry) => entry.method === "thread/metadata/update");
+  if (!auditEntry || auditEntry.status !== "blocked") {
+    throwRequestError("Thread metadata update method is not available", 400);
+  }
+  const metadataUpdate = summarizeThreadMetadataUpdateArguments(body?.arguments);
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: publicWorkspaces([workspace])[0],
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      metadataTraffic: false,
+    },
+    action: {
+      type: "thread-metadata-update-preflight",
+      method: "thread/metadata/update",
+      execution: "blocked",
+      wouldUpdateMetadata: false,
+      metadataUpdated: false,
+      threadStateMutated: false,
+      appServerTouched: false,
+      modelTraffic: false,
+      reason: "thread-metadata-update-execution-not-implemented",
+    },
+    thread: {
+      threadIdSuffix,
+      fullIdsReturned: false,
+      contentReturned: false,
+      pathsReturned: false,
+    },
+    metadataUpdate: {
+      method: "thread/metadata/update",
+      ...metadataUpdate,
+      metadataExecutionBlocked: true,
+      appServerTraffic: false,
+      modelTraffic: false,
+      fullIdsReturned: false,
+      branchReturned: false,
+      originUrlReturned: false,
+      shaReturned: false,
+      pathsReturned: false,
+      secretsReturned: false,
+      argumentTextReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: threadMetadataUpdatePolicy(),
+  };
+}
+
+function summarizeThreadMetadataUpdateArguments(value) {
+  const args = validateMcpArguments(value);
+  const argumentObject = parseIntegrationRiskArguments(value);
+  if (args.present && !argumentObject) {
+    throwRequestError("Thread metadata update arguments must be a JSON object", 400);
+  }
+  const input = argumentObject ?? {};
+  const topLevelKeys = Object.keys(input);
+  for (const key of topLevelKeys) {
+    if (key !== "gitInfo") {
+      throwRequestError("Thread metadata update arguments contain unsupported keys", 400);
+    }
+  }
+  const gitInfo = input.gitInfo;
+  const gitInfoPresent = Object.hasOwn(input, "gitInfo");
+  const gitInfoNullRequested = gitInfoPresent && gitInfo === null;
+  const gitInfoObjectAccepted =
+    gitInfoPresent && gitInfo !== null && typeof gitInfo === "object" && !Array.isArray(gitInfo);
+  if (gitInfoPresent && !gitInfoNullRequested && !gitInfoObjectAccepted) {
+    throwRequestError("Thread metadata gitInfo must be an object or null", 400);
+  }
+  const allowedGitKeys = new Set(["branch", "originUrl", "sha"]);
+  const gitInfoObject = gitInfoObjectAccepted ? gitInfo : {};
+  for (const key of Object.keys(gitInfoObject)) {
+    if (!allowedGitKeys.has(key)) {
+      throwRequestError("Thread metadata gitInfo contains unsupported keys", 400);
+    }
+    validateThreadMetadataGitString(gitInfoObject[key], key);
+  }
+  const shape = summarizeIntegrationRiskArgumentShape(input);
+  return {
+    argumentCharCount: safeCount(args.charCount),
+    argumentLineCount: safeCount(args.lineCount),
+    argumentTopLevelKeyCount: topLevelKeys.length,
+    argumentObjectAccepted: !args.present || args.validJsonObject,
+    gitInfoPresent,
+    gitInfoNullRequested,
+    gitInfoObjectAccepted,
+    branchPresent: typeof gitInfoObject.branch === "string",
+    branchNullRequested: Object.hasOwn(gitInfoObject, "branch") && gitInfoObject.branch === null,
+    branchCharCount: typeof gitInfoObject.branch === "string" ? gitInfoObject.branch.length : 0,
+    originUrlPresent: typeof gitInfoObject.originUrl === "string",
+    originUrlNullRequested:
+      Object.hasOwn(gitInfoObject, "originUrl") && gitInfoObject.originUrl === null,
+    originUrlCharCount:
+      typeof gitInfoObject.originUrl === "string" ? gitInfoObject.originUrl.length : 0,
+    shaPresent: typeof gitInfoObject.sha === "string",
+    shaNullRequested: Object.hasOwn(gitInfoObject, "sha") && gitInfoObject.sha === null,
+    shaCharCount: typeof gitInfoObject.sha === "string" ? gitInfoObject.sha.length : 0,
+    urlLikeArgumentCount: shape.urlLikeArgumentCount,
+    pathLikeArgumentCount: shape.pathLikeArgumentCount,
+    secretLikeArgumentCount: shape.secretLikeArgumentCount,
+    sensitiveKeyCount: shape.sensitiveKeyCount,
+  };
+}
+
+function validateThreadMetadataGitString(value, key) {
+  if (value === null) {
+    return;
+  }
+  if (typeof value !== "string") {
+    throwRequestError(`Thread metadata gitInfo.${key} must be a string or null`, 400);
+  }
+  if (value.trim().length === 0) {
+    throwRequestError(`Thread metadata gitInfo.${key} must not be empty`, 400);
+  }
+  if (value.includes("\0")) {
+    throwRequestError(`Thread metadata gitInfo.${key} contains unsupported text`, 400);
+  }
+  if (value.length > MAX_INTEGRATION_TARGET_CHARS) {
+    throwRequestError(
+      `Thread metadata gitInfo.${key} must be ${MAX_INTEGRATION_TARGET_CHARS} characters or fewer`,
+      400,
+    );
+  }
+}
+
 export function sanitizeThreadRollbackPayload(
   payload,
   { workspace = null, consumedPreflight, actionAuditLog = null, auditLogWritableChecked = false } = {},
@@ -39109,6 +39379,35 @@ function threadMemoryModePolicy({
     browserMethodCallsAccepted: Boolean(enabled && memoryModeSet),
     implemented: Boolean(enabled),
     requiresExplicitExecutionGate: true,
+  };
+}
+
+function threadMetadataUpdatePolicy() {
+  return {
+    readOnly: true,
+    appServerTraffic: false,
+    modelTraffic: false,
+    commandTraffic: false,
+    threadStateMutated: false,
+    metadataUpdated: false,
+    metadataUpdatePreflightEnabled: true,
+    metadataUpdateEnabled: false,
+    executionRouteImplemented: false,
+    dedicatedExecutionRouteImplemented: false,
+    executionGateEnabled: false,
+    requiresApprovalPipeline: true,
+    requiresExplicitEnablement: true,
+    browserMethodCallsAccepted: false,
+    threadContentReturned: false,
+    fullIdsReturned: false,
+    branchReturned: false,
+    originUrlReturned: false,
+    shaReturned: false,
+    pathsReturned: false,
+    secretsReturned: false,
+    argumentTextReturned: false,
+    rawPayloadsReturned: false,
+    implemented: true,
   };
 }
 

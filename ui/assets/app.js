@@ -401,6 +401,11 @@ const elements = {
   threadMemoryModePreflightButton: document.querySelector("#thread-memory-mode-preflight-button"),
   threadMemoryModeButton: document.querySelector("#thread-memory-mode-button"),
   threadMemoryModeStatus: document.querySelector("#thread-memory-mode-status"),
+  threadMetadataArgumentsInput: document.querySelector("#thread-metadata-arguments-input"),
+  threadMetadataUpdatePreflightButton: document.querySelector(
+    "#thread-metadata-update-preflight-button",
+  ),
+  threadMetadataUpdateStatus: document.querySelector("#thread-metadata-update-status"),
   threadRollbackTurnsInput: document.querySelector("#thread-rollback-turns-input"),
   threadRollbackPreflightButton: document.querySelector("#thread-rollback-preflight-button"),
   threadRollbackButton: document.querySelector("#thread-rollback-button"),
@@ -760,6 +765,7 @@ let lastThreadRenamePreflight = null;
 let lastThreadGoalSetPreflight = null;
 let lastThreadGoalClearPreflight = null;
 let lastThreadMemoryModePreflight = null;
+let lastThreadMetadataUpdatePreflight = null;
 let lastThreadRollbackPreflight = null;
 let lastThreadSafetyLockPreflight = null;
 let lastThreadDeletePreflight = null;
@@ -828,6 +834,7 @@ elements.workspaceSelect.addEventListener("change", () => {
   lastThreadGoalSetPreflight = null;
   lastThreadGoalClearPreflight = null;
   lastThreadMemoryModePreflight = null;
+  lastThreadMetadataUpdatePreflight = null;
   lastThreadRollbackPreflight = null;
   lastThreadSafetyLockPreflight = null;
   lastThreadDeletePreflight = null;
@@ -1077,6 +1084,15 @@ elements.threadMemoryModePreflightButton.addEventListener("click", () => {
 
 elements.threadMemoryModeButton.addEventListener("click", () => {
   runThreadMemoryModeAction();
+});
+
+elements.threadMetadataArgumentsInput.addEventListener("input", () => {
+  lastThreadMetadataUpdatePreflight = null;
+  updateThreadMetadataUpdateState();
+});
+
+elements.threadMetadataUpdatePreflightButton.addEventListener("click", () => {
+  runThreadMetadataUpdatePreflight();
 });
 
 elements.threadRollbackTurnsInput.addEventListener("input", () => {
@@ -1845,6 +1861,10 @@ function threadMemoryModePreflightEndpoint() {
 
 function threadMemoryModeEndpoint() {
   return "/api/thread-memory-mode-set-action";
+}
+
+function threadMetadataUpdatePreflightEndpoint() {
+  return "/api/thread-metadata-update-preflight";
 }
 
 function threadRollbackPreflightEndpoint() {
@@ -5679,6 +5699,7 @@ async function loadThreadDetail(threadIdSuffix, { archived = false } = {}) {
   lastThreadGoalSetPreflight = null;
   lastThreadGoalClearPreflight = null;
   lastThreadMemoryModePreflight = null;
+  lastThreadMetadataUpdatePreflight = null;
   lastThreadRollbackPreflight = null;
   lastThreadSafetyLockPreflight = null;
   lastThreadDeletePreflight = null;
@@ -5693,6 +5714,7 @@ async function loadThreadDetail(threadIdSuffix, { archived = false } = {}) {
   elements.threadGoalStatus.textContent = "Goal not loaded.";
   elements.threadGoalMutationStatus.textContent = "Goal actions require preflight.";
   elements.threadMemoryModeStatus.textContent = "Memory mode requires preflight.";
+  elements.threadMetadataUpdateStatus.textContent = "Metadata update check ready.";
   elements.threadTurnsButton.disabled = false;
   elements.threadTurnsStatus.textContent = "Turns page not loaded.";
   elements.threadTurnItemsInput.value = "";
@@ -5704,6 +5726,7 @@ async function loadThreadDetail(threadIdSuffix, { archived = false } = {}) {
   updateThreadRenameState();
   updateThreadGoalMutationState();
   updateThreadMemoryModeState();
+  updateThreadMetadataUpdateState();
   updateThreadRollbackState();
   updateThreadSafetyLockState();
   updateThreadDeleteState();
@@ -6500,6 +6523,47 @@ async function runThreadMemoryModeAction() {
     renderError(error);
   } finally {
     updateThreadMemoryModeState();
+  }
+}
+
+async function runThreadMetadataUpdatePreflight() {
+  if (!selectedThreadIdSuffix) {
+    elements.threadMetadataUpdateStatus.textContent = "Select a thread first";
+    return;
+  }
+
+  setThreadMetadataUpdateLoading(true);
+  lastThreadMetadataUpdatePreflight = null;
+  hideError();
+
+  const body = {
+    workspace: selectedWorkspaceId,
+    thread: selectedThreadIdSuffix,
+    arguments: elements.threadMetadataArgumentsInput.value,
+  };
+
+  try {
+    const response = await fetch(threadMetadataUpdatePreflightEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify(body),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    lastThreadMetadataUpdatePreflight = {
+      body,
+      token: payload.preflight?.token ?? null,
+      enabled: false,
+    };
+    renderThreadMetadataUpdatePreflight(payload);
+  } catch (error) {
+    elements.threadMetadataUpdateStatus.textContent = "Metadata check failed";
+    renderError(error);
+  } finally {
+    setThreadMetadataUpdateLoading(false);
   }
 }
 
@@ -7489,6 +7553,21 @@ function renderThreadMemoryModeAction(payload) {
     payload.result?.memoryModeSet === true ? `Memory ${mode}` : "Memory set done";
 }
 
+function renderThreadMetadataUpdatePreflight(payload) {
+  const metadata = payload.metadataUpdate ?? {};
+  const parts = [
+    metadata.gitInfoNullRequested
+      ? "clear git"
+      : metadata.gitInfoPresent
+        ? "git info"
+        : "no git change",
+    metadata.branchPresent ? "branch" : null,
+    metadata.originUrlPresent ? "origin" : null,
+    metadata.shaPresent ? "sha" : null,
+  ].filter(Boolean);
+  elements.threadMetadataUpdateStatus.textContent = `Metadata blocked (${parts.join(", ")})`;
+}
+
 function renderThreadRollbackPreflight(payload) {
   const count = Number.isSafeInteger(payload.thread?.numTurns) ? payload.thread.numTurns : 0;
   elements.threadRollbackStatus.textContent = payload.policy?.executionGateEnabled
@@ -8044,6 +8123,7 @@ function clearThreadDetail() {
   lastThreadGoalSetPreflight = null;
   lastThreadGoalClearPreflight = null;
   lastThreadMemoryModePreflight = null;
+  lastThreadMetadataUpdatePreflight = null;
   lastThreadRollbackPreflight = null;
   lastThreadSafetyLockPreflight = null;
   lastThreadDeletePreflight = null;
@@ -8060,6 +8140,9 @@ function clearThreadDetail() {
   elements.threadGoalBudgetInput.disabled = true;
   elements.threadMemoryModeSelect.value = "enabled";
   elements.threadMemoryModeSelect.disabled = true;
+  elements.threadMetadataArgumentsInput.value = "";
+  elements.threadMetadataArgumentsInput.disabled = true;
+  elements.threadMetadataUpdatePreflightButton.disabled = true;
   elements.threadTurnItemsInput.value = "";
   elements.threadTurnItemsInput.disabled = true;
   elements.threadTurnItemsButton.disabled = true;
@@ -8077,6 +8160,7 @@ function clearThreadDetail() {
   elements.threadGoalButton.disabled = true;
   elements.threadGoalMutationStatus.textContent = "Select a thread to update goal state.";
   elements.threadMemoryModeStatus.textContent = "Select a thread to update memory mode.";
+  elements.threadMetadataUpdateStatus.textContent = "Select a thread to check metadata updates.";
   elements.threadTurnsStatus.textContent = "Select a thread to inspect paged turn metadata.";
   elements.threadTurnsButton.disabled = true;
   elements.threadTurnItemsStatus.textContent = "Select a thread and turn to inspect paged item metadata.";
@@ -8090,6 +8174,7 @@ function clearThreadDetail() {
   updateThreadRenameState();
   updateThreadGoalMutationState();
   updateThreadMemoryModeState();
+  updateThreadMetadataUpdateState();
   updateThreadRollbackState();
   updateThreadSafetyLockState();
   updateThreadDeleteState();
@@ -8218,6 +8303,15 @@ function updateThreadMemoryModeState() {
     !lastThreadMemoryModePreflight?.token || lastThreadMemoryModePreflight.enabled !== true;
   if (!hasThread) {
     elements.threadMemoryModeStatus.textContent = "Select a thread to update memory mode.";
+  }
+}
+
+function updateThreadMetadataUpdateState() {
+  const hasThread = Boolean(selectedThreadIdSuffix);
+  elements.threadMetadataArgumentsInput.disabled = !hasThread;
+  elements.threadMetadataUpdatePreflightButton.disabled = !hasThread;
+  if (!hasThread) {
+    elements.threadMetadataUpdateStatus.textContent = "Select a thread to check metadata updates.";
   }
 }
 
@@ -12672,6 +12766,18 @@ function setThreadMemoryModeLoading(isLoading) {
   elements.threadMemoryModePreflightButton.textContent = isLoading ? "Checking" : "Memory Check";
   if (isLoading) {
     elements.threadMemoryModeStatus.textContent = "Checking memory mode";
+  }
+}
+
+function setThreadMetadataUpdateLoading(isLoading) {
+  const hasThread = Boolean(selectedThreadIdSuffix);
+  elements.threadMetadataArgumentsInput.disabled = isLoading || !hasThread;
+  elements.threadMetadataUpdatePreflightButton.disabled = isLoading || !hasThread;
+  elements.threadMetadataUpdatePreflightButton.textContent = isLoading
+    ? "Checking"
+    : "Metadata Check";
+  if (isLoading) {
+    elements.threadMetadataUpdateStatus.textContent = "Checking metadata";
   }
 }
 

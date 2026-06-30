@@ -153,6 +153,12 @@ Target parity with the Codex desktop workflow:
   accepts only `enabled` or `disabled`, and returns only suffix/mode/status
   metadata, not full ids, paths, thread content, preflight tokens, or raw
   payloads.
+- `thread/metadata/update` has a separate local-only preflight path. It accepts
+  only optional `gitInfo` branch/origin/SHA shape, rejects unsupported keys and
+  unsafe values before app-server traffic, never mutates metadata, and returns
+  only count/presence metadata, not full ids, branch names, origin URLs, SHAs,
+  paths, secrets, arguments, preflight tokens, or raw payloads. There is no
+  metadata update execution route.
 - `skills/extraRoots/set` has a separate disabled-by-default clear-only path
   behind `CODEX_APP_PORT_ALLOW_SKILLS_EXTRA_ROOTS_CLEAR=1`; it consumes a
   matching one-time preflight token, accepts no browser roots/paths/arguments,

@@ -261,6 +261,13 @@ Current M1 status:
   controls, no model traffic, sanitized suffix/policy/status response metadata,
   and sanitized action audit records without settings payloads, full ids, cwd,
   paths, or raw app-server payloads
+- done: local-only `/api/thread-metadata-update-preflight` path for
+  `thread/metadata/update`, with route-specific nested response schemas,
+  selected-thread suffix validation, optional `gitInfo` branch/origin/SHA shape
+  validation, no execution route, no app-server traffic, no metadata mutation,
+  no model traffic, and sanitized count/presence metadata without full ids,
+  branch names, origin URLs, SHAs, cwd, paths, arguments, secrets, or raw
+  payloads
 - done: opt-in `/api/thread-compact-start` path behind both
   `CODEX_APP_PORT_ALLOW_THREAD_COMPACT=1` and
   `CODEX_APP_PORT_ALLOW_SESSION_MANAGER=1`, with matching one-time

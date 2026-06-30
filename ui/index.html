@@ -1607,6 +1607,20 @@
             <button id="thread-memory-mode-button" class="secondary-button" type="button" disabled>
               Set Memory
             </button>
+            <label class="search-control" for="thread-metadata-arguments-input">
+              <span>Metadata</span>
+              <input
+                id="thread-metadata-arguments-input"
+                type="text"
+                autocomplete="off"
+                maxlength="1200"
+                placeholder='{"gitInfo":{"branch":"main"}}'
+                disabled
+              />
+            </label>
+            <button id="thread-metadata-update-preflight-button" class="secondary-button" type="button" disabled>
+              Metadata Check
+            </button>
             <label class="search-control" for="thread-turn-items-input">
               <span>Turn</span>
               <input id="thread-turn-items-input" type="text" autocomplete="off" maxlength="8" disabled />
@@ -1648,6 +1662,7 @@
           <p id="thread-goal-status" class="empty-state">Select a thread to inspect goal state.</p>
           <p id="thread-goal-mutation-status" class="empty-state">Select a thread to update goal state.</p>
           <p id="thread-memory-mode-status" class="empty-state">Select a thread to update memory mode.</p>
+          <p id="thread-metadata-update-status" class="empty-state">Select a thread to check metadata updates.</p>
           <p id="thread-turns-status" class="empty-state">Select a thread to inspect paged turn metadata.</p>
           <p id="thread-turn-items-status" class="empty-state">Select a thread and turn to inspect paged item metadata.</p>
           <dl id="thread-detail-meta" class="agent-grid"></dl>
