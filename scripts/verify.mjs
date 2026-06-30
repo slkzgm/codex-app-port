@@ -72,6 +72,7 @@ async function main() {
   await checkEventStreamApi();
   await checkSettingsIntegrationsApi();
   await checkThreadRealtimeVoicesApi();
+  await checkFsDirectoryApi();
   await checkAccountLoginApi();
   await checkAccountLoginCancelApi();
   await checkAccountCreditsNudgeApi();
@@ -14309,6 +14310,128 @@ async function checkThreadRealtimeVoicesApi() {
     await closeServer(enabled);
   }
   pass("dev server realtime voices API is opt-in and enum-only");
+}
+
+async function checkFsDirectoryApi() {
+  const blockedCalls = [];
+  const blocked = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    fsDirectoryFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+  const blockedPort = await listenWithFallback(blocked, { host: "127.0.0.1", port: 0 });
+  const blockedBaseUrl = `http://127.0.0.1:${blockedPort}`;
+
+  try {
+    const token = await readUiSessionToken(blockedBaseUrl);
+    const response = await fetch(`${blockedBaseUrl}/api/fs-directory?path=src`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`blocked fs directory API returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (
+      payload.appServer?.touched !== false ||
+      payload.policy?.fsDirectoryReadEnabled !== false ||
+      payload.policy?.entryNamesReturned !== false ||
+      payload.probes?.fsDirectory?.returnedEntryCount !== 0 ||
+      blockedCalls.length !== 0
+    ) {
+      throw new Error("blocked fs directory API did not stay local and empty");
+    }
+  } finally {
+    await closeServer(blocked);
+  }
+
+  const calls = [];
+  const enabled = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    fsDirectoryEnabled: true,
+    fsDirectoryFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-06-30T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformOs: "linux",
+          platformFamily: "unix",
+          userAgent: "verify-sensitive-agent",
+          codexHome: "/tmp/verify-private-home",
+        },
+        probes: {
+          fsDirectory: {
+            method: "fs/readDirectory",
+            methodsUsed: ["fs/getMetadata", "fs/readDirectory", "fs/readFile"],
+            target: {
+              basename: "src",
+              path: "/tmp/codex-app-port-verify/src",
+              depth: 1,
+              isWorkspaceRoot: false,
+              isDirectory: true,
+              isFile: false,
+              isSymlink: false,
+              createdTimestampPresent: true,
+              modifiedTimestampPresent: true,
+              pathReturned: true,
+              timestampsReturned: true,
+            },
+            entryCount: 6,
+            scannedEntryCount: 6,
+            returnedEntryCount: 6,
+            fileCount: 3,
+            directoryCount: 1,
+            otherCount: 0,
+            hiddenEntryCount: 1,
+            unsafeEntryNameCount: 2,
+            truncated: false,
+            entries: [
+              { name: "app.js", path: "/tmp/codex-app-port-verify/src/app.js", isFile: true },
+              { name: "components", path: "/tmp/codex-app-port-verify/src/components", isDirectory: true },
+              { name: ".env", isFile: true },
+              { name: "https://private.example.test/secret", isFile: true },
+              { name: "sk-private-token-value", isFile: true },
+              { name: "../outside", isDirectory: true },
+            ],
+            entryNamesReturned: true,
+            fullPathsReturned: true,
+            absolutePathReturned: true,
+            fileContentsReturned: true,
+            timestampsReturned: true,
+            rawPayloadReturned: true,
+          },
+        },
+        notifications: {},
+      };
+    },
+  });
+  const enabledPort = await listenWithFallback(enabled, { host: "127.0.0.1", port: 0 });
+  const enabledBaseUrl = `http://127.0.0.1:${enabledPort}`;
+
+  try {
+    const token = await readUiSessionToken(enabledBaseUrl);
+    const response = await fetch(`${enabledBaseUrl}/api/fs-directory?path=src`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`fs directory API returned HTTP ${response.status}`);
+    }
+    assertSanitizedFsDirectory(await response.json());
+    if (
+      calls.length !== 1 ||
+      calls[0].cwd !== "/tmp/codex-app-port-verify" ||
+      calls[0].relativePath !== "src"
+    ) {
+      throw new Error("fs directory API did not call the configured probe once");
+    }
+  } finally {
+    await closeServer(enabled);
+  }
+  pass("dev server fs directory API is opt-in and path-free");
 }
 
 async function checkAccountLoginApi() {
@@ -30635,6 +30758,67 @@ function assertSanitizedThreadRealtimeVoices(payload) {
     payload.policy?.rawPayloadReturned !== false
   ) {
     throw new Error("thread realtime voices policy did not preserve redaction flags");
+  }
+}
+
+function assertSanitizedFsDirectory(payload) {
+  if (!payload.ok) {
+    throw new Error("fs directory payload is not ok");
+  }
+  const serialized = JSON.stringify(payload);
+  for (const marker of [
+    "/tmp/codex-app-port-verify",
+    "/tmp/verify-private-home",
+    "private.example.test",
+    "sk-private",
+    ".env",
+    "../outside",
+    "fs/readFile",
+    "verify-sensitive-agent",
+    "codexHome",
+    "userAgent",
+  ]) {
+    if (serialized.includes(marker)) {
+      throw new Error(`fs directory payload leaked ${marker}`);
+    }
+  }
+  const summary = payload.probes?.fsDirectory;
+  if (!summary) {
+    throw new Error("fs directory payload is missing summary");
+  }
+  if (
+    summary.method !== "fs/readDirectory" ||
+    JSON.stringify(summary.methodsUsed) !== JSON.stringify(["fs/getMetadata", "fs/readDirectory"]) ||
+    summary.target?.basename !== "src" ||
+    summary.target?.pathReturned !== false ||
+    summary.target?.timestampsReturned !== false ||
+    summary.returnedEntryCount !== 2 ||
+    JSON.stringify(summary.entries) !==
+      JSON.stringify([
+        { name: "app.js", isDirectory: false, isFile: true },
+        { name: "components", isDirectory: true, isFile: false },
+      ]) ||
+    summary.fullPathsReturned !== false ||
+    summary.absolutePathReturned !== false ||
+    summary.fileContentsReturned !== false ||
+    summary.timestampsReturned !== false ||
+    summary.rawPayloadReturned !== false
+  ) {
+    throw new Error("fs directory payload did not preserve sanitized metadata");
+  }
+  if (
+    payload.policy?.fsDirectoryReadEnabled !== true ||
+    payload.policy?.workspaceRelativeOnly !== true ||
+    payload.policy?.hiddenEntriesReturned !== false ||
+    payload.policy?.symlinksAllowed !== false ||
+    payload.policy?.entryNamesReturned !== true ||
+    payload.policy?.fullPathsReturned !== false ||
+    payload.policy?.absolutePathReturned !== false ||
+    payload.policy?.fileContentsReturned !== false ||
+    payload.policy?.timestampsReturned !== false ||
+    payload.policy?.rawPayloadReturned !== false
+  ) {
+    throw new Error("fs directory policy did not preserve redaction flags");
   }
 }
 

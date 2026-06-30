@@ -19,6 +19,7 @@ import {
   runConfigValueWriteProbe,
   runEnvironmentAddProbe,
   runExperimentalFeatureEnablementSetProbe,
+  runFsDirectoryProbe,
   runIntegrationsInventoryProbe,
   runLiveSessionControlProbe,
   runLoadedSessionsProbe,
@@ -107,6 +108,8 @@ export const MAX_TERMINAL_SESSION_SELECTOR_CHARS = 80;
 export const MAX_TERMINAL_DIMENSION = 500;
 export const MAX_FILE_ACTION_PATH_CHARS = 1_000;
 export const MAX_FILE_ACTION_CONTENT_CHARS = 4_000;
+export const MAX_FS_DIRECTORY_PATH_CHARS = 500;
+export const MAX_FS_DIRECTORY_ENTRIES = 100;
 export const MAX_MCP_REFERENCE_CHARS = 200;
 export const MAX_MCP_ARGUMENT_CHARS = 8_000;
 export const MAX_CONFIG_BATCH_EDITS = 10;
@@ -10336,6 +10339,7 @@ export function createDevServer({
   configValueWriteFn = runConfigValueWriteProbe,
   environmentAddFn = runEnvironmentAddProbe,
   experimentalFeatureSetFn = runExperimentalFeatureEnablementSetProbe,
+  fsDirectoryFn = runFsDirectoryProbe,
   mcpServerReloadFn = runMcpServerReloadProbe,
   mcpToolCallFn = runMcpToolCallProbe,
   mcpResourceReadFn = runMcpResourceReadProbe,
@@ -10407,6 +10411,7 @@ export function createDevServer({
   ),
   experimentalFeatureSetEnabled =
     process.env.CODEX_APP_PORT_ALLOW_EXPERIMENTAL_FEATURE_SET === "1",
+  fsDirectoryEnabled = process.env.CODEX_APP_PORT_ALLOW_FS_DIRECTORY === "1",
   experimentalFeatureAllowlist = parseExperimentalFeatureAllowlist(
     process.env.CODEX_APP_PORT_EXPERIMENTAL_FEATURE_ALLOWLIST,
   ),
@@ -10535,6 +10540,7 @@ export function createDevServer({
       configValueWriteFn,
       environmentAddFn,
       experimentalFeatureSetFn,
+      fsDirectoryFn,
       mcpServerReloadFn,
       mcpOauthLoginFn,
       mcpToolCallFn,
@@ -10597,6 +10603,7 @@ export function createDevServer({
       configValueWriteEnabled,
       configValueWriteAllowlist,
       experimentalFeatureSetEnabled,
+      fsDirectoryEnabled,
       experimentalFeatureAllowlist,
       mcpServerReloadEnabled,
       mcpOauthLoginEnabled,
@@ -16083,6 +16090,45 @@ export async function handleRequest(request, response, options) {
     return;
   }
 
+  if (url.pathname === "/api/fs-directory") {
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        url.searchParams.get("workspace"),
+      );
+      const target = validateFsDirectoryBrowserPath(url.searchParams.get("path"));
+      if (!options.fsDirectoryEnabled) {
+        sendJson(response, 200, buildFsDirectoryBlockedPayload({ workspace, target }));
+        return;
+      }
+      const payload = await options.fsDirectoryFn({
+        codexBin: options.codexBin,
+        cwd: workspace.cwd,
+        timeoutMs: options.timeoutMs,
+        relativePath: target.relativePath,
+      });
+      sendJson(
+        response,
+        200,
+        sanitizeFsDirectoryPayload(payload, {
+          workspace,
+          enabled: true,
+        }),
+      );
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 502, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Directory request failed",
+      });
+    }
+    return;
+  }
+
   if (url.pathname === "/api/terminal-actions") {
     if (!hasValidApiToken(request, options.sessionToken)) {
       sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
@@ -18460,6 +18506,28 @@ function threadRealtimeVoicesPolicy({ enabled = false, appServerTraffic = false 
   };
 }
 
+function fsDirectoryPolicy({ enabled = false, appServerTraffic = false } = {}) {
+  return {
+    readOnly: true,
+    appServerTraffic: Boolean(appServerTraffic),
+    modelTraffic: false,
+    commandTraffic: false,
+    fsDirectoryReadEnabled: Boolean(enabled),
+    requiresExplicitEnablement: true,
+    workspaceRelativeOnly: true,
+    hiddenEntriesReturned: false,
+    symlinksAllowed: false,
+    entryNamesReturned: Boolean(enabled),
+    fullPathsReturned: false,
+    absolutePathReturned: false,
+    fileContentsReturned: false,
+    timestampsReturned: false,
+    rawPayloadReturned: false,
+    browserMethodCallsAccepted: Boolean(enabled),
+    implemented: Boolean(enabled),
+  };
+}
+
 export function buildThreadTurnsBlockedPayload({ workspace = null, threadIdSuffix = null } = {}) {
   return {
     ok: true,
@@ -18490,6 +18558,55 @@ export function buildThreadTurnsBlockedPayload({ workspace = null, threadIdSuffi
       }),
     },
     policy: threadTurnsPolicy({ enabled: false, appServerTraffic: false }),
+  };
+}
+
+export function buildFsDirectoryBlockedPayload({ workspace = null, target = null } = {}) {
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["fs/getMetadata", "fs/readDirectory"],
+    },
+    probes: {
+      fsDirectory: sanitizeFsDirectorySummary({
+        method: "fs/readDirectory",
+        methodsUsed: ["fs/getMetadata", "fs/readDirectory"],
+        target: {
+          basename: target?.basename ?? null,
+          depth: target?.depth ?? 0,
+          isWorkspaceRoot: Boolean(target?.isWorkspaceRoot),
+          isDirectory: false,
+          isFile: false,
+          isSymlink: false,
+          createdTimestampPresent: false,
+          modifiedTimestampPresent: false,
+          pathReturned: false,
+          timestampsReturned: false,
+        },
+        entryCount: 0,
+        scannedEntryCount: 0,
+        returnedEntryCount: 0,
+        fileCount: 0,
+        directoryCount: 0,
+        otherCount: 0,
+        hiddenEntryCount: 0,
+        unsafeEntryNameCount: 0,
+        truncated: false,
+        entries: [],
+        entryNamesReturned: false,
+        fullPathsReturned: false,
+        absolutePathReturned: false,
+        fileContentsReturned: false,
+        timestampsReturned: false,
+        rawPayloadReturned: false,
+      }),
+    },
+    policy: fsDirectoryPolicy({ enabled: false, appServerTraffic: false }),
   };
 }
 
@@ -18592,6 +18709,30 @@ export function sanitizeThreadTurnsPayload(
     },
     notifications: sanitizeNotificationCounts(payload?.notifications),
     policy: threadTurnsPolicy({ enabled, appServerTraffic: true }),
+  };
+}
+
+export function sanitizeFsDirectoryPayload(payload, { workspace = null, enabled = false } = {}) {
+  return {
+    ok: Boolean(payload?.ok),
+    generatedAt: payload?.generatedAt ?? new Date().toISOString(),
+    transport: cleanDisplayText(payload?.transport, 80),
+    protocol: cleanDisplayText(payload?.protocol, 80),
+    initialize: sanitizeInitialize(payload?.initialize),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: true,
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["fs/getMetadata", "fs/readDirectory"],
+    },
+    probes: {
+      fsDirectory: payload?.probes?.fsDirectory
+        ? sanitizeFsDirectorySummary(payload.probes.fsDirectory)
+        : null,
+    },
+    notifications: sanitizeNotificationCounts(payload?.notifications),
+    policy: fsDirectoryPolicy({ enabled, appServerTraffic: true }),
   };
 }
 
@@ -36842,6 +36983,93 @@ function sanitizeThreadRealtimeVoicesSummary(summary) {
   };
 }
 
+function sanitizeFsDirectorySummary(summary) {
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  const safeEntries = entries
+    .slice(0, MAX_FS_DIRECTORY_ENTRIES)
+    .map(sanitizeFsDirectoryEntry)
+    .filter(Boolean);
+  return {
+    method: "fs/readDirectory",
+    methodsUsed: sanitizeAuditedMethodList(summary?.methodsUsed, [
+      "fs/getMetadata",
+      "fs/readDirectory",
+    ]),
+    target: sanitizeFsDirectoryTarget(summary?.target),
+    entryCount: safeCount(summary?.entryCount),
+    scannedEntryCount: safeCount(summary?.scannedEntryCount),
+    returnedEntryCount: safeEntries.length,
+    fileCount: safeCount(summary?.fileCount),
+    directoryCount: safeCount(summary?.directoryCount),
+    otherCount: safeCount(summary?.otherCount),
+    hiddenEntryCount: safeCount(summary?.hiddenEntryCount),
+    unsafeEntryNameCount: safeCount(summary?.unsafeEntryNameCount),
+    truncated: Boolean(summary?.truncated) || entries.length > MAX_FS_DIRECTORY_ENTRIES,
+    entries: safeEntries,
+    entryNamesReturned: safeEntries.length > 0,
+    fullPathsReturned: false,
+    absolutePathReturned: false,
+    fileContentsReturned: false,
+    timestampsReturned: false,
+    rawPayloadReturned: false,
+  };
+}
+
+function sanitizeFsDirectoryTarget(target) {
+  return {
+    basename: sanitizeFsEntryName(target?.basename),
+    depth: safeCount(target?.depth),
+    isWorkspaceRoot: Boolean(target?.isWorkspaceRoot),
+    isDirectory: Boolean(target?.isDirectory),
+    isFile: Boolean(target?.isFile),
+    isSymlink: false,
+    createdTimestampPresent: Boolean(target?.createdTimestampPresent),
+    modifiedTimestampPresent: Boolean(target?.modifiedTimestampPresent),
+    pathReturned: false,
+    timestampsReturned: false,
+  };
+}
+
+function sanitizeFsDirectoryEntry(entry) {
+  const name = sanitizeFsEntryName(entry?.name ?? entry?.fileName);
+  if (!name) {
+    return null;
+  }
+  return {
+    name,
+    isDirectory: Boolean(entry?.isDirectory),
+    isFile: Boolean(entry?.isFile),
+  };
+}
+
+function sanitizeFsEntryName(value) {
+  const clean = cleanDisplayText(value, 120);
+  if (!clean) {
+    return null;
+  }
+  if (
+    clean.startsWith(".") ||
+    clean.includes("/") ||
+    clean.includes("\\") ||
+    clean.includes("\0") ||
+    clean.includes("..") ||
+    clean.endsWith(".lock") ||
+    /:\/\/|www\./i.test(clean) ||
+    /\b(?:sk-[A-Za-z0-9_-]{8,}|gh[pousr]_[A-Za-z0-9_]{8,}|xox[baprs]-[A-Za-z0-9-]{8,})\b/.test(clean)
+  ) {
+    return null;
+  }
+  return clean;
+}
+
+function sanitizeAuditedMethodList(value, allowedMethods) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  const allowed = new Set(allowedMethods);
+  return value.filter((method) => allowed.has(method));
+}
+
 const SAFE_REALTIME_VOICES = new Set([
   "alloy",
   "arbor",
@@ -40099,6 +40327,48 @@ function validateFileActionType(value) {
 
 function validateSanitizedFileAction(value) {
   return ["writeFile", "remove", "copy", "createDirectory"].includes(value) ? value : null;
+}
+
+function validateFsDirectoryBrowserPath(value) {
+  const clean = typeof value === "string" ? value.trim().replace(/\\/g, "/") : "";
+  if (clean.length > MAX_FS_DIRECTORY_PATH_CHARS) {
+    throwRequestError(
+      `Directory path must be ${MAX_FS_DIRECTORY_PATH_CHARS} characters or fewer`,
+      400,
+    );
+  }
+  if (
+    clean.startsWith("/") ||
+    /^[A-Za-z]:\//.test(clean) ||
+    clean.includes("\0") ||
+    clean.includes("//") ||
+    clean.includes("..")
+  ) {
+    throwRequestError("Directory path is invalid", 400);
+  }
+  const parts = clean.length === 0 || clean === "." ? [] : clean.split("/").filter(Boolean);
+  if (
+    parts.some(
+      (part) =>
+        part === "." ||
+        part.startsWith(".") ||
+        part === ".git" ||
+        part.startsWith(".git") ||
+        part.endsWith(".lock"),
+    )
+  ) {
+    throwRequestError("Directory path is invalid", 400);
+  }
+  const cleanBase = parts.length > 0 ? safeBasename(parts.at(-1)) : null;
+  if (parts.length > 0 && !cleanBase) {
+    throwRequestError("Directory path is invalid", 400);
+  }
+  return {
+    relativePath: parts.join("/"),
+    basename: cleanBase,
+    depth: parts.length,
+    isWorkspaceRoot: parts.length === 0,
+  };
 }
 
 function validateFileActionPath(value, { label }) {

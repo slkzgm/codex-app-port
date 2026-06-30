@@ -48,6 +48,8 @@ test("protocol contracts name the app-server methods currently used", () => {
   assert.equal(APP_SERVER_METHODS.processWriteStdin, "process/writeStdin");
   assert.equal(APP_SERVER_METHODS.processResizePty, "process/resizePty");
   assert.equal(APP_SERVER_METHODS.processKill, "process/kill");
+  assert.equal(APP_SERVER_METHODS.fsGetMetadata, "fs/getMetadata");
+  assert.equal(APP_SERVER_METHODS.fsReadDirectory, "fs/readDirectory");
   assert.equal(APP_SERVER_METHODS.configValueWrite, "config/value/write");
   assert.equal(APP_SERVER_METHODS.configBatchWrite, "config/batchWrite");
   assert.equal(APP_SERVER_METHODS.experimentalFeatureList, "experimentalFeature/list");

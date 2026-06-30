@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { lstat, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename as pathBasename, relative, resolve, sep, join } from "node:path";
 import process from "node:process";
 
 import {
@@ -31,6 +31,9 @@ export const DEFAULT_THREAD_DETAIL_TURN_LIMIT = 12;
 export const DEFAULT_THREAD_DETAIL_ITEM_LIMIT = 80;
 export const DEFAULT_THREAD_TURNS_PAGE_LIMIT = 25;
 export const DEFAULT_THREAD_TURN_ITEMS_PAGE_LIMIT = 50;
+export const DEFAULT_FS_DIRECTORY_ENTRY_LIMIT = 100;
+export const DEFAULT_FS_DIRECTORY_ENTRY_SCAN_LIMIT = 1_000;
+export const DEFAULT_FS_DIRECTORY_PATH_LIMIT = 500;
 export const DEFAULT_TRANSCRIPT_TURN_LIMIT = 20;
 export const DEFAULT_TRANSCRIPT_ITEM_LIMIT = 120;
 export const DEFAULT_TRANSCRIPT_ITEM_TEXT_LIMIT = 2_000;
@@ -370,6 +373,125 @@ export function summarizeThreadRealtimeVoices(response) {
     pathsReturned: false,
     rawPayloadReturned: false,
   };
+}
+
+export function summarizeFsDirectory(
+  response,
+  {
+    metadata = null,
+    target = null,
+    limit = DEFAULT_FS_DIRECTORY_ENTRY_LIMIT,
+    scanLimit = DEFAULT_FS_DIRECTORY_ENTRY_SCAN_LIMIT,
+  } = {},
+) {
+  const entries = Array.isArray(response?.entries) ? response.entries : [];
+  const safeLimit = Math.max(
+    0,
+    Math.min(
+      DEFAULT_FS_DIRECTORY_ENTRY_LIMIT,
+      Number.isFinite(limit) ? Math.trunc(limit) : DEFAULT_FS_DIRECTORY_ENTRY_LIMIT,
+    ),
+  );
+  const safeScanLimit = Math.max(
+    safeLimit,
+    Math.min(
+      DEFAULT_FS_DIRECTORY_ENTRY_SCAN_LIMIT,
+      Number.isFinite(scanLimit)
+        ? Math.trunc(scanLimit)
+        : DEFAULT_FS_DIRECTORY_ENTRY_SCAN_LIMIT,
+    ),
+  );
+  const sanitizedEntries = [];
+  let hiddenEntryCount = 0;
+  let unsafeEntryNameCount = 0;
+  let fileCount = 0;
+  let directoryCount = 0;
+  let otherCount = 0;
+
+  for (const entry of entries.slice(0, safeScanLimit)) {
+    const name = safeFsEntryName(entry?.fileName ?? entry?.name);
+    if (!name) {
+      unsafeEntryNameCount += 1;
+      continue;
+    }
+    if (isHiddenFsName(name)) {
+      hiddenEntryCount += 1;
+      continue;
+    }
+    const isDirectory = Boolean(entry?.isDirectory);
+    const isFile = Boolean(entry?.isFile);
+    if (isDirectory) {
+      directoryCount += 1;
+    } else if (isFile) {
+      fileCount += 1;
+    } else {
+      otherCount += 1;
+    }
+    if (sanitizedEntries.length < safeLimit) {
+      sanitizedEntries.push({
+        name,
+        isDirectory,
+        isFile,
+      });
+    }
+  }
+
+  return {
+    method: APP_SERVER_METHODS.fsReadDirectory,
+    methodsUsed: [APP_SERVER_METHODS.fsGetMetadata, APP_SERVER_METHODS.fsReadDirectory],
+    target: {
+      basename: target?.basename ?? null,
+      depth: Number.isFinite(target?.depth) ? Math.max(0, Math.trunc(target.depth)) : 0,
+      isWorkspaceRoot: Boolean(target?.isWorkspaceRoot),
+      isDirectory: Boolean(metadata?.isDirectory),
+      isFile: Boolean(metadata?.isFile),
+      isSymlink: Boolean(metadata?.isSymlink),
+      createdTimestampPresent: Number.isFinite(metadata?.createdAtMs) && metadata.createdAtMs > 0,
+      modifiedTimestampPresent:
+        Number.isFinite(metadata?.modifiedAtMs) && metadata.modifiedAtMs > 0,
+      pathReturned: false,
+      timestampsReturned: false,
+    },
+    entryCount: entries.length,
+    scannedEntryCount: Math.min(entries.length, safeScanLimit),
+    returnedEntryCount: sanitizedEntries.length,
+    fileCount,
+    directoryCount,
+    otherCount,
+    hiddenEntryCount,
+    unsafeEntryNameCount,
+    truncated: entries.length > safeScanLimit || sanitizedEntries.length < fileCount + directoryCount + otherCount,
+    entries: sanitizedEntries,
+    entryNamesReturned: true,
+    fullPathsReturned: false,
+    absolutePathReturned: false,
+    fileContentsReturned: false,
+    timestampsReturned: false,
+    rawPayloadReturned: false,
+  };
+}
+
+function safeFsEntryName(value) {
+  const clean = cleanDisplayText(value, 120);
+  if (!clean) {
+    return null;
+  }
+  if (
+    clean.includes("/") ||
+    clean.includes("\\") ||
+    clean.includes("\0") ||
+    clean.includes("..") ||
+    clean.endsWith(".lock") ||
+    /:\/\/|www\./i.test(clean) ||
+    /\b(?:sk-[A-Za-z0-9_-]{8,}|gh[pousr]_[A-Za-z0-9_]{8,}|xox[baprs]-[A-Za-z0-9-]{8,})\b/.test(clean)
+  ) {
+    return null;
+  }
+  return clean;
+}
+
+function isHiddenFsName(name) {
+  return name.startsWith(".") || name === ".git" || name.startsWith(".git");
 }
 
 function safeRealtimeVoices(value) {
@@ -1897,6 +2019,82 @@ export async function runThreadRealtimeVoicesProbe({
       initialize: summarizeInitialize(initialize),
       probes: {
         threadRealtimeVoices: summarizeThreadRealtimeVoices(voices),
+      },
+      notifications: notificationCounts(notifications),
+    };
+  } finally {
+    await client.close();
+  }
+}
+
+export async function runFsDirectoryProbe({
+  codexBin = process.env.CODEX_BIN || "codex",
+  codexArgs = ["app-server", "--listen", "stdio://"],
+  cwd = process.cwd(),
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+  relativePath = "",
+  limit = DEFAULT_FS_DIRECTORY_ENTRY_LIMIT,
+  onNotification = null,
+} = {}) {
+  if (process.env.CODEX_APP_PORT_ALLOW_FS_DIRECTORY !== "1") {
+    throw new Error(
+      "fs/readDirectory requires CODEX_APP_PORT_ALLOW_FS_DIRECTORY=1 because directory names can reveal local project structure",
+    );
+  }
+
+  const target = await validateFsDirectoryTarget(relativePath, cwd);
+  const notifications = [];
+  const client = new JsonlRpcClient({
+    command: codexBin,
+    args: codexArgs,
+    cwd,
+    timeoutMs,
+    onNotification(notification) {
+      notifications.push({
+        method: notification.method,
+      });
+      onNotification?.(notification);
+    },
+  });
+
+  await client.start();
+
+  try {
+    const initialize = normalizeInitializeResponse(
+      await client.request("initialize", {
+        clientInfo: {
+          name: "codex_app_port",
+          title: "Codex App Port",
+          version: "0.1.0",
+        },
+        capabilities: {
+          experimentalApi: false,
+          requestAttestation: false,
+        },
+      }),
+    );
+
+    client.notify("initialized");
+
+    const metadata = await client.request(APP_SERVER_METHODS.fsGetMetadata, {
+      path: target.absolutePath,
+    });
+    const directory = await client.request(APP_SERVER_METHODS.fsReadDirectory, {
+      path: target.absolutePath,
+    });
+
+    return {
+      ok: true,
+      generatedAt: new Date().toISOString(),
+      transport: "stdio-jsonl",
+      protocol: "json-rpc-2.0-without-jsonrpc-field",
+      initialize: summarizeInitialize(initialize),
+      probes: {
+        fsDirectory: summarizeFsDirectory(directory, {
+          metadata,
+          target,
+          limit,
+        }),
       },
       notifications: notificationCounts(notifications),
     };
@@ -6659,6 +6857,76 @@ function selectTurnIdBySuffix(turns, turnIdSuffix) {
     throwRequestError("Turn id suffix is ambiguous", 409);
   }
   return matches[0].id;
+}
+
+async function validateFsDirectoryTarget(value, workspacePath) {
+  if (typeof workspacePath !== "string" || workspacePath.length === 0) {
+    throwRequestError("Workspace is required for directory reads", 400);
+  }
+  const clean = typeof value === "string" ? value.trim().replace(/\\/g, "/") : "";
+  if (clean.length > DEFAULT_FS_DIRECTORY_PATH_LIMIT) {
+    throwRequestError(
+      `Directory path must be ${DEFAULT_FS_DIRECTORY_PATH_LIMIT} characters or fewer`,
+      400,
+    );
+  }
+  if (
+    clean.startsWith("/") ||
+    /^[A-Za-z]:\//.test(clean) ||
+    clean.includes("\0") ||
+    clean.includes("//") ||
+    clean.includes("..")
+  ) {
+    throwRequestError("Directory path is invalid", 400);
+  }
+  const parts = clean.length === 0 || clean === "." ? [] : clean.split("/").filter(Boolean);
+  if (
+    parts.some(
+      (part) =>
+        part === "." ||
+        part.startsWith(".") ||
+        part === ".git" ||
+        part.startsWith(".git") ||
+        part.endsWith(".lock"),
+    )
+  ) {
+    throwRequestError("Directory path is invalid", 400);
+  }
+  const workspaceRoot = resolve(workspacePath);
+  const absolutePath = resolve(workspaceRoot, ...parts);
+  const relativePath = relative(workspaceRoot, absolutePath);
+  if (relativePath.startsWith("..") || relativePath.includes(`..${sep}`)) {
+    throwRequestError("Directory path is invalid", 400);
+  }
+  await ensureFsDirectoryNoSymlink(workspaceRoot);
+  let current = workspaceRoot;
+  for (const part of parts) {
+    current = resolve(current, part);
+    await ensureFsDirectoryNoSymlink(current);
+  }
+  return {
+    absolutePath,
+    relativePath,
+    parts,
+    basename: parts.length > 0 ? cleanDisplayText(pathBasename(absolutePath), 80) : null,
+    depth: parts.length,
+    isWorkspaceRoot: parts.length === 0,
+  };
+}
+
+async function ensureFsDirectoryNoSymlink(path) {
+  let info;
+  try {
+    info = await lstat(path);
+  } catch (error) {
+    if (error.code === "ENOENT") {
+      throwRequestError("Directory path does not exist", 404);
+    }
+    throwRequestError("Directory path is not safely readable", 409);
+  }
+  if (info.isSymbolicLink() || !info.isDirectory()) {
+    throwRequestError("Directory path is not a safe directory", 409);
+  }
 }
 
 function liveSessionControlMethod(action) {

@@ -803,6 +803,13 @@ Current M1 status:
   content count, filesystem result, token-consumed, and audit metadata only,
   without preflight tokens, full paths, basenames, file contents, raw intent,
   intent hashes, or app-server payloads
+- done: disabled-by-default `/api/fs-directory` behind
+  `CODEX_APP_PORT_ALLOW_FS_DIRECTORY=1` that accepts only workspace-relative
+  non-hidden directory selectors, rejects symlinked path segments before
+  app-server traffic, calls only `fs/getMetadata` and `fs/readDirectory` with a
+  server-resolved absolute path, and returns bounded direct child names plus
+  type/count metadata without absolute paths, relative paths, timestamps, file
+  contents, hidden entries, token-like names, URLs, or raw payloads
 - done: fail-closed action-preflight confirmation route that consumes local
   tokens once against the same hashed intent and still blocks all mutations
 - done: strict browser JSON POST body validation for preflight, confirmation,

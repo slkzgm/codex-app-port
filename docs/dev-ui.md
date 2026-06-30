@@ -42,6 +42,9 @@ The server binds to `127.0.0.1` by default and serves:
   tokens, names, targets, arguments, paths, URLs, or raw payloads
 - `/api/thread-realtime-voices`: disabled-by-default enum-only
   `thread/realtime/listVoices` bridge for supported realtime voice names
+- `/api/fs-directory`: disabled-by-default workspace-relative
+  `fs/getMetadata` + `fs/readDirectory` bridge with hidden/symlink/path
+  redaction
 - `/api/account-login-preflight` and `/api/account-login-start`: local auth
   login confirmation plus opt-in app-server `account/login/start` device-code
   flow behind `CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN=1` and a matching one-time
@@ -416,6 +419,20 @@ browser may receive known voice names and default voice names only. It does not
 accept browser parameters, start realtime sessions, send audio/text/speech,
 touch threads, trigger model traffic, or return paths, ids, raw payloads, SDP,
 audio, transcript content, or unknown voice strings.
+
+`/api/fs-directory` is the separate app-server filesystem directory metadata
+surface. It is disabled unless `CODEX_APP_PORT_ALLOW_FS_DIRECTORY=1` is set
+before server startup. The browser may send only a workspace-relative directory
+path; absolute paths, traversal, dotfiles, `.git`, lockfiles, and path-like
+segments are rejected before app-server traffic. When enabled, the server
+locally verifies that the workspace path and every requested path segment are
+non-symlink directories, then calls only `fs/getMetadata` and
+`fs/readDirectory` with the server-resolved absolute path. The browser receives
+bounded direct child names plus file/directory booleans, target depth,
+entry/type counts, and redaction flags. It does not receive absolute paths,
+relative paths, timestamps, file contents, symlink targets, dotfile entries,
+hidden entries, token-like names, URLs, raw filesystem payloads, or raw
+app-server payloads.
 
 Every `/api/*` route also requires a per-process session token. The server
 injects this token into the served HTML and the browser sends it back in the

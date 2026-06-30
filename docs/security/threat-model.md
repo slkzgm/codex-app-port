@@ -248,6 +248,17 @@
   parameters, start realtime sessions, send audio/text/speech, expose SDP,
   audio, transcript content, prompt text, full ids, cwd, paths, unknown voice
   strings, raw app-server payloads, or model traffic.
+- Browser-facing app-server filesystem directory reads must be blocked by
+  default and opt-in only. When `CODEX_APP_PORT_ALLOW_FS_DIRECTORY=1` is
+  enabled, `/api/fs-directory` may accept only a workspace-relative directory
+  selector. Absolute paths, traversal, dotfiles, `.git`, lockfiles, path-like
+  segments, and symlinked workspace/path segments must be rejected before
+  app-server traffic. Execution may call only `fs/getMetadata` and
+  `fs/readDirectory` with a server-resolved absolute path. Responses may expose
+  only bounded direct child names, file/directory booleans, target depth,
+  counts, and redaction flags. They must not return absolute paths, relative
+  paths, timestamps, file contents, symlink targets, hidden entries, token-like
+  names, URLs, raw filesystem payloads, or raw app-server payloads.
 - Browser-facing thread lifecycle histories must be process-local, capped, and
   sanitized. They may expose only action type/method, thread suffix, safe
   status/count metadata, token-consumed state, model-traffic booleans, and audit

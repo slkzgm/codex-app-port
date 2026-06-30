@@ -99,6 +99,13 @@ Target parity with the Codex desktop workflow:
   parameter object and returns only voice names that match the official schema
   enum plus default voice names, not unknown strings, SDP, audio, transcript
   content, thread content, ids, paths, model traffic, or raw payloads.
+- `fs/getMetadata` and `fs/readDirectory` have a separate disabled-by-default
+  `GET /api/fs-directory` path behind `CODEX_APP_PORT_ALLOW_FS_DIRECTORY=1`;
+  it accepts only workspace-relative non-hidden directory selectors, rejects
+  symlinked path segments before app-server traffic, and returns bounded direct
+  child names plus type/count metadata, not absolute paths, relative paths,
+  timestamps, file contents, hidden entries, token-like names, URLs, or raw
+  payloads.
 - `thread/delete` has a separate disabled-by-default destructive
   `POST /api/thread-delete-action` path behind
   `CODEX_APP_PORT_ALLOW_THREAD_DELETE=1`; it consumes a matching one-time

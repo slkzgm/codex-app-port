@@ -2194,6 +2194,37 @@
             </div>
           </dl>
           <div id="terminal-background-list" class="boundary-list compact" role="list"></div>
+          <form id="fs-directory-form" class="turn-form">
+            <div class="thread-tools">
+              <label class="search-control" for="fs-directory-path">
+                <span>Directory</span>
+                <input id="fs-directory-path" type="text" autocomplete="off" />
+              </label>
+              <button id="fs-directory-button" class="secondary-button" type="submit">
+                List Directory
+              </button>
+              <span id="fs-directory-status" class="empty-state">Blocked</span>
+            </div>
+          </form>
+          <dl class="agent-grid">
+            <div>
+              <dt>Entries</dt>
+              <dd id="fs-directory-entry-count">0</dd>
+            </div>
+            <div>
+              <dt>Directories</dt>
+              <dd id="fs-directory-dir-count">0</dd>
+            </div>
+            <div>
+              <dt>Files</dt>
+              <dd id="fs-directory-file-count">0</dd>
+            </div>
+            <div>
+              <dt>Traffic</dt>
+              <dd id="fs-directory-traffic">None</dd>
+            </div>
+          </dl>
+          <div id="fs-directory-list" class="boundary-list compact" role="list"></div>
           <form id="file-action-form" class="turn-form">
             <div class="thread-tools">
               <label class="workspace-control" for="file-action-select">

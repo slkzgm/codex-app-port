@@ -111,6 +111,13 @@ patches, paths, cursor values, full ids, timestamps, or raw payloads.
 object and filters the response to the generated official voice enum, returning
 only known voice names/defaults and never unknown strings, SDP, audio,
 transcript content, thread content, ids, paths, model traffic, or raw payloads.
+`fs/getMetadata` and `fs/readDirectory` have a separate disabled-by-default
+`GET /api/fs-directory` path behind `CODEX_APP_PORT_ALLOW_FS_DIRECTORY=1`; it
+accepts only workspace-relative non-hidden directory selectors, rejects
+symlinked path segments before app-server traffic, and returns bounded direct
+child names plus type/count metadata, never absolute paths, relative paths,
+timestamps, file contents, hidden entries, token-like names, URLs, or raw
+payloads.
 `thread/delete` also has a
 separate disabled-by-default destructive path:
 `POST /api/thread-delete-preflight` validates only suffix and archived-state

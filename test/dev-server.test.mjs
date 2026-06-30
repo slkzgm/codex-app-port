@@ -181,6 +181,9 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /thread-turn-items-input/);
     assert.match(html, /thread-turn-items-button/);
     assert.match(html, /thread-turn-items-status/);
+    assert.match(html, /fs-directory-form/);
+    assert.match(html, /fs-directory-status/);
+    assert.match(html, /fs-directory-list/);
     const appResponse = await fetch(`${url}/assets/app.js`);
     assert.equal(appResponse.status, 200);
     const appScript = await appResponse.text();
@@ -204,6 +207,8 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(appScript, /renderThreadTurnItems/);
     assert.match(appScript, /loadThreadRealtimeVoices/);
     assert.match(appScript, /renderThreadRealtimeVoices/);
+    assert.match(appScript, /loadFsDirectory/);
+    assert.match(appScript, /renderFsDirectory/);
     assert.match(appScript, /manualRefreshSettingsIntegrations/);
     assert.match(appScript, /setSettingsRefreshState/);
     assert.match(appScript, /turnExecutionAuthorityText/);
@@ -18863,6 +18868,155 @@ test("dev server exposes realtime voices only behind opt-in with enum-only names
       "private.example.test",
       "/tmp/default-workspace",
       "/tmp/private-home",
+      "userAgent",
+      "codexHome",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    await closeServer(server);
+  }
+});
+
+test("dev server exposes workspace-relative fs directory metadata only behind opt-in", async () => {
+  const blockedCalls = [];
+  const blockedServer = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    fsDirectoryFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+
+  try {
+    const response = await fetch(`${blockedServer.url}/api/fs-directory?path=src`, {
+      headers: apiHeaders(blockedServer.server),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, false);
+    assert.equal(payload.policy.fsDirectoryReadEnabled, false);
+    assert.equal(payload.policy.entryNamesReturned, false);
+    assert.equal(payload.probes.fsDirectory.target.basename, "src");
+    assert.equal(payload.probes.fsDirectory.returnedEntryCount, 0);
+    assert.equal(blockedCalls.length, 0);
+  } finally {
+    await closeServer(blockedServer.server);
+  }
+
+  const calls = [];
+  const { server, url } = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    fsDirectoryEnabled: true,
+    fsDirectoryFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-06-30T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/private-home",
+          userAgent: "mock/0.0.0",
+        },
+        probes: {
+          fsDirectory: {
+            method: "fs/readDirectory",
+            methodsUsed: ["fs/getMetadata", "fs/readDirectory", "fs/readFile"],
+            target: {
+              basename: "src",
+              path: "/tmp/default-workspace/src",
+              depth: 1,
+              isWorkspaceRoot: false,
+              isDirectory: true,
+              isFile: false,
+              isSymlink: false,
+              createdTimestampPresent: true,
+              modifiedTimestampPresent: true,
+              pathReturned: true,
+              timestampsReturned: true,
+            },
+            entryCount: 6,
+            scannedEntryCount: 6,
+            returnedEntryCount: 6,
+            fileCount: 3,
+            directoryCount: 1,
+            otherCount: 0,
+            hiddenEntryCount: 1,
+            unsafeEntryNameCount: 2,
+            truncated: false,
+            entries: [
+              { name: "app.js", path: "/tmp/default-workspace/src/app.js", isFile: true },
+              { name: "components", path: "/tmp/default-workspace/src/components", isDirectory: true },
+              { name: ".env", isFile: true },
+              { name: "https://private.example.test/secret", isFile: true },
+              { name: "sk-private-token-value", isFile: true },
+              { name: "../outside", isDirectory: true },
+            ],
+            entryNamesReturned: true,
+            fullPathsReturned: true,
+            absolutePathReturned: true,
+            fileContentsReturned: true,
+            timestampsReturned: true,
+            rawPayloadReturned: true,
+          },
+        },
+        notifications: {},
+      };
+    },
+  });
+
+  try {
+    const response = await fetch(`${url}/api/fs-directory?path=src`, {
+      headers: apiHeaders(server),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].cwd, "/tmp/default-workspace");
+    assert.equal(calls[0].relativePath, "src");
+    assert.equal(payload.appServer.touched, true);
+    assert.deepEqual(payload.appServer.auditedMethods, ["fs/getMetadata", "fs/readDirectory"]);
+    assert.equal(payload.policy.fsDirectoryReadEnabled, true);
+    assert.equal(payload.policy.workspaceRelativeOnly, true);
+    assert.equal(payload.policy.hiddenEntriesReturned, false);
+    assert.equal(payload.policy.symlinksAllowed, false);
+    assert.equal(payload.policy.entryNamesReturned, true);
+    assert.equal(payload.policy.fullPathsReturned, false);
+    assert.equal(payload.policy.absolutePathReturned, false);
+    assert.equal(payload.policy.fileContentsReturned, false);
+    assert.equal(payload.policy.timestampsReturned, false);
+    assert.equal(payload.policy.rawPayloadReturned, false);
+    assert.deepEqual(payload.probes.fsDirectory.methodsUsed, [
+      "fs/getMetadata",
+      "fs/readDirectory",
+    ]);
+    assert.equal(payload.probes.fsDirectory.target.basename, "src");
+    assert.equal(payload.probes.fsDirectory.target.pathReturned, false);
+    assert.equal(payload.probes.fsDirectory.target.timestampsReturned, false);
+    assert.deepEqual(payload.probes.fsDirectory.entries, [
+      { name: "app.js", isDirectory: false, isFile: true },
+      { name: "components", isDirectory: true, isFile: false },
+    ]);
+    assert.equal(payload.probes.fsDirectory.returnedEntryCount, 2);
+    assert.equal(payload.probes.fsDirectory.fullPathsReturned, false);
+    assert.equal(payload.probes.fsDirectory.absolutePathReturned, false);
+    assert.equal(payload.probes.fsDirectory.fileContentsReturned, false);
+    assert.equal(payload.probes.fsDirectory.timestampsReturned, false);
+    assert.equal(payload.probes.fsDirectory.rawPayloadReturned, false);
+    for (const marker of [
+      "/tmp/default-workspace",
+      "/tmp/private-home",
+      "private.example.test",
+      "sk-private",
+      ".env",
+      "../outside",
+      "fs/readFile",
       "userAgent",
       "codexHome",
     ]) {

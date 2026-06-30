@@ -541,6 +541,15 @@ const elements = {
   terminalBackgroundCountText: document.querySelector("#terminal-background-count-text"),
   terminalBackgroundSelectionText: document.querySelector("#terminal-background-selection-text"),
   terminalBackgroundList: document.querySelector("#terminal-background-list"),
+  fsDirectoryForm: document.querySelector("#fs-directory-form"),
+  fsDirectoryPath: document.querySelector("#fs-directory-path"),
+  fsDirectoryButton: document.querySelector("#fs-directory-button"),
+  fsDirectoryStatus: document.querySelector("#fs-directory-status"),
+  fsDirectoryEntryCount: document.querySelector("#fs-directory-entry-count"),
+  fsDirectoryDirCount: document.querySelector("#fs-directory-dir-count"),
+  fsDirectoryFileCount: document.querySelector("#fs-directory-file-count"),
+  fsDirectoryTraffic: document.querySelector("#fs-directory-traffic"),
+  fsDirectoryList: document.querySelector("#fs-directory-list"),
   fileActionForm: document.querySelector("#file-action-form"),
   fileActionSelect: document.querySelector("#file-action-select"),
   fileActionPath: document.querySelector("#file-action-path"),
@@ -1177,6 +1186,11 @@ elements.terminalBackgroundTerminatePreflightButton.addEventListener("click", ()
 
 elements.terminalBackgroundTerminateButton.addEventListener("click", () => {
   runTerminalBackgroundTerminate();
+});
+
+elements.fsDirectoryForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  loadFsDirectory();
 });
 
 elements.fileActionForm.addEventListener("submit", (event) => {
@@ -1943,6 +1957,19 @@ function terminalBackgroundTerminatePreflightEndpoint() {
 
 function terminalBackgroundTerminateEndpoint() {
   return "/api/terminal-background-terminate";
+}
+
+function fsDirectoryEndpoint() {
+  const params = new URLSearchParams();
+  if (selectedWorkspaceId) {
+    params.set("workspace", selectedWorkspaceId);
+  }
+  const directoryPath = elements.fsDirectoryPath.value.trim();
+  if (directoryPath) {
+    params.set("path", directoryPath);
+  }
+  const query = params.toString();
+  return query ? `/api/fs-directory?${query}` : "/api/fs-directory";
 }
 
 function fileActionPreflightEndpoint() {
@@ -4470,6 +4497,31 @@ async function runTerminalBackgroundTerminate() {
     selectedTerminalBackgroundRef = null;
     elements.terminalBackgroundTerminatePreflightButton.disabled = true;
     elements.terminalBackgroundTerminateButton.disabled = true;
+  }
+}
+
+async function loadFsDirectory() {
+  elements.fsDirectoryButton.disabled = true;
+  elements.fsDirectoryStatus.textContent = "Loading";
+  hideError();
+
+  try {
+    const response = await fetch(fsDirectoryEndpoint(), {
+      method: "GET",
+      headers: apiHeaders(),
+      cache: "no-store",
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderFsDirectory(payload.probes?.fsDirectory ?? null, payload.policy ?? null, payload.appServer);
+  } catch (error) {
+    elements.fsDirectoryStatus.textContent = "Failed";
+    elements.fsDirectoryList.replaceChildren();
+    renderError(error);
+  } finally {
+    elements.fsDirectoryButton.disabled = false;
   }
 }
 
@@ -11171,6 +11223,64 @@ function renderTerminalBackgroundListItems(items) {
     header.append(title, meta);
     row.append(header, chips);
     elements.terminalBackgroundList.append(row);
+  }
+}
+
+function renderFsDirectory(summary, policy, appServer) {
+  const enabled = policy?.fsDirectoryReadEnabled === true;
+  if (!summary) {
+    elements.fsDirectoryStatus.textContent = "No directory metadata";
+    elements.fsDirectoryEntryCount.textContent = "0";
+    elements.fsDirectoryDirCount.textContent = "0";
+    elements.fsDirectoryFileCount.textContent = "0";
+    elements.fsDirectoryTraffic.textContent = appServer?.touched ? "App-server" : "None";
+    elements.fsDirectoryList.replaceChildren();
+    return;
+  }
+
+  elements.fsDirectoryEntryCount.textContent = String(summary.returnedEntryCount ?? 0);
+  elements.fsDirectoryDirCount.textContent = String(summary.directoryCount ?? 0);
+  elements.fsDirectoryFileCount.textContent = String(summary.fileCount ?? 0);
+  elements.fsDirectoryTraffic.textContent = appServer?.touched ? "App-server" : "None";
+  elements.fsDirectoryStatus.textContent = enabled
+    ? joinParts([
+        summary.target?.isWorkspaceRoot ? "Workspace root" : summary.target?.basename,
+        `${summary.returnedEntryCount ?? 0} entries`,
+        summary.truncated ? "truncated" : null,
+        summary.hiddenEntryCount ? `${summary.hiddenEntryCount} hidden` : null,
+      ])
+    : "Blocked";
+
+  elements.fsDirectoryList.replaceChildren();
+  const entries = Array.isArray(summary.entries) ? summary.entries : [];
+  if (!enabled || entries.length === 0) {
+    elements.fsDirectoryList.append(
+      emptyState(enabled ? "No visible directory entries." : "Directory reads disabled by default."),
+    );
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.name ?? "entry";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.isDirectory ? "directory" : entry.isFile ? "file" : "other";
+
+    const detail = document.createElement("p");
+    detail.className = "boundary-detail";
+    detail.textContent = "workspace-relative entry name only";
+
+    header.append(title, meta);
+    row.append(header, detail);
+    elements.fsDirectoryList.append(row);
   }
 }
 
