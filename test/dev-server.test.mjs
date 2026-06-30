@@ -35420,6 +35420,257 @@ function assertCodexSitesCatalog(payload) {
   }
 }
 
+function expectedCodexPermissionsEntries() {
+  return [
+    ["filesystemAccessLevels", "filesystem", "catalog-only", "official-codex-permissions-docs"],
+    [
+      "filesystemSpecificityPrecedence",
+      "filesystem",
+      "catalog-only",
+      "official-codex-permissions-docs",
+    ],
+    [
+      "filesystemDenyWriteReadPrecedence",
+      "filesystem",
+      "catalog-only",
+      "official-codex-permissions-docs",
+    ],
+    ["broadWorkspaceCarveouts", "filesystem", "catalog-only", "official-codex-permissions-docs"],
+    [
+      "narrowerReopenInsideDeny",
+      "filesystem",
+      "catalog-only",
+      "official-codex-permissions-docs",
+    ],
+    ["rootPathToken", "path-forms", "catalog-only", "official-codex-permissions-docs"],
+    ["minimalPathToken", "path-forms", "catalog-only", "official-codex-permissions-docs"],
+    ["workspaceRootsPathToken", "path-forms", "catalog-only", "official-codex-permissions-docs"],
+    ["tempDirectoryPathTokens", "path-forms", "catalog-only", "official-codex-permissions-docs"],
+    ["absoluteAndHomePaths", "path-forms", "catalog-only", "official-codex-permissions-docs"],
+    ["rootBroadReadCaution", "filesystem", "catalog-only", "official-codex-permissions-docs"],
+    [
+      "workspaceRootNestedSubpaths",
+      "workspace-roots",
+      "catalog-only",
+      "official-codex-permissions-docs",
+    ],
+    [
+      "workspaceRootTraversalRejected",
+      "workspace-roots",
+      "catalog-only",
+      "official-codex-permissions-docs",
+    ],
+    ["denyExactPaths", "deny-rules", "catalog-only", "official-codex-permissions-docs"],
+    ["denyGlobPatterns", "deny-rules", "catalog-only", "official-codex-permissions-docs"],
+    [
+      "workspaceRelativeDenyGlobs",
+      "deny-rules",
+      "catalog-only",
+      "official-codex-permissions-docs",
+    ],
+    ["denyReadGlobSupport", "deny-rules", "catalog-only", "official-codex-permissions-docs"],
+    [
+      "readWriteGlobPortabilityCaution",
+      "deny-rules",
+      "catalog-only",
+      "official-codex-permissions-docs",
+    ],
+    ["globScanMaxDepth", "deny-rules", "catalog-only", "official-codex-permissions-docs"],
+    ["explicitDepthDenyPatterns", "deny-rules", "catalog-only", "official-codex-permissions-docs"],
+    ["profileWorkspaceRoots", "workspace-roots", "catalog-only", "official-codex-permissions-docs"],
+    ["windowsAbsolutePaths", "path-forms", "catalog-only", "official-codex-permissions-docs"],
+    ["networkEnabledFlag", "network", "catalog-only", "official-codex-permissions-docs"],
+    ["networkDomainRules", "network", "catalog-only", "official-codex-permissions-docs"],
+    ["networkDenyWins", "network", "catalog-only", "official-codex-permissions-docs"],
+    ["networkProxyListeners", "network", "catalog-only", "official-codex-permissions-docs"],
+    [
+      "dangerousNetworkKeysCaution",
+      "network",
+      "catalog-only",
+      "official-codex-permissions-docs",
+    ],
+    ["localPrivateNetworkGuard", "local-network", "catalog-only", "official-codex-permissions-docs"],
+    ["localTargetAllowlist", "local-network", "catalog-only", "official-codex-permissions-docs"],
+    [
+      "allowLocalBindingCaution",
+      "local-network",
+      "catalog-only",
+      "official-codex-permissions-docs",
+    ],
+    ["unixSocketProxying", "unix-sockets", "catalog-only", "official-codex-permissions-docs"],
+    ["unixSocketDeny", "unix-sockets", "catalog-only", "official-codex-permissions-docs"],
+    ["migrateOlderSandboxSettings", "migration", "catalog-only", "official-codex-permissions-docs"],
+    ["builtInPermissionProfiles", "profiles", "catalog-only", "official-codex-permissions-docs"],
+    ["dangerFullAccessCaution", "profiles", "catalog-only", "official-codex-permissions-docs"],
+    [
+      "managedRequirementsCannotBroaden",
+      "managed-policy",
+      "catalog-only",
+      "official-codex-permissions-docs",
+    ],
+    ["permissionProfileReadBoundary", "profiles", "blocked", "local-permissions-boundary"],
+    ["permissionProfileWriteBoundary", "profiles", "blocked", "local-permissions-boundary"],
+    ["filesystemRuleReadBoundary", "filesystem", "blocked", "local-permissions-boundary"],
+    ["filesystemRuleWriteBoundary", "filesystem", "blocked", "local-permissions-boundary"],
+    ["networkRuleReadBoundary", "network", "blocked", "local-permissions-boundary"],
+    ["networkRuleWriteBoundary", "network", "blocked", "local-permissions-boundary"],
+    ["localPrivateAccessBoundary", "local-network", "blocked", "local-permissions-boundary"],
+    ["unixSocketAccessBoundary", "unix-sockets", "blocked", "local-permissions-boundary"],
+    ["globExpansionBoundary", "deny-rules", "blocked", "local-permissions-boundary"],
+    ["workspaceRootExpansionBoundary", "workspace-roots", "blocked", "local-permissions-boundary"],
+    ["sandboxMigrationBoundary", "migration", "blocked", "local-permissions-boundary"],
+    ["managedRequirementsBoundary", "managed-policy", "blocked", "local-permissions-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexPermissionsCatalog(payload) {
+  const catalog = payload.codexPermissions;
+  const expectedEntries = expectedCodexPermissionsEntries();
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-permissions-docs");
+  assert.equal(catalog.entryCount, 48);
+  assert.equal(catalog.officialEntryCount, 36);
+  assert.equal(catalog.localBoundaryEntryCount, 12);
+  assert.equal(catalog.catalogOnlyEntryCount, 36);
+  assert.equal(catalog.blockedEntryCount, 12);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({
+      key,
+      group,
+      state,
+      source,
+    })),
+    expectedEntries,
+  );
+
+  const entryRedactionFlags = [
+    "permissionProfileReturned",
+    "permissionProfileNameReturned",
+    "filesystemRuleReturned",
+    "pathValueReturned",
+    "accessValueReturned",
+    "denyGlobReturned",
+    "globPatternReturned",
+    "workspaceRootReturned",
+    "networkRuleReturned",
+    "domainRuleReturned",
+    "proxyUrlReturned",
+    "localPrivatePolicyReturned",
+    "unixSocketPathReturned",
+    "sandboxModeReturned",
+    "managedRequirementReturned",
+    "configTomlReturned",
+    "platformPathReturned",
+    "permissionValueReturned",
+    "settingValueReturned",
+    "permissionProfileWritten",
+    "networkRuleWritten",
+    "filesystemRuleWritten",
+    "unixSocketRuleWritten",
+    "sandboxMigrated",
+    "globExpanded",
+    "workspaceRootExpanded",
+    "networkAccess",
+    "filesystemRead",
+    "filesystemWrite",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.permissionsCatalogReturned, true);
+  for (const flag of [
+    "permissionProfilesReturned",
+    "permissionProfileNamesReturned",
+    "filesystemRulesReturned",
+    "pathValuesReturned",
+    "accessValuesReturned",
+    "denyGlobsReturned",
+    "globPatternsReturned",
+    "workspaceRootsReturned",
+    "networkRulesReturned",
+    "domainRulesReturned",
+    "proxyUrlsReturned",
+    "localPrivatePoliciesReturned",
+    "unixSocketPathsReturned",
+    "sandboxModesReturned",
+    "managedRequirementsReturned",
+    "configTomlReturned",
+    "platformPathsReturned",
+    "permissionValuesReturned",
+    "settingValuesReturned",
+    "permissionProfilesWritten",
+    "networkRulesWritten",
+    "filesystemRulesWritten",
+    "unixSocketRulesWritten",
+    "sandboxMigrated",
+    "globExpanded",
+    "workspaceRootsExpanded",
+    "networkAccess",
+    "filesystemReads",
+    "filesystemWrites",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexPermissionsReturned", true],
+    ["codexPermissionsValuesReturned", false],
+    ["codexPermissionsProfilesReturned", false],
+    ["codexPermissionsProfileNamesReturned", false],
+    ["codexPermissionsFilesystemRulesReturned", false],
+    ["codexPermissionsPathsReturned", false],
+    ["codexPermissionsAccessValuesReturned", false],
+    ["codexPermissionsDenyGlobsReturned", false],
+    ["codexPermissionsGlobPatternsReturned", false],
+    ["codexPermissionsWorkspaceRootsReturned", false],
+    ["codexPermissionsNetworkRulesReturned", false],
+    ["codexPermissionsDomainsReturned", false],
+    ["codexPermissionsProxyUrlsReturned", false],
+    ["codexPermissionsLocalPrivatePolicyReturned", false],
+    ["codexPermissionsUnixSocketPathsReturned", false],
+    ["codexPermissionsSandboxModesReturned", false],
+    ["codexPermissionsManagedRequirementsReturned", false],
+    ["codexPermissionsConfigTomlReturned", false],
+    ["codexPermissionsPlatformPathsReturned", false],
+    ["codexPermissionsPermissionValuesReturned", false],
+    ["codexPermissionsSettingValuesReturned", false],
+    ["codexPermissionsProfileWriteEnabled", false],
+    ["codexPermissionsFilesystemRuleWriteEnabled", false],
+    ["codexPermissionsNetworkRuleWriteEnabled", false],
+    ["codexPermissionsUnixSocketRuleWriteEnabled", false],
+    ["codexPermissionsSandboxMigrationEnabled", false],
+    ["codexPermissionsGlobExpansionEnabled", false],
+    ["codexPermissionsWorkspaceRootExpansionEnabled", false],
+    ["codexPermissionsNetworkAccess", false],
+    ["codexPermissionsFilesystemAccess", false],
+    ["codexPermissionsMutationsEnabled", false],
+    ["codexPermissionsUrlsReturned", false],
+    ["codexPermissionsSecretsReturned", false],
+    ["codexPermissionsRawPayloadsReturned", false],
+    ["codexPermissionsAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedAutomationsCatalogEntries() {
   return [
     {
@@ -36814,6 +37065,7 @@ function assertCodexAppSettingsParity(
   assert.equal(summary.settingsWritesEnabled, false);
   assertSkillsPluginsCatalog(payload);
   assertCodexSitesCatalog(payload);
+  assertCodexPermissionsCatalog(payload);
   assertAutomationsCatalog(payload);
   assertCodexAppCommandsCatalog(payload);
   assertCodexChromeExtensionCatalog(payload);

@@ -461,6 +461,16 @@
   change access, write environment values or secrets, start builds, provision
   storage, install plugins, access network, read or write files, or mutate Sites
   state. Its
+  Codex Permissions catalog may expose only static official-documentation keys
+  plus local boundary keys, groups, states, sources, counts, and redaction
+  flags; it must not return permission profiles, profile names, filesystem
+  rules, paths, access values, deny globs, glob patterns, workspace roots,
+  network rules, domains, proxy URLs, local/private policy values, Unix socket
+  paths, sandbox modes, managed requirements, `config.toml`, platform paths,
+  setting values, secrets, raw payloads, app-server payloads, or app-server
+  traffic, and must not write profiles or rules, expand globs or workspace
+  roots, migrate sandbox settings, access network, read or write files, or
+  mutate permission state. Its
   Automations catalog may expose only static official-documentation keys plus
   local boundary keys, groups, states, sources, counts, and redaction flags; it
   must not return automation names, run ids, run results, triage items,

@@ -156,6 +156,20 @@ Target parity with the Codex desktop workflow:
   app-server traffic, and it does not create sites, save versions, deploy,
   change access, write environment values/secrets, start builds, provision
   storage, install plugins, access network, read/write files, or mutate Sites.
+- `/api/settings-integrations` now also exposes a read-only Codex Permissions
+  catalog aligned to the official Permissions documentation. It returns only
+  static keys, groups, states, sources, counts, and redaction flags for
+  filesystem access levels and precedence, supported path forms, workspace-root
+  scoping, deny exact/glob rules, glob scan depth, network domain and proxy
+  rules, local/private-network guardrails, Unix socket rules, migration from
+  older sandbox settings, built-in profiles, `danger-full-access` caution, and
+  managed requirements. It does not return permission profiles, profile names,
+  filesystem rules, paths, access values, deny globs, glob patterns, workspace
+  roots, network rules, domains, proxy URLs, local/private policy values, Unix
+  socket paths, sandbox modes, managed requirements, `config.toml`, platform
+  paths, setting values, secrets, raw payloads, or app-server traffic, and it
+  does not write profiles/rules, expand globs/workspace roots, migrate
+  sandbox settings, access network, read/write files, or mutate permissions.
 - `/api/settings-integrations` now also exposes a read-only Automations catalog
   aligned to the official Codex app Automations documentation. It returns only
   static keys, groups, states, sources, counts, and redaction flags for the

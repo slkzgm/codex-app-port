@@ -798,6 +798,19 @@ output/logs, source commits, plugin names, local paths, setting values, site
 content, screenshots, raw payloads, app-server traffic, site creation, version
 saving, deployment, access changes, environment/secret writes, builds, storage
 provisioning, plugin installs, network access, filesystem access, or mutations.
+The same response exposes `codexPermissions` as a static review-only catalog
+for official Codex Permissions. The UI shows only catalog counts, entry keys,
+groups, state/source chips, and redaction chips for filesystem access levels
+and precedence, supported path forms, workspace-root scoping, deny exact/glob
+rules, glob scan depth, network domain/proxy rules, local/private-network
+guardrails, Unix socket rules, migration from older sandbox settings, built-in
+profiles, `danger-full-access` caution, and managed requirements. It does not
+show permission profiles, profile names, filesystem rules, paths, access
+values, deny globs, glob patterns, workspace roots, network rules, domains,
+proxy URLs, local/private policy values, Unix socket paths, sandbox modes,
+managed requirements, `config.toml`, platform paths, setting values, profile or
+rule writes, glob/workspace-root expansion, sandbox migration, network access,
+filesystem access, mutations, secrets, raw payloads, or app-server traffic.
 The same response exposes `automationsCatalog` as a static review-only
 Automations catalog. The UI shows only catalog counts, keys, groups,
 state/source chips, and redaction chips for official automation pane, Triage,

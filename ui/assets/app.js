@@ -33,6 +33,8 @@ const elements = {
   skillsPluginsCatalogValuesText: document.querySelector("#skills-plugins-catalog-values-text"),
   codexSitesText: document.querySelector("#codex-sites-text"),
   codexSitesValuesText: document.querySelector("#codex-sites-values-text"),
+  codexPermissionsText: document.querySelector("#codex-permissions-text"),
+  codexPermissionsValuesText: document.querySelector("#codex-permissions-values-text"),
   automationsCatalogText: document.querySelector("#automations-catalog-text"),
   automationsCatalogValuesText: document.querySelector("#automations-catalog-values-text"),
   codexAppCommandsText: document.querySelector("#codex-app-commands-text"),
@@ -411,6 +413,7 @@ const elements = {
   appIntegrationsMcpList: document.querySelector("#app-integrations-mcp-list"),
   skillsPluginsCatalogList: document.querySelector("#skills-plugins-catalog-list"),
   codexSitesList: document.querySelector("#codex-sites-list"),
+  codexPermissionsList: document.querySelector("#codex-permissions-list"),
   automationsCatalogList: document.querySelector("#automations-catalog-list"),
   codexAppCommandsList: document.querySelector("#codex-app-commands-list"),
   codexChromeExtensionList: document.querySelector("#codex-chrome-extension-list"),
@@ -10457,6 +10460,7 @@ function renderSettingsIntegrations(payload) {
   const codexAppSettings = payload.codexAppSettings ?? {};
   const skillsPluginsCatalog = payload.skillsPluginsCatalog ?? {};
   const codexSites = payload.codexSites ?? {};
+  const codexPermissions = payload.codexPermissions ?? {};
   const automationsCatalog = payload.automationsCatalog ?? {};
   const codexAppCommands = payload.codexAppCommands ?? {};
   const codexChromeExtension = payload.codexChromeExtension ?? {};
@@ -10573,6 +10577,49 @@ function renderSettingsIntegrations(payload) {
     codexSites.secretsReturned ||
     codexSites.rawPayloadsReturned ||
     codexSites.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexPermissionsText.textContent = codexPermissions.returned
+    ? `${codexPermissions.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexPermissions.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexPermissionsValuesText.textContent =
+    codexPermissions.permissionProfilesReturned ||
+    codexPermissions.permissionProfileNamesReturned ||
+    codexPermissions.filesystemRulesReturned ||
+    codexPermissions.pathValuesReturned ||
+    codexPermissions.accessValuesReturned ||
+    codexPermissions.denyGlobsReturned ||
+    codexPermissions.globPatternsReturned ||
+    codexPermissions.workspaceRootsReturned ||
+    codexPermissions.networkRulesReturned ||
+    codexPermissions.domainRulesReturned ||
+    codexPermissions.proxyUrlsReturned ||
+    codexPermissions.localPrivatePoliciesReturned ||
+    codexPermissions.unixSocketPathsReturned ||
+    codexPermissions.sandboxModesReturned ||
+    codexPermissions.managedRequirementsReturned ||
+    codexPermissions.configTomlReturned ||
+    codexPermissions.platformPathsReturned ||
+    codexPermissions.permissionValuesReturned ||
+    codexPermissions.settingValuesReturned ||
+    codexPermissions.permissionProfilesWritten ||
+    codexPermissions.networkRulesWritten ||
+    codexPermissions.filesystemRulesWritten ||
+    codexPermissions.unixSocketRulesWritten ||
+    codexPermissions.sandboxMigrated ||
+    codexPermissions.globExpanded ||
+    codexPermissions.workspaceRootsExpanded ||
+    codexPermissions.networkAccess ||
+    codexPermissions.filesystemReads ||
+    codexPermissions.filesystemWrites ||
+    codexPermissions.mutationEnabled ||
+    codexPermissions.pathsReturned ||
+    codexPermissions.urlsReturned ||
+    codexPermissions.secretsReturned ||
+    codexPermissions.rawPayloadsReturned ||
+    codexPermissions.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.automationsCatalogText.textContent = automationsCatalog.returned
@@ -11173,6 +11220,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexAppSettingsParity(codexAppSettings);
   renderSkillsPluginsCatalog(skillsPluginsCatalog);
   renderCodexSitesCatalog(codexSites);
+  renderCodexPermissionsCatalog(codexPermissions);
   renderAutomationsCatalog(automationsCatalog);
   renderCodexAppCommandsCatalog(codexAppCommands);
   renderCodexChromeExtensionCatalog(codexChromeExtension);
@@ -12882,6 +12930,90 @@ function renderCodexSitesCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexSitesList.append(row);
+  }
+}
+
+function renderCodexPermissionsCatalog(summary) {
+  elements.codexPermissionsList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexPermissionsList.append(
+      emptyState("No Codex Permissions catalog returned."),
+    );
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "permissions";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.permissionProfileReturned ? "profiles returned" : "profiles hidden",
+      entry.permissionProfileNameReturned ? "profile names returned" : "profile names hidden",
+      entry.filesystemRuleReturned ? "filesystem rules returned" : "filesystem rules hidden",
+      entry.pathValueReturned ? "path values returned" : "path values hidden",
+      entry.accessValueReturned ? "access values returned" : "access values hidden",
+      entry.denyGlobReturned ? "deny globs returned" : "deny globs hidden",
+      entry.globPatternReturned ? "glob patterns returned" : "glob patterns hidden",
+      entry.workspaceRootReturned ? "workspace roots returned" : "workspace roots hidden",
+      entry.networkRuleReturned ? "network rules returned" : "network rules hidden",
+      entry.domainRuleReturned ? "domain rules returned" : "domain rules hidden",
+      entry.proxyUrlReturned ? "proxy URLs returned" : "proxy URLs hidden",
+      entry.localPrivatePolicyReturned
+        ? "local/private policy returned"
+        : "local/private policy hidden",
+      entry.unixSocketPathReturned ? "Unix socket paths returned" : "Unix socket paths hidden",
+      entry.sandboxModeReturned ? "sandbox modes returned" : "sandbox modes hidden",
+      entry.managedRequirementReturned
+        ? "managed requirements returned"
+        : "managed requirements hidden",
+      entry.configTomlReturned ? "config.toml returned" : "config.toml hidden",
+      entry.platformPathReturned ? "platform paths returned" : "platform paths hidden",
+      entry.permissionValueReturned ? "permission values returned" : "permission values hidden",
+      entry.settingValueReturned ? "setting values returned" : "setting values hidden",
+      entry.permissionProfileWritten ? "profile written" : "profile write blocked",
+      entry.networkRuleWritten ? "network rule written" : "network rule write blocked",
+      entry.filesystemRuleWritten ? "filesystem rule written" : "filesystem rule write blocked",
+      entry.unixSocketRuleWritten ? "Unix socket rule written" : "Unix socket write blocked",
+      entry.sandboxMigrated ? "sandbox migrated" : "sandbox migration blocked",
+      entry.globExpanded ? "globs expanded" : "glob expansion blocked",
+      entry.workspaceRootExpanded ? "workspace roots expanded" : "workspace root expansion blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexPermissionsList.append(row);
   }
 }
 

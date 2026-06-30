@@ -559,6 +559,20 @@ Current M1 status:
   version saving, deployment, access changes, environment/secret writes, build
   starts, storage provisioning, plugin installs, network access, filesystem
   access, mutations, raw payloads, and app-server traffic blocked
+- done: read-only Codex Permissions catalog in `/api/settings-integrations`,
+  exposing only static official Permissions documentation keys plus local
+  boundary keys/groups/states/sources/counts/redaction flags for filesystem
+  access levels and precedence, supported path forms, workspace-root scoping,
+  deny exact/glob rules, glob scan depth, network domain/proxy rules,
+  local/private-network guardrails, Unix socket rules, migration from older
+  sandbox settings, built-in profiles, `danger-full-access` caution, and
+  managed requirements, with permission profiles/names, filesystem rules,
+  paths, access values, deny globs, glob patterns, workspace roots, network
+  rules, domains, proxy URLs, local/private policy values, Unix socket paths,
+  sandbox modes, managed requirements, config.toml, platform paths, setting
+  values, profile/rule writes, glob/workspace-root expansion, sandbox
+  migration, network access, filesystem access, mutations, secrets, raw
+  payloads, and app-server traffic blocked
 - done: read-only Automations catalog in `/api/settings-integrations`,
   exposing only static official Automations documentation keys plus local
   boundary keys/groups/states/sources/counts/redaction flags for the
