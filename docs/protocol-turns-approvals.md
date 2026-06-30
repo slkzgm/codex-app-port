@@ -150,6 +150,16 @@ returns only enum/count/presence metadata with no full ids, thread content,
 prompt text, audio data, text, SDP, realtime session ids, paths, secrets, or raw
 payloads.
 
+`thread/increment_elicitation`, `thread/decrement_elicitation`, and
+`thread/approveGuardianDeniedAction` remain blocked as browser mutations and are
+exposed only through `/api/thread-guardian-preflight` for local validation. The
+route accepts a selected thread suffix, an explicit official method name, and
+JSON-object arguments, rejects unsupported keys such as browser-supplied full
+`threadId`, has no execution route, performs no app-server, thread-state, or
+model traffic, changes no elicitation counters, approves no guarded action, and
+returns only count/presence metadata with no full ids, thread content, guardian
+event details, paths, secrets, or raw payloads.
+
 Current local status: `permissionProfile/list`, `account/usage/read`,
 `account/workspaceMessages/read`, `externalAgentConfig/import/readHistories`,
 `plugin/installed`, and `remoteControl/status/read` are exposed only through the
@@ -467,6 +477,16 @@ execution route. Browser responses return only enum/count/presence metadata and
 safety flags, not full ids, thread content, prompt text, audio data, text, SDP,
 realtime session ids, paths, secrets, raw app-server payloads, or raw request
 payloads.
+
+`/api/thread-guardian-preflight` validates selected-thread
+`thread/increment_elicitation`, `thread/decrement_elicitation`, and
+`thread/approveGuardianDeniedAction` intent locally without app-server traffic.
+It summarizes official argument shapes such as empty elicitation params, guardian
+event presence, event size, object key counts, and URL/path/secret-like counters,
+issues only a local confirmation token for the blocked intent, and has no
+matching execution route. Browser responses return only count/presence metadata
+and safety flags, not full ids, thread content, guardian event details, paths,
+secrets, raw app-server payloads, or raw request payloads.
 
 When the server is started with `CODEX_APP_PORT_ALLOW_THREAD_TURNS=1`,
 `/api/thread-turns` may call `thread/list` to resolve the selected suffix and

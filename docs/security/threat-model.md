@@ -198,6 +198,16 @@
   model traffic, or return full ids, thread content, prompt text, audio data,
   text, SDP, realtime session ids, cwd, paths, secrets, raw app-server payloads,
   or raw request payloads.
+- Browser-facing elicitation counters and guardian-denied-action approvals must
+  not expose arbitrary `thread/increment_elicitation`,
+  `thread/decrement_elicitation`, or `thread/approveGuardianDeniedAction`
+  execution. The only implemented surface is a local-only
+  `/api/thread-guardian-preflight` check with selected-thread suffix validation,
+  official method allowlisting, JSON-object argument shape validation, and no
+  execution route. It must not touch app-server, mutate counters, approve guarded
+  actions, create model traffic, or return full ids, thread content, guardian
+  event details, cwd, paths, secrets, raw app-server payloads, or raw request
+  payloads.
 - Browser-facing thread compaction must be blocked by default and opt-in only.
   Because `thread/compact/start` can trigger model traffic, it also requires the
   persistent session manager gate. When `CODEX_APP_PORT_ALLOW_THREAD_COMPACT=1`

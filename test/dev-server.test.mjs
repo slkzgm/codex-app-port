@@ -385,12 +385,18 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /thread-realtime-arguments-input/);
     assert.match(html, /thread-realtime-preflight-button/);
     assert.match(html, /thread-realtime-status/);
+    assert.match(html, /thread-guardian-method-select/);
+    assert.match(html, /thread-guardian-arguments-input/);
+    assert.match(html, /thread-guardian-preflight-button/);
+    assert.match(html, /thread-guardian-status/);
     assert.match(appScript, /runThreadMetadataUpdatePreflight/);
     assert.match(appScript, /renderThreadMetadataUpdatePreflight/);
     assert.match(appScript, /runThreadResumeInjectPreflight/);
     assert.match(appScript, /renderThreadResumeInjectPreflight/);
     assert.match(appScript, /runThreadRealtimePreflight/);
     assert.match(appScript, /renderThreadRealtimePreflight/);
+    assert.match(appScript, /runThreadGuardianPreflight/);
+    assert.match(appScript, /renderThreadGuardianPreflight/);
     assert.match(html, /thread-safety-lock-preflight-button/);
     assert.match(html, /thread-safety-lock-button/);
     assert.match(html, /thread-safety-lock-status/);
@@ -455,6 +461,7 @@ test("browser POST body contracts are centralized and immutable", () => {
     "/api/thread-metadata-update-preflight",
     "/api/thread-resume-inject-preflight",
     "/api/thread-realtime-preflight",
+    "/api/thread-guardian-preflight",
     "/api/thread-rollback-preflight",
     "/api/thread-rollback-action",
     "/api/thread-safety-lock-preflight",
@@ -636,6 +643,12 @@ test("browser POST body contracts are centralized and immutable", () => {
     "arguments",
   ]);
   assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/thread-realtime-preflight"].allowedFields], [
+    "workspace",
+    "method",
+    "thread",
+    "arguments",
+  ]);
+  assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/thread-guardian-preflight"].allowedFields], [
     "workspace",
     "method",
     "thread",
@@ -1917,6 +1930,31 @@ test("browser POST response contracts block unsafe response values", () => {
   );
   assert.equal(
     threadRealtimePreflightContract.nestedKeySchemas.policy.includes("unexpected"),
+    false,
+  );
+  const threadGuardianPreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-guardian-preflight"];
+  assert.equal(threadGuardianPreflightContract.usesRouteSpecificNestedKeySchemas, true);
+  assert.equal(
+    threadGuardianPreflightContract.nestedKeySchemas.guardian.includes("eventReturned"),
+    true,
+  );
+  assert.equal(
+    threadGuardianPreflightContract.nestedKeySchemas.guardian.includes("eventCharCount"),
+    true,
+  );
+  assert.equal(
+    threadGuardianPreflightContract.nestedKeySchemas.policy.includes(
+      "guardianDeniedActionApproved",
+    ),
+    true,
+  );
+  assert.equal(
+    threadGuardianPreflightContract.nestedKeySchemas.policy.includes("rawPayloadsReturned"),
+    true,
+  );
+  assert.equal(
+    threadGuardianPreflightContract.nestedKeySchemas.policy.includes("unexpected"),
     false,
   );
   const fsReadFilePreflightContract =
@@ -12433,6 +12471,224 @@ test("dev server preflights thread realtime intents without app-server traffic",
         thread: "abcd1234",
         arguments: startArgs,
         preflightToken: startPayload.preflight.token,
+      }),
+    });
+    assert.equal(actionRoute.status, 405);
+    assert.equal(probeCalled, false);
+  } finally {
+    await closeServer(server);
+  }
+});
+
+test("dev server preflights thread guardian intents without app-server traffic", async () => {
+  let probeCalled = false;
+  const { server, url } = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    probeFn: async () => {
+      probeCalled = true;
+      return { ok: true };
+    },
+  });
+
+  try {
+    const getResponse = await fetch(`${url}/api/thread-guardian-preflight`, {
+      headers: apiHeaders(server),
+    });
+    assert.equal(getResponse.status, 405);
+
+    const rejectedField = await fetch(`${url}/api/thread-guardian-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/approveGuardianDeniedAction",
+        thread: "abcd1234",
+        arguments: JSON.stringify({ event: { detail: "secret guardian event" } }),
+        target: "/tmp/default-workspace/private-guardian",
+      }),
+    });
+    assert.equal(rejectedField.status, 400);
+    const rejectedFieldSerialized = await rejectedField.text();
+    assert.equal(rejectedFieldSerialized.includes("secret guardian event"), false);
+    assert.equal(rejectedFieldSerialized.includes("/tmp/default-workspace"), false);
+
+    const invalidMethod = await fetch(`${url}/api/thread-guardian-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/realtime/start",
+        thread: "abcd1234",
+        arguments: "{}",
+      }),
+    });
+    assert.equal(invalidMethod.status, 400);
+
+    const rejectedThreadId = await fetch(`${url}/api/thread-guardian-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/increment_elicitation",
+        thread: "abcd1234",
+        arguments: JSON.stringify({ threadId: "thread-full-private-id" }),
+      }),
+    });
+    assert.equal(rejectedThreadId.status, 400);
+    assert.equal((await rejectedThreadId.text()).includes("thread-full-private-id"), false);
+
+    const missingEvent = await fetch(`${url}/api/thread-guardian-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/approveGuardianDeniedAction",
+        thread: "abcd1234",
+        arguments: "{}",
+      }),
+    });
+    assert.equal(missingEvent.status, 400);
+
+    const incrementArgs = "{}";
+    const incrementResponse = await fetch(`${url}/api/thread-guardian-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/increment_elicitation",
+        thread: "abcd1234",
+        arguments: incrementArgs,
+      }),
+    });
+    assert.equal(incrementResponse.status, 200);
+    const incrementPayload = await incrementResponse.json();
+    assert.equal(incrementPayload.ok, true);
+    assert.equal(incrementPayload.appServer.touched, false);
+    assert.equal(incrementPayload.appServer.modelTraffic, false);
+    assert.equal(incrementPayload.appServer.commandTraffic, false);
+    assert.equal(incrementPayload.appServer.threadTraffic, false);
+    assert.equal(incrementPayload.action.type, "thread-guardian-preflight");
+    assert.equal(incrementPayload.action.method, "thread/increment_elicitation");
+    assert.equal(incrementPayload.action.execution, "blocked");
+    assert.equal(incrementPayload.action.threadStateMutated, false);
+    assert.equal(incrementPayload.thread.threadIdSuffix, "abcd1234");
+    assert.equal(incrementPayload.thread.fullIdsReturned, false);
+    assert.equal(incrementPayload.thread.contentReturned, false);
+    assert.equal(incrementPayload.thread.pathsReturned, false);
+    assert.equal(incrementPayload.guardian.incrementElicitationRequested, true);
+    assert.equal(incrementPayload.guardian.decrementElicitationRequested, false);
+    assert.equal(incrementPayload.guardian.guardianApprovalRequested, false);
+    assert.equal(incrementPayload.guardian.eventPresent, false);
+    assert.equal(incrementPayload.guardian.eventReturned, false);
+    assert.equal(incrementPayload.guardian.argumentTextReturned, false);
+    assert.equal(incrementPayload.guardian.rawPayloadReturned, false);
+    assert.equal(incrementPayload.policy.readOnly, true);
+    assert.equal(incrementPayload.policy.threadStateMutated, false);
+    assert.equal(incrementPayload.policy.elicitationIncremented, false);
+    assert.equal(incrementPayload.policy.guardianDeniedActionApproved, false);
+    assert.equal(incrementPayload.policy.executionRouteImplemented, false);
+    assert.equal(incrementPayload.policy.eventReturned, false);
+    assert.equal(incrementPayload.policy.rawPayloadsReturned, false);
+    assertActionPreflight(incrementPayload, "thread-guardian-preflight", "default");
+
+    const decrementResponse = await fetch(`${url}/api/thread-guardian-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/decrement_elicitation",
+        thread: "abcd1234",
+        arguments: "{}",
+      }),
+    });
+    assert.equal(decrementResponse.status, 200);
+    const decrementPayload = await decrementResponse.json();
+    assert.equal(decrementPayload.action.method, "thread/decrement_elicitation");
+    assert.equal(decrementPayload.guardian.decrementElicitationRequested, true);
+    assert.equal(decrementPayload.policy.elicitationDecremented, false);
+    assertActionPreflight(decrementPayload, "thread-guardian-preflight", "default");
+
+    const approveArgs = JSON.stringify({
+      event: {
+        assessment: "denied",
+        action: "secret guardian event",
+        path: "/tmp/default-workspace/private-guardian",
+        token: "sk-proj-guardiansecret",
+      },
+    });
+    const approveResponse = await fetch(`${url}/api/thread-guardian-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/approveGuardianDeniedAction",
+        thread: "abcd1234",
+        arguments: approveArgs,
+      }),
+    });
+    assert.equal(approveResponse.status, 200);
+    const approvePayload = await approveResponse.json();
+    const approveSerialized = JSON.stringify(approvePayload);
+    assert.equal(approvePayload.action.method, "thread/approveGuardianDeniedAction");
+    assert.equal(approvePayload.guardian.guardianApprovalRequested, true);
+    assert.equal(approvePayload.guardian.eventPresent, true);
+    assert.equal(approvePayload.guardian.eventObjectPresent, true);
+    assert.equal(approvePayload.guardian.eventCharCount, JSON.stringify(JSON.parse(approveArgs).event).length);
+    assert.equal(approvePayload.guardian.eventTopLevelKeyCount, 4);
+    assert.equal(approvePayload.guardian.pathLikeArgumentCount, 1);
+    assert.equal(approvePayload.guardian.secretLikeArgumentCount, 1);
+    assert.equal(approvePayload.guardian.sensitiveKeyCount, 1);
+    assert.equal(approvePayload.guardian.eventReturned, false);
+    assert.equal(approvePayload.policy.guardianDeniedActionApproved, false);
+    assertActionPreflight(approvePayload, "thread-guardian-preflight", "default");
+    for (const marker of [
+      "secret guardian event",
+      "/tmp/default-workspace",
+      "sk-proj-guardiansecret",
+      "codexHome",
+      "userAgent",
+      "\"eventReturned\":true",
+      "\"argumentTextReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]) {
+      assert.equal(approveSerialized.includes(marker), false, `guardian preflight leaked ${marker}`);
+    }
+
+    const confirm = await fetch(`${url}/api/action-preflight-confirm`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        actionType: "thread-guardian-preflight",
+        preflightToken: approvePayload.preflight.token,
+        method: "thread/approveGuardianDeniedAction",
+        thread: "abcd1234",
+        arguments: approveArgs,
+      }),
+    });
+    assert.equal(confirm.status, 200);
+    const confirmPayload = await confirm.json();
+    assertActionPreflightConfirmation(confirmPayload, "thread-guardian-preflight", "default");
+    assert.equal(confirmPayload.action.method, "thread/approveGuardianDeniedAction");
+    const confirmSerialized = JSON.stringify(confirmPayload);
+    for (const marker of [
+      approvePayload.preflight.token,
+      "secret guardian event",
+      "/tmp/default-workspace",
+      "sk-proj-guardiansecret",
+    ]) {
+      assert.equal(confirmSerialized.includes(marker), false, `guardian confirm leaked ${marker}`);
+    }
+
+    const actionRoute = await fetch(`${url}/api/thread-guardian-action`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/approveGuardianDeniedAction",
+        thread: "abcd1234",
+        arguments: approveArgs,
+        preflightToken: approvePayload.preflight.token,
       }),
     });
     assert.equal(actionRoute.status, 405);

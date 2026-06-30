@@ -857,6 +857,14 @@ touches app-server, starts realtime, sends audio/text/speech, stops realtime, or
 creates model traffic. Responses expose only enum/count/presence metadata and
 redaction flags, never full ids, thread content, prompt text, audio data, text,
 SDP, realtime session ids, paths, raw payloads, or an execution route.
+Thread elicitation and guardian-denied-action approvals are preflight-only.
+`/api/thread-guardian-preflight` validates selected-thread
+`thread/increment_elicitation`, `thread/decrement_elicitation`, and
+`thread/approveGuardianDeniedAction` intent locally, rejects browser-supplied
+full `threadId`, and never touches app-server, changes elicitation counters, or
+approves guarded actions. Responses expose only count/presence metadata and
+redaction flags, never full ids, thread content, guardian event details, paths,
+secrets, raw payloads, or an execution route.
 Thread compaction is more sensitive because it can trigger model traffic.
 `/api/thread-compact-preflight` validates a selected thread suffix locally and
 returns a one-time token without app-server traffic. `/api/thread-compact-start`

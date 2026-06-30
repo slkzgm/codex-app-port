@@ -286,6 +286,14 @@ Current M1 status:
   sanitized enum/count/presence metadata without full ids, thread content,
   prompt text, audio data, text, SDP, realtime session ids, paths, arguments,
   secrets, or raw payloads
+- done: local-only `/api/thread-guardian-preflight` path for
+  `thread/increment_elicitation`, `thread/decrement_elicitation`, and
+  `thread/approveGuardianDeniedAction`, with route-specific nested response
+  schemas, selected-thread suffix validation, official method allowlisting,
+  guardian/elicitation argument shape validation, no execution route, no
+  app-server traffic, no model traffic, no elicitation counter or guarded-action
+  side effects, and sanitized count/presence metadata without full ids, thread
+  content, guardian event details, paths, arguments, secrets, or raw payloads
 - done: opt-in `/api/thread-compact-start` path behind both
   `CODEX_APP_PORT_ALLOW_THREAD_COMPACT=1` and
   `CODEX_APP_PORT_ALLOW_SESSION_MANAGER=1`, with matching one-time

@@ -69,6 +69,7 @@ async function main() {
   await checkThreadTurnItemsApi();
   await checkThreadResumeInjectPreflightApi();
   await checkThreadRealtimePreflightApi();
+  await checkThreadGuardianPreflightApi();
   await checkThreadTranscriptApi();
   await checkThreadChangesApi();
   await checkEventStreamApi();
@@ -1013,6 +1014,14 @@ async function checkStrictBrowserPostBodies() {
           method: "thread/realtime/start",
           thread: "12345678",
           arguments: "{\"outputModality\":\"text\"}",
+        },
+      ],
+      [
+        "/api/thread-guardian-preflight",
+        {
+          method: "thread/increment_elicitation",
+          thread: "12345678",
+          arguments: "{}",
         },
       ],
       ["/api/thread-rollback-preflight", { thread: "12345678", numTurns: 1 }],
@@ -2557,6 +2566,21 @@ function assertBrowserPostBodyContracts(cases) {
   ) {
     throw new Error("thread-realtime-preflight response contract is missing nested schemas");
   }
+  const threadGuardianPreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-guardian-preflight"];
+  if (
+    threadGuardianPreflightContract.usesRouteSpecificNestedKeySchemas !== true ||
+    !Object.isFrozen(threadGuardianPreflightContract.nestedKeySchemas.policy) ||
+    !threadGuardianPreflightContract.nestedKeySchemas.guardian?.includes("eventReturned") ||
+    !threadGuardianPreflightContract.nestedKeySchemas.guardian?.includes("eventCharCount") ||
+    !threadGuardianPreflightContract.nestedKeySchemas.policy?.includes(
+      "guardianDeniedActionApproved",
+    ) ||
+    !threadGuardianPreflightContract.nestedKeySchemas.policy?.includes("rawPayloadsReturned") ||
+    threadGuardianPreflightContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("thread-guardian-preflight response contract is missing nested schemas");
+  }
   const fsReadFilePreflightContract =
     BROWSER_POST_RESPONSE_CONTRACTS["/api/fs-read-file-preflight"];
   if (
@@ -3387,6 +3411,102 @@ function assertBrowserPostBodyContracts(cases) {
   });
   if (allowedThreadRealtimePreflightShape.statusCode !== 200) {
     throw new Error("browser POST response contract rejected an allowed thread realtime preflight shape");
+  }
+  const allowedThreadGuardianPreflightShape = applyBrowserPostResponseContract({
+    method: "POST",
+    pathname: "/api/thread-guardian-preflight",
+    statusCode: 200,
+    payload: {
+      ok: true,
+      appServer: {
+        touched: false,
+        modelTraffic: false,
+        commandTraffic: false,
+        threadTraffic: false,
+      },
+      action: {
+        type: "thread-guardian-preflight",
+        method: "thread/increment_elicitation",
+        execution: "blocked",
+        wouldIncrementElicitation: false,
+        wouldDecrementElicitation: false,
+        wouldApproveGuardianDeniedAction: false,
+        threadStateMutated: false,
+        appServerTouched: false,
+        modelTraffic: false,
+        reason: "thread-guardian-execution-not-implemented",
+      },
+      thread: {
+        threadIdSuffix: "thread1234",
+        fullIdsReturned: false,
+        contentReturned: false,
+        pathsReturned: false,
+      },
+      guardian: {
+        method: "thread/increment_elicitation",
+        argumentCharCount: 2,
+        argumentLineCount: 1,
+        argumentTopLevelKeyCount: 0,
+        argumentObjectAccepted: true,
+        incrementElicitationRequested: true,
+        decrementElicitationRequested: false,
+        guardianApprovalRequested: false,
+        eventPresent: false,
+        eventObjectPresent: false,
+        eventArrayPresent: false,
+        eventStringPresent: false,
+        eventCharCount: 0,
+        eventTopLevelKeyCount: 0,
+        urlLikeArgumentCount: 0,
+        pathLikeArgumentCount: 0,
+        secretLikeArgumentCount: 0,
+        sensitiveKeyCount: 0,
+        appServerTraffic: false,
+        modelTraffic: false,
+        threadContentReturned: false,
+        fullIdsReturned: false,
+        pathsReturned: false,
+        eventReturned: false,
+        argumentTextReturned: false,
+        rawPayloadReturned: false,
+      },
+      preflight: {
+        token: "preflight-1234567890abcdef",
+        tokenIssued: true,
+        scope: {
+          kind: "thread-guardian-preflight",
+          workspaceId: "default",
+        },
+      },
+      policy: {
+        readOnly: true,
+        appServerTraffic: false,
+        modelTraffic: false,
+        commandTraffic: false,
+        threadTraffic: false,
+        threadStateMutated: false,
+        elicitationIncremented: false,
+        elicitationDecremented: false,
+        guardianDeniedActionApproved: false,
+        executionRouteImplemented: false,
+        dedicatedExecutionRouteImplemented: false,
+        executionGateEnabled: false,
+        requiresApprovalPipeline: true,
+        requiresExplicitEnablement: true,
+        browserMethodCallsAccepted: false,
+        threadContentReturned: false,
+        fullIdsReturned: false,
+        pathsReturned: false,
+        eventReturned: false,
+        argumentTextReturned: false,
+        rawPayloadsReturned: false,
+        preflightImplemented: true,
+        implemented: true,
+      },
+    },
+  });
+  if (allowedThreadGuardianPreflightShape.statusCode !== 200) {
+    throw new Error("browser POST response contract rejected an allowed thread guardian preflight shape");
   }
   const allowedNestedIntegrationShape = applyBrowserPostResponseContract({
     method: "POST",
@@ -10492,6 +10612,28 @@ function assertBrowserPostBodyContracts(cases) {
     }
   }
   for (const [payload, marker] of [
+    [{ ok: true, guardian: { argumentCharCount: 12, leakedEvent: "private event" } }, "private"],
+    [{ ok: true, guardian: { eventReturned: false, leakedThreadId: "private id" } }, "private"],
+    [{ ok: true, thread: { threadIdSuffix: "thread1234", leakedFullThreadId: "private id" } }, "private"],
+    [{ ok: true, policy: { guardianDeniedActionApproved: false, leakedGuardianPolicy: "private policy" } }, "private"],
+  ]) {
+    const unexpectedThreadGuardianPreflightNestedKeyResponse =
+      applyBrowserPostResponseContract({
+        method: "POST",
+        pathname: "/api/thread-guardian-preflight",
+        statusCode: 200,
+        payload,
+      });
+    if (
+      unexpectedThreadGuardianPreflightNestedKeyResponse.statusCode !== 500 ||
+      JSON.stringify(unexpectedThreadGuardianPreflightNestedKeyResponse.payload).includes(marker)
+    ) {
+      throw new Error(
+        "browser POST response contract did not block an unexpected thread guardian preflight nested key",
+      );
+    }
+  }
+  for (const [payload, marker] of [
     [{ ok: true, target: { threadIdSuffix: "thread1234", leakedThreadId: "private id" } }, "private"],
     [
       {
@@ -13584,6 +13726,249 @@ async function checkThreadRealtimePreflightApi() {
     await closeServer(server);
   }
   pass("dev server thread realtime preflight stays local and sanitized");
+}
+
+async function checkThreadGuardianPreflightApi() {
+  let probeCalled = false;
+  const server = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    probeFn: async () => {
+      probeCalled = true;
+      return { ok: true };
+    },
+  });
+  const port = await listenWithFallback(server, { host: "127.0.0.1", port: 0 });
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  try {
+    const token = await readUiSessionToken(baseUrl);
+    const getResponse = await fetch(`${baseUrl}/api/thread-guardian-preflight`, {
+      headers: apiHeaders(token),
+    });
+    if (getResponse.status !== 405) {
+      throw new Error(`thread guardian GET returned HTTP ${getResponse.status}`);
+    }
+
+    const rejectedField = await fetch(`${baseUrl}/api/thread-guardian-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/approveGuardianDeniedAction",
+        thread: "abcd1234",
+        arguments: JSON.stringify({ event: { detail: "verify secret guardian event" } }),
+        target: "/tmp/codex-app-port-verify/private-guardian",
+      }),
+    });
+    if (rejectedField.status !== 400) {
+      throw new Error(`thread guardian unsupported field returned HTTP ${rejectedField.status}`);
+    }
+    const rejectedFieldText = await rejectedField.text();
+    if (
+      rejectedFieldText.includes("verify secret guardian event") ||
+      rejectedFieldText.includes("/tmp/codex-app-port-verify")
+    ) {
+      throw new Error("thread guardian unsupported-field response leaked private data");
+    }
+
+    const invalidMethod = await fetch(`${baseUrl}/api/thread-guardian-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/realtime/start",
+        thread: "abcd1234",
+        arguments: "{}",
+      }),
+    });
+    if (invalidMethod.status !== 400) {
+      throw new Error(`thread guardian invalid method returned HTTP ${invalidMethod.status}`);
+    }
+
+    const rejectedThreadId = await fetch(`${baseUrl}/api/thread-guardian-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/increment_elicitation",
+        thread: "abcd1234",
+        arguments: JSON.stringify({ threadId: "verify-private-full-thread-id" }),
+      }),
+    });
+    if (rejectedThreadId.status !== 400) {
+      throw new Error(`thread guardian browser threadId returned HTTP ${rejectedThreadId.status}`);
+    }
+    if ((await rejectedThreadId.text()).includes("verify-private-full-thread-id")) {
+      throw new Error("thread guardian invalid argument response leaked private thread id");
+    }
+
+    const missingEvent = await fetch(`${baseUrl}/api/thread-guardian-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/approveGuardianDeniedAction",
+        thread: "abcd1234",
+        arguments: "{}",
+      }),
+    });
+    if (missingEvent.status !== 400) {
+      throw new Error(`thread guardian approval without event returned HTTP ${missingEvent.status}`);
+    }
+
+    const incrementArgs = "{}";
+    const incrementResponse = await fetch(`${baseUrl}/api/thread-guardian-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/increment_elicitation",
+        thread: "abcd1234",
+        arguments: incrementArgs,
+      }),
+    });
+    if (!incrementResponse.ok) {
+      throw new Error(`thread guardian increment preflight returned HTTP ${incrementResponse.status}`);
+    }
+    const incrementPayload = await incrementResponse.json();
+    assertSanitizedThreadGuardianPreflight(incrementPayload, {
+      method: "thread/increment_elicitation",
+      argumentsText: incrementArgs,
+      forbiddenMarkers: [],
+    });
+    if (
+      incrementPayload.guardian?.incrementElicitationRequested !== true ||
+      incrementPayload.guardian?.decrementElicitationRequested !== false ||
+      incrementPayload.guardian?.guardianApprovalRequested !== false ||
+      incrementPayload.guardian?.eventPresent !== false
+    ) {
+      throw new Error("thread guardian increment preflight did not preserve sanitized increment metadata");
+    }
+
+    const decrementArgs = "{}";
+    const decrementResponse = await fetch(`${baseUrl}/api/thread-guardian-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/decrement_elicitation",
+        thread: "abcd1234",
+        arguments: decrementArgs,
+      }),
+    });
+    if (!decrementResponse.ok) {
+      throw new Error(`thread guardian decrement preflight returned HTTP ${decrementResponse.status}`);
+    }
+    const decrementPayload = await decrementResponse.json();
+    assertSanitizedThreadGuardianPreflight(decrementPayload, {
+      method: "thread/decrement_elicitation",
+      argumentsText: decrementArgs,
+      forbiddenMarkers: [],
+    });
+    if (decrementPayload.guardian?.decrementElicitationRequested !== true) {
+      throw new Error("thread guardian decrement preflight did not preserve decrement intent");
+    }
+
+    const approveEvent = {
+      assessment: "denied",
+      action: "verify secret guardian event",
+      path: "/tmp/codex-app-port-verify/private-guardian",
+      token: "sk-proj-verifyguardian",
+    };
+    const approveArgs = JSON.stringify({ event: approveEvent });
+    const approveResponse = await fetch(`${baseUrl}/api/thread-guardian-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/approveGuardianDeniedAction",
+        thread: "abcd1234",
+        arguments: approveArgs,
+      }),
+    });
+    if (!approveResponse.ok) {
+      throw new Error(`thread guardian approve preflight returned HTTP ${approveResponse.status}`);
+    }
+    const approvePayload = await approveResponse.json();
+    assertSanitizedThreadGuardianPreflight(approvePayload, {
+      method: "thread/approveGuardianDeniedAction",
+      argumentsText: approveArgs,
+      forbiddenMarkers: [
+        "verify secret guardian event",
+        "/tmp/codex-app-port-verify",
+        "sk-proj-verifyguardian",
+      ],
+    });
+    if (
+      approvePayload.guardian?.guardianApprovalRequested !== true ||
+      approvePayload.guardian?.eventObjectPresent !== true ||
+      approvePayload.guardian?.eventCharCount !== JSON.stringify(approveEvent).length ||
+      approvePayload.guardian?.eventTopLevelKeyCount !== 4 ||
+      approvePayload.guardian?.pathLikeArgumentCount !== 1 ||
+      approvePayload.guardian?.secretLikeArgumentCount !== 1 ||
+      approvePayload.guardian?.sensitiveKeyCount !== 1
+    ) {
+      throw new Error("thread guardian approve preflight did not preserve sanitized event metadata");
+    }
+
+    const confirm = await fetch(`${baseUrl}/api/action-preflight-confirm`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        actionType: "thread-guardian-preflight",
+        preflightToken: approvePayload.preflight.token,
+        method: "thread/approveGuardianDeniedAction",
+        thread: "abcd1234",
+        arguments: approveArgs,
+      }),
+    });
+    if (!confirm.ok) {
+      throw new Error(`thread guardian preflight confirmation returned HTTP ${confirm.status}`);
+    }
+    const confirmPayload = await confirm.json();
+    assertSanitizedActionPreflightConfirmation(
+      confirmPayload,
+      "thread-guardian-preflight",
+      "default",
+      approvePayload.preflight.token,
+    );
+    if (confirmPayload.action?.method !== "thread/approveGuardianDeniedAction") {
+      throw new Error("thread guardian preflight confirmation lost method metadata");
+    }
+    const confirmSerialized = JSON.stringify(confirmPayload);
+    for (const marker of [
+      "verify secret guardian event",
+      "/tmp/codex-app-port-verify",
+      "sk-proj-verifyguardian",
+    ]) {
+      if (confirmSerialized.includes(marker)) {
+        throw new Error(`thread guardian preflight confirmation leaked ${marker}`);
+      }
+    }
+
+    const actionRoute = await fetch(`${baseUrl}/api/thread-guardian-action`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/approveGuardianDeniedAction",
+        thread: "abcd1234",
+        arguments: approveArgs,
+        preflightToken: approvePayload.preflight.token,
+      }),
+    });
+    if (actionRoute.status !== 405) {
+      throw new Error(`thread guardian action route returned HTTP ${actionRoute.status}`);
+    }
+
+    if (probeCalled) {
+      throw new Error("thread guardian preflight called the app-server probe");
+    }
+  } finally {
+    await closeServer(server);
+  }
+  pass("dev server thread guardian preflight stays local and sanitized");
 }
 
 async function checkThreadTranscriptApi() {
@@ -40873,6 +41258,88 @@ function assertSanitizedThreadRealtimePreflight(
     throw new Error("thread realtime preflight did not preserve local-only safety flags");
   }
   assertActionPreflight(payload, "thread-realtime-preflight", "default");
+}
+
+function assertSanitizedThreadGuardianPreflight(
+  payload,
+  { method, argumentsText, forbiddenMarkers },
+) {
+  if (!payload.ok) {
+    throw new Error("thread guardian preflight payload is not ok");
+  }
+  const serialized = JSON.stringify(payload);
+  for (const marker of [
+    ...forbiddenMarkers,
+    "verify-sensitive-agent",
+    "codexHome",
+    "userAgent",
+    "\"threadContentReturned\":true",
+    "\"fullIdsReturned\":true",
+    "\"pathsReturned\":true",
+    "\"eventReturned\":true",
+    "\"argumentTextReturned\":true",
+    "\"rawPayloadReturned\":true",
+    "\"rawPayloadsReturned\":true",
+  ]) {
+    if (serialized.includes(marker)) {
+      throw new Error(`thread guardian preflight leaked ${marker}`);
+    }
+  }
+  if (
+    payload.appServer?.touched !== false ||
+    payload.appServer?.modelTraffic !== false ||
+    payload.appServer?.commandTraffic !== false ||
+    payload.appServer?.threadTraffic !== false ||
+    payload.action?.type !== "thread-guardian-preflight" ||
+    payload.action?.method !== method ||
+    payload.action?.execution !== "blocked" ||
+    payload.action?.wouldIncrementElicitation !== false ||
+    payload.action?.wouldDecrementElicitation !== false ||
+    payload.action?.wouldApproveGuardianDeniedAction !== false ||
+    payload.action?.threadStateMutated !== false ||
+    payload.action?.appServerTouched !== false ||
+    payload.thread?.threadIdSuffix !== "abcd1234" ||
+    payload.thread?.fullIdsReturned !== false ||
+    payload.thread?.contentReturned !== false ||
+    payload.thread?.pathsReturned !== false ||
+    payload.guardian?.method !== method ||
+    payload.guardian?.argumentCharCount !== argumentsText.length ||
+    payload.guardian?.argumentObjectAccepted !== true ||
+    payload.guardian?.appServerTraffic !== false ||
+    payload.guardian?.modelTraffic !== false ||
+    payload.guardian?.threadContentReturned !== false ||
+    payload.guardian?.fullIdsReturned !== false ||
+    payload.guardian?.pathsReturned !== false ||
+    payload.guardian?.eventReturned !== false ||
+    payload.guardian?.argumentTextReturned !== false ||
+    payload.guardian?.rawPayloadReturned !== false ||
+    payload.policy?.readOnly !== true ||
+    payload.policy?.appServerTraffic !== false ||
+    payload.policy?.modelTraffic !== false ||
+    payload.policy?.commandTraffic !== false ||
+    payload.policy?.threadTraffic !== false ||
+    payload.policy?.threadStateMutated !== false ||
+    payload.policy?.elicitationIncremented !== false ||
+    payload.policy?.elicitationDecremented !== false ||
+    payload.policy?.guardianDeniedActionApproved !== false ||
+    payload.policy?.executionRouteImplemented !== false ||
+    payload.policy?.dedicatedExecutionRouteImplemented !== false ||
+    payload.policy?.executionGateEnabled !== false ||
+    payload.policy?.requiresApprovalPipeline !== true ||
+    payload.policy?.requiresExplicitEnablement !== true ||
+    payload.policy?.browserMethodCallsAccepted !== false ||
+    payload.policy?.threadContentReturned !== false ||
+    payload.policy?.fullIdsReturned !== false ||
+    payload.policy?.pathsReturned !== false ||
+    payload.policy?.eventReturned !== false ||
+    payload.policy?.argumentTextReturned !== false ||
+    payload.policy?.rawPayloadsReturned !== false ||
+    payload.policy?.preflightImplemented !== true ||
+    payload.policy?.implemented !== true
+  ) {
+    throw new Error("thread guardian preflight did not preserve local-only safety flags");
+  }
+  assertActionPreflight(payload, "thread-guardian-preflight", "default");
 }
 
 function assertSanitizedThreadTranscript(payload) {

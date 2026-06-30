@@ -428,6 +428,10 @@ const elements = {
   threadRealtimeArgumentsInput: document.querySelector("#thread-realtime-arguments-input"),
   threadRealtimePreflightButton: document.querySelector("#thread-realtime-preflight-button"),
   threadRealtimeStatus: document.querySelector("#thread-realtime-status"),
+  threadGuardianMethodSelect: document.querySelector("#thread-guardian-method-select"),
+  threadGuardianArgumentsInput: document.querySelector("#thread-guardian-arguments-input"),
+  threadGuardianPreflightButton: document.querySelector("#thread-guardian-preflight-button"),
+  threadGuardianStatus: document.querySelector("#thread-guardian-status"),
   threadRollbackTurnsInput: document.querySelector("#thread-rollback-turns-input"),
   threadRollbackPreflightButton: document.querySelector("#thread-rollback-preflight-button"),
   threadRollbackButton: document.querySelector("#thread-rollback-button"),
@@ -1199,6 +1203,22 @@ for (const input of [
 
 elements.threadRealtimePreflightButton.addEventListener("click", () => {
   runThreadRealtimePreflight();
+});
+
+for (const input of [
+  elements.threadGuardianMethodSelect,
+  elements.threadGuardianArgumentsInput,
+]) {
+  input.addEventListener("input", () => {
+    updateThreadGuardianState();
+  });
+  input.addEventListener("change", () => {
+    updateThreadGuardianState();
+  });
+}
+
+elements.threadGuardianPreflightButton.addEventListener("click", () => {
+  runThreadGuardianPreflight();
 });
 
 elements.threadRollbackTurnsInput.addEventListener("input", () => {
@@ -2043,6 +2063,10 @@ function threadResumeInjectPreflightEndpoint() {
 
 function threadRealtimePreflightEndpoint() {
   return "/api/thread-realtime-preflight";
+}
+
+function threadGuardianPreflightEndpoint() {
+  return "/api/thread-guardian-preflight";
 }
 
 function threadRollbackPreflightEndpoint() {
@@ -6111,6 +6135,7 @@ async function loadThreadDetail(threadIdSuffix, { archived = false } = {}) {
   elements.threadMetadataUpdateStatus.textContent = "Metadata update check ready.";
   elements.threadResumeInjectStatus.textContent = "Resume/inject check ready.";
   elements.threadRealtimeStatus.textContent = "Realtime check ready.";
+  elements.threadGuardianStatus.textContent = "Guardian check ready.";
   elements.threadTurnsButton.disabled = false;
   elements.threadTurnsStatus.textContent = "Turns page not loaded.";
   elements.threadTurnItemsInput.value = "";
@@ -6125,6 +6150,7 @@ async function loadThreadDetail(threadIdSuffix, { archived = false } = {}) {
   updateThreadMetadataUpdateState();
   updateThreadResumeInjectState();
   updateThreadRealtimeState();
+  updateThreadGuardianState();
   updateThreadRollbackState();
   updateThreadSafetyLockState();
   updateThreadDeleteState();
@@ -7034,6 +7060,42 @@ async function runThreadRealtimePreflight() {
     renderError(error);
   } finally {
     setThreadRealtimeLoading(false);
+  }
+}
+
+async function runThreadGuardianPreflight() {
+  if (!selectedThreadIdSuffix) {
+    elements.threadGuardianStatus.textContent = "Select a thread first";
+    return;
+  }
+
+  setThreadGuardianLoading(true);
+  hideError();
+
+  const body = {
+    workspace: selectedWorkspaceId,
+    method: elements.threadGuardianMethodSelect.value,
+    thread: selectedThreadIdSuffix,
+    arguments: elements.threadGuardianArgumentsInput.value,
+  };
+
+  try {
+    const response = await fetch(threadGuardianPreflightEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify(body),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderThreadGuardianPreflight(payload);
+  } catch (error) {
+    elements.threadGuardianStatus.textContent = "Guardian check failed";
+    renderError(error);
+  } finally {
+    setThreadGuardianLoading(false);
   }
 }
 
@@ -8072,6 +8134,21 @@ function renderThreadRealtimePreflight(payload) {
   }`;
 }
 
+function renderThreadGuardianPreflight(payload) {
+  const guardian = payload.guardian ?? {};
+  const method = String(guardian.method ?? "").replace("thread/", "") || "guardian";
+  const detail = [
+    guardian.eventPresent ? `${guardian.eventCharCount ?? 0} event chars` : null,
+    guardian.eventObjectPresent ? `${guardian.eventTopLevelKeyCount ?? 0} event keys` : null,
+    guardian.incrementElicitationRequested ? "increment" : null,
+    guardian.decrementElicitationRequested ? "decrement" : null,
+    guardian.guardianApprovalRequested ? "approval" : null,
+  ].filter(Boolean);
+  elements.threadGuardianStatus.textContent = `${method} blocked${
+    detail.length > 0 ? ` (${detail.join(", ")})` : ""
+  }`;
+}
+
 function renderThreadRollbackPreflight(payload) {
   const count = Number.isSafeInteger(payload.thread?.numTurns) ? payload.thread.numTurns : 0;
   elements.threadRollbackStatus.textContent = payload.policy?.executionGateEnabled
@@ -8657,6 +8734,11 @@ function clearThreadDetail() {
   elements.threadRealtimeArgumentsInput.value = "";
   elements.threadRealtimeArgumentsInput.disabled = true;
   elements.threadRealtimePreflightButton.disabled = true;
+  elements.threadGuardianMethodSelect.value = "thread/increment_elicitation";
+  elements.threadGuardianMethodSelect.disabled = true;
+  elements.threadGuardianArgumentsInput.value = "";
+  elements.threadGuardianArgumentsInput.disabled = true;
+  elements.threadGuardianPreflightButton.disabled = true;
   elements.threadTurnItemsInput.value = "";
   elements.threadTurnItemsInput.disabled = true;
   elements.threadTurnItemsButton.disabled = true;
@@ -8677,6 +8759,7 @@ function clearThreadDetail() {
   elements.threadMetadataUpdateStatus.textContent = "Select a thread to check metadata updates.";
   elements.threadResumeInjectStatus.textContent = "Select a thread to check resume or inject intent.";
   elements.threadRealtimeStatus.textContent = "Select a thread to check realtime intent.";
+  elements.threadGuardianStatus.textContent = "Select a thread to check guardian intent.";
   elements.threadTurnsStatus.textContent = "Select a thread to inspect paged turn metadata.";
   elements.threadTurnsButton.disabled = true;
   elements.threadTurnItemsStatus.textContent = "Select a thread and turn to inspect paged item metadata.";
@@ -8851,6 +8934,16 @@ function updateThreadRealtimeState() {
   elements.threadRealtimePreflightButton.disabled = !hasThread;
   if (!hasThread) {
     elements.threadRealtimeStatus.textContent = "Select a thread to check realtime intent.";
+  }
+}
+
+function updateThreadGuardianState() {
+  const hasThread = Boolean(selectedThreadIdSuffix);
+  elements.threadGuardianMethodSelect.disabled = !hasThread;
+  elements.threadGuardianArgumentsInput.disabled = !hasThread;
+  elements.threadGuardianPreflightButton.disabled = !hasThread;
+  if (!hasThread) {
+    elements.threadGuardianStatus.textContent = "Select a thread to check guardian intent.";
   }
 }
 
@@ -13409,6 +13502,17 @@ function setThreadRealtimeLoading(isLoading) {
   elements.threadRealtimePreflightButton.textContent = isLoading ? "Checking" : "Realtime Check";
   if (isLoading) {
     elements.threadRealtimeStatus.textContent = "Checking realtime";
+  }
+}
+
+function setThreadGuardianLoading(isLoading) {
+  const hasThread = Boolean(selectedThreadIdSuffix);
+  elements.threadGuardianMethodSelect.disabled = isLoading || !hasThread;
+  elements.threadGuardianArgumentsInput.disabled = isLoading || !hasThread;
+  elements.threadGuardianPreflightButton.disabled = isLoading || !hasThread;
+  elements.threadGuardianPreflightButton.textContent = isLoading ? "Checking" : "Guardian Check";
+  if (isLoading) {
+    elements.threadGuardianStatus.textContent = "Checking guardian";
   }
 }
 

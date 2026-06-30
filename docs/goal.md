@@ -121,6 +121,13 @@ Target parity with the Codex desktop workflow:
   returns only enum/count/presence metadata with no full ids, thread content,
   prompt text, audio data, text, SDP, session ids, paths, secrets, or raw
   payloads.
+- `thread/increment_elicitation`, `thread/decrement_elicitation`, and
+  `thread/approveGuardianDeniedAction` have only a local-only
+  `POST /api/thread-guardian-preflight` path; it validates selected-thread
+  intent and official argument shapes without app-server traffic, thread-state
+  mutation, counter changes, guarded-action approval, or model traffic, and
+  returns only count/presence metadata with no full ids, thread content,
+  guardian event details, paths, secrets, or raw payloads.
 - `fs/getMetadata` and `fs/readDirectory` have a separate disabled-by-default
   `GET /api/fs-directory` path behind `CODEX_APP_PORT_ALLOW_FS_DIRECTORY=1`;
   it accepts only workspace-relative non-hidden directory selectors, rejects
