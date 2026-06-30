@@ -461,6 +461,15 @@
   materialize worktrees, read triage inbox contents, perform unattended
   execution, read or write files, access network, control apps, or mutate
   automation state. Its
+  Codex app Commands catalog may expose only static official-documentation keys
+  plus local boundary keys, groups, states, sources, counts, and redaction
+  flags; it must not return shortcut bindings, custom shortcuts, slash command
+  text, deep-link templates, query parameters, thread ids, prompt text,
+  workspace paths, origin URLs, SSH host aliases, plugin identifiers,
+  marketplace names, marketplace paths, pet names, pet image URLs, paths, URLs,
+  secrets, raw payloads, app-server payloads, or app-server traffic, and must
+  not open settings, launch browsers, execute commands, execute slash commands,
+  open deep links, or mutate command state. Its
   Codex app Features catalog may expose only static official-documentation keys
   plus local boundary keys, groups, states, sources, counts, and redaction
   flags; it must not return project names, thread ids, thread content, mode

@@ -798,6 +798,16 @@ model or reasoning values, skill or plugin names, sandbox/admin policy values,
 app names, notification payloads, filesystem access, network access, app
 control, unattended execution, schedule writes, run starts, run archives,
 worktree creation, mutations, URLs, paths, raw payloads, or app-server traffic.
+The same response exposes `codexAppCommands` as a static review-only catalog
+for official Codex app commands. The UI shows only catalog counts, command
+keys, groups, state/source chips, and redaction chips for documented keyboard
+shortcuts, slash commands, deep-link destinations, and local high-risk command
+boundaries. It does not show shortcut bindings, custom shortcuts, slash command
+text, deep-link templates, query parameters, thread ids, prompt text, workspace
+paths, origin URLs, SSH host aliases, plugin identifiers, marketplace names or
+paths, pet names, pet image URLs, settings opens, browser launches, command or
+slash-command execution, deep-link openings, mutations, URLs, paths, raw
+payloads, or app-server traffic.
 The same response exposes `codexAppFeatures` as a static review-only catalog
 for official Codex app features. The UI shows only catalog counts, feature keys,
 groups, state/source chips, and redaction chips for project multitasking,

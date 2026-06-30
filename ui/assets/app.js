@@ -33,6 +33,8 @@ const elements = {
   skillsPluginsCatalogValuesText: document.querySelector("#skills-plugins-catalog-values-text"),
   automationsCatalogText: document.querySelector("#automations-catalog-text"),
   automationsCatalogValuesText: document.querySelector("#automations-catalog-values-text"),
+  codexAppCommandsText: document.querySelector("#codex-app-commands-text"),
+  codexAppCommandsValuesText: document.querySelector("#codex-app-commands-values-text"),
   codexAppFeaturesText: document.querySelector("#codex-app-features-text"),
   codexAppFeaturesValuesText: document.querySelector("#codex-app-features-values-text"),
   appBrowserText: document.querySelector("#app-browser-text"),
@@ -399,6 +401,7 @@ const elements = {
   appIntegrationsMcpList: document.querySelector("#app-integrations-mcp-list"),
   skillsPluginsCatalogList: document.querySelector("#skills-plugins-catalog-list"),
   automationsCatalogList: document.querySelector("#automations-catalog-list"),
+  codexAppCommandsList: document.querySelector("#codex-app-commands-list"),
   codexAppFeaturesList: document.querySelector("#codex-app-features-list"),
   appBrowserList: document.querySelector("#app-browser-list"),
   appComputerUseList: document.querySelector("#app-computer-use-list"),
@@ -10441,6 +10444,7 @@ function renderSettingsIntegrations(payload) {
   const codexAppSettings = payload.codexAppSettings ?? {};
   const skillsPluginsCatalog = payload.skillsPluginsCatalog ?? {};
   const automationsCatalog = payload.automationsCatalog ?? {};
+  const codexAppCommands = payload.codexAppCommands ?? {};
   const codexAppFeatures = payload.codexAppFeatures ?? {};
 
   elements.settingsStateText.textContent = settings.state ?? "blocked";
@@ -10545,6 +10549,41 @@ function renderSettingsIntegrations(payload) {
     automationsCatalog.secretsReturned ||
     automationsCatalog.rawPayloadsReturned ||
     automationsCatalog.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexAppCommandsText.textContent = codexAppCommands.returned
+    ? `${codexAppCommands.catalogOnlyCommandCount ?? 0} catalog / ${
+        codexAppCommands.commandCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexAppCommandsValuesText.textContent =
+    codexAppCommands.commandValuesReturned ||
+    codexAppCommands.shortcutBindingsReturned ||
+    codexAppCommands.customShortcutsReturned ||
+    codexAppCommands.slashCommandTextReturned ||
+    codexAppCommands.deepLinkTemplatesReturned ||
+    codexAppCommands.queryParametersReturned ||
+    codexAppCommands.threadIdsReturned ||
+    codexAppCommands.promptTextReturned ||
+    codexAppCommands.workspacePathsReturned ||
+    codexAppCommands.originUrlsReturned ||
+    codexAppCommands.sshHostAliasesReturned ||
+    codexAppCommands.pluginIdentifiersReturned ||
+    codexAppCommands.marketplaceNamesReturned ||
+    codexAppCommands.localMarketplacePathsReturned ||
+    codexAppCommands.petNamesReturned ||
+    codexAppCommands.petImageUrlsReturned ||
+    codexAppCommands.commandExecutionEnabled ||
+    codexAppCommands.deepLinkOpenEnabled ||
+    codexAppCommands.slashCommandExecutionEnabled ||
+    codexAppCommands.settingsOpenEnabled ||
+    codexAppCommands.browserLaunched ||
+    codexAppCommands.mutationEnabled ||
+    codexAppCommands.pathsReturned ||
+    codexAppCommands.urlsReturned ||
+    codexAppCommands.secretsReturned ||
+    codexAppCommands.rawPayloadsReturned ||
+    codexAppCommands.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexAppFeaturesText.textContent = codexAppFeatures.returned
@@ -10982,6 +11021,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexAppSettingsParity(codexAppSettings);
   renderSkillsPluginsCatalog(skillsPluginsCatalog);
   renderAutomationsCatalog(automationsCatalog);
+  renderCodexAppCommandsCatalog(codexAppCommands);
   renderCodexAppFeaturesCatalog(codexAppFeatures);
   renderCodexAppGeneralSettings(general);
   renderCodexAppProfileSettings(profile);
@@ -12681,6 +12721,82 @@ function renderAutomationsCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.automationsCatalogList.append(row);
+  }
+}
+
+function renderCodexAppCommandsCatalog(summary) {
+  elements.codexAppCommandsList.replaceChildren();
+  const commands = Array.isArray(summary?.commands) ? summary.commands : [];
+  if (commands.length === 0) {
+    elements.codexAppCommandsList.append(emptyState("No Codex app commands catalog returned."));
+    return;
+  }
+
+  for (const command of commands) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = command.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = command.group ?? "app-command";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      command.state ?? "blocked",
+      command.source ?? null,
+      command.commandValueReturned ? "command values returned" : "command values hidden",
+      command.shortcutBindingReturned ? "shortcut bindings returned" : "shortcut bindings hidden",
+      command.customShortcutReturned ? "custom shortcuts returned" : "custom shortcuts hidden",
+      command.slashCommandTextReturned
+        ? "slash command text returned"
+        : "slash command text hidden",
+      command.deepLinkTemplateReturned
+        ? "deep-link templates returned"
+        : "deep-link templates hidden",
+      command.queryParameterReturned ? "query params returned" : "query params hidden",
+      command.threadIdReturned ? "thread ids returned" : "thread ids hidden",
+      command.promptTextReturned ? "prompt text returned" : "prompt text hidden",
+      command.workspacePathReturned ? "workspace paths returned" : "workspace paths hidden",
+      command.originUrlReturned ? "origin URLs returned" : "origin URLs hidden",
+      command.sshHostAliasReturned ? "SSH aliases returned" : "SSH aliases hidden",
+      command.pluginIdentifierReturned ? "plugin identifiers returned" : "plugin identifiers hidden",
+      command.marketplaceNameReturned ? "marketplace names returned" : "marketplace names hidden",
+      command.localMarketplacePathReturned
+        ? "marketplace paths returned"
+        : "marketplace paths hidden",
+      command.petNameReturned ? "pet names returned" : "pet names hidden",
+      command.petImageUrlReturned ? "pet image URLs returned" : "pet image URLs hidden",
+      command.commandExecuted ? "command executed" : "command execution blocked",
+      command.deepLinkOpened ? "deep link opened" : "deep links blocked",
+      command.slashCommandExecuted ? "slash command executed" : "slash commands blocked",
+      command.settingsOpened ? "settings opened" : "settings open blocked",
+      command.browserLaunched ? "browser launched" : "browser launch blocked",
+      command.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      command.pathsReturned ? "paths returned" : "paths hidden",
+      command.urlsReturned ? "URLs returned" : "URLs hidden",
+      command.secretsReturned ? "secrets returned" : "secrets hidden",
+      command.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      command.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexAppCommandsList.append(row);
   }
 }
 

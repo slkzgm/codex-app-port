@@ -156,6 +156,17 @@ Target parity with the Codex desktop workflow:
   notification payloads, secrets, raw payloads, app-server traffic, filesystem
   access, network access, app control, unattended execution, schedule writes,
   run starts, run archives, worktree creation, or automation mutations.
+- `/api/settings-integrations` now also exposes a read-only Codex app Commands
+  catalog aligned to the official Codex app Commands documentation. It returns
+  only static keys, groups, states, sources, counts, and redaction flags for
+  documented general/thread keyboard shortcuts, slash commands, thread/settings/
+  skills/automations/plugin/pet deep-link destinations, and local execution
+  boundaries. It does not return shortcut bindings, custom shortcuts, slash
+  command text, deep-link templates, query parameters, thread ids, prompt text,
+  workspace paths, origin URLs, SSH host aliases, plugin identifiers,
+  marketplace names or paths, pet names, pet image URLs, paths, URLs, secrets,
+  raw payloads, app-server traffic, browser launches, settings opens, command
+  execution, slash-command execution, deep-link opening, or mutations.
 - `/api/settings-integrations` now also exposes a read-only Codex app Features
   catalog aligned to the official Codex app Features documentation. It returns
   only static keys, groups, states, sources, counts, and redaction flags for

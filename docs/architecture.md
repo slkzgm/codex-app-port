@@ -559,6 +559,18 @@ Current M1 status:
   access, network access, app control, unattended execution, schedule writes,
   run starts/archives, worktree creation, mutations, secrets, raw payloads, and
   app-server traffic blocked
+- done: read-only Codex app Commands catalog in `/api/settings-integrations`,
+  exposing only static official Commands documentation keys plus local boundary
+  keys/groups/states/sources/counts/redaction flags for documented general and
+  thread keyboard shortcuts, slash commands, thread/settings/skills/
+  automations/plugin/pet deep-link destinations, shortcut customization,
+  slash-command execution, deep-link opening, thread-search content, workspace
+  path query, and pet install boundaries, with shortcut bindings, custom
+  shortcuts, slash command text, deep-link templates, query parameters, thread
+  ids, prompt text, workspace paths, origin URLs, SSH host aliases, plugin
+  identifiers, marketplace names/paths, pet names, pet image URLs, settings
+  opens, browser launches, command/slash/deep-link execution, mutations, paths,
+  URLs, secrets, raw payloads, and app-server traffic blocked
 - done: read-only Codex app Features catalog in `/api/settings-integrations`,
   exposing only static official Features documentation keys plus local
   boundary keys/groups/states/sources/counts/redaction flags for project

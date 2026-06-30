@@ -33617,6 +33617,238 @@ function assertAutomationsCatalog(payload) {
   }
 }
 
+function expectedCodexAppCommandsEntries() {
+  return [
+    ["commandMenuShortcut", "keyboard-general", "catalog-only", "official-codex-app-commands-docs"],
+    ["settingsShortcut", "keyboard-general", "catalog-only", "official-codex-app-commands-docs"],
+    [
+      "keyboardShortcutsShortcut",
+      "keyboard-general",
+      "catalog-only",
+      "official-codex-app-commands-docs",
+    ],
+    ["openFolderShortcut", "keyboard-general", "catalog-only", "official-codex-app-commands-docs"],
+    ["navigateBackShortcut", "keyboard-general", "catalog-only", "official-codex-app-commands-docs"],
+    [
+      "navigateForwardShortcut",
+      "keyboard-general",
+      "catalog-only",
+      "official-codex-app-commands-docs",
+    ],
+    [
+      "increaseFontSizeShortcut",
+      "keyboard-general",
+      "catalog-only",
+      "official-codex-app-commands-docs",
+    ],
+    [
+      "decreaseFontSizeShortcut",
+      "keyboard-general",
+      "catalog-only",
+      "official-codex-app-commands-docs",
+    ],
+    ["toggleSidebarShortcut", "keyboard-general", "catalog-only", "official-codex-app-commands-docs"],
+    ["toggleDiffPanelShortcut", "keyboard-general", "catalog-only", "official-codex-app-commands-docs"],
+    ["toggleTerminalShortcut", "keyboard-general", "catalog-only", "official-codex-app-commands-docs"],
+    ["clearTerminalShortcut", "keyboard-general", "catalog-only", "official-codex-app-commands-docs"],
+    ["newThreadShortcut", "keyboard-thread", "catalog-only", "official-codex-app-commands-docs"],
+    ["searchThreadsShortcut", "keyboard-thread", "catalog-only", "official-codex-app-commands-docs"],
+    ["findInThreadShortcut", "keyboard-thread", "catalog-only", "official-codex-app-commands-docs"],
+    ["previousThreadShortcut", "keyboard-thread", "catalog-only", "official-codex-app-commands-docs"],
+    ["nextThreadShortcut", "keyboard-thread", "catalog-only", "official-codex-app-commands-docs"],
+    ["dictationShortcut", "keyboard-thread", "catalog-only", "official-codex-app-commands-docs"],
+    ["slashFeedback", "slash-command", "catalog-only", "official-codex-app-commands-docs"],
+    ["slashGoal", "slash-command", "catalog-only", "official-codex-app-commands-docs"],
+    ["slashInit", "slash-command", "catalog-only", "official-codex-app-commands-docs"],
+    ["slashMcp", "slash-command", "catalog-only", "official-codex-app-commands-docs"],
+    ["slashPlan", "slash-command", "catalog-only", "official-codex-app-commands-docs"],
+    ["slashReview", "slash-command", "catalog-only", "official-codex-app-commands-docs"],
+    ["slashStatus", "slash-command", "catalog-only", "official-codex-app-commands-docs"],
+    ["deepLinkThreadsNew", "deep-link-thread", "catalog-only", "official-codex-app-commands-docs"],
+    ["deepLinkNewWithParams", "deep-link-thread", "catalog-only", "official-codex-app-commands-docs"],
+    ["deepLinkThreadById", "deep-link-thread", "catalog-only", "official-codex-app-commands-docs"],
+    ["deepLinkSettings", "deep-link-settings", "catalog-only", "official-codex-app-commands-docs"],
+    [
+      "deepLinkSettingsBrowserUse",
+      "deep-link-settings",
+      "catalog-only",
+      "official-codex-app-commands-docs",
+    ],
+    [
+      "deepLinkSettingsComputerUseChrome",
+      "deep-link-settings",
+      "catalog-only",
+      "official-codex-app-commands-docs",
+    ],
+    [
+      "deepLinkSettingsConnections",
+      "deep-link-settings",
+      "catalog-only",
+      "official-codex-app-commands-docs",
+    ],
+    [
+      "deepLinkSettingsConnectionsComputer",
+      "deep-link-settings",
+      "catalog-only",
+      "official-codex-app-commands-docs",
+    ],
+    [
+      "deepLinkSettingsConnectionsDevices",
+      "deep-link-settings",
+      "catalog-only",
+      "official-codex-app-commands-docs",
+    ],
+    [
+      "deepLinkSettingsConnectionsSsh",
+      "deep-link-settings",
+      "catalog-only",
+      "official-codex-app-commands-docs",
+    ],
+    [
+      "deepLinkSettingsConnectionsSshAdd",
+      "deep-link-settings",
+      "catalog-only",
+      "official-codex-app-commands-docs",
+    ],
+    ["deepLinkSkills", "deep-link-tools", "catalog-only", "official-codex-app-commands-docs"],
+    ["deepLinkAutomations", "deep-link-tools", "catalog-only", "official-codex-app-commands-docs"],
+    ["deepLinkPluginInstall", "deep-link-plugins", "catalog-only", "official-codex-app-commands-docs"],
+    ["deepLinkPluginDetail", "deep-link-plugins", "catalog-only", "official-codex-app-commands-docs"],
+    ["deepLinkLocalPlugin", "deep-link-plugins", "catalog-only", "official-codex-app-commands-docs"],
+    ["deepLinkPetInstall", "deep-link-pets", "catalog-only", "official-codex-app-commands-docs"],
+    ["shortcutCustomizationBoundary", "keyboard-customization", "blocked", "local-command-boundary"],
+    ["slashCommandExecutionBoundary", "slash-command", "blocked", "local-command-boundary"],
+    ["deepLinkOpenBoundary", "deep-link", "blocked", "local-deep-link-boundary"],
+    ["threadSearchContentBoundary", "thread-search", "blocked", "local-command-boundary"],
+    ["workspacePathQueryBoundary", "deep-link-thread", "blocked", "local-deep-link-boundary"],
+    ["petInstallBoundary", "deep-link-pets", "blocked", "local-deep-link-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexAppCommandsCatalog(payload) {
+  const catalog = payload.codexAppCommands;
+  const expectedEntries = expectedCodexAppCommandsEntries();
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-app-commands-docs");
+  assert.equal(catalog.commandCount, 48);
+  assert.equal(catalog.officialCommandCount, 42);
+  assert.equal(catalog.localBoundaryCommandCount, 6);
+  assert.equal(catalog.catalogOnlyCommandCount, 42);
+  assert.equal(catalog.blockedCommandCount, 6);
+  assert.equal(catalog.enabledCommandCount, 0);
+  assert.deepEqual(
+    (catalog.commands ?? []).map(({ key, group, state, source }) => ({
+      key,
+      group,
+      state,
+      source,
+    })),
+    expectedEntries,
+  );
+
+  const commandRedactionFlags = [
+    "commandValueReturned",
+    "shortcutBindingReturned",
+    "customShortcutReturned",
+    "slashCommandTextReturned",
+    "deepLinkTemplateReturned",
+    "queryParameterReturned",
+    "threadIdReturned",
+    "promptTextReturned",
+    "workspacePathReturned",
+    "originUrlReturned",
+    "sshHostAliasReturned",
+    "pluginIdentifierReturned",
+    "marketplaceNameReturned",
+    "localMarketplacePathReturned",
+    "petNameReturned",
+    "petImageUrlReturned",
+    "commandExecuted",
+    "deepLinkOpened",
+    "slashCommandExecuted",
+    "settingsOpened",
+    "browserLaunched",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.commands.every((command) =>
+      commandRedactionFlags.every((flag) => command[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.appCommandsCatalogReturned, true);
+  for (const flag of [
+    "commandValuesReturned",
+    "shortcutBindingsReturned",
+    "customShortcutsReturned",
+    "slashCommandTextReturned",
+    "deepLinkTemplatesReturned",
+    "queryParametersReturned",
+    "threadIdsReturned",
+    "promptTextReturned",
+    "workspacePathsReturned",
+    "originUrlsReturned",
+    "sshHostAliasesReturned",
+    "pluginIdentifiersReturned",
+    "marketplaceNamesReturned",
+    "localMarketplacePathsReturned",
+    "petNamesReturned",
+    "petImageUrlsReturned",
+    "commandExecutionEnabled",
+    "deepLinkOpenEnabled",
+    "slashCommandExecutionEnabled",
+    "settingsOpenEnabled",
+    "browserLaunched",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexAppCommandsReturned", true],
+    ["codexAppCommandsValuesReturned", false],
+    ["codexAppCommandsShortcutBindingsReturned", false],
+    ["codexAppCommandsCustomShortcutsReturned", false],
+    ["codexAppCommandsSlashTextReturned", false],
+    ["codexAppCommandsDeepLinkTemplatesReturned", false],
+    ["codexAppCommandsQueryParametersReturned", false],
+    ["codexAppCommandsThreadIdsReturned", false],
+    ["codexAppCommandsPromptTextReturned", false],
+    ["codexAppCommandsWorkspacePathsReturned", false],
+    ["codexAppCommandsOriginUrlsReturned", false],
+    ["codexAppCommandsSshHostAliasesReturned", false],
+    ["codexAppCommandsPluginIdentifiersReturned", false],
+    ["codexAppCommandsMarketplaceNamesReturned", false],
+    ["codexAppCommandsLocalMarketplacePathsReturned", false],
+    ["codexAppCommandsPetNamesReturned", false],
+    ["codexAppCommandsPetImageUrlsReturned", false],
+    ["codexAppCommandsExecutionEnabled", false],
+    ["codexAppCommandsDeepLinkOpenEnabled", false],
+    ["codexAppCommandsSlashExecutionEnabled", false],
+    ["codexAppCommandsSettingsOpenEnabled", false],
+    ["codexAppCommandsBrowserLaunched", false],
+    ["codexAppCommandsMutationsEnabled", false],
+    ["codexAppCommandsPathsReturned", false],
+    ["codexAppCommandsUrlsReturned", false],
+    ["codexAppCommandsRawPayloadsReturned", false],
+    ["codexAppCommandsAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexAppFeaturesEntries() {
   return [
     ["multitaskAcrossProjects", "project-workflows", "catalog-only", "official-codex-app-features-docs"],
@@ -33907,6 +34139,7 @@ function assertCodexAppSettingsParity(
   }
   assertSkillsPluginsCatalog(payload);
   assertAutomationsCatalog(payload);
+  assertCodexAppCommandsCatalog(payload);
   assertCodexAppFeaturesCatalog(payload);
   if (
     summary.sectionKeysReturned !== true ||
