@@ -404,6 +404,12 @@
   current file-opening locations, command-output preferences, terminal tab
   preferences, multiline prompt values, sleep-prevention state, paths, URLs,
   secrets, raw payloads, app-server payloads, or General settings mutations.
+  Its Agent configuration settings catalog may expose only static setting keys,
+  groups, states, sources, and counts; it must not return current config
+  values, `config.toml` content or paths, model settings, sandbox settings,
+  approval settings, instruction values, security policy values, paths, URLs,
+  secrets, raw payloads, app-server payloads, config writes, or agent
+  configuration mutations.
   Its Profile settings catalog may expose only
   static setting keys, groups, states, sources, and counts; it must not return
   activity metrics, token values, profile pictures, display names, usernames,

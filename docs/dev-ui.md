@@ -731,6 +731,14 @@ setting keys, groups, state/source chips, catalog counts, and redaction chips;
 current values, local file-open targets, command-output preferences, terminal
 preferences, sleep-prevention state, paths, URLs, raw payloads, mutations, and
 app-server traffic remain blocked.
+Within that same summary, `agentConfiguration` exposes a static review-only
+catalog for shared CLI/IDE configuration inheritance, in-app common controls,
+advanced `config.toml` editing, Codex security reference, and config-basics
+reference. The UI shows only setting keys, groups, state/source chips, catalog
+counts, and redaction chips; current config values, `config.toml` content or
+paths, model settings, sandbox settings, approval settings, instruction values,
+security policy values, paths, URLs, raw payloads, config writes, mutations,
+and app-server traffic remain blocked.
 Within that same summary, `profile` exposes a static review-only catalog for
 activity insights, lifetime and peak token metrics, streaks, longest task,
 token activity, profile detail update surfaces, profile-card sharing, and

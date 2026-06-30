@@ -33177,6 +33177,99 @@ function buildCodexAppGeneralSettingsSummary() {
   };
 }
 
+const CODEX_APP_AGENT_CONFIGURATION_SETTINGS = Object.freeze([
+  {
+    key: "sharedCliIdeConfiguration",
+    group: "inheritance",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "inAppCommonAgentSettings",
+    group: "controls",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "advancedConfigTomlEditing",
+    group: "advanced-config",
+    state: "blocked",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "codexSecurityReference",
+    group: "security",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "configBasicsReference",
+    group: "config-basics",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+]);
+
+function buildCodexAppAgentConfigurationSettingsSummary() {
+  const settings = CODEX_APP_AGENT_CONFIGURATION_SETTINGS.map((setting) => ({
+    ...setting,
+    settingValueReturned: false,
+    currentConfigReturned: false,
+    configValueReturned: false,
+    configTomlContentReturned: false,
+    configTomlPathReturned: false,
+    modelSettingReturned: false,
+    sandboxSettingReturned: false,
+    approvalSettingReturned: false,
+    instructionValueReturned: false,
+    securityPolicyValueReturned: false,
+    configWriteEnabled: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+    rawPayloadsReturned: false,
+    appServerTraffic: false,
+  }));
+  const catalogOnlySettingCount = settings.filter(
+    (setting) => setting.state === "catalog-only",
+  ).length;
+  const blockedSettingCount = settings.filter((setting) => setting.state === "blocked").length;
+
+  return {
+    returned: true,
+    state: catalogOnlySettingCount > 0 ? "partial" : "blocked",
+    settingCount: settings.length,
+    officialSettingCount: settings.filter(
+      (setting) => setting.source === "official-codex-app-docs",
+    ).length,
+    catalogOnlySettingCount,
+    blockedSettingCount,
+    enabledSettingCount: 0,
+    settings,
+    agentConfigurationControlsReturned: true,
+    sharedConfigurationInheritanceReturned: true,
+    inAppControlsReturned: true,
+    currentConfigReturned: false,
+    configValuesReturned: false,
+    configTomlContentReturned: false,
+    configTomlPathsReturned: false,
+    modelSettingsReturned: false,
+    sandboxSettingsReturned: false,
+    approvalSettingsReturned: false,
+    instructionValuesReturned: false,
+    securityPolicyValuesReturned: false,
+    settingValuesReturned: false,
+    localSettingValuesReturned: false,
+    configWriteEnabled: false,
+    mutationEnabled: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+    rawPayloadsReturned: false,
+    appServerTraffic: false,
+  };
+}
+
 const CODEX_APP_KEYBOARD_SHORTCUTS = Object.freeze([
   {
     key: "openSettings",
@@ -34254,7 +34347,6 @@ function codexAppSettingsSection(key, group, state, source) {
 
 function buildCodexAppSettingsParity(payload = {}) {
   const surfaces = payload.surfaces ?? {};
-  const settings = surfaces.settings ?? {};
   const apps = surfaces.apps ?? {};
   const externalAgentConfig = surfaces.externalAgentConfig ?? {};
   const mcp = surfaces.mcp ?? {};
@@ -34262,6 +34354,7 @@ function buildCodexAppSettingsParity(payload = {}) {
   const plugins = surfaces.plugins ?? {};
   const integrationScope = payload.integrationScope ?? {};
   const general = buildCodexAppGeneralSettingsSummary();
+  const agentConfiguration = buildCodexAppAgentConfigurationSettingsSummary();
   const keyboardShortcuts = buildCodexAppKeyboardShortcutsSummary();
   const profile = buildCodexAppProfileSettingsSummary();
   const appearance = buildCodexAppAppearanceSettingsSummary();
@@ -34303,8 +34396,8 @@ function buildCodexAppSettingsParity(payload = {}) {
     codexAppSettingsSection(
       "agentConfiguration",
       "agent",
-      settings.readOnlySummaryAvailable ? "partial" : "blocked",
-      "settings-summary",
+      agentConfiguration.state,
+      "agent-configuration-settings-catalog",
     ),
     codexAppSettingsSection(
       "appearance",
@@ -34376,6 +34469,7 @@ function buildCodexAppSettingsParity(payload = {}) {
     blockedSectionCount,
     sections,
     general,
+    agentConfiguration,
     profile,
     keyboardShortcuts,
     appearance,
@@ -34783,6 +34877,14 @@ export function sanitizeSettingsIntegrationsPayload(
       codexAppGeneralTerminalPreferenceReturned: false,
       codexAppGeneralSleepControlReturned: false,
       codexAppGeneralMutationsEnabled: false,
+      codexAppAgentConfigurationSettingsReturned: true,
+      codexAppAgentConfigurationValuesReturned: false,
+      codexAppAgentConfigurationConfigTomlReturned: false,
+      codexAppAgentConfigurationPathsReturned: false,
+      codexAppAgentConfigurationModelSettingsReturned: false,
+      codexAppAgentConfigurationSandboxSettingsReturned: false,
+      codexAppAgentConfigurationApprovalSettingsReturned: false,
+      codexAppAgentConfigurationMutationsEnabled: false,
       codexAppProfileSettingsReturned: true,
       codexAppProfileValuesReturned: false,
       codexAppProfileActivityMetricsReturned: false,
@@ -42380,6 +42482,14 @@ export function buildSettingsIntegrations({
       codexAppGeneralTerminalPreferenceReturned: false,
       codexAppGeneralSleepControlReturned: false,
       codexAppGeneralMutationsEnabled: false,
+      codexAppAgentConfigurationSettingsReturned: true,
+      codexAppAgentConfigurationValuesReturned: false,
+      codexAppAgentConfigurationConfigTomlReturned: false,
+      codexAppAgentConfigurationPathsReturned: false,
+      codexAppAgentConfigurationModelSettingsReturned: false,
+      codexAppAgentConfigurationSandboxSettingsReturned: false,
+      codexAppAgentConfigurationApprovalSettingsReturned: false,
+      codexAppAgentConfigurationMutationsEnabled: false,
       codexAppProfileSettingsReturned: true,
       codexAppProfileValuesReturned: false,
       codexAppProfileActivityMetricsReturned: false,

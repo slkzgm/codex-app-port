@@ -33141,6 +33141,8 @@ function assertCodexAppSettingsParity(
       "partial" ||
     summary.sections?.find((section) => section.key === "notifications")?.state !==
       "partial" ||
+    summary.sections?.find((section) => section.key === "agentConfiguration")?.state !==
+      "partial" ||
     summary.sections?.find((section) => section.key === "appearance")?.state !==
       "partial" ||
     summary.sections?.find((section) => section.key === "codexPets")?.state !== "partial" ||
@@ -33271,6 +33273,61 @@ function assertCodexAppSettingsParity(
         setting.invitationEligibilityReturned === false &&
         setting.invitationLinkReturned === false &&
         setting.invitationSent === false &&
+        setting.pathsReturned === false &&
+        setting.urlsReturned === false &&
+        setting.secretsReturned === false &&
+        setting.rawPayloadsReturned === false &&
+        setting.appServerTraffic === false,
+    ) ||
+    summary.agentConfiguration?.returned !== true ||
+    summary.agentConfiguration.state !== "partial" ||
+    summary.agentConfiguration.settingCount !== 5 ||
+    summary.agentConfiguration.officialSettingCount !== 5 ||
+    summary.agentConfiguration.catalogOnlySettingCount !== 4 ||
+    summary.agentConfiguration.blockedSettingCount !== 1 ||
+    summary.agentConfiguration.enabledSettingCount !== 0 ||
+    summary.agentConfiguration.agentConfigurationControlsReturned !== true ||
+    summary.agentConfiguration.sharedConfigurationInheritanceReturned !== true ||
+    summary.agentConfiguration.inAppControlsReturned !== true ||
+    summary.agentConfiguration.currentConfigReturned !== false ||
+    summary.agentConfiguration.configValuesReturned !== false ||
+    summary.agentConfiguration.configTomlContentReturned !== false ||
+    summary.agentConfiguration.configTomlPathsReturned !== false ||
+    summary.agentConfiguration.modelSettingsReturned !== false ||
+    summary.agentConfiguration.sandboxSettingsReturned !== false ||
+    summary.agentConfiguration.approvalSettingsReturned !== false ||
+    summary.agentConfiguration.instructionValuesReturned !== false ||
+    summary.agentConfiguration.securityPolicyValuesReturned !== false ||
+    summary.agentConfiguration.settingValuesReturned !== false ||
+    summary.agentConfiguration.localSettingValuesReturned !== false ||
+    summary.agentConfiguration.configWriteEnabled !== false ||
+    summary.agentConfiguration.mutationEnabled !== false ||
+    summary.agentConfiguration.pathsReturned !== false ||
+    summary.agentConfiguration.urlsReturned !== false ||
+    summary.agentConfiguration.secretsReturned !== false ||
+    summary.agentConfiguration.rawPayloadsReturned !== false ||
+    summary.agentConfiguration.appServerTraffic !== false ||
+    JSON.stringify((summary.agentConfiguration.settings ?? []).map((setting) => setting.key)) !==
+      JSON.stringify([
+        "sharedCliIdeConfiguration",
+        "inAppCommonAgentSettings",
+        "advancedConfigTomlEditing",
+        "codexSecurityReference",
+        "configBasicsReference",
+      ]) ||
+    !summary.agentConfiguration.settings?.every(
+      (setting) =>
+        setting.settingValueReturned === false &&
+        setting.currentConfigReturned === false &&
+        setting.configValueReturned === false &&
+        setting.configTomlContentReturned === false &&
+        setting.configTomlPathReturned === false &&
+        setting.modelSettingReturned === false &&
+        setting.sandboxSettingReturned === false &&
+        setting.approvalSettingReturned === false &&
+        setting.instructionValueReturned === false &&
+        setting.securityPolicyValueReturned === false &&
+        setting.configWriteEnabled === false &&
         setting.pathsReturned === false &&
         setting.urlsReturned === false &&
         setting.secretsReturned === false &&
@@ -33777,6 +33834,14 @@ function assertCodexAppSettingsParity(
     payload.policy?.codexAppGeneralTerminalPreferenceReturned !== false ||
     payload.policy?.codexAppGeneralSleepControlReturned !== false ||
     payload.policy?.codexAppGeneralMutationsEnabled !== false ||
+    payload.policy?.codexAppAgentConfigurationSettingsReturned !== true ||
+    payload.policy?.codexAppAgentConfigurationValuesReturned !== false ||
+    payload.policy?.codexAppAgentConfigurationConfigTomlReturned !== false ||
+    payload.policy?.codexAppAgentConfigurationPathsReturned !== false ||
+    payload.policy?.codexAppAgentConfigurationModelSettingsReturned !== false ||
+    payload.policy?.codexAppAgentConfigurationSandboxSettingsReturned !== false ||
+    payload.policy?.codexAppAgentConfigurationApprovalSettingsReturned !== false ||
+    payload.policy?.codexAppAgentConfigurationMutationsEnabled !== false ||
     payload.policy?.codexAppProfileSettingsReturned !== true ||
     payload.policy?.codexAppProfileValuesReturned !== false ||
     payload.policy?.codexAppProfileActivityMetricsReturned !== false ||

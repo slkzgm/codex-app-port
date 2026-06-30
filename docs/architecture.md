@@ -499,6 +499,13 @@ Current M1 status:
   shortcuts and local accessibility shortcuts, with command labels, custom/user
   bindings, keystroke search, reset/edit mutations, paths, URLs, secrets, raw
   payloads, and app-server traffic blocked
+- done: read-only Agent configuration settings catalog inside that settings
+  parity summary, exposing only static shared CLI/IDE inheritance, in-app common
+  controls, advanced `config.toml`, Codex security reference, and config-basics
+  keys/groups/states/counts, with current config values, `config.toml` content
+  or paths, model settings, sandbox settings, approval settings, instruction
+  values, security policy values, paths, URLs, secrets, raw payloads, config
+  writes, mutations, and app-server traffic blocked
 - done: read-only Appearance settings catalog inside the settings parity
   summary, exposing only static base-theme/color/font/sharing control
   keys/groups/states/counts, with active theme values, color values, font names,

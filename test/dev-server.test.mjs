@@ -34976,6 +34976,10 @@ function assertCodexAppSettingsParity(
     "partial",
   );
   assert.equal(
+    summary.sections.find((section) => section.key === "agentConfiguration")?.state,
+    "partial",
+  );
+  assert.equal(
     summary.sections.find((section) => section.key === "appearance")?.state,
     "partial",
   );
@@ -35120,6 +35124,66 @@ function assertCodexAppSettingsParity(
         setting.invitationEligibilityReturned === false &&
         setting.invitationLinkReturned === false &&
         setting.invitationSent === false &&
+        setting.pathsReturned === false &&
+        setting.urlsReturned === false &&
+        setting.secretsReturned === false &&
+        setting.rawPayloadsReturned === false &&
+        setting.appServerTraffic === false,
+    ),
+    true,
+  );
+  assert.equal(summary.agentConfiguration?.returned, true);
+  assert.equal(summary.agentConfiguration.state, "partial");
+  assert.equal(summary.agentConfiguration.settingCount, 5);
+  assert.equal(summary.agentConfiguration.officialSettingCount, 5);
+  assert.equal(summary.agentConfiguration.catalogOnlySettingCount, 4);
+  assert.equal(summary.agentConfiguration.blockedSettingCount, 1);
+  assert.equal(summary.agentConfiguration.enabledSettingCount, 0);
+  assert.equal(summary.agentConfiguration.agentConfigurationControlsReturned, true);
+  assert.equal(summary.agentConfiguration.sharedConfigurationInheritanceReturned, true);
+  assert.equal(summary.agentConfiguration.inAppControlsReturned, true);
+  assert.equal(summary.agentConfiguration.currentConfigReturned, false);
+  assert.equal(summary.agentConfiguration.configValuesReturned, false);
+  assert.equal(summary.agentConfiguration.configTomlContentReturned, false);
+  assert.equal(summary.agentConfiguration.configTomlPathsReturned, false);
+  assert.equal(summary.agentConfiguration.modelSettingsReturned, false);
+  assert.equal(summary.agentConfiguration.sandboxSettingsReturned, false);
+  assert.equal(summary.agentConfiguration.approvalSettingsReturned, false);
+  assert.equal(summary.agentConfiguration.instructionValuesReturned, false);
+  assert.equal(summary.agentConfiguration.securityPolicyValuesReturned, false);
+  assert.equal(summary.agentConfiguration.settingValuesReturned, false);
+  assert.equal(summary.agentConfiguration.localSettingValuesReturned, false);
+  assert.equal(summary.agentConfiguration.configWriteEnabled, false);
+  assert.equal(summary.agentConfiguration.mutationEnabled, false);
+  assert.equal(summary.agentConfiguration.pathsReturned, false);
+  assert.equal(summary.agentConfiguration.urlsReturned, false);
+  assert.equal(summary.agentConfiguration.secretsReturned, false);
+  assert.equal(summary.agentConfiguration.rawPayloadsReturned, false);
+  assert.equal(summary.agentConfiguration.appServerTraffic, false);
+  assert.deepEqual(
+    summary.agentConfiguration.settings.map((setting) => setting.key),
+    [
+      "sharedCliIdeConfiguration",
+      "inAppCommonAgentSettings",
+      "advancedConfigTomlEditing",
+      "codexSecurityReference",
+      "configBasicsReference",
+    ],
+  );
+  assert.equal(
+    summary.agentConfiguration.settings.every(
+      (setting) =>
+        setting.settingValueReturned === false &&
+        setting.currentConfigReturned === false &&
+        setting.configValueReturned === false &&
+        setting.configTomlContentReturned === false &&
+        setting.configTomlPathReturned === false &&
+        setting.modelSettingReturned === false &&
+        setting.sandboxSettingReturned === false &&
+        setting.approvalSettingReturned === false &&
+        setting.instructionValueReturned === false &&
+        setting.securityPolicyValueReturned === false &&
+        setting.configWriteEnabled === false &&
         setting.pathsReturned === false &&
         setting.urlsReturned === false &&
         setting.secretsReturned === false &&
@@ -35676,6 +35740,14 @@ function assertCodexAppSettingsParity(
   assert.equal(payload.policy?.codexAppGeneralTerminalPreferenceReturned, false);
   assert.equal(payload.policy?.codexAppGeneralSleepControlReturned, false);
   assert.equal(payload.policy?.codexAppGeneralMutationsEnabled, false);
+  assert.equal(payload.policy?.codexAppAgentConfigurationSettingsReturned, true);
+  assert.equal(payload.policy?.codexAppAgentConfigurationValuesReturned, false);
+  assert.equal(payload.policy?.codexAppAgentConfigurationConfigTomlReturned, false);
+  assert.equal(payload.policy?.codexAppAgentConfigurationPathsReturned, false);
+  assert.equal(payload.policy?.codexAppAgentConfigurationModelSettingsReturned, false);
+  assert.equal(payload.policy?.codexAppAgentConfigurationSandboxSettingsReturned, false);
+  assert.equal(payload.policy?.codexAppAgentConfigurationApprovalSettingsReturned, false);
+  assert.equal(payload.policy?.codexAppAgentConfigurationMutationsEnabled, false);
   assert.equal(payload.policy?.codexAppProfileSettingsReturned, true);
   assert.equal(payload.policy?.codexAppProfileValuesReturned, false);
   assert.equal(payload.policy?.codexAppProfileActivityMetricsReturned, false);

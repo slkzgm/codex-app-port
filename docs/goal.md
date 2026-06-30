@@ -90,6 +90,14 @@ Target parity with the Codex desktop workflow:
   and counts only; custom/user bindings, command labels, keystroke search,
   reset/edit mutations, paths, URLs, secrets, raw payloads, and app-server
   traffic remain blocked.
+- The same summary now includes a read-only Agent configuration settings
+  catalog for the official shared CLI/IDE configuration inheritance, in-app
+  common controls, advanced `config.toml` editing surface, Codex security
+  reference, and config-basics reference. It returns only keys, groups, states,
+  sources, and counts; current config values, `config.toml` content or paths,
+  model settings, sandbox settings, approval settings, instruction values,
+  security policy values, paths, URLs, secrets, raw payloads, config writes,
+  mutations, and app-server traffic remain blocked.
 - The same summary now includes a read-only Appearance settings catalog for the
   official base theme, color, font, and custom-theme sharing controls. It
   returns only keys, groups, states, sources, and counts; active theme values,

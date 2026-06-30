@@ -19,6 +19,8 @@ const elements = {
   appGeneralValuesText: document.querySelector("#app-general-values-text"),
   appProfileText: document.querySelector("#app-profile-text"),
   appProfileValuesText: document.querySelector("#app-profile-values-text"),
+  appAgentConfigText: document.querySelector("#app-agent-config-text"),
+  appAgentConfigValuesText: document.querySelector("#app-agent-config-values-text"),
   appAppearanceText: document.querySelector("#app-appearance-text"),
   appAppearanceValuesText: document.querySelector("#app-appearance-values-text"),
   appPetsText: document.querySelector("#app-pets-text"),
@@ -378,6 +380,7 @@ const elements = {
   appSettingsParityList: document.querySelector("#app-settings-parity-list"),
   appGeneralList: document.querySelector("#app-general-list"),
   appProfileList: document.querySelector("#app-profile-list"),
+  appAgentConfigList: document.querySelector("#app-agent-config-list"),
   appAppearanceList: document.querySelector("#app-appearance-list"),
   appPetsList: document.querySelector("#app-pets-list"),
   appBrowserList: document.querySelector("#app-browser-list"),
@@ -10465,6 +10468,24 @@ function renderSettingsIntegrations(payload) {
     profile.invitationLinksReturned
       ? "Returned"
       : "Hidden";
+  const agentConfiguration = codexAppSettings.agentConfiguration ?? {};
+  elements.appAgentConfigText.textContent = agentConfiguration.returned
+    ? `${agentConfiguration.catalogOnlySettingCount ?? 0} catalog / ${
+        agentConfiguration.settingCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.appAgentConfigValuesText.textContent =
+    agentConfiguration.currentConfigReturned ||
+    agentConfiguration.configValuesReturned ||
+    agentConfiguration.configTomlContentReturned ||
+    agentConfiguration.configTomlPathsReturned ||
+    agentConfiguration.modelSettingsReturned ||
+    agentConfiguration.sandboxSettingsReturned ||
+    agentConfiguration.approvalSettingsReturned ||
+    agentConfiguration.instructionValuesReturned ||
+    agentConfiguration.securityPolicyValuesReturned
+      ? "Returned"
+      : "Hidden";
   const appearance = codexAppSettings.appearance ?? {};
   elements.appAppearanceText.textContent = appearance.returned
     ? `${appearance.catalogOnlySettingCount ?? 0} catalog / ${
@@ -10735,6 +10756,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexAppSettingsParity(codexAppSettings);
   renderCodexAppGeneralSettings(general);
   renderCodexAppProfileSettings(profile);
+  renderCodexAppAgentConfigurationSettings(agentConfiguration);
   renderCodexAppAppearanceSettings(appearance);
   renderCodexAppPetSettings(codexPets);
   renderCodexAppBrowserSettings(browser);
@@ -12400,6 +12422,60 @@ function renderCodexAppProfileSettings(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.appProfileList.append(row);
+  }
+}
+
+function renderCodexAppAgentConfigurationSettings(summary) {
+  elements.appAgentConfigList.replaceChildren();
+  const settings = Array.isArray(summary?.settings) ? summary.settings : [];
+  if (settings.length === 0) {
+    elements.appAgentConfigList.append(
+      emptyState("No agent configuration settings catalog returned."),
+    );
+    return;
+  }
+  for (const setting of settings) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = setting.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = setting.group ?? "agent-config";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      setting.state ?? "blocked",
+      setting.source ?? null,
+      setting.settingValueReturned ? "value returned" : "value hidden",
+      setting.currentConfigReturned ? "config returned" : "config hidden",
+      setting.configTomlContentReturned ? "config.toml returned" : "config.toml hidden",
+      setting.configTomlPathReturned ? "config path returned" : "config path hidden",
+      setting.modelSettingReturned ? "model setting returned" : "model setting hidden",
+      setting.sandboxSettingReturned ? "sandbox returned" : "sandbox hidden",
+      setting.approvalSettingReturned ? "approval setting returned" : "approval setting hidden",
+      setting.instructionValueReturned ? "instructions returned" : "instructions hidden",
+      setting.configWriteEnabled ? "config writes enabled" : "config writes blocked",
+      setting.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.appAgentConfigList.append(row);
   }
 }
 
