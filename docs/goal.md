@@ -106,6 +106,16 @@ Target parity with the Codex desktop workflow:
   only keys, groups, states, sources, and counts; the active personality,
   custom instructions, personal `AGENTS.md` content or paths, paths, URLs,
   secrets, raw payloads, mutations, and app-server traffic remain blocked.
+- The same summary now includes a read-only Memories settings catalog for the
+  official global enablement, config flag, generation/use controls,
+  external-context privacy control, rate-limit threshold, extraction and
+  consolidation model controls, per-thread controls, review-memory-files
+  boundary, and local memory-reset preflight boundary. It returns only keys,
+  groups, states, sources, and counts; current values, config values, memory
+  files, memory content, memory paths, storage paths, per-thread choices,
+  rate-limit values, model names, generation/injection triggers, reset
+  execution, paths, URLs, secrets, raw payloads, mutations, and app-server
+  traffic remain blocked.
 - `permissionProfile/list` has an opt-in, counts-only inventory path; it
   returns profile counts and allowed/blocked totals only, not profile ids or
   descriptions.

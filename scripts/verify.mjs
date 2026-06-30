@@ -32691,8 +32691,8 @@ function assertSanitizedSettingsIntegrations(payload) {
   assertSettingsServerBoundaries(payload);
   assertCodexAppSettingsParity(payload, {
     availableSectionCount: 12,
-    partialSectionCount: 11,
-    preflightOnlySectionCount: 1,
+    partialSectionCount: 12,
+    preflightOnlySectionCount: 0,
     blockedSectionCount: 3,
     profileState: "blocked",
   });
@@ -33147,7 +33147,7 @@ function assertCodexAppSettingsParity(
     summary.sections?.find((section) => section.key === "personalization")?.state !==
       "partial" ||
     summary.sections?.find((section) => section.key === "computerUse")?.state !== "blocked" ||
-    summary.sections?.find((section) => section.key === "memories")?.state !== "preflight-only"
+    summary.sections?.find((section) => section.key === "memories")?.state !== "partial"
   ) {
     throw new Error("Codex app settings parity section mapping changed unexpectedly");
   }
@@ -33454,6 +33454,71 @@ function assertCodexAppSettingsParity(
         setting.rawPayloadsReturned === false &&
         setting.appServerTraffic === false,
     ) ||
+    summary.memories?.returned !== true ||
+    summary.memories.state !== "partial" ||
+    summary.memories.settingCount !== 11 ||
+    summary.memories.officialSettingCount !== 10 ||
+    summary.memories.catalogOnlySettingCount !== 9 ||
+    summary.memories.preflightOnlySettingCount !== 1 ||
+    summary.memories.blockedSettingCount !== 1 ||
+    summary.memories.enabledSettingCount !== 0 ||
+    summary.memories.memoryControlsReturned !== true ||
+    summary.memories.memoryResetPreflightReturned !== true ||
+    summary.memories.currentValuesReturned !== false ||
+    summary.memories.configValuesReturned !== false ||
+    summary.memories.memoryFilesReturned !== false ||
+    summary.memories.memoryContentReturned !== false ||
+    summary.memories.memoryPathsReturned !== false ||
+    summary.memories.storagePathsReturned !== false ||
+    summary.memories.threadChoicesReturned !== false ||
+    summary.memories.rateLimitValuesReturned !== false ||
+    summary.memories.modelNamesReturned !== false ||
+    summary.memories.memoryGenerationTriggered !== false ||
+    summary.memories.memoryInjectionTriggered !== false ||
+    summary.memories.memoryResetExecuted !== false ||
+    summary.memories.memoriesDeleted !== false ||
+    summary.memories.settingValuesReturned !== false ||
+    summary.memories.localSettingValuesReturned !== false ||
+    summary.memories.mutationEnabled !== false ||
+    summary.memories.pathsReturned !== false ||
+    summary.memories.urlsReturned !== false ||
+    summary.memories.secretsReturned !== false ||
+    summary.memories.rawPayloadsReturned !== false ||
+    summary.memories.appServerTraffic !== false ||
+    JSON.stringify((summary.memories.settings ?? []).map((setting) => setting.key)) !==
+      JSON.stringify([
+        "globalMemoriesFeature",
+        "featuresMemoriesConfigFlag",
+        "generateMemories",
+        "useMemories",
+        "disableOnExternalContext",
+        "minRateLimitRemainingPercent",
+        "extractModel",
+        "consolidationModel",
+        "threadMemoryControls",
+        "reviewMemoryFiles",
+        "memoryResetPreflightBoundary",
+      ]) ||
+    !summary.memories.settings?.every(
+      (setting) =>
+        setting.settingValueReturned === false &&
+        setting.currentValueReturned === false &&
+        setting.configValueReturned === false &&
+        setting.memoryFilesReturned === false &&
+        setting.memoryContentReturned === false &&
+        setting.memoryPathsReturned === false &&
+        setting.storagePathReturned === false &&
+        setting.threadChoiceReturned === false &&
+        setting.rateLimitValueReturned === false &&
+        setting.modelNameReturned === false &&
+        setting.resetExecutionBlocked === true &&
+        setting.memoriesDeleted === false &&
+        setting.pathsReturned === false &&
+        setting.urlsReturned === false &&
+        setting.secretsReturned === false &&
+        setting.rawPayloadsReturned === false &&
+        setting.appServerTraffic === false,
+    ) ||
     !summary.sections?.every(
       (section) =>
         section.tracked === true &&
@@ -33510,7 +33575,17 @@ function assertCodexAppSettingsParity(
     payload.policy?.codexAppPersonalizationCustomInstructionsReturned !== false ||
     payload.policy?.codexAppPersonalizationAgentsMdContentReturned !== false ||
     payload.policy?.codexAppPersonalizationAgentsMdPathsReturned !== false ||
-    payload.policy?.codexAppPersonalizationMutationsEnabled !== false
+    payload.policy?.codexAppPersonalizationMutationsEnabled !== false ||
+    payload.policy?.codexAppMemoriesSettingsReturned !== true ||
+    payload.policy?.codexAppMemoriesValuesReturned !== false ||
+    payload.policy?.codexAppMemoriesConfigValuesReturned !== false ||
+    payload.policy?.codexAppMemoriesFilesReturned !== false ||
+    payload.policy?.codexAppMemoriesContentReturned !== false ||
+    payload.policy?.codexAppMemoriesPathsReturned !== false ||
+    payload.policy?.codexAppMemoriesThreadChoicesReturned !== false ||
+    payload.policy?.codexAppMemoriesModelNamesReturned !== false ||
+    payload.policy?.codexAppMemoriesResetExecuted !== false ||
+    payload.policy?.codexAppMemoriesMutationsEnabled !== false
   ) {
     throw new Error("Codex app settings parity did not preserve redaction policy");
   }
@@ -35154,8 +35229,8 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
   assertSettingsServerBoundaries(payload);
   assertCodexAppSettingsParity(payload, {
     availableSectionCount: 13,
-    partialSectionCount: 12,
-    preflightOnlySectionCount: 1,
+    partialSectionCount: 13,
+    preflightOnlySectionCount: 0,
     blockedSectionCount: 2,
     profileState: "partial",
   });

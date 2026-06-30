@@ -428,7 +428,13 @@
   setting keys, groups, states, sources, and counts; it must not return active
   personality values, custom instructions, personal `AGENTS.md` content or
   paths, paths, URLs, secrets, raw payloads, app-server payloads, or
-  personalization mutations.
+  personalization mutations. Its Memories settings catalog may expose only
+  static setting keys, groups, states, sources, and counts; it must not return
+  current memory setting values, config values, memory files, memory content,
+  memory paths, storage paths, thread-level choices, rate-limit values, model
+  names, paths, URLs, secrets, raw payloads, or app-server payloads, and must
+  not trigger memory generation, memory injection, memory reset, or memory
+  mutations.
   Browser-side approval queue filters must operate only on the already sanitized
   queue payload, and visible-subset deny/accept actions must still submit the
   bounded tokenized decision batch through the normal approval route. They must

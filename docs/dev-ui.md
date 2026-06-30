@@ -745,6 +745,16 @@ the local server-notification boundary. The UI shows only setting keys, groups,
 state/source chips, boundary counts, and redaction chips; notification values,
 browser permission state, subscriptions, payloads, browser Notification API
 prompts, paths, URLs, raw payloads, and app-server traffic remain blocked.
+Within that same summary, `memories` exposes a static review-only catalog for
+global memory enablement, the `features.memories` config flag,
+generation/use controls, external-context privacy, rate-limit threshold,
+extraction/consolidation model controls, per-thread controls,
+review-memory-files, and the existing memory-reset preflight boundary. The UI
+shows only setting keys, groups, state/source chips, catalog counts, and
+redaction chips; current values, config values, memory files, memory content,
+memory paths, storage paths, per-thread choices, rate-limit values, model
+names, generation/injection triggers, reset execution, paths, URLs, raw
+payloads, and app-server traffic remain blocked.
 Within that same summary, `personalization` exposes a static review-only
 catalog for the official personality-mode options and custom-instructions
 boundary. The UI shows only setting keys, groups, state/source chips, catalog

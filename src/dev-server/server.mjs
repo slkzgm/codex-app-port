@@ -33654,6 +33654,148 @@ function buildCodexAppPersonalizationSettingsSummary() {
   };
 }
 
+const CODEX_APP_MEMORIES_SETTINGS = Object.freeze([
+  {
+    key: "globalMemoriesFeature",
+    group: "enablement",
+    state: "catalog-only",
+    source: "official-codex-memories-docs",
+  },
+  {
+    key: "featuresMemoriesConfigFlag",
+    group: "config",
+    state: "catalog-only",
+    source: "official-codex-memories-docs",
+  },
+  {
+    key: "generateMemories",
+    group: "generation",
+    state: "catalog-only",
+    source: "official-codex-memories-docs",
+  },
+  {
+    key: "useMemories",
+    group: "injection",
+    state: "catalog-only",
+    source: "official-codex-memories-docs",
+  },
+  {
+    key: "disableOnExternalContext",
+    group: "privacy",
+    state: "catalog-only",
+    source: "official-codex-memories-docs",
+  },
+  {
+    key: "minRateLimitRemainingPercent",
+    group: "quota",
+    state: "catalog-only",
+    source: "official-codex-memories-docs",
+  },
+  {
+    key: "extractModel",
+    group: "models",
+    state: "catalog-only",
+    source: "official-codex-memories-docs",
+  },
+  {
+    key: "consolidationModel",
+    group: "models",
+    state: "catalog-only",
+    source: "official-codex-memories-docs",
+  },
+  {
+    key: "threadMemoryControls",
+    group: "thread",
+    state: "catalog-only",
+    source: "official-codex-memories-docs",
+  },
+  {
+    key: "reviewMemoryFiles",
+    group: "storage",
+    state: "blocked",
+    source: "official-codex-memories-docs",
+  },
+  {
+    key: "memoryResetPreflightBoundary",
+    group: "reset",
+    state: "preflight-only",
+    source: "local-memory-reset-boundary",
+  },
+]);
+
+function buildCodexAppMemoriesSettingsSummary(integrationScope = {}) {
+  const memoryResetPreflightAvailable =
+    integrationScope.memoryResetPreflightEnabled === true;
+  const settings = CODEX_APP_MEMORIES_SETTINGS.map((setting) => ({
+    ...setting,
+    state:
+      setting.key === "memoryResetPreflightBoundary" && !memoryResetPreflightAvailable
+        ? "blocked"
+        : setting.state,
+    settingValueReturned: false,
+    currentValueReturned: false,
+    configValueReturned: false,
+    memoryFilesReturned: false,
+    memoryContentReturned: false,
+    memoryPathsReturned: false,
+    storagePathReturned: false,
+    threadChoiceReturned: false,
+    rateLimitValueReturned: false,
+    modelNameReturned: false,
+    resetExecutionBlocked: true,
+    memoriesDeleted: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+    rawPayloadsReturned: false,
+    appServerTraffic: false,
+  }));
+  const catalogOnlySettingCount = settings.filter(
+    (setting) => setting.state === "catalog-only",
+  ).length;
+  const preflightOnlySettingCount = settings.filter(
+    (setting) => setting.state === "preflight-only",
+  ).length;
+  const blockedSettingCount = settings.filter((setting) => setting.state === "blocked").length;
+
+  return {
+    returned: true,
+    state: catalogOnlySettingCount > 0 ? "partial" : "blocked",
+    settingCount: settings.length,
+    officialSettingCount: settings.filter(
+      (setting) => setting.source === "official-codex-memories-docs",
+    ).length,
+    catalogOnlySettingCount,
+    preflightOnlySettingCount,
+    blockedSettingCount,
+    enabledSettingCount: 0,
+    settings,
+    memoryControlsReturned: true,
+    memoryResetPreflightReturned: memoryResetPreflightAvailable,
+    currentValuesReturned: false,
+    configValuesReturned: false,
+    memoryFilesReturned: false,
+    memoryContentReturned: false,
+    memoryPathsReturned: false,
+    storagePathsReturned: false,
+    threadChoicesReturned: false,
+    rateLimitValuesReturned: false,
+    modelNamesReturned: false,
+    memoryGenerationTriggered: false,
+    memoryInjectionTriggered: false,
+    memoryResetExecuted: false,
+    memoriesDeleted: false,
+    settingValuesReturned: false,
+    localSettingValuesReturned: false,
+    mutationEnabled: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+    rawPayloadsReturned: false,
+    appServerTraffic: false,
+  };
+}
+
 function codexAppSettingsSection(key, group, state, source) {
   return {
     key,
@@ -33687,6 +33829,7 @@ function buildCodexAppSettingsParity(payload = {}) {
   const browser = buildCodexAppBrowserSettingsSummary();
   const notifications = buildCodexAppNotificationSettingsSummary(payload);
   const personalization = buildCodexAppPersonalizationSettingsSummary();
+  const memories = buildCodexAppMemoriesSettingsSummary(integrationScope);
   const hasOptInAuthAction = Boolean(
     auth.loginEnabled ||
       auth.loginCancelEnabled ||
@@ -33766,8 +33909,8 @@ function buildCodexAppSettingsParity(payload = {}) {
     codexAppSettingsSection(
       "memories",
       "agent",
-      integrationScope.memoryResetPreflightEnabled ? "preflight-only" : "blocked",
-      "memory-reset-preflight",
+      memories.state,
+      "memories-settings-catalog",
     ),
     codexAppSettingsSection(
       "archivedThreads",
@@ -33798,6 +33941,7 @@ function buildCodexAppSettingsParity(payload = {}) {
     browser,
     notifications,
     personalization,
+    memories,
     sectionKeysReturned: true,
     sectionLabelsReturned: false,
     localSettingValuesReturned: false,
@@ -34227,6 +34371,16 @@ export function sanitizeSettingsIntegrationsPayload(
       codexAppPersonalizationAgentsMdContentReturned: false,
       codexAppPersonalizationAgentsMdPathsReturned: false,
       codexAppPersonalizationMutationsEnabled: false,
+      codexAppMemoriesSettingsReturned: true,
+      codexAppMemoriesValuesReturned: false,
+      codexAppMemoriesConfigValuesReturned: false,
+      codexAppMemoriesFilesReturned: false,
+      codexAppMemoriesContentReturned: false,
+      codexAppMemoriesPathsReturned: false,
+      codexAppMemoriesThreadChoicesReturned: false,
+      codexAppMemoriesModelNamesReturned: false,
+      codexAppMemoriesResetExecuted: false,
+      codexAppMemoriesMutationsEnabled: false,
       serverRequestHandlersEnabled: false,
       serverRequestPayloadsReturned: false,
       serverRequestSchemasReturned: false,
@@ -41782,6 +41936,16 @@ export function buildSettingsIntegrations({
       codexAppPersonalizationAgentsMdContentReturned: false,
       codexAppPersonalizationAgentsMdPathsReturned: false,
       codexAppPersonalizationMutationsEnabled: false,
+      codexAppMemoriesSettingsReturned: true,
+      codexAppMemoriesValuesReturned: false,
+      codexAppMemoriesConfigValuesReturned: false,
+      codexAppMemoriesFilesReturned: false,
+      codexAppMemoriesContentReturned: false,
+      codexAppMemoriesPathsReturned: false,
+      codexAppMemoriesThreadChoicesReturned: false,
+      codexAppMemoriesModelNamesReturned: false,
+      codexAppMemoriesResetExecuted: false,
+      codexAppMemoriesMutationsEnabled: false,
       serverRequestHandlersEnabled: false,
       serverRequestPayloadsReturned: false,
       serverRequestSchemasReturned: false,

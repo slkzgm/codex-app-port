@@ -20490,8 +20490,8 @@ test("dev server exposes settings and integration boundary without app-server tr
     assertSettingsServerBoundaries(payload);
     assertCodexAppSettingsParity(payload, {
       availableSectionCount: 12,
-      partialSectionCount: 11,
-      preflightOnlySectionCount: 1,
+      partialSectionCount: 12,
+      preflightOnlySectionCount: 0,
       blockedSectionCount: 3,
       profileState: "blocked",
     });
@@ -22762,8 +22762,8 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
     assertSettingsServerBoundaries(payload);
     assertCodexAppSettingsParity(payload, {
       availableSectionCount: 13,
-      partialSectionCount: 12,
-      preflightOnlySectionCount: 1,
+      partialSectionCount: 13,
+      preflightOnlySectionCount: 0,
       blockedSectionCount: 2,
       profileState: "partial",
     });
@@ -34989,7 +34989,7 @@ function assertCodexAppSettingsParity(
   );
   assert.equal(
     summary.sections.find((section) => section.key === "memories")?.state,
-    "preflight-only",
+    "partial",
   );
   assert.equal(summary.sectionKeysReturned, true);
   assert.equal(summary.sectionLabelsReturned, false);
@@ -35325,6 +35325,76 @@ function assertCodexAppSettingsParity(
     ),
     true,
   );
+  assert.equal(summary.memories?.returned, true);
+  assert.equal(summary.memories.state, "partial");
+  assert.equal(summary.memories.settingCount, 11);
+  assert.equal(summary.memories.officialSettingCount, 10);
+  assert.equal(summary.memories.catalogOnlySettingCount, 9);
+  assert.equal(summary.memories.preflightOnlySettingCount, 1);
+  assert.equal(summary.memories.blockedSettingCount, 1);
+  assert.equal(summary.memories.enabledSettingCount, 0);
+  assert.equal(summary.memories.memoryControlsReturned, true);
+  assert.equal(summary.memories.memoryResetPreflightReturned, true);
+  assert.equal(summary.memories.currentValuesReturned, false);
+  assert.equal(summary.memories.configValuesReturned, false);
+  assert.equal(summary.memories.memoryFilesReturned, false);
+  assert.equal(summary.memories.memoryContentReturned, false);
+  assert.equal(summary.memories.memoryPathsReturned, false);
+  assert.equal(summary.memories.storagePathsReturned, false);
+  assert.equal(summary.memories.threadChoicesReturned, false);
+  assert.equal(summary.memories.rateLimitValuesReturned, false);
+  assert.equal(summary.memories.modelNamesReturned, false);
+  assert.equal(summary.memories.memoryGenerationTriggered, false);
+  assert.equal(summary.memories.memoryInjectionTriggered, false);
+  assert.equal(summary.memories.memoryResetExecuted, false);
+  assert.equal(summary.memories.memoriesDeleted, false);
+  assert.equal(summary.memories.settingValuesReturned, false);
+  assert.equal(summary.memories.localSettingValuesReturned, false);
+  assert.equal(summary.memories.mutationEnabled, false);
+  assert.equal(summary.memories.pathsReturned, false);
+  assert.equal(summary.memories.urlsReturned, false);
+  assert.equal(summary.memories.secretsReturned, false);
+  assert.equal(summary.memories.rawPayloadsReturned, false);
+  assert.equal(summary.memories.appServerTraffic, false);
+  assert.deepEqual(
+    summary.memories.settings.map((setting) => setting.key),
+    [
+      "globalMemoriesFeature",
+      "featuresMemoriesConfigFlag",
+      "generateMemories",
+      "useMemories",
+      "disableOnExternalContext",
+      "minRateLimitRemainingPercent",
+      "extractModel",
+      "consolidationModel",
+      "threadMemoryControls",
+      "reviewMemoryFiles",
+      "memoryResetPreflightBoundary",
+    ],
+  );
+  assert.equal(
+    summary.memories.settings.every(
+      (setting) =>
+        setting.settingValueReturned === false &&
+        setting.currentValueReturned === false &&
+        setting.configValueReturned === false &&
+        setting.memoryFilesReturned === false &&
+        setting.memoryContentReturned === false &&
+        setting.memoryPathsReturned === false &&
+        setting.storagePathReturned === false &&
+        setting.threadChoiceReturned === false &&
+        setting.rateLimitValueReturned === false &&
+        setting.modelNameReturned === false &&
+        setting.resetExecutionBlocked === true &&
+        setting.memoriesDeleted === false &&
+        setting.pathsReturned === false &&
+        setting.urlsReturned === false &&
+        setting.secretsReturned === false &&
+        setting.rawPayloadsReturned === false &&
+        setting.appServerTraffic === false,
+    ),
+    true,
+  );
   assert.equal(
     summary.sections.every(
       (section) =>
@@ -35385,6 +35455,16 @@ function assertCodexAppSettingsParity(
   assert.equal(payload.policy?.codexAppPersonalizationAgentsMdContentReturned, false);
   assert.equal(payload.policy?.codexAppPersonalizationAgentsMdPathsReturned, false);
   assert.equal(payload.policy?.codexAppPersonalizationMutationsEnabled, false);
+  assert.equal(payload.policy?.codexAppMemoriesSettingsReturned, true);
+  assert.equal(payload.policy?.codexAppMemoriesValuesReturned, false);
+  assert.equal(payload.policy?.codexAppMemoriesConfigValuesReturned, false);
+  assert.equal(payload.policy?.codexAppMemoriesFilesReturned, false);
+  assert.equal(payload.policy?.codexAppMemoriesContentReturned, false);
+  assert.equal(payload.policy?.codexAppMemoriesPathsReturned, false);
+  assert.equal(payload.policy?.codexAppMemoriesThreadChoicesReturned, false);
+  assert.equal(payload.policy?.codexAppMemoriesModelNamesReturned, false);
+  assert.equal(payload.policy?.codexAppMemoriesResetExecuted, false);
+  assert.equal(payload.policy?.codexAppMemoriesMutationsEnabled, false);
 }
 
 function assertTurnSessionRoutingContract(payload, expected) {

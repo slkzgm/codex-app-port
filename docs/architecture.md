@@ -517,6 +517,15 @@ Current M1 status:
   boundary keys/groups/states/counts, with active personality, custom
   instructions, personal `AGENTS.md` content or paths, paths, URLs, secrets,
   raw payloads, mutations, and app-server traffic blocked
+- done: read-only Memories settings catalog inside the settings parity summary,
+  exposing only static global enablement, config flag, generation/use,
+  external-context privacy, rate-limit threshold, extraction/consolidation
+  model, per-thread control, review-memory-files boundary, and local
+  memory-reset preflight keys/groups/states/counts, with current values, config
+  values, memory files, memory content, memory paths, storage paths, per-thread
+  choices, rate-limit values, model names, generation/injection triggers, reset
+  execution, paths, URLs, secrets, raw payloads, mutations, and app-server
+  traffic blocked
 - done: opt-in `/api/account-login-start` path behind
   `CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN=1`, with matching one-time
   account-login-preflight token consumption, `account/login/start` device-code

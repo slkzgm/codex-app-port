@@ -25,6 +25,8 @@ const elements = {
   appShortcutsEditingText: document.querySelector("#app-shortcuts-editing-text"),
   appNotificationsText: document.querySelector("#app-notifications-text"),
   appNotificationsPermissionText: document.querySelector("#app-notifications-permission-text"),
+  appMemoriesText: document.querySelector("#app-memories-text"),
+  appMemoriesValuesText: document.querySelector("#app-memories-values-text"),
   appPersonalizationText: document.querySelector("#app-personalization-text"),
   appPersonalizationValueText: document.querySelector("#app-personalization-value-text"),
   realtimeVoicesButton: document.querySelector("#realtime-voices-button"),
@@ -370,6 +372,7 @@ const elements = {
   appKeyboardShortcutsList: document.querySelector("#app-keyboard-shortcuts-list"),
   appNotificationsList: document.querySelector("#app-notifications-list"),
   appPersonalizationList: document.querySelector("#app-personalization-list"),
+  appMemoriesList: document.querySelector("#app-memories-list"),
   gitButton: document.querySelector("#git-button"),
   gitSwitchButton: document.querySelector("#git-switch-button"),
   gitDeleteButton: document.querySelector("#git-delete-button"),
@@ -10478,6 +10481,22 @@ function renderSettingsIntegrations(payload) {
     notifications.permissionPromptAvailable || notifications.permissionPromptExecuted
       ? "Enabled"
       : "Blocked";
+  const memories = codexAppSettings.memories ?? {};
+  elements.appMemoriesText.textContent = memories.returned
+    ? `${memories.catalogOnlySettingCount ?? 0} catalog / ${
+        memories.settingCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.appMemoriesValuesText.textContent =
+    memories.currentValuesReturned ||
+    memories.configValuesReturned ||
+    memories.memoryFilesReturned ||
+    memories.memoryContentReturned ||
+    memories.memoryPathsReturned ||
+    memories.threadChoicesReturned ||
+    memories.modelNamesReturned
+      ? "Returned"
+      : "Hidden";
   const personalization = codexAppSettings.personalization ?? {};
   elements.appPersonalizationText.textContent = personalization.returned
     ? `${personalization.catalogOnlySettingCount ?? 0} catalog / ${
@@ -10636,6 +10655,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexAppKeyboardShortcuts(keyboardShortcuts);
   renderCodexAppNotificationSettings(notifications);
   renderCodexAppPersonalizationSettings(personalization);
+  renderCodexAppMemoriesSettings(memories);
   renderUpstreamDrift(upstreamDrift);
   renderIntegrationMethodAudit(methodAudit);
 }
@@ -12484,6 +12504,57 @@ function renderCodexAppPersonalizationSettings(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.appPersonalizationList.append(row);
+  }
+}
+
+function renderCodexAppMemoriesSettings(summary) {
+  elements.appMemoriesList.replaceChildren();
+  const settings = Array.isArray(summary?.settings) ? summary.settings : [];
+  if (settings.length === 0) {
+    elements.appMemoriesList.append(emptyState("No memories settings catalog returned."));
+    return;
+  }
+  for (const setting of settings) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = setting.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = setting.group ?? "memories";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      setting.state ?? "blocked",
+      setting.source ?? null,
+      setting.settingValueReturned ? "value returned" : "value hidden",
+      setting.configValueReturned ? "config returned" : "config hidden",
+      setting.memoryFilesReturned ? "memory files returned" : "memory files hidden",
+      setting.memoryContentReturned ? "memory content returned" : "memory content hidden",
+      setting.memoryPathsReturned ? "memory paths returned" : "memory paths hidden",
+      setting.threadChoiceReturned ? "thread choice returned" : "thread choice hidden",
+      setting.modelNameReturned ? "model returned" : "model hidden",
+      setting.memoriesDeleted ? "memories deleted" : "delete blocked",
+      setting.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.appMemoriesList.append(row);
   }
 }
 
