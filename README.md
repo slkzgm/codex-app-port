@@ -378,8 +378,9 @@ installs/uninstalls/sharing, and marketplace mutations are blocked.
 with active read methods, local preflight/login/login-cancel/logout gates, and
 blocked mutation method names/counts, including MCP reload, config-value,
 config-batch, plugin-install-preflight, marketplace-action-preflight,
-plugin-share-action-preflight, plugin-uninstall, skills-config, remote environment add, and
-experimental-feature gates when enabled; it never returns secrets, auth tokens,
+plugin-share-action-preflight, external-config-import-preflight, plugin-uninstall,
+skills-config, remote environment add, and experimental-feature gates when
+enabled; it never returns secrets, auth tokens,
 names unless the name gate is enabled, paths, URLs, hook commands, rate-limit
 details, or raw payloads.
 Its lifecycle response also includes sanitized integration management and
@@ -551,6 +552,15 @@ confirmation/history, and never saves, updates, deletes, exposes share targets,
 calls app-server, or returns plugin names, principal ids, principals, paths,
 URLs, secrets, targets, arguments, or raw payloads. There is no plugin-share
 mutation execution route.
+External config imports have a dedicated local-only
+`/api/external-config-import-preflight` route for `externalAgentConfig/import`.
+It validates draft target and argument JSON, returns target/argument counts plus
+migration item/plugin/marketplace/session/command/hook/MCP/subagent counters
+only, records a short-lived preflight token for confirmation/history, and never
+imports, writes config, installs plugins, calls app-server, or returns migration
+items, plugin names, marketplace names, session titles, commands, hook commands,
+MCP server names, subagent names, paths, URLs, secrets, targets, arguments, or
+raw payloads. There is no external config import execution route.
 Plugin content preflight accepts only audited blocked `plugin/skill/read` and
 `plugin/share/list` intent and returns method plus target/argument counts. It
 does not echo skill text, sharing URLs, sharing principals, plugin names,

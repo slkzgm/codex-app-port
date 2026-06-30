@@ -664,6 +664,14 @@ Current M1 status:
   field-presence booleans, short-lived preflight confirmation/history, and no
   share mutation route, app-server traffic, share-target/principal echo, plugin
   names, principal ids, paths, URLs, secrets, or raw payloads
+- done: local-only `/api/external-config-import-preflight` for audited
+  `externalAgentConfig/import` intent, with route-specific nested response
+  schemas, target/argument counts, URL/path/secret-like counters, migration
+  item/plugin/marketplace/session/command/hook/MCP/subagent counters,
+  short-lived preflight confirmation/history, and no import execution route,
+  app-server traffic, migration item echo, plugin names, marketplace names,
+  session titles, commands, hook commands, MCP server names, subagent names,
+  paths, URLs, secrets, or raw payloads
 - done: opt-in `/api/plugin-content-read` behind
   `CODEX_APP_PORT_ALLOW_PLUGIN_CONTENT_READ=1` for `plugin/skill/read` and
   `CODEX_APP_PORT_ALLOW_PLUGIN_SHARE_LIST=1` for `plugin/share/list`, with

@@ -721,6 +721,13 @@ export const ACTION_PREFLIGHT_CONFIRMATION_FIELD_CONTRACTS = Object.freeze({
     "target",
     "arguments",
   ),
+  "external-config-import-preflight": bodyFields(
+    "workspace",
+    "actionType",
+    "preflightToken",
+    "target",
+    "arguments",
+  ),
   "plugin-share-checkout": bodyFields(
     "workspace",
     "target",
@@ -1195,6 +1202,10 @@ export const BROWSER_POST_BODY_CONTRACTS = Object.freeze({
       appServerTraffic: false,
     },
   ),
+  "/api/external-config-import-preflight": bodyContract(["workspace", "target", "arguments"], {
+    kind: "preflight",
+    appServerTraffic: false,
+  }),
   "/api/plugin-share-checkout": bodyContract(["workspace", "target", "preflightToken"], {
     kind: "mutation",
     requiresPreflightToken: true,
@@ -7954,6 +7965,119 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
     ],
     "preflight.scope": ["kind", "workspaceId"],
   }),
+  "/api/external-config-import-preflight": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    appServer: [
+      "touched",
+      "modelTraffic",
+      "commandTraffic",
+      "externalConfigImportTraffic",
+    ],
+    action: [
+      "type",
+      "method",
+      "category",
+      "execution",
+      "wouldImportExternalConfig",
+      "wouldWriteConfig",
+      "wouldInstallPlugins",
+      "appServerTouched",
+      "modelTraffic",
+      "reason",
+    ],
+    integrationAction: ["method", "category", "target", "arguments", "methodAllowedByAudit"],
+    "integrationAction.target": ["present", "charCount", "lineCount", "textReturned"],
+    "integrationAction.arguments": [
+      "present",
+      "charCount",
+      "lineCount",
+      "validJsonObject",
+      "topLevelKeyCount",
+      "textReturned",
+    ],
+    externalConfigImport: [
+      "method",
+      "targetPresent",
+      "targetCharCount",
+      "targetUrlLike",
+      "targetPathLike",
+      "argumentCharCount",
+      "argumentTopLevelKeyCount",
+      "argumentObjectAccepted",
+      "stringArgumentCount",
+      "urlLikeArgumentCount",
+      "pathLikeArgumentCount",
+      "secretLikeArgumentCount",
+      "sensitiveKeyCount",
+      "migrationItemCount",
+      "repoScopedMigrationItemCount",
+      "pluginMigrationCount",
+      "pluginNameReferenceCount",
+      "marketplaceNameReferenceCount",
+      "sessionMigrationCount",
+      "commandMigrationCount",
+      "hookMigrationCount",
+      "mcpServerMigrationCount",
+      "subagentMigrationCount",
+      "importExecutionBlocked",
+      "appServerTraffic",
+      "migrationItemsReturned",
+      "pluginNamesReturned",
+      "marketplaceNamesReturned",
+      "sessionTitlesReturned",
+      "commandsReturned",
+      "hookCommandsReturned",
+      "mcpServerNamesReturned",
+      "subagentNamesReturned",
+      "pathsReturned",
+      "urlsReturned",
+      "secretsReturned",
+      "rawPayloadReturned",
+    ],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "externalConfigImport",
+      "externalConfigImportPreflightEnabled",
+      "externalConfigImportEnabled",
+      "importExecutionBlocked",
+      "executionRouteImplemented",
+      "dedicatedExecutionRouteImplemented",
+      "executionGateEnabled",
+      "requiresApprovalPipeline",
+      "requiresIntegrationProvenance",
+      "requiresExplicitEnablement",
+      "browserMethodCallsAccepted",
+      "migrationItemsReturned",
+      "pluginNamesReturned",
+      "marketplaceNamesReturned",
+      "sessionTitlesReturned",
+      "commandsReturned",
+      "hookCommandsReturned",
+      "mcpServerNamesReturned",
+      "subagentNamesReturned",
+      "targetReturned",
+      "argumentTextReturned",
+      "pathsReturned",
+      "urlsReturned",
+      "secretsReturned",
+      "rawPayloadsReturned",
+      "implemented",
+    ],
+    preflight: [
+      "token",
+      "tokenIssued",
+      "issuedAt",
+      "expiresAt",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseRequiredForMutation",
+      "consumed",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+  }),
   "/api/plugin-share-checkout": responseNestedKeySchemas({
     workspace: ["id", "label", "isDefault"],
     initialize: ["platformFamily", "platformOs"],
@@ -10595,6 +10719,11 @@ const BROWSER_POST_RESPONSE_ROUTE_TOP_LEVEL_KEYS = Object.freeze({
     ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
     "integrationAction",
     "pluginShareAction",
+  ),
+  "/api/external-config-import-preflight": routeResponseTopLevelKeys(
+    ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
+    "integrationAction",
+    "externalConfigImport",
   ),
   "/api/plugin-share-checkout": routeResponseTopLevelKeys(
     ...RESPONSE_APP_SERVER_MUTATION_TOP_LEVEL_KEYS,
@@ -15344,6 +15473,41 @@ export async function handleRequest(request, response, options) {
     return;
   }
 
+  if (url.pathname === "/api/external-config-import-preflight") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, [
+        "workspace",
+        "target",
+        "arguments",
+      ]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const payload = buildExternalConfigImportPreflight(body, { workspace });
+      const attached = attachActionPreflight(payload, { body, workspace, options });
+      options.integrationPreflightLedger?.record(attached);
+      sendJson(response, 200, attached);
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error:
+          cleanDisplayText(error.message, 200) ?? "Invalid external config import preflight request",
+      });
+    }
+    return;
+  }
+
   if (url.pathname === "/api/plugin-share-checkout") {
     if (request.method !== "POST") {
       sendJson(response, 405, { ok: false, error: "Method not allowed" });
@@ -17350,6 +17514,10 @@ async function buildConfirmableActionPreflightPayload(actionType, body, { worksp
       return buildPluginShareActionPreflight(body, {
         workspace,
       });
+    case "external-config-import-preflight":
+      return buildExternalConfigImportPreflight(body, {
+        workspace,
+      });
     case "plugin-content-preflight":
       return buildPluginContentPreflight(body, {
         workspace,
@@ -17461,6 +17629,7 @@ function isIntegrationPreflightActionType(actionType) {
     actionType === "plugin-uninstall-preflight" ||
     actionType === "plugin-share-checkout-preflight" ||
     actionType === "plugin-share-action-preflight" ||
+    actionType === "external-config-import-preflight" ||
     actionType === "plugin-content-preflight" ||
     actionType === "skills-config-preflight" ||
     actionType === "skills-extra-roots-clear-preflight" ||
@@ -26243,6 +26412,121 @@ export function buildPluginShareActionPreflight(body, { workspace } = {}) {
   };
 }
 
+export function buildExternalConfigImportPreflight(body, { workspace } = {}) {
+  const methodAudit = integrationMethodAudit();
+  const auditEntry = methodAudit.find((entry) => entry.method === "externalAgentConfig/import");
+  const category = auditEntry?.category ?? "settings-import";
+  const target = validateIntegrationTarget(body?.target);
+  const args = validateMcpArguments(body?.arguments);
+  const risk = summarizeBlockedIntegrationActionRisk({
+    method: "externalAgentConfig/import",
+    category,
+    target,
+    argumentsValue: body?.arguments,
+  });
+  const externalImport = risk.externalImport;
+  const targetText = typeof body?.target === "string" ? body.target.trim() : "";
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: publicWorkspaces([workspace])[0],
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      externalConfigImportTraffic: false,
+    },
+    action: {
+      type: "external-config-import-preflight",
+      method: "externalAgentConfig/import",
+      category,
+      execution: "blocked",
+      wouldImportExternalConfig: false,
+      wouldWriteConfig: false,
+      wouldInstallPlugins: false,
+      appServerTouched: false,
+      modelTraffic: false,
+      reason: "external-config-import-execution-not-implemented",
+    },
+    integrationAction: {
+      method: "externalAgentConfig/import",
+      category,
+      target,
+      arguments: args,
+      methodAllowedByAudit: auditEntry?.status === "blocked",
+    },
+    externalConfigImport: {
+      method: "externalAgentConfig/import",
+      targetPresent: target.present,
+      targetCharCount: target.charCount,
+      targetUrlLike: isUrlLikeArgument(targetText),
+      targetPathLike: isPathLikeArgument(targetText),
+      argumentCharCount: args.charCount,
+      argumentTopLevelKeyCount: args.topLevelKeyCount,
+      argumentObjectAccepted: risk.argumentObjectAccepted,
+      stringArgumentCount: risk.stringArgumentCount,
+      urlLikeArgumentCount: risk.urlLikeArgumentCount,
+      pathLikeArgumentCount: risk.pathLikeArgumentCount,
+      secretLikeArgumentCount: risk.secretLikeArgumentCount,
+      sensitiveKeyCount: risk.sensitiveKeyCount,
+      migrationItemCount: externalImport.migrationItemCount,
+      repoScopedMigrationItemCount: externalImport.repoScopedMigrationItemCount,
+      pluginMigrationCount: externalImport.pluginMigrationCount,
+      pluginNameReferenceCount: externalImport.pluginNameReferenceCount,
+      marketplaceNameReferenceCount: externalImport.marketplaceNameReferenceCount,
+      sessionMigrationCount: externalImport.sessionMigrationCount,
+      commandMigrationCount: externalImport.commandMigrationCount,
+      hookMigrationCount: externalImport.hookMigrationCount,
+      mcpServerMigrationCount: externalImport.mcpServerMigrationCount,
+      subagentMigrationCount: externalImport.subagentMigrationCount,
+      importExecutionBlocked: true,
+      appServerTraffic: false,
+      migrationItemsReturned: false,
+      pluginNamesReturned: false,
+      marketplaceNamesReturned: false,
+      sessionTitlesReturned: false,
+      commandsReturned: false,
+      hookCommandsReturned: false,
+      mcpServerNamesReturned: false,
+      subagentNamesReturned: false,
+      pathsReturned: false,
+      urlsReturned: false,
+      secretsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: false,
+      externalConfigImport: false,
+      externalConfigImportPreflightEnabled: true,
+      externalConfigImportEnabled: false,
+      importExecutionBlocked: true,
+      executionRouteImplemented: false,
+      dedicatedExecutionRouteImplemented: false,
+      executionGateEnabled: false,
+      requiresApprovalPipeline: true,
+      requiresIntegrationProvenance: true,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: false,
+      migrationItemsReturned: false,
+      pluginNamesReturned: false,
+      marketplaceNamesReturned: false,
+      sessionTitlesReturned: false,
+      commandsReturned: false,
+      hookCommandsReturned: false,
+      mcpServerNamesReturned: false,
+      subagentNamesReturned: false,
+      targetReturned: false,
+      argumentTextReturned: false,
+      pathsReturned: false,
+      urlsReturned: false,
+      secretsReturned: false,
+      rawPayloadsReturned: false,
+      implemented: true,
+    },
+  };
+}
+
 function buildPluginShareCheckoutBlocked(preflightPayload) {
   const checkout = preflightPayload.pluginShareCheckout ?? {};
   return {
@@ -29358,12 +29642,10 @@ export function sanitizeSettingsIntegrationsPayload(
           : "app-list-unavailable",
       },
       externalAgentConfig: {
-        state:
-          inventory.externalAgentConfig.ok || inventory.externalAgentConfigImportHistories.ok
-            ? "partial"
-            : "blocked",
+        state: "partial",
         detectionAvailable: inventory.externalAgentConfig.ok,
         importHistoriesAvailable: inventory.externalAgentConfigImportHistories.ok,
+        importPreflightEnabled: true,
         importEnabled: false,
         mutationEnabled: false,
         reason: inventory.externalAgentConfig.ok
@@ -35856,11 +36138,12 @@ export function buildSettingsIntegrations({
         reason: "requires-explicit-inventory-enable",
       },
       externalAgentConfig: {
-        state: "blocked",
+        state: "partial",
         detectionAvailable: false,
+        importPreflightEnabled: true,
         importEnabled: false,
         mutationEnabled: false,
-        reason: "requires-explicit-inventory-enable",
+        reason: "external-config-import-preflight-local-only",
       },
       skills: {
         state: skillsConfigWriteEnabled || skillsExtraRootsClearEnabled ? "partial" : "blocked",
@@ -36023,6 +36306,7 @@ function buildIntegrationActionScope({
     "plugin-uninstall-preflight",
     "plugin-share-checkout-preflight",
     "plugin-share-action-preflight",
+    "external-config-import-preflight",
     "plugin-content-preflight",
     "config-value-preflight",
     "config-batch-preflight",
@@ -36090,6 +36374,7 @@ function buildIntegrationActionScope({
     mcpResourceReadEnabled: Boolean(mcpResourceReadEnabled),
     appInstallEnabled: false,
     appAuthLinkingEnabled: false,
+    externalConfigImportPreflightEnabled: true,
     externalConfigImportEnabled: false,
     skillsConfigWriteEnabled: Boolean(skillsConfigWriteEnabled),
     skillsExtraRootsClearEnabled: Boolean(skillsExtraRootsClearEnabled),

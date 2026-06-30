@@ -113,6 +113,19 @@ const elements = {
   appsStateText: document.querySelector("#apps-state-text"),
   externalConfigStateText: document.querySelector("#external-config-state-text"),
   externalConfigImportHistoryText: document.querySelector("#external-config-import-history-text"),
+  externalConfigImportForm: document.querySelector("#external-config-import-form"),
+  externalConfigImportTargetInput: document.querySelector("#external-config-import-target-input"),
+  externalConfigImportArgumentsInput: document.querySelector(
+    "#external-config-import-arguments-input",
+  ),
+  externalConfigImportButton: document.querySelector("#external-config-import-button"),
+  externalConfigImportStatus: document.querySelector("#external-config-import-status"),
+  externalConfigImportTargetChars: document.querySelector(
+    "#external-config-import-target-chars",
+  ),
+  externalConfigImportArgKeys: document.querySelector("#external-config-import-arg-keys"),
+  externalConfigImportItemsText: document.querySelector("#external-config-import-items-text"),
+  externalConfigImportText: document.querySelector("#external-config-import-text"),
   skillsStateText: document.querySelector("#skills-state-text"),
   pluginsStateText: document.querySelector("#plugins-state-text"),
   installedPluginsStateText: document.querySelector("#installed-plugins-state-text"),
@@ -1549,6 +1562,11 @@ elements.integrationActionForm.addEventListener("submit", (event) => {
   runIntegrationActionPreflight();
 });
 
+elements.externalConfigImportForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  runExternalConfigImportPreflight();
+});
+
 elements.accountLoginPreflightButton.addEventListener("click", () => {
   runAccountLoginPreflight();
 });
@@ -1947,6 +1965,10 @@ function experimentalFeatureSetEndpoint() {
 
 function integrationActionPreflightEndpoint() {
   return "/api/integration-action-preflight";
+}
+
+function externalConfigImportPreflightEndpoint() {
+  return "/api/external-config-import-preflight";
 }
 
 function accountLoginPreflightEndpoint() {
@@ -3717,6 +3739,35 @@ async function runIntegrationActionPreflight() {
     renderError(error);
   } finally {
     setIntegrationActionLoading(false);
+  }
+}
+
+async function runExternalConfigImportPreflight() {
+  setExternalConfigImportLoading(true);
+  hideError();
+
+  try {
+    const response = await fetch(externalConfigImportPreflightEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify({
+        workspace: selectedWorkspaceId,
+        target: elements.externalConfigImportTargetInput.value,
+        arguments: elements.externalConfigImportArgumentsInput.value,
+      }),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderExternalConfigImportPreflight(payload);
+    await refreshSettingsIntegrations().catch(() => {});
+  } catch (error) {
+    elements.externalConfigImportStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    setExternalConfigImportLoading(false);
   }
 }
 
@@ -9473,7 +9524,9 @@ function renderSettingsIntegrations(payload) {
     : "Blocked";
   elements.externalConfigStateText.textContent = externalAgentConfig.detectionAvailable
     ? `${inventory.externalAgentConfig?.itemCount ?? 0} items`
-    : "Blocked";
+    : externalAgentConfig.importPreflightEnabled
+      ? "Import check"
+      : "Blocked";
   elements.externalConfigImportHistoryText.textContent =
     externalAgentConfig.importHistoriesAvailable
       ? `${inventory.externalAgentConfigImportHistories?.historyCount ?? 0} imports`
@@ -9933,6 +9986,12 @@ function renderIntegrationPreflightHistory(history) {
         `${item.integrationAction?.targetCharCount ?? 0} server chars`,
         "authorization URL omitted",
       ]);
+    } else if (item.action?.type === "external-config-import-preflight") {
+      detail.textContent = joinParts([
+        `${item.integrationAction?.targetCharCount ?? 0} target chars`,
+        `${item.integrationAction?.argumentTopLevelKeyCount ?? 0} arg keys`,
+        "import details omitted",
+      ]);
     } else if (
       item.action?.type === "plugin-read-preflight" ||
       item.action?.type === "plugin-content-preflight" ||
@@ -10051,6 +10110,12 @@ function renderIntegrationConfirmationHistory(history) {
       detail.textContent = joinParts([
         `${item.integrationAction?.targetCharCount ?? 0} server chars`,
         "authorization URL omitted",
+      ]);
+    } else if (item.action?.type === "external-config-import-preflight") {
+      detail.textContent = joinParts([
+        `${item.integrationAction?.targetCharCount ?? 0} target chars`,
+        `${item.integrationAction?.argumentTopLevelKeyCount ?? 0} arg keys`,
+        "import details omitted",
       ]);
     } else if (
       item.action?.type === "plugin-read-preflight" ||
@@ -10667,6 +10732,32 @@ function renderIntegrationActionPreflight(payload) {
     payload.action?.wouldInstallPlugin
       ? "Enabled"
       : "Blocked";
+}
+
+function renderExternalConfigImportPreflight(payload) {
+  const externalImport = payload.externalConfigImport ?? {};
+  elements.externalConfigImportStatus.textContent = payload.action?.execution ?? "blocked";
+  elements.externalConfigImportTargetChars.textContent = String(
+    externalImport.targetCharCount ?? 0,
+  );
+  elements.externalConfigImportArgKeys.textContent = String(
+    externalImport.argumentTopLevelKeyCount ?? 0,
+  );
+  elements.externalConfigImportItemsText.textContent = joinParts([
+    `${externalImport.migrationItemCount ?? 0} items`,
+    `${externalImport.pluginMigrationCount ?? 0} plugins`,
+    `${externalImport.sessionMigrationCount ?? 0} sessions`,
+    `${externalImport.commandMigrationCount ?? 0} commands`,
+    `${externalImport.hookMigrationCount ?? 0} hooks`,
+    `${externalImport.mcpServerMigrationCount ?? 0} MCP`,
+    `${externalImport.subagentMigrationCount ?? 0} subagents`,
+  ]);
+  elements.externalConfigImportText.textContent = payload.policy?.externalConfigImport
+    ? "Enabled"
+    : "Blocked";
+  elements.externalConfigStateText.textContent = payload.policy?.externalConfigImportPreflightEnabled
+    ? "Import check"
+    : "Blocked";
 }
 
 function renderAccountLoginPreflight(payload) {
@@ -12660,6 +12751,14 @@ function setIntegrationActionLoading(isLoading) {
   elements.integrationActionButton.textContent = isLoading ? "Checking" : "Preflight";
   if (isLoading) {
     elements.integrationActionStatus.textContent = "Checking";
+  }
+}
+
+function setExternalConfigImportLoading(isLoading) {
+  elements.externalConfigImportButton.disabled = isLoading;
+  elements.externalConfigImportButton.textContent = isLoading ? "Checking" : "Import Check";
+  if (isLoading) {
+    elements.externalConfigImportStatus.textContent = "Checking";
   }
 }
 

@@ -1201,6 +1201,49 @@
               <dd id="environment-add-result-text">Blocked</dd>
             </div>
           </dl>
+          <form id="external-config-import-form" class="turn-form">
+            <div class="thread-tools">
+              <label class="search-control" for="external-config-import-target-input">
+                <span>Import target</span>
+                <input
+                  id="external-config-import-target-input"
+                  type="text"
+                  autocomplete="off"
+                  maxlength="500"
+                />
+              </label>
+            </div>
+            <textarea
+              id="external-config-import-arguments-input"
+              maxlength="8000"
+              rows="4"
+              placeholder="Import arguments JSON"
+            ></textarea>
+            <div class="turn-actions">
+              <button id="external-config-import-button" class="secondary-button" type="submit">
+                Import Check
+              </button>
+              <span id="external-config-import-status" class="empty-state">Blocked</span>
+            </div>
+          </form>
+          <dl class="agent-grid">
+            <div>
+              <dt>Target chars</dt>
+              <dd id="external-config-import-target-chars">0</dd>
+            </div>
+            <div>
+              <dt>Arg keys</dt>
+              <dd id="external-config-import-arg-keys">0</dd>
+            </div>
+            <div>
+              <dt>Items</dt>
+              <dd id="external-config-import-items-text">0</dd>
+            </div>
+            <div>
+              <dt>Import</dt>
+              <dd id="external-config-import-text">Blocked</dd>
+            </div>
+          </dl>
           <form id="integration-action-form" class="turn-form">
             <div class="thread-tools">
               <label class="workspace-control" for="integration-method-select">
