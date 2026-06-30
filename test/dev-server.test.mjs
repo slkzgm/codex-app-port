@@ -35197,6 +35197,229 @@ function assertSkillsPluginsCatalog(payload) {
   }
 }
 
+function expectedCodexSitesEntries() {
+  return [
+    ["sitesPluginUseCase", "overview", "catalog-only", "official-codex-sites-docs"],
+    ["hostedWebsitesAppsGames", "overview", "catalog-only", "official-codex-sites-docs"],
+    ["promptToHostedSite", "workflow", "catalog-only", "official-codex-sites-docs"],
+    ["existingProjectDeployment", "workflow", "catalog-only", "official-codex-sites-docs"],
+    ["productionDeploymentUrls", "deployments", "catalog-only", "official-codex-sites-docs"],
+    ["saveWithoutDeployingReview", "deployments", "catalog-only", "official-codex-sites-docs"],
+    ["projectHostingJsonLinkage", "project-metadata", "catalog-only", "official-codex-sites-docs"],
+    ["storageBindingNames", "storage", "catalog-only", "official-codex-sites-docs"],
+    ["saveVersionStage", "versions", "catalog-only", "official-codex-sites-docs"],
+    ["deployVersionStage", "deployments", "catalog-only", "official-codex-sites-docs"],
+    ["inspectSavedVersions", "versions", "catalog-only", "official-codex-sites-docs"],
+    ["cloudflareWorkerEsModules", "compatibility", "catalog-only", "official-codex-sites-docs"],
+    ["recommendedStarter", "compatibility", "catalog-only", "official-codex-sites-docs"],
+    ["compatibilityBuildCheck", "compatibility", "catalog-only", "official-codex-sites-docs"],
+    ["d1DurableStructuredData", "storage", "catalog-only", "official-codex-sites-docs"],
+    ["r2FileStorage", "storage", "catalog-only", "official-codex-sites-docs"],
+    ["workspaceIdentitySites", "authentication", "catalog-only", "official-codex-sites-docs"],
+    [
+      "externalIdentityProviderSites",
+      "authentication",
+      "catalog-only",
+      "official-codex-sites-docs",
+    ],
+    ["accessModeAdminsOnly", "access", "catalog-only", "official-codex-sites-docs"],
+    ["accessModeWorkspaceAll", "access", "catalog-only", "official-codex-sites-docs"],
+    ["accessModeCustom", "access", "catalog-only", "official-codex-sites-docs"],
+    ["runtimeEnvironmentValuesPanel", "environment", "catalog-only", "official-codex-sites-docs"],
+    ["dontStoreSecretsInHostingJson", "security", "catalog-only", "official-codex-sites-docs"],
+    ["redeployAfterEnvChanges", "environment", "catalog-only", "official-codex-sites-docs"],
+    ["reviewPaneBeforeShare", "review", "catalog-only", "official-codex-sites-docs"],
+    ["buildSucceededBeforePublish", "review", "catalog-only", "official-codex-sites-docs"],
+    ["intendedAudienceCheck", "access", "catalog-only", "official-codex-sites-docs"],
+    ["deploymentStatusUrlConfirm", "review", "catalog-only", "official-codex-sites-docs"],
+    ["sitesPluginInstallBoundary", "plugin", "blocked", "local-sites-boundary"],
+    ["projectLinkageReadBoundary", "project-metadata", "blocked", "local-sites-boundary"],
+    ["hostingJsonReadBoundary", "project-metadata", "blocked", "local-sites-boundary"],
+    ["versionSaveBoundary", "versions", "blocked", "local-sites-boundary"],
+    ["deploymentBoundary", "deployments", "blocked", "local-sites-boundary"],
+    ["productionUrlBoundary", "deployments", "blocked", "local-sites-boundary"],
+    ["accessPolicyBoundary", "access", "blocked", "local-sites-boundary"],
+    ["environmentSecretBoundary", "environment", "blocked", "local-sites-boundary"],
+    ["storageBindingBoundary", "storage", "blocked", "local-sites-boundary"],
+    ["databaseMigrationBoundary", "storage", "blocked", "local-sites-boundary"],
+    ["buildExecutionBoundary", "compatibility", "blocked", "local-sites-boundary"],
+    ["appServerTrafficBoundary", "runtime", "blocked", "local-sites-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexSitesCatalog(payload) {
+  const catalog = payload.codexSites;
+  const expectedEntries = expectedCodexSitesEntries();
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-sites-docs");
+  assert.equal(catalog.entryCount, 40);
+  assert.equal(catalog.officialEntryCount, 28);
+  assert.equal(catalog.localBoundaryEntryCount, 12);
+  assert.equal(catalog.catalogOnlyEntryCount, 28);
+  assert.equal(catalog.blockedEntryCount, 12);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({
+      key,
+      group,
+      state,
+      source,
+    })),
+    expectedEntries,
+  );
+
+  const entryRedactionFlags = [
+    "siteProjectReturned",
+    "siteProjectIdReturned",
+    "hostingJsonReturned",
+    "storageBindingReturned",
+    "versionIdReturned",
+    "deploymentUrlReturned",
+    "productionUrlReturned",
+    "accessModeReturned",
+    "audienceReturned",
+    "userGroupReturned",
+    "environmentKeyReturned",
+    "environmentValueReturned",
+    "secretValueReturned",
+    "databaseBindingReturned",
+    "objectStorageBindingReturned",
+    "migrationContentReturned",
+    "buildOutputReturned",
+    "buildLogReturned",
+    "sourceCommitReturned",
+    "pluginNameReturned",
+    "localPathReturned",
+    "settingValueReturned",
+    "siteContentReturned",
+    "screenshotReturned",
+    "appServerPayloadReturned",
+    "siteCreated",
+    "versionSaved",
+    "deployed",
+    "accessChanged",
+    "environmentWritten",
+    "secretWritten",
+    "buildStarted",
+    "storageProvisioned",
+    "pluginInstalled",
+    "networkAccess",
+    "filesystemRead",
+    "filesystemWrite",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.sitesCatalogReturned, true);
+  for (const flag of [
+    "siteProjectsReturned",
+    "siteProjectIdsReturned",
+    "hostingJsonReturned",
+    "storageBindingsReturned",
+    "versionIdsReturned",
+    "deploymentUrlsReturned",
+    "productionUrlsReturned",
+    "accessModesReturned",
+    "audiencesReturned",
+    "userGroupsReturned",
+    "environmentKeysReturned",
+    "environmentValuesReturned",
+    "secretValuesReturned",
+    "databaseBindingsReturned",
+    "objectStorageBindingsReturned",
+    "migrationContentReturned",
+    "buildOutputsReturned",
+    "buildLogsReturned",
+    "sourceCommitsReturned",
+    "pluginNamesReturned",
+    "localPathsReturned",
+    "settingValuesReturned",
+    "siteContentReturned",
+    "screenshotsReturned",
+    "appServerPayloadsReturned",
+    "sitesCreated",
+    "versionsSaved",
+    "deploymentsStarted",
+    "accessChanged",
+    "environmentWritten",
+    "secretsWritten",
+    "buildsStarted",
+    "storageProvisioned",
+    "pluginsInstalled",
+    "networkAccess",
+    "filesystemReads",
+    "filesystemWrites",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexSitesReturned", true],
+    ["codexSitesValuesReturned", false],
+    ["codexSitesProjectsReturned", false],
+    ["codexSitesProjectIdsReturned", false],
+    ["codexSitesHostingJsonReturned", false],
+    ["codexSitesStorageBindingsReturned", false],
+    ["codexSitesVersionIdsReturned", false],
+    ["codexSitesDeploymentUrlsReturned", false],
+    ["codexSitesProductionUrlsReturned", false],
+    ["codexSitesAccessModesReturned", false],
+    ["codexSitesAudiencesReturned", false],
+    ["codexSitesUserGroupsReturned", false],
+    ["codexSitesEnvironmentKeysReturned", false],
+    ["codexSitesEnvironmentValuesReturned", false],
+    ["codexSitesSecretValuesReturned", false],
+    ["codexSitesDatabaseBindingsReturned", false],
+    ["codexSitesObjectStorageBindingsReturned", false],
+    ["codexSitesMigrationContentReturned", false],
+    ["codexSitesBuildOutputsReturned", false],
+    ["codexSitesBuildLogsReturned", false],
+    ["codexSitesSourceCommitsReturned", false],
+    ["codexSitesPluginNamesReturned", false],
+    ["codexSitesLocalPathsReturned", false],
+    ["codexSitesSettingValuesReturned", false],
+    ["codexSitesContentReturned", false],
+    ["codexSitesScreenshotsReturned", false],
+    ["codexSitesAppServerPayloadsReturned", false],
+    ["codexSitesCreateEnabled", false],
+    ["codexSitesVersionSaveEnabled", false],
+    ["codexSitesDeployEnabled", false],
+    ["codexSitesAccessChangeEnabled", false],
+    ["codexSitesEnvironmentWriteEnabled", false],
+    ["codexSitesSecretWriteEnabled", false],
+    ["codexSitesBuildEnabled", false],
+    ["codexSitesStorageProvisionEnabled", false],
+    ["codexSitesPluginInstallEnabled", false],
+    ["codexSitesNetworkAccess", false],
+    ["codexSitesFilesystemAccess", false],
+    ["codexSitesMutationsEnabled", false],
+    ["codexSitesPathsReturned", false],
+    ["codexSitesUrlsReturned", false],
+    ["codexSitesSecretsReturned", false],
+    ["codexSitesRawPayloadsReturned", false],
+    ["codexSitesAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedAutomationsCatalogEntries() {
   return [
     {
@@ -36590,6 +36813,7 @@ function assertCodexAppSettingsParity(
   assert.equal(summary.browserHandlersEnabled, false);
   assert.equal(summary.settingsWritesEnabled, false);
   assertSkillsPluginsCatalog(payload);
+  assertCodexSitesCatalog(payload);
   assertAutomationsCatalog(payload);
   assertCodexAppCommandsCatalog(payload);
   assertCodexChromeExtensionCatalog(payload);

@@ -142,6 +142,20 @@ Target parity with the Codex desktop workflow:
   secrets, raw payloads, app-server traffic, external code, installs,
   uninstalls, enablement writes, config writes, extra-root writes, share
   mutations, or marketplace mutations.
+- `/api/settings-integrations` now also exposes a read-only Codex Sites catalog
+  aligned to the official Sites plugin documentation. It returns only static
+  keys, groups, states, sources, counts, and redaction flags for hosted website,
+  web app, and game workflows, project/version/deployment concepts, supported
+  site shapes, D1/R2 storage guidance, workspace or external identity options,
+  access modes, runtime environment values, review-before-share guidance, and
+  local high-risk boundaries. It does not return Sites projects, project ids,
+  `.openai/hosting.json`, storage bindings, version ids, deployment URLs,
+  production URLs, access modes, audiences, user groups, environment keys or
+  values, secrets, migrations, build output/logs, source commits, plugin names,
+  local paths, setting values, site content, screenshots, raw payloads, or
+  app-server traffic, and it does not create sites, save versions, deploy,
+  change access, write environment values/secrets, start builds, provision
+  storage, install plugins, access network, read/write files, or mutate Sites.
 - `/api/settings-integrations` now also exposes a read-only Automations catalog
   aligned to the official Codex app Automations documentation. It returns only
   static keys, groups, states, sources, counts, and redaction flags for the

@@ -450,6 +450,17 @@
   app-server payloads, or app-server traffic, and must not materialize external
   code, install or uninstall plugins, write plugin enablement, write skill
   config, clear extra roots, mutate sharing, or mutate marketplaces. Its
+  Codex Sites catalog may expose only static official-documentation keys plus
+  local boundary keys, groups, states, sources, counts, and redaction flags; it
+  must not return Sites projects, project ids, `.openai/hosting.json`, storage
+  bindings, version ids, deployment URLs, production URLs, access modes,
+  audiences, user groups, environment keys or values, secret values,
+  migrations, build output or logs, source commits, plugin names, local paths,
+  setting values, site content, screenshots, raw payloads, app-server payloads,
+  or app-server traffic, and must not create sites, save versions, deploy,
+  change access, write environment values or secrets, start builds, provision
+  storage, install plugins, access network, read or write files, or mutate Sites
+  state. Its
   Automations catalog may expose only static official-documentation keys plus
   local boundary keys, groups, states, sources, counts, and redaction flags; it
   must not return automation names, run ids, run results, triage items,

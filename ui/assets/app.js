@@ -31,6 +31,8 @@ const elements = {
   appIntegrationsMcpValuesText: document.querySelector("#app-integrations-mcp-values-text"),
   skillsPluginsCatalogText: document.querySelector("#skills-plugins-catalog-text"),
   skillsPluginsCatalogValuesText: document.querySelector("#skills-plugins-catalog-values-text"),
+  codexSitesText: document.querySelector("#codex-sites-text"),
+  codexSitesValuesText: document.querySelector("#codex-sites-values-text"),
   automationsCatalogText: document.querySelector("#automations-catalog-text"),
   automationsCatalogValuesText: document.querySelector("#automations-catalog-values-text"),
   codexAppCommandsText: document.querySelector("#codex-app-commands-text"),
@@ -408,6 +410,7 @@ const elements = {
   appGitList: document.querySelector("#app-git-list"),
   appIntegrationsMcpList: document.querySelector("#app-integrations-mcp-list"),
   skillsPluginsCatalogList: document.querySelector("#skills-plugins-catalog-list"),
+  codexSitesList: document.querySelector("#codex-sites-list"),
   automationsCatalogList: document.querySelector("#automations-catalog-list"),
   codexAppCommandsList: document.querySelector("#codex-app-commands-list"),
   codexChromeExtensionList: document.querySelector("#codex-chrome-extension-list"),
@@ -10453,6 +10456,7 @@ function renderSettingsIntegrations(payload) {
   const integrationLifecycle = payload.integrationLifecycle ?? {};
   const codexAppSettings = payload.codexAppSettings ?? {};
   const skillsPluginsCatalog = payload.skillsPluginsCatalog ?? {};
+  const codexSites = payload.codexSites ?? {};
   const automationsCatalog = payload.automationsCatalog ?? {};
   const codexAppCommands = payload.codexAppCommands ?? {};
   const codexChromeExtension = payload.codexChromeExtension ?? {};
@@ -10518,6 +10522,57 @@ function renderSettingsIntegrations(payload) {
     skillsPluginsCatalog.secretsReturned ||
     skillsPluginsCatalog.rawPayloadsReturned ||
     skillsPluginsCatalog.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexSitesText.textContent = codexSites.returned
+    ? `${codexSites.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexSites.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexSitesValuesText.textContent =
+    codexSites.siteProjectsReturned ||
+    codexSites.siteProjectIdsReturned ||
+    codexSites.hostingJsonReturned ||
+    codexSites.storageBindingsReturned ||
+    codexSites.versionIdsReturned ||
+    codexSites.deploymentUrlsReturned ||
+    codexSites.productionUrlsReturned ||
+    codexSites.accessModesReturned ||
+    codexSites.audiencesReturned ||
+    codexSites.userGroupsReturned ||
+    codexSites.environmentKeysReturned ||
+    codexSites.environmentValuesReturned ||
+    codexSites.secretValuesReturned ||
+    codexSites.databaseBindingsReturned ||
+    codexSites.objectStorageBindingsReturned ||
+    codexSites.migrationContentReturned ||
+    codexSites.buildOutputsReturned ||
+    codexSites.buildLogsReturned ||
+    codexSites.sourceCommitsReturned ||
+    codexSites.pluginNamesReturned ||
+    codexSites.localPathsReturned ||
+    codexSites.settingValuesReturned ||
+    codexSites.siteContentReturned ||
+    codexSites.screenshotsReturned ||
+    codexSites.appServerPayloadsReturned ||
+    codexSites.sitesCreated ||
+    codexSites.versionsSaved ||
+    codexSites.deploymentsStarted ||
+    codexSites.accessChanged ||
+    codexSites.environmentWritten ||
+    codexSites.secretsWritten ||
+    codexSites.buildsStarted ||
+    codexSites.storageProvisioned ||
+    codexSites.pluginsInstalled ||
+    codexSites.networkAccess ||
+    codexSites.filesystemReads ||
+    codexSites.filesystemWrites ||
+    codexSites.mutationEnabled ||
+    codexSites.pathsReturned ||
+    codexSites.urlsReturned ||
+    codexSites.secretsReturned ||
+    codexSites.rawPayloadsReturned ||
+    codexSites.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.automationsCatalogText.textContent = automationsCatalog.returned
@@ -11117,6 +11172,7 @@ function renderSettingsIntegrations(payload) {
   renderIntegrationDetails(inventory);
   renderCodexAppSettingsParity(codexAppSettings);
   renderSkillsPluginsCatalog(skillsPluginsCatalog);
+  renderCodexSitesCatalog(codexSites);
   renderAutomationsCatalog(automationsCatalog);
   renderCodexAppCommandsCatalog(codexAppCommands);
   renderCodexChromeExtensionCatalog(codexChromeExtension);
@@ -12738,6 +12794,94 @@ function renderSkillsPluginsCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.skillsPluginsCatalogList.append(row);
+  }
+}
+
+function renderCodexSitesCatalog(summary) {
+  elements.codexSitesList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexSitesList.append(emptyState("No Codex Sites catalog returned."));
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "sites";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.siteProjectReturned ? "site projects returned" : "site projects hidden",
+      entry.siteProjectIdReturned ? "site project ids returned" : "site project ids hidden",
+      entry.hostingJsonReturned ? "hosting JSON returned" : "hosting JSON hidden",
+      entry.storageBindingReturned ? "storage bindings returned" : "storage bindings hidden",
+      entry.versionIdReturned ? "version ids returned" : "version ids hidden",
+      entry.deploymentUrlReturned ? "deployment URLs returned" : "deployment URLs hidden",
+      entry.productionUrlReturned ? "production URLs returned" : "production URLs hidden",
+      entry.accessModeReturned ? "access modes returned" : "access modes hidden",
+      entry.audienceReturned ? "audiences returned" : "audiences hidden",
+      entry.userGroupReturned ? "user groups returned" : "user groups hidden",
+      entry.environmentKeyReturned ? "environment keys returned" : "environment keys hidden",
+      entry.environmentValueReturned ? "environment values returned" : "environment values hidden",
+      entry.secretValueReturned ? "secret values returned" : "secret values hidden",
+      entry.databaseBindingReturned ? "database bindings returned" : "database bindings hidden",
+      entry.objectStorageBindingReturned
+        ? "object storage returned"
+        : "object storage hidden",
+      entry.migrationContentReturned ? "migration content returned" : "migration content hidden",
+      entry.buildOutputReturned ? "build output returned" : "build output hidden",
+      entry.buildLogReturned ? "build logs returned" : "build logs hidden",
+      entry.sourceCommitReturned ? "source commits returned" : "source commits hidden",
+      entry.pluginNameReturned ? "plugin names returned" : "plugin names hidden",
+      entry.localPathReturned ? "local paths returned" : "local paths hidden",
+      entry.settingValueReturned ? "setting values returned" : "setting values hidden",
+      entry.siteContentReturned ? "site content returned" : "site content hidden",
+      entry.screenshotReturned ? "screenshots returned" : "screenshots hidden",
+      entry.appServerPayloadReturned ? "app-server payloads returned" : "app-server payloads hidden",
+      entry.siteCreated ? "site created" : "site creation blocked",
+      entry.versionSaved ? "version saved" : "version save blocked",
+      entry.deployed ? "deployment started" : "deployment blocked",
+      entry.accessChanged ? "access changed" : "access change blocked",
+      entry.environmentWritten ? "environment written" : "environment write blocked",
+      entry.secretWritten ? "secrets written" : "secret write blocked",
+      entry.buildStarted ? "build started" : "build blocked",
+      entry.storageProvisioned ? "storage provisioned" : "storage provisioning blocked",
+      entry.pluginInstalled ? "plugin installed" : "plugin install blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexSitesList.append(row);
   }
 }
 

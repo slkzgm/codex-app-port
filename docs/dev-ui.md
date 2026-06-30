@@ -785,6 +785,19 @@ commands, share links or principals, setting values, external code, paths,
 URLs, raw payloads, app-server traffic, installs, uninstalls, enablement writes,
 skill config writes, extra-root writes, share mutations, or marketplace
 mutations.
+The same response exposes `codexSites` as a static review-only catalog for the
+official Sites plugin. The UI shows only catalog counts, entry keys, groups,
+state/source chips, and redaction chips for hosted website, web app, and game
+workflows, project/version/deployment concepts, supported site shapes, D1/R2
+storage guidance, workspace or external identity options, access modes, runtime
+environment values, review-before-share guidance, and local high-risk
+boundaries. It does not show Sites projects, project ids, `.openai/hosting.json`,
+storage bindings, version ids, deployment URLs, production URLs, access modes,
+audiences, user groups, environment keys or values, secrets, migrations, build
+output/logs, source commits, plugin names, local paths, setting values, site
+content, screenshots, raw payloads, app-server traffic, site creation, version
+saving, deployment, access changes, environment/secret writes, builds, storage
+provisioning, plugin installs, network access, filesystem access, or mutations.
 The same response exposes `automationsCatalog` as a static review-only
 Automations catalog. The UI shows only catalog counts, keys, groups,
 state/source chips, and redaction chips for official automation pane, Triage,

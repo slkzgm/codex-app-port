@@ -545,6 +545,20 @@ Current M1 status:
   MCP server names, hook commands, share links/principals, setting values,
   installs, uninstalls, writes, mutations, external code, paths, URLs, secrets,
   raw payloads, and app-server traffic blocked
+- done: read-only Codex Sites catalog in `/api/settings-integrations`,
+  exposing only static official Sites plugin documentation keys plus local
+  boundary keys/groups/states/sources/counts/redaction flags for hosted
+  website/web-app/game workflows, project/version/deployment concepts,
+  supported site shapes, D1/R2 storage guidance, workspace/external identity
+  options, access modes, runtime environment values, review-before-share
+  guidance, and high-risk boundaries, with Sites projects, project ids,
+  `.openai/hosting.json`, storage bindings, version ids, deployment URLs,
+  production URLs, access modes, audiences, user groups, environment keys or
+  values, secrets, migrations, build output/logs, source commits, plugin names,
+  local paths, setting values, site content, screenshots, site creation,
+  version saving, deployment, access changes, environment/secret writes, build
+  starts, storage provisioning, plugin installs, network access, filesystem
+  access, mutations, raw payloads, and app-server traffic blocked
 - done: read-only Automations catalog in `/api/settings-integrations`,
   exposing only static official Automations documentation keys plus local
   boundary keys/groups/states/sources/counts/redaction flags for the
