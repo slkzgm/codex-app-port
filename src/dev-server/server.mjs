@@ -105,6 +105,7 @@ export const MAX_THREAD_RENAME_CHARS = 120;
 export const MAX_THREAD_GOAL_OBJECTIVE_CHARS = 4_000;
 export const MAX_THREAD_GOAL_TOKEN_BUDGET = 10_000_000;
 export const MAX_THREAD_ROLLBACK_TURNS = 50;
+export const MAX_THREAD_INJECT_ITEM_COUNT = 50;
 export const MAX_TERMINAL_COMMAND_CHARS = 2_000;
 export const MAX_TERMINAL_COMMAND_ARGS = 24;
 export const MAX_TERMINAL_COMMAND_ARG_CHARS = 240;
@@ -182,6 +183,29 @@ const REVIEW_FEEDBACK_PREFLIGHT_METHODS = Object.freeze(["review/start", "feedba
 const REMOTE_CONTROL_PAIRING_PREFLIGHT_METHODS = Object.freeze([
   "remoteControl/pairing/start",
   "remoteControl/pairing/status",
+]);
+const THREAD_RESUME_INJECT_PREFLIGHT_METHODS = Object.freeze([
+  "thread/resume",
+  "thread/inject_items",
+]);
+const THREAD_RESUME_ARGUMENT_KEYS = Object.freeze([
+  "approvalPolicy",
+  "approvalsReviewer",
+  "baseInstructions",
+  "config",
+  "cwd",
+  "developerInstructions",
+  "excludeTurns",
+  "history",
+  "initialTurnsPage",
+  "model",
+  "modelProvider",
+  "path",
+  "permissions",
+  "personality",
+  "runtimeWorkspaceRoots",
+  "sandbox",
+  "serviceTier",
 ]);
 const STATIC_ROOT = new URL("../../ui/", import.meta.url);
 const SESSION_TOKEN_PLACEHOLDER = "__CODEX_APP_PORT_SESSION_TOKEN__";
@@ -513,6 +537,14 @@ export const ACTION_PREFLIGHT_CONFIRMATION_FIELD_CONTRACTS = Object.freeze({
     "workspace",
     "actionType",
     "preflightToken",
+    "thread",
+    "arguments",
+  ),
+  "thread-resume-inject-preflight": bodyFields(
+    "workspace",
+    "actionType",
+    "preflightToken",
+    "method",
     "thread",
     "arguments",
   ),
@@ -994,6 +1026,13 @@ export const BROWSER_POST_BODY_CONTRACTS = Object.freeze({
     kind: "preflight",
     appServerTraffic: false,
   }),
+  "/api/thread-resume-inject-preflight": bodyContract(
+    ["workspace", "method", "thread", "arguments"],
+    {
+      kind: "preflight",
+      appServerTraffic: false,
+    },
+  ),
   "/api/fs-read-file-preflight": bodyContract(["workspace", "path"], {
     kind: "preflight",
     appServerTraffic: false,
@@ -4087,6 +4126,93 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
       "secretsReturned",
       "argumentTextReturned",
       "rawPayloadsReturned",
+      "implemented",
+    ],
+    preflight: [
+      "token",
+      "tokenIssued",
+      "issuedAt",
+      "expiresAt",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseRequiredForMutation",
+      "consumed",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+  }),
+  "/api/thread-resume-inject-preflight": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    appServer: ["touched", "modelTraffic", "commandTraffic", "threadTraffic"],
+    action: [
+      "type",
+      "method",
+      "execution",
+      "wouldResumeThread",
+      "wouldInjectItems",
+      "threadStateMutated",
+      "appServerTouched",
+      "modelTraffic",
+      "reason",
+    ],
+    thread: ["threadIdSuffix", "fullIdsReturned", "contentReturned", "pathsReturned"],
+    request: [
+      "method",
+      "argumentCharCount",
+      "argumentLineCount",
+      "argumentTopLevelKeyCount",
+      "argumentObjectAccepted",
+      "resumeRequested",
+      "injectItemsRequested",
+      "excludeTurnsRequested",
+      "historyPresent",
+      "historyItemCount",
+      "pathPresent",
+      "cwdPresent",
+      "instructionOverrideCount",
+      "configOverridePresent",
+      "modelOverrideCount",
+      "permissionOverridePresent",
+      "sandboxOverridePresent",
+      "runtimeWorkspaceRootCount",
+      "initialTurnsPagePresent",
+      "itemsPresent",
+      "itemCount",
+      "itemObjectCount",
+      "urlLikeArgumentCount",
+      "pathLikeArgumentCount",
+      "secretLikeArgumentCount",
+      "sensitiveKeyCount",
+      "appServerTraffic",
+      "modelTraffic",
+      "threadContentReturned",
+      "fullIdsReturned",
+      "pathsReturned",
+      "argumentTextReturned",
+      "rawPayloadReturned",
+    ],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "modelTraffic",
+      "commandTraffic",
+      "threadTraffic",
+      "threadStateMutated",
+      "resumeStarted",
+      "itemsInjected",
+      "executionRouteImplemented",
+      "dedicatedExecutionRouteImplemented",
+      "executionGateEnabled",
+      "requiresApprovalPipeline",
+      "requiresExplicitEnablement",
+      "browserMethodCallsAccepted",
+      "threadContentReturned",
+      "fullIdsReturned",
+      "pathsReturned",
+      "argumentTextReturned",
+      "rawPayloadsReturned",
+      "preflightImplemented",
       "implemented",
     ],
     preflight: [
@@ -11349,6 +11475,11 @@ const BROWSER_POST_RESPONSE_ROUTE_TOP_LEVEL_KEYS = Object.freeze({
     "thread",
     "metadataUpdate",
   ),
+  "/api/thread-resume-inject-preflight": routeResponseTopLevelKeys(
+    ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
+    "thread",
+    "request",
+  ),
   "/api/fs-read-file-preflight": routeResponseTopLevelKeys(
     ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
     "target",
@@ -13246,6 +13377,41 @@ export async function handleRequest(request, response, options) {
         error:
           cleanDisplayText(error.message, 200) ??
           "Invalid thread metadata update preflight request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/thread-resume-inject-preflight") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, [
+        "workspace",
+        "method",
+        "thread",
+        "arguments",
+      ]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const payload = buildThreadResumeInjectPreflight(body, { workspace });
+      sendJson(response, 200, attachActionPreflight(payload, { body, workspace, options }));
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error:
+          cleanDisplayText(error.message, 200) ??
+          "Invalid thread resume/inject preflight request",
       });
     }
     return;
@@ -18791,6 +18957,10 @@ async function buildConfirmableActionPreflightPayload(actionType, body, { worksp
       return buildThreadMetadataUpdatePreflight(body, {
         workspace,
       });
+    case "thread-resume-inject-preflight":
+      return buildThreadResumeInjectPreflight(body, {
+        workspace,
+      });
     case "thread-rollback-preflight":
       return buildThreadRollbackPreflight(body, {
         workspace,
@@ -19111,6 +19281,7 @@ function isIntegrationPreflightActionType(actionType) {
     actionType === "config-batch-preflight" ||
     actionType === "experimental-feature-preflight" ||
     actionType === "plugin-enablement-preflight" ||
+    actionType === "thread-resume-inject-preflight" ||
     actionType === "mcp-resource-preflight" ||
     actionType === "plugin-read-preflight" ||
     actionType === "plugin-install-preflight" ||
@@ -33508,6 +33679,221 @@ function validateThreadMetadataGitString(value, key) {
   }
 }
 
+export function buildThreadResumeInjectPreflight(body, { workspace } = {}) {
+  const threadIdSuffix = validateThreadSuffix(body?.thread);
+  const methodAudit = integrationMethodAudit();
+  const method = validateThreadResumeInjectPreflightMethod(body?.method, methodAudit);
+  const requestSummary = summarizeThreadResumeInjectArguments(method, body?.arguments);
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: publicWorkspaces([workspace])[0],
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      threadTraffic: false,
+    },
+    action: {
+      type: "thread-resume-inject-preflight",
+      method,
+      execution: "blocked",
+      wouldResumeThread: false,
+      wouldInjectItems: false,
+      threadStateMutated: false,
+      appServerTouched: false,
+      modelTraffic: false,
+      reason: "thread-resume-inject-execution-not-implemented",
+    },
+    thread: {
+      threadIdSuffix,
+      fullIdsReturned: false,
+      contentReturned: false,
+      pathsReturned: false,
+    },
+    request: {
+      method,
+      ...requestSummary,
+      appServerTraffic: false,
+      modelTraffic: false,
+      threadContentReturned: false,
+      fullIdsReturned: false,
+      pathsReturned: false,
+      argumentTextReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      threadTraffic: false,
+      threadStateMutated: false,
+      resumeStarted: false,
+      itemsInjected: false,
+      executionRouteImplemented: false,
+      dedicatedExecutionRouteImplemented: false,
+      executionGateEnabled: false,
+      requiresApprovalPipeline: true,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: false,
+      threadContentReturned: false,
+      fullIdsReturned: false,
+      pathsReturned: false,
+      argumentTextReturned: false,
+      rawPayloadsReturned: false,
+      preflightImplemented: true,
+      implemented: true,
+    },
+  };
+}
+
+function summarizeThreadResumeInjectArguments(method, value) {
+  const args = validateMcpArguments(value);
+  const argumentObject = parseIntegrationRiskArguments(value);
+  if (args.present && !argumentObject) {
+    throwRequestError("Thread resume/inject arguments must be a JSON object", 400);
+  }
+  const input = argumentObject ?? {};
+  const topLevelKeys = Object.keys(input);
+  if (method === "thread/resume") {
+    validateThreadResumeArguments(input, topLevelKeys);
+  } else {
+    validateThreadInjectItemsArguments(input, topLevelKeys);
+  }
+  const shape = summarizeIntegrationRiskArgumentShape(input);
+  const items = Array.isArray(input.items) ? input.items : [];
+  const history = Array.isArray(input.history) ? input.history : [];
+  const runtimeWorkspaceRoots = Array.isArray(input.runtimeWorkspaceRoots)
+    ? input.runtimeWorkspaceRoots
+    : [];
+  return {
+    argumentCharCount: safeCount(args.charCount),
+    argumentLineCount: safeCount(args.lineCount),
+    argumentTopLevelKeyCount: topLevelKeys.length,
+    argumentObjectAccepted: !args.present || args.validJsonObject,
+    resumeRequested: method === "thread/resume",
+    injectItemsRequested: method === "thread/inject_items",
+    excludeTurnsRequested: input.excludeTurns === true,
+    historyPresent: hasOwnObjectProperty(input, "history"),
+    historyItemCount: safeCount(history.length),
+    pathPresent: hasNonEmptyString(input.path),
+    cwdPresent: hasNonEmptyString(input.cwd),
+    instructionOverrideCount: safeCount(
+      [input.baseInstructions, input.developerInstructions].filter((entry) =>
+        hasNonEmptyString(entry),
+      ).length,
+    ),
+    configOverridePresent: hasOwnObjectProperty(input, "config") && input.config !== null,
+    modelOverrideCount: safeCount(
+      [input.model, input.modelProvider, input.serviceTier].filter((entry) =>
+        hasNonEmptyString(entry),
+      ).length,
+    ),
+    permissionOverridePresent: hasOwnObjectProperty(input, "permissions") && input.permissions !== null,
+    sandboxOverridePresent: hasOwnObjectProperty(input, "sandbox") && input.sandbox !== null,
+    runtimeWorkspaceRootCount: safeCount(runtimeWorkspaceRoots.length),
+    initialTurnsPagePresent:
+      hasOwnObjectProperty(input, "initialTurnsPage") && input.initialTurnsPage !== null,
+    itemsPresent: hasOwnObjectProperty(input, "items"),
+    itemCount: safeCount(items.length),
+    itemObjectCount: safeCount(
+      items.filter((item) => item && typeof item === "object" && !Array.isArray(item)).length,
+    ),
+    urlLikeArgumentCount: shape.urlLikeArgumentCount,
+    pathLikeArgumentCount: shape.pathLikeArgumentCount,
+    secretLikeArgumentCount: shape.secretLikeArgumentCount,
+    sensitiveKeyCount: shape.sensitiveKeyCount,
+  };
+}
+
+function validateThreadResumeArguments(input, topLevelKeys) {
+  const allowed = new Set(THREAD_RESUME_ARGUMENT_KEYS);
+  for (const key of topLevelKeys) {
+    if (!allowed.has(key)) {
+      throwRequestError("Thread resume arguments contain unsupported keys", 400);
+    }
+  }
+  if (hasOwnObjectProperty(input, "excludeTurns") && typeof input.excludeTurns !== "boolean") {
+    throwRequestError("Thread resume excludeTurns must be a boolean", 400);
+  }
+  for (const key of [
+    "baseInstructions",
+    "cwd",
+    "developerInstructions",
+    "model",
+    "modelProvider",
+    "path",
+    "permissions",
+    "serviceTier",
+  ]) {
+    validateThreadResumeNullableString(input[key], key, hasOwnObjectProperty(input, key));
+  }
+  if (hasOwnObjectProperty(input, "history")) {
+    if (input.history !== null && !Array.isArray(input.history)) {
+      throwRequestError("Thread resume history must be an array or null", 400);
+    }
+    if (Array.isArray(input.history) && input.history.length > MAX_THREAD_INJECT_ITEM_COUNT) {
+      throwRequestError(
+        `Thread resume history must include ${MAX_THREAD_INJECT_ITEM_COUNT} items or fewer`,
+        400,
+      );
+    }
+  }
+  if (
+    hasOwnObjectProperty(input, "runtimeWorkspaceRoots") &&
+    input.runtimeWorkspaceRoots !== null &&
+    !Array.isArray(input.runtimeWorkspaceRoots)
+  ) {
+    throwRequestError("Thread resume runtimeWorkspaceRoots must be an array or null", 400);
+  }
+  for (const key of ["approvalsReviewer", "config", "initialTurnsPage", "personality", "sandbox"]) {
+    if (
+      hasOwnObjectProperty(input, key) &&
+      input[key] !== null &&
+      typeof input[key] !== "object" &&
+      typeof input[key] !== "string"
+    ) {
+      throwRequestError(`Thread resume ${key} has unsupported shape`, 400);
+    }
+  }
+}
+
+function validateThreadInjectItemsArguments(input, topLevelKeys) {
+  for (const key of topLevelKeys) {
+    if (key !== "items") {
+      throwRequestError("Thread inject_items arguments contain unsupported keys", 400);
+    }
+  }
+  if (!Array.isArray(input.items)) {
+    throwRequestError("Thread inject_items arguments must include an items array", 400);
+  }
+  if (input.items.length > MAX_THREAD_INJECT_ITEM_COUNT) {
+    throwRequestError(
+      `Thread inject_items items must include ${MAX_THREAD_INJECT_ITEM_COUNT} entries or fewer`,
+      400,
+    );
+  }
+}
+
+function validateThreadResumeNullableString(value, key, present) {
+  if (!present || value === null) {
+    return;
+  }
+  if (typeof value !== "string") {
+    throwRequestError(`Thread resume ${key} must be a string or null`, 400);
+  }
+  if (value.includes("\0")) {
+    throwRequestError(`Thread resume ${key} contains unsupported text`, 400);
+  }
+  if (value.length > MAX_INTEGRATION_TARGET_CHARS) {
+    throwRequestError(
+      `Thread resume ${key} must be ${MAX_INTEGRATION_TARGET_CHARS} characters or fewer`,
+      400,
+    );
+  }
+}
+
 export function sanitizeThreadRollbackPayload(
   payload,
   { workspace = null, consumedPreflight, actionAuditLog = null, auditLogWritableChecked = false } = {},
@@ -45139,6 +45525,17 @@ function validateRemoteControlPairingPreflightMethod(value, methodAudit = integr
   }
   if (!methodAudit.some((entry) => entry.method === method && entry.status === "blocked")) {
     throwRequestError("Remote control pairing method is not available", 400);
+  }
+  return method;
+}
+
+function validateThreadResumeInjectPreflightMethod(value, methodAudit = integrationMethodAudit()) {
+  const method = cleanDisplayText(value, 100);
+  if (!method || !THREAD_RESUME_INJECT_PREFLIGHT_METHODS.includes(method)) {
+    throwRequestError("Thread resume/inject method is unsupported", 400);
+  }
+  if (!methodAudit.some((entry) => entry.method === method && entry.status === "blocked")) {
+    throwRequestError("Thread resume/inject method is not available", 400);
   }
   return method;
 }

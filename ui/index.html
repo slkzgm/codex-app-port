@@ -1663,6 +1663,27 @@
             <button id="thread-metadata-update-preflight-button" class="secondary-button" type="button" disabled>
               Metadata Check
             </button>
+            <label class="workspace-control" for="thread-resume-inject-method-select">
+              <span>Resume/inject</span>
+              <select id="thread-resume-inject-method-select" disabled>
+                <option value="thread/resume">thread/resume</option>
+                <option value="thread/inject_items">thread/inject_items</option>
+              </select>
+            </label>
+            <label class="search-control" for="thread-resume-inject-arguments-input">
+              <span>Args</span>
+              <input
+                id="thread-resume-inject-arguments-input"
+                type="text"
+                autocomplete="off"
+                maxlength="8000"
+                placeholder='{"excludeTurns":true}'
+                disabled
+              />
+            </label>
+            <button id="thread-resume-inject-preflight-button" class="secondary-button" type="button" disabled>
+              Resume Check
+            </button>
             <label class="search-control" for="thread-turn-items-input">
               <span>Turn</span>
               <input id="thread-turn-items-input" type="text" autocomplete="off" maxlength="8" disabled />
@@ -1705,6 +1726,7 @@
           <p id="thread-goal-mutation-status" class="empty-state">Select a thread to update goal state.</p>
           <p id="thread-memory-mode-status" class="empty-state">Select a thread to update memory mode.</p>
           <p id="thread-metadata-update-status" class="empty-state">Select a thread to check metadata updates.</p>
+          <p id="thread-resume-inject-status" class="empty-state">Select a thread to check resume or inject intent.</p>
           <p id="thread-turns-status" class="empty-state">Select a thread to inspect paged turn metadata.</p>
           <p id="thread-turn-items-status" class="empty-state">Select a thread and turn to inspect paged item metadata.</p>
           <dl id="thread-detail-meta" class="agent-grid"></dl>

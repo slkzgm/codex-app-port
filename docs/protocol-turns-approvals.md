@@ -129,6 +129,15 @@ performs no app-server traffic, mutates no thread metadata, and returns no full
 ids, branch names, origin URLs, SHAs, paths, secrets, arguments, or raw
 payloads.
 
+`thread/resume` and `thread/inject_items` remain blocked as browser mutations
+and are exposed only through `/api/thread-resume-inject-preflight` for local
+validation. The route accepts a selected thread suffix, an explicit official
+method name, and JSON-object arguments, rejects unsupported keys such as
+browser-supplied full `threadId`, has no execution route, performs no
+app-server or model traffic, resumes no thread, injects no items, and returns
+only counts/presence metadata with no full ids, thread content, paths,
+argument text, secrets, or raw payloads.
+
 Current local status: `permissionProfile/list`, `account/usage/read`,
 `account/workspaceMessages/read`, `externalAgentConfig/import/readHistories`,
 `plugin/installed`, and `remoteControl/status/read` are exposed only through the
@@ -423,6 +432,14 @@ Browser responses return only count/presence metadata plus explicit blocked
 policy flags, not full ids, branch names, origin URLs, SHAs, cwd, paths,
 argument text, secrets, raw app-server payloads, or preflight tokens outside the
 standard protected token field.
+
+`/api/thread-resume-inject-preflight` validates selected-thread
+`thread/resume` and `thread/inject_items` intent locally without app-server
+traffic. It summarizes official argument shapes such as resume history/path/cwd
+overrides or inject item counts, issues only a local confirmation token for the
+blocked intent, and has no matching execution route. Browser responses return
+only counts and safety flags, not full ids, thread content, paths, argument
+text, secrets, raw app-server payloads, or raw request payloads.
 
 When the server is started with `CODEX_APP_PORT_ALLOW_THREAD_TURNS=1`,
 `/api/thread-turns` may call `thread/list` to resolve the selected suffix and

@@ -67,6 +67,7 @@ async function main() {
   await checkThreadGoalApi();
   await checkThreadTurnsApi();
   await checkThreadTurnItemsApi();
+  await checkThreadResumeInjectPreflightApi();
   await checkThreadTranscriptApi();
   await checkThreadChangesApi();
   await checkEventStreamApi();
@@ -995,6 +996,14 @@ async function checkStrictBrowserPostBodies() {
         {
           thread: "12345678",
           arguments: "{\"gitInfo\":{\"branch\":\"main\"}}",
+        },
+      ],
+      [
+        "/api/thread-resume-inject-preflight",
+        {
+          method: "thread/resume",
+          thread: "12345678",
+          arguments: "{\"excludeTurns\":true}",
         },
       ],
       ["/api/thread-rollback-preflight", { thread: "12345678", numTurns: 1 }],
@@ -2508,6 +2517,22 @@ function assertBrowserPostBodyContracts(cases) {
   ) {
     throw new Error("thread-metadata-update-preflight response contract is missing nested schemas");
   }
+  const threadResumeInjectPreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-resume-inject-preflight"];
+  if (
+    threadResumeInjectPreflightContract.usesRouteSpecificNestedKeySchemas !== true ||
+    !Object.isFrozen(threadResumeInjectPreflightContract.nestedKeySchemas.policy) ||
+    !threadResumeInjectPreflightContract.nestedKeySchemas.request?.includes(
+      "argumentTextReturned",
+    ) ||
+    !threadResumeInjectPreflightContract.nestedKeySchemas.policy?.includes("resumeStarted") ||
+    !threadResumeInjectPreflightContract.nestedKeySchemas.policy?.includes(
+      "rawPayloadsReturned",
+    ) ||
+    threadResumeInjectPreflightContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("thread-resume-inject-preflight response contract is missing nested schemas");
+  }
   const fsReadFilePreflightContract =
     BROWSER_POST_RESPONSE_CONTRACTS["/api/fs-read-file-preflight"];
   if (
@@ -3096,6 +3121,106 @@ function assertBrowserPostBodyContracts(cases) {
     JSON.stringify(wrongRouteTopLevelResponse.payload).includes("mcpToolCall")
   ) {
     throw new Error("browser POST response contract did not block a wrong-route top-level key");
+  }
+  const allowedThreadResumeInjectPreflightShape = applyBrowserPostResponseContract({
+    method: "POST",
+    pathname: "/api/thread-resume-inject-preflight",
+    statusCode: 200,
+    payload: {
+      ok: true,
+      appServer: {
+        touched: false,
+        modelTraffic: false,
+        commandTraffic: false,
+        threadTraffic: false,
+      },
+      action: {
+        type: "thread-resume-inject-preflight",
+        method: "thread/resume",
+        execution: "blocked",
+        wouldResumeThread: false,
+        wouldInjectItems: false,
+        threadStateMutated: false,
+        appServerTouched: false,
+        modelTraffic: false,
+        reason: "thread-resume-inject-execution-not-implemented",
+      },
+      thread: {
+        threadIdSuffix: "thread1234",
+        fullIdsReturned: false,
+        contentReturned: false,
+        pathsReturned: false,
+      },
+      request: {
+        method: "thread/resume",
+        argumentCharCount: 24,
+        argumentLineCount: 1,
+        argumentTopLevelKeyCount: 1,
+        argumentObjectAccepted: true,
+        resumeRequested: true,
+        injectItemsRequested: false,
+        excludeTurnsRequested: true,
+        historyPresent: false,
+        historyItemCount: 0,
+        pathPresent: false,
+        cwdPresent: false,
+        instructionOverrideCount: 0,
+        configOverridePresent: false,
+        modelOverrideCount: 0,
+        permissionOverridePresent: false,
+        sandboxOverridePresent: false,
+        runtimeWorkspaceRootCount: 0,
+        initialTurnsPagePresent: false,
+        itemsPresent: false,
+        itemCount: 0,
+        itemObjectCount: 0,
+        urlLikeArgumentCount: 0,
+        pathLikeArgumentCount: 0,
+        secretLikeArgumentCount: 0,
+        sensitiveKeyCount: 0,
+        appServerTraffic: false,
+        modelTraffic: false,
+        threadContentReturned: false,
+        fullIdsReturned: false,
+        pathsReturned: false,
+        argumentTextReturned: false,
+        rawPayloadReturned: false,
+      },
+      preflight: {
+        token: "preflight-1234567890abcdef",
+        tokenIssued: true,
+        scope: {
+          kind: "thread-resume-inject-preflight",
+          workspaceId: "default",
+        },
+      },
+      policy: {
+        readOnly: true,
+        appServerTraffic: false,
+        modelTraffic: false,
+        commandTraffic: false,
+        threadTraffic: false,
+        threadStateMutated: false,
+        resumeStarted: false,
+        itemsInjected: false,
+        executionRouteImplemented: false,
+        dedicatedExecutionRouteImplemented: false,
+        executionGateEnabled: false,
+        requiresApprovalPipeline: true,
+        requiresExplicitEnablement: true,
+        browserMethodCallsAccepted: false,
+        threadContentReturned: false,
+        fullIdsReturned: false,
+        pathsReturned: false,
+        argumentTextReturned: false,
+        rawPayloadsReturned: false,
+        preflightImplemented: true,
+        implemented: true,
+      },
+    },
+  });
+  if (allowedThreadResumeInjectPreflightShape.statusCode !== 200) {
+    throw new Error("browser POST response contract rejected an allowed thread resume/inject preflight shape");
   }
   const allowedNestedIntegrationShape = applyBrowserPostResponseContract({
     method: "POST",
@@ -10156,6 +10281,29 @@ function assertBrowserPostBodyContracts(cases) {
     }
   }
   for (const [payload, marker] of [
+    [{ ok: true, request: { argumentCharCount: 12, leakedArgumentText: "private argument" } }, "private"],
+    [{ ok: true, thread: { threadIdSuffix: "thread1234", leakedFullThreadId: "private id" } }, "private"],
+    [{ ok: true, policy: { resumeStarted: false, leakedResumePolicy: "private policy" } }, "private"],
+  ]) {
+    const unexpectedThreadResumeInjectPreflightNestedKeyResponse =
+      applyBrowserPostResponseContract({
+        method: "POST",
+        pathname: "/api/thread-resume-inject-preflight",
+        statusCode: 200,
+        payload,
+      });
+    if (
+      unexpectedThreadResumeInjectPreflightNestedKeyResponse.statusCode !== 500 ||
+      JSON.stringify(unexpectedThreadResumeInjectPreflightNestedKeyResponse.payload).includes(
+        marker,
+      )
+    ) {
+      throw new Error(
+        "browser POST response contract did not block an unexpected thread resume/inject preflight nested key",
+      );
+    }
+  }
+  for (const [payload, marker] of [
     [{ ok: true, target: { threadIdSuffix: "thread1234", leakedThreadId: "private id" } }, "private"],
     [
       {
@@ -12673,6 +12821,237 @@ async function checkThreadTurnItemsApi() {
     await closeServer(server);
   }
   pass("dev server thread turn items API returns sensitive-field-free metadata");
+}
+
+async function checkThreadResumeInjectPreflightApi() {
+  let probeCalled = false;
+  const server = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    probeFn: async () => {
+      probeCalled = true;
+      return { ok: true };
+    },
+  });
+  const port = await listenWithFallback(server, { host: "127.0.0.1", port: 0 });
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  try {
+    const token = await readUiSessionToken(baseUrl);
+    const getResponse = await fetch(`${baseUrl}/api/thread-resume-inject-preflight`, {
+      headers: apiHeaders(token),
+    });
+    if (getResponse.status !== 405) {
+      throw new Error(`thread resume/inject GET returned HTTP ${getResponse.status}`);
+    }
+
+    const rejectedField = await fetch(`${baseUrl}/api/thread-resume-inject-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/resume",
+        thread: "abcd1234",
+        arguments: JSON.stringify({
+          path: "/tmp/codex-app-port-verify/private-resume",
+        }),
+        target: "/tmp/codex-app-port-verify/private-resume",
+      }),
+    });
+    if (rejectedField.status !== 400) {
+      throw new Error(`thread resume/inject unsupported field returned HTTP ${rejectedField.status}`);
+    }
+    const rejectedFieldText = await rejectedField.text();
+    if (
+      rejectedFieldText.includes("/tmp/codex-app-port-verify") ||
+      rejectedFieldText.includes("private-resume")
+    ) {
+      throw new Error("thread resume/inject unsupported-field response leaked private data");
+    }
+
+    const invalidMethod = await fetch(`${baseUrl}/api/thread-resume-inject-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/delete",
+        thread: "abcd1234",
+        arguments: "{}",
+      }),
+    });
+    if (invalidMethod.status !== 400) {
+      throw new Error(`thread resume/inject invalid method returned HTTP ${invalidMethod.status}`);
+    }
+
+    const rejectedThreadId = await fetch(`${baseUrl}/api/thread-resume-inject-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/resume",
+        thread: "abcd1234",
+        arguments: JSON.stringify({
+          threadId: "verify-private-full-thread-id",
+          path: "/tmp/codex-app-port-verify/private-resume",
+        }),
+      }),
+    });
+    if (rejectedThreadId.status !== 400) {
+      throw new Error(`thread resume browser threadId returned HTTP ${rejectedThreadId.status}`);
+    }
+    const rejectedThreadIdText = await rejectedThreadId.text();
+    if (
+      rejectedThreadIdText.includes("verify-private-full-thread-id") ||
+      rejectedThreadIdText.includes("/tmp/codex-app-port-verify")
+    ) {
+      throw new Error("thread resume invalid argument response leaked private data");
+    }
+
+    const missingItems = await fetch(`${baseUrl}/api/thread-resume-inject-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/inject_items",
+        thread: "abcd1234",
+        arguments: "{}",
+      }),
+    });
+    if (missingItems.status !== 400) {
+      throw new Error(`thread inject_items missing items returned HTTP ${missingItems.status}`);
+    }
+
+    const resumeArgs = JSON.stringify({
+      excludeTurns: true,
+      path: "/tmp/codex-app-port-verify/private-resume",
+      cwd: "/tmp/codex-app-port-verify/private-cwd",
+      history: [{ type: "message", content: "verify secret resume text" }],
+      config: { apiKey: "sk-proj-verifyresume" },
+      runtimeWorkspaceRoots: ["/tmp/codex-app-port-verify/private-root"],
+    });
+    const resumeResponse = await fetch(`${baseUrl}/api/thread-resume-inject-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/resume",
+        thread: "abcd1234",
+        arguments: resumeArgs,
+      }),
+    });
+    if (!resumeResponse.ok) {
+      throw new Error(`thread resume preflight returned HTTP ${resumeResponse.status}`);
+    }
+    const resumePayload = await resumeResponse.json();
+    assertSanitizedThreadResumeInjectPreflight(resumePayload, {
+      method: "thread/resume",
+      argumentsText: resumeArgs,
+      forbiddenMarkers: [
+        "verify secret resume text",
+        "sk-proj-verifyresume",
+        "/tmp/codex-app-port-verify",
+        "private-resume",
+        "private-cwd",
+        "private-root",
+      ],
+    });
+    if (
+      resumePayload.request?.resumeRequested !== true ||
+      resumePayload.request?.injectItemsRequested !== false ||
+      resumePayload.request?.historyItemCount !== 1 ||
+      resumePayload.request?.pathLikeArgumentCount < 3 ||
+      resumePayload.request?.secretLikeArgumentCount < 1
+    ) {
+      throw new Error("thread resume preflight did not preserve sanitized resume counts");
+    }
+
+    const confirm = await fetch(`${baseUrl}/api/action-preflight-confirm`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        actionType: "thread-resume-inject-preflight",
+        preflightToken: resumePayload.preflight.token,
+        method: "thread/resume",
+        thread: "abcd1234",
+        arguments: resumeArgs,
+      }),
+    });
+    if (!confirm.ok) {
+      throw new Error(`thread resume preflight confirmation returned HTTP ${confirm.status}`);
+    }
+    const confirmPayload = await confirm.json();
+    assertSanitizedActionPreflightConfirmation(
+      confirmPayload,
+      "thread-resume-inject-preflight",
+      "default",
+      resumePayload.preflight.token,
+    );
+    const confirmSerialized = JSON.stringify(confirmPayload);
+    for (const marker of [
+      "verify secret resume text",
+      "sk-proj-verifyresume",
+      "/tmp/codex-app-port-verify",
+      "private-resume",
+    ]) {
+      if (confirmSerialized.includes(marker)) {
+        throw new Error(`thread resume preflight confirmation leaked ${marker}`);
+      }
+    }
+
+    const injectArgs = JSON.stringify({
+      items: [{ type: "message", content: "verify secret inject text" }],
+    });
+    const injectResponse = await fetch(`${baseUrl}/api/thread-resume-inject-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/inject_items",
+        thread: "abcd1234",
+        arguments: injectArgs,
+      }),
+    });
+    if (!injectResponse.ok) {
+      throw new Error(`thread inject_items preflight returned HTTP ${injectResponse.status}`);
+    }
+    const injectPayload = await injectResponse.json();
+    assertSanitizedThreadResumeInjectPreflight(injectPayload, {
+      method: "thread/inject_items",
+      argumentsText: injectArgs,
+      forbiddenMarkers: ["verify secret inject text"],
+    });
+    if (
+      injectPayload.request?.resumeRequested !== false ||
+      injectPayload.request?.injectItemsRequested !== true ||
+      injectPayload.request?.itemsPresent !== true ||
+      injectPayload.request?.itemCount !== 1 ||
+      injectPayload.request?.itemObjectCount !== 1
+    ) {
+      throw new Error("thread inject_items preflight did not preserve sanitized item counts");
+    }
+
+    const actionRoute = await fetch(`${baseUrl}/api/thread-resume-inject-action`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/inject_items",
+        thread: "abcd1234",
+        arguments: injectArgs,
+        preflightToken: injectPayload.preflight.token,
+      }),
+    });
+    if (actionRoute.status !== 405) {
+      throw new Error(`thread resume/inject action route returned HTTP ${actionRoute.status}`);
+    }
+
+    if (probeCalled) {
+      throw new Error("thread resume/inject preflight called the app-server probe");
+    }
+  } finally {
+    await closeServer(server);
+  }
+  pass("dev server thread resume/inject preflight stays local and sanitized");
 }
 
 async function checkThreadTranscriptApi() {
@@ -39791,6 +40170,78 @@ function assertSanitizedThreadTurnItems(payload) {
   ) {
     throw new Error("thread turn items policy did not preserve redaction flags");
   }
+}
+
+function assertSanitizedThreadResumeInjectPreflight(
+  payload,
+  { method, argumentsText, forbiddenMarkers },
+) {
+  if (!payload.ok) {
+    throw new Error("thread resume/inject preflight payload is not ok");
+  }
+  const serialized = JSON.stringify(payload);
+  for (const marker of [
+    ...forbiddenMarkers,
+    "verify-sensitive-agent",
+    "codexHome",
+    "userAgent",
+    "\"threadContentReturned\":true",
+    "\"fullIdsReturned\":true",
+    "\"pathsReturned\":true",
+    "\"rawPayloadReturned\":true",
+  ]) {
+    if (serialized.includes(marker)) {
+      throw new Error(`thread resume/inject preflight leaked ${marker}`);
+    }
+  }
+  if (
+    payload.appServer?.touched !== false ||
+    payload.appServer?.modelTraffic !== false ||
+    payload.appServer?.commandTraffic !== false ||
+    payload.appServer?.threadTraffic !== false ||
+    payload.action?.type !== "thread-resume-inject-preflight" ||
+    payload.action?.method !== method ||
+    payload.action?.execution !== "blocked" ||
+    payload.action?.wouldResumeThread !== false ||
+    payload.action?.wouldInjectItems !== false ||
+    payload.action?.threadStateMutated !== false ||
+    payload.action?.appServerTouched !== false ||
+    payload.thread?.threadIdSuffix !== "abcd1234" ||
+    payload.thread?.fullIdsReturned !== false ||
+    payload.thread?.contentReturned !== false ||
+    payload.thread?.pathsReturned !== false ||
+    payload.request?.method !== method ||
+    payload.request?.argumentCharCount !== argumentsText.length ||
+    payload.request?.argumentObjectAccepted !== true ||
+    payload.request?.appServerTraffic !== false ||
+    payload.request?.modelTraffic !== false ||
+    payload.request?.threadContentReturned !== false ||
+    payload.request?.fullIdsReturned !== false ||
+    payload.request?.pathsReturned !== false ||
+    payload.request?.argumentTextReturned !== false ||
+    payload.request?.rawPayloadReturned !== false ||
+    payload.policy?.readOnly !== true ||
+    payload.policy?.appServerTraffic !== false ||
+    payload.policy?.modelTraffic !== false ||
+    payload.policy?.commandTraffic !== false ||
+    payload.policy?.threadTraffic !== false ||
+    payload.policy?.threadStateMutated !== false ||
+    payload.policy?.resumeStarted !== false ||
+    payload.policy?.itemsInjected !== false ||
+    payload.policy?.executionRouteImplemented !== false ||
+    payload.policy?.dedicatedExecutionRouteImplemented !== false ||
+    payload.policy?.browserMethodCallsAccepted !== false ||
+    payload.policy?.threadContentReturned !== false ||
+    payload.policy?.fullIdsReturned !== false ||
+    payload.policy?.pathsReturned !== false ||
+    payload.policy?.argumentTextReturned !== false ||
+    payload.policy?.rawPayloadsReturned !== false ||
+    payload.policy?.preflightImplemented !== true ||
+    payload.policy?.implemented !== true
+  ) {
+    throw new Error("thread resume/inject preflight did not preserve local-only safety flags");
+  }
+  assertActionPreflight(payload, "thread-resume-inject-preflight", "default");
 }
 
 function assertSanitizedThreadTranscript(payload) {

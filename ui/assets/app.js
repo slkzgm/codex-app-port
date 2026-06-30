@@ -416,6 +416,14 @@ const elements = {
     "#thread-metadata-update-preflight-button",
   ),
   threadMetadataUpdateStatus: document.querySelector("#thread-metadata-update-status"),
+  threadResumeInjectMethodSelect: document.querySelector("#thread-resume-inject-method-select"),
+  threadResumeInjectArgumentsInput: document.querySelector(
+    "#thread-resume-inject-arguments-input",
+  ),
+  threadResumeInjectPreflightButton: document.querySelector(
+    "#thread-resume-inject-preflight-button",
+  ),
+  threadResumeInjectStatus: document.querySelector("#thread-resume-inject-status"),
   threadRollbackTurnsInput: document.querySelector("#thread-rollback-turns-input"),
   threadRollbackPreflightButton: document.querySelector("#thread-rollback-preflight-button"),
   threadRollbackButton: document.querySelector("#thread-rollback-button"),
@@ -1155,6 +1163,22 @@ elements.threadMetadataArgumentsInput.addEventListener("input", () => {
 
 elements.threadMetadataUpdatePreflightButton.addEventListener("click", () => {
   runThreadMetadataUpdatePreflight();
+});
+
+for (const input of [
+  elements.threadResumeInjectMethodSelect,
+  elements.threadResumeInjectArgumentsInput,
+]) {
+  input.addEventListener("input", () => {
+    updateThreadResumeInjectState();
+  });
+  input.addEventListener("change", () => {
+    updateThreadResumeInjectState();
+  });
+}
+
+elements.threadResumeInjectPreflightButton.addEventListener("click", () => {
+  runThreadResumeInjectPreflight();
 });
 
 elements.threadRollbackTurnsInput.addEventListener("input", () => {
@@ -1991,6 +2015,10 @@ function threadMemoryModeEndpoint() {
 
 function threadMetadataUpdatePreflightEndpoint() {
   return "/api/thread-metadata-update-preflight";
+}
+
+function threadResumeInjectPreflightEndpoint() {
+  return "/api/thread-resume-inject-preflight";
 }
 
 function threadRollbackPreflightEndpoint() {
@@ -6057,6 +6085,7 @@ async function loadThreadDetail(threadIdSuffix, { archived = false } = {}) {
   elements.threadGoalMutationStatus.textContent = "Goal actions require preflight.";
   elements.threadMemoryModeStatus.textContent = "Memory mode requires preflight.";
   elements.threadMetadataUpdateStatus.textContent = "Metadata update check ready.";
+  elements.threadResumeInjectStatus.textContent = "Resume/inject check ready.";
   elements.threadTurnsButton.disabled = false;
   elements.threadTurnsStatus.textContent = "Turns page not loaded.";
   elements.threadTurnItemsInput.value = "";
@@ -6069,6 +6098,7 @@ async function loadThreadDetail(threadIdSuffix, { archived = false } = {}) {
   updateThreadGoalMutationState();
   updateThreadMemoryModeState();
   updateThreadMetadataUpdateState();
+  updateThreadResumeInjectState();
   updateThreadRollbackState();
   updateThreadSafetyLockState();
   updateThreadDeleteState();
@@ -6906,6 +6936,42 @@ async function runThreadMetadataUpdatePreflight() {
     renderError(error);
   } finally {
     setThreadMetadataUpdateLoading(false);
+  }
+}
+
+async function runThreadResumeInjectPreflight() {
+  if (!selectedThreadIdSuffix) {
+    elements.threadResumeInjectStatus.textContent = "Select a thread first";
+    return;
+  }
+
+  setThreadResumeInjectLoading(true);
+  hideError();
+
+  const body = {
+    workspace: selectedWorkspaceId,
+    method: elements.threadResumeInjectMethodSelect.value,
+    thread: selectedThreadIdSuffix,
+    arguments: elements.threadResumeInjectArgumentsInput.value,
+  };
+
+  try {
+    const response = await fetch(threadResumeInjectPreflightEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify(body),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderThreadResumeInjectPreflight(payload);
+  } catch (error) {
+    elements.threadResumeInjectStatus.textContent = "Resume/inject check failed";
+    renderError(error);
+  } finally {
+    setThreadResumeInjectLoading(false);
   }
 }
 
@@ -7910,6 +7976,24 @@ function renderThreadMetadataUpdatePreflight(payload) {
   elements.threadMetadataUpdateStatus.textContent = `Metadata blocked (${parts.join(", ")})`;
 }
 
+function renderThreadResumeInjectPreflight(payload) {
+  const request = payload.request ?? {};
+  const method = request.injectItemsRequested ? "inject" : "resume";
+  const count = request.injectItemsRequested
+    ? `${request.itemCount ?? 0} items`
+    : `${request.historyItemCount ?? 0} history`;
+  const risky = [
+    request.pathPresent ? "path" : null,
+    request.cwdPresent ? "cwd" : null,
+    request.configOverridePresent ? "config" : null,
+    request.sandboxOverridePresent ? "sandbox" : null,
+    request.instructionOverrideCount > 0 ? "instructions" : null,
+  ].filter(Boolean);
+  elements.threadResumeInjectStatus.textContent = `${method} blocked (${count}${
+    risky.length > 0 ? `, ${risky.join("/")}` : ""
+  })`;
+}
+
 function renderThreadRollbackPreflight(payload) {
   const count = Number.isSafeInteger(payload.thread?.numTurns) ? payload.thread.numTurns : 0;
   elements.threadRollbackStatus.textContent = payload.policy?.executionGateEnabled
@@ -8485,6 +8569,11 @@ function clearThreadDetail() {
   elements.threadMetadataArgumentsInput.value = "";
   elements.threadMetadataArgumentsInput.disabled = true;
   elements.threadMetadataUpdatePreflightButton.disabled = true;
+  elements.threadResumeInjectMethodSelect.value = "thread/resume";
+  elements.threadResumeInjectMethodSelect.disabled = true;
+  elements.threadResumeInjectArgumentsInput.value = "";
+  elements.threadResumeInjectArgumentsInput.disabled = true;
+  elements.threadResumeInjectPreflightButton.disabled = true;
   elements.threadTurnItemsInput.value = "";
   elements.threadTurnItemsInput.disabled = true;
   elements.threadTurnItemsButton.disabled = true;
@@ -8503,6 +8592,7 @@ function clearThreadDetail() {
   elements.threadGoalMutationStatus.textContent = "Select a thread to update goal state.";
   elements.threadMemoryModeStatus.textContent = "Select a thread to update memory mode.";
   elements.threadMetadataUpdateStatus.textContent = "Select a thread to check metadata updates.";
+  elements.threadResumeInjectStatus.textContent = "Select a thread to check resume or inject intent.";
   elements.threadTurnsStatus.textContent = "Select a thread to inspect paged turn metadata.";
   elements.threadTurnsButton.disabled = true;
   elements.threadTurnItemsStatus.textContent = "Select a thread and turn to inspect paged item metadata.";
@@ -8517,6 +8607,7 @@ function clearThreadDetail() {
   updateThreadGoalMutationState();
   updateThreadMemoryModeState();
   updateThreadMetadataUpdateState();
+  updateThreadResumeInjectState();
   updateThreadRollbackState();
   updateThreadSafetyLockState();
   updateThreadDeleteState();
@@ -8654,6 +8745,17 @@ function updateThreadMetadataUpdateState() {
   elements.threadMetadataUpdatePreflightButton.disabled = !hasThread;
   if (!hasThread) {
     elements.threadMetadataUpdateStatus.textContent = "Select a thread to check metadata updates.";
+  }
+}
+
+function updateThreadResumeInjectState() {
+  const hasThread = Boolean(selectedThreadIdSuffix);
+  elements.threadResumeInjectMethodSelect.disabled = !hasThread;
+  elements.threadResumeInjectArgumentsInput.disabled = !hasThread;
+  elements.threadResumeInjectPreflightButton.disabled = !hasThread;
+  if (!hasThread) {
+    elements.threadResumeInjectStatus.textContent =
+      "Select a thread to check resume or inject intent.";
   }
 }
 
@@ -13190,6 +13292,17 @@ function setThreadMetadataUpdateLoading(isLoading) {
     : "Metadata Check";
   if (isLoading) {
     elements.threadMetadataUpdateStatus.textContent = "Checking metadata";
+  }
+}
+
+function setThreadResumeInjectLoading(isLoading) {
+  const hasThread = Boolean(selectedThreadIdSuffix);
+  elements.threadResumeInjectMethodSelect.disabled = isLoading || !hasThread;
+  elements.threadResumeInjectArgumentsInput.disabled = isLoading || !hasThread;
+  elements.threadResumeInjectPreflightButton.disabled = isLoading || !hasThread;
+  elements.threadResumeInjectPreflightButton.textContent = isLoading ? "Checking" : "Resume Check";
+  if (isLoading) {
+    elements.threadResumeInjectStatus.textContent = "Checking resume/inject";
   }
 }
 

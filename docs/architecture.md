@@ -269,6 +269,13 @@ Current M1 status:
   no model traffic, and sanitized count/presence metadata without full ids,
   branch names, origin URLs, SHAs, cwd, paths, arguments, secrets, or raw
   payloads
+- done: local-only `/api/thread-resume-inject-preflight` path for
+  `thread/resume` and `thread/inject_items`, with route-specific nested
+  response schemas, selected-thread suffix validation, official method
+  allowlisting, resume/inject argument shape validation, no execution route, no
+  app-server traffic, no model traffic, no thread resume or item injection, and
+  sanitized count/presence metadata without full ids, thread content, cwd,
+  paths, item text, arguments, secrets, or raw payloads
 - done: opt-in `/api/thread-compact-start` path behind both
   `CODEX_APP_PORT_ALLOW_THREAD_COMPACT=1` and
   `CODEX_APP_PORT_ALLOW_SESSION_MANAGER=1`, with matching one-time

@@ -842,6 +842,13 @@ shape locally, rejects unsupported keys or unsafe values, and never touches
 app-server or mutates thread metadata. The browser receives only counts and
 presence booleans, never full ids, branch names, origin URLs, SHAs, cwd, paths,
 argument text, secrets, raw payloads, or an execution route.
+Thread resume and item injection are also preflight-only.
+`/api/thread-resume-inject-preflight` validates selected-thread `thread/resume`
+and `thread/inject_items` intent locally, rejects unsupported keys including a
+browser-supplied full `threadId`, and never touches app-server, resumes a
+thread, or injects items. The browser receives only counts and presence
+booleans, never full ids, thread content, cwd, paths, item text, argument text,
+secrets, raw payloads, or an execution route.
 Thread compaction is more sensitive because it can trigger model traffic.
 `/api/thread-compact-preflight` validates a selected thread suffix locally and
 returns a one-time token without app-server traffic. `/api/thread-compact-start`

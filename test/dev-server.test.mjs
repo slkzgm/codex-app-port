@@ -377,8 +377,14 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /thread-metadata-arguments-input/);
     assert.match(html, /thread-metadata-update-preflight-button/);
     assert.match(html, /thread-metadata-update-status/);
+    assert.match(html, /thread-resume-inject-method-select/);
+    assert.match(html, /thread-resume-inject-arguments-input/);
+    assert.match(html, /thread-resume-inject-preflight-button/);
+    assert.match(html, /thread-resume-inject-status/);
     assert.match(appScript, /runThreadMetadataUpdatePreflight/);
     assert.match(appScript, /renderThreadMetadataUpdatePreflight/);
+    assert.match(appScript, /runThreadResumeInjectPreflight/);
+    assert.match(appScript, /renderThreadResumeInjectPreflight/);
     assert.match(html, /thread-safety-lock-preflight-button/);
     assert.match(html, /thread-safety-lock-button/);
     assert.match(html, /thread-safety-lock-status/);
@@ -441,6 +447,7 @@ test("browser POST body contracts are centralized and immutable", () => {
     "/api/thread-memory-mode-set-preflight",
     "/api/thread-memory-mode-set-action",
     "/api/thread-metadata-update-preflight",
+    "/api/thread-resume-inject-preflight",
     "/api/thread-rollback-preflight",
     "/api/thread-rollback-action",
     "/api/thread-safety-lock-preflight",
@@ -612,6 +619,12 @@ test("browser POST body contracts are centralized and immutable", () => {
   ]);
   assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/thread-metadata-update-preflight"].allowedFields], [
     "workspace",
+    "thread",
+    "arguments",
+  ]);
+  assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/thread-resume-inject-preflight"].allowedFields], [
+    "workspace",
+    "method",
     "thread",
     "arguments",
   ]);
@@ -1845,6 +1858,29 @@ test("browser POST response contracts block unsafe response values", () => {
   );
   assert.equal(
     threadMetadataUpdatePreflightContract.nestedKeySchemas.policy.includes("unexpected"),
+    false,
+  );
+  const threadResumeInjectPreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-resume-inject-preflight"];
+  assert.equal(threadResumeInjectPreflightContract.usesRouteSpecificNestedKeySchemas, true);
+  assert.equal(
+    threadResumeInjectPreflightContract.nestedKeySchemas.request.includes(
+      "argumentTextReturned",
+    ),
+    true,
+  );
+  assert.equal(
+    threadResumeInjectPreflightContract.nestedKeySchemas.policy.includes(
+      "resumeStarted",
+    ),
+    true,
+  );
+  assert.equal(
+    threadResumeInjectPreflightContract.nestedKeySchemas.policy.includes("rawPayloadsReturned"),
+    true,
+  );
+  assert.equal(
+    threadResumeInjectPreflightContract.nestedKeySchemas.policy.includes("unexpected"),
     false,
   );
   const fsReadFilePreflightContract =
@@ -11772,6 +11808,259 @@ test("dev server preflights thread metadata updates without app-server traffic",
         thread: "abcd1234",
         arguments: args,
         preflightToken: payload.preflight.token,
+      }),
+    });
+    assert.equal(actionRoute.status, 405);
+    assert.equal(probeCalled, false);
+  } finally {
+    await closeServer(server);
+  }
+});
+
+test("dev server preflights thread resume and item injection without app-server traffic", async () => {
+  let probeCalled = false;
+  const { server, url } = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    probeFn: async () => {
+      probeCalled = true;
+      return { ok: true };
+    },
+  });
+
+  try {
+    const getResponse = await fetch(`${url}/api/thread-resume-inject-preflight`, {
+      headers: apiHeaders(server),
+    });
+    assert.equal(getResponse.status, 405);
+
+    const rejectedField = await fetch(`${url}/api/thread-resume-inject-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/resume",
+        thread: "abcd1234",
+        arguments: JSON.stringify({ path: "/tmp/default-workspace/private-resume" }),
+        target: "/tmp/default-workspace/private-resume",
+      }),
+    });
+    assert.equal(rejectedField.status, 400);
+    const rejectedFieldSerialized = await rejectedField.text();
+    assert.equal(rejectedFieldSerialized.includes("/tmp/default-workspace"), false);
+    assert.equal(rejectedFieldSerialized.includes("private-resume"), false);
+
+    const invalidMethod = await fetch(`${url}/api/thread-resume-inject-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/delete",
+        thread: "abcd1234",
+        arguments: "{}",
+      }),
+    });
+    assert.equal(invalidMethod.status, 400);
+
+    const rejectedThreadId = await fetch(`${url}/api/thread-resume-inject-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/resume",
+        thread: "abcd1234",
+        arguments: JSON.stringify({
+          threadId: "thread-full-private-id",
+          path: "/tmp/default-workspace/private-resume",
+        }),
+      }),
+    });
+    assert.equal(rejectedThreadId.status, 400);
+    const rejectedThreadIdSerialized = await rejectedThreadId.text();
+    assert.equal(rejectedThreadIdSerialized.includes("thread-full-private-id"), false);
+    assert.equal(rejectedThreadIdSerialized.includes("/tmp/default-workspace"), false);
+
+    const missingItems = await fetch(`${url}/api/thread-resume-inject-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/inject_items",
+        thread: "abcd1234",
+        arguments: "{}",
+      }),
+    });
+    assert.equal(missingItems.status, 400);
+
+    const resumeArgs = JSON.stringify({
+      excludeTurns: true,
+      path: "/tmp/default-workspace/private-resume",
+      cwd: "/tmp/default-workspace/private-cwd",
+      history: [{ type: "message", content: "secret resume text" }],
+      config: { apiKey: "sk-test-private-resume" },
+      runtimeWorkspaceRoots: ["/tmp/default-workspace/private-root"],
+    });
+    const response = await fetch(`${url}/api/thread-resume-inject-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/resume",
+        thread: "abcd1234",
+        arguments: resumeArgs,
+      }),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, false);
+    assert.equal(payload.appServer.modelTraffic, false);
+    assert.equal(payload.appServer.commandTraffic, false);
+    assert.equal(payload.appServer.threadTraffic, false);
+    assert.equal(payload.action.type, "thread-resume-inject-preflight");
+    assert.equal(payload.action.method, "thread/resume");
+    assert.equal(payload.action.execution, "blocked");
+    assert.equal(payload.action.wouldResumeThread, false);
+    assert.equal(payload.action.wouldInjectItems, false);
+    assert.equal(payload.action.threadStateMutated, false);
+    assert.equal(payload.action.appServerTouched, false);
+    assert.equal(payload.thread.threadIdSuffix, "abcd1234");
+    assert.equal(payload.thread.fullIdsReturned, false);
+    assert.equal(payload.thread.contentReturned, false);
+    assert.equal(payload.thread.pathsReturned, false);
+    assert.equal(payload.request.method, "thread/resume");
+    assert.equal(payload.request.argumentCharCount, resumeArgs.length);
+    assert.equal(payload.request.argumentObjectAccepted, true);
+    assert.equal(payload.request.resumeRequested, true);
+    assert.equal(payload.request.injectItemsRequested, false);
+    assert.equal(payload.request.excludeTurnsRequested, true);
+    assert.equal(payload.request.historyPresent, true);
+    assert.equal(payload.request.historyItemCount, 1);
+    assert.equal(payload.request.pathPresent, true);
+    assert.equal(payload.request.cwdPresent, true);
+    assert.equal(payload.request.configOverridePresent, true);
+    assert.equal(payload.request.runtimeWorkspaceRootCount, 1);
+    assert.equal(payload.request.pathLikeArgumentCount >= 3, true);
+    assert.equal(payload.request.secretLikeArgumentCount >= 1, true);
+    assert.equal(payload.request.appServerTraffic, false);
+    assert.equal(payload.request.modelTraffic, false);
+    assert.equal(payload.request.threadContentReturned, false);
+    assert.equal(payload.request.fullIdsReturned, false);
+    assert.equal(payload.request.pathsReturned, false);
+    assert.equal(payload.request.argumentTextReturned, false);
+    assert.equal(payload.request.rawPayloadReturned, false);
+    assert.equal(payload.policy.readOnly, true);
+    assert.equal(payload.policy.appServerTraffic, false);
+    assert.equal(payload.policy.modelTraffic, false);
+    assert.equal(payload.policy.commandTraffic, false);
+    assert.equal(payload.policy.threadTraffic, false);
+    assert.equal(payload.policy.threadStateMutated, false);
+    assert.equal(payload.policy.resumeStarted, false);
+    assert.equal(payload.policy.itemsInjected, false);
+    assert.equal(payload.policy.executionRouteImplemented, false);
+    assert.equal(payload.policy.dedicatedExecutionRouteImplemented, false);
+    assert.equal(payload.policy.browserMethodCallsAccepted, false);
+    assert.equal(payload.policy.threadContentReturned, false);
+    assert.equal(payload.policy.fullIdsReturned, false);
+    assert.equal(payload.policy.pathsReturned, false);
+    assert.equal(payload.policy.argumentTextReturned, false);
+    assert.equal(payload.policy.rawPayloadsReturned, false);
+    assert.equal(payload.policy.preflightImplemented, true);
+    assert.equal(payload.policy.implemented, true);
+    assertActionPreflight(payload, "thread-resume-inject-preflight", "default");
+    assert.equal(probeCalled, false);
+    for (const marker of [
+      "secret resume text",
+      "sk-test-private-resume",
+      "/tmp/default-workspace",
+      "private-resume",
+      "private-cwd",
+      "private-root",
+      "codexHome",
+      "userAgent",
+      "\"threadContentReturned\":true",
+      "\"fullIdsReturned\":true",
+      "\"pathsReturned\":true",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `resume preflight leaked ${marker}`);
+    }
+
+    const confirm = await fetch(`${url}/api/action-preflight-confirm`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        actionType: "thread-resume-inject-preflight",
+        preflightToken: payload.preflight.token,
+        method: "thread/resume",
+        thread: "abcd1234",
+        arguments: resumeArgs,
+      }),
+    });
+    assert.equal(confirm.status, 200);
+    const confirmPayload = await confirm.json();
+    const confirmSerialized = JSON.stringify(confirmPayload);
+    assertActionPreflightConfirmation(
+      confirmPayload,
+      "thread-resume-inject-preflight",
+      "default",
+    );
+    assert.equal(confirmPayload.action.method, "thread/resume");
+    assert.equal(confirmPayload.action.mutationExecuted, false);
+    for (const marker of [
+      payload.preflight.token,
+      "secret resume text",
+      "sk-test-private-resume",
+      "/tmp/default-workspace",
+      "private-resume",
+    ]) {
+      assert.equal(confirmSerialized.includes(marker), false, `resume confirm leaked ${marker}`);
+    }
+
+    const injectArgs = JSON.stringify({
+      items: [{ type: "message", content: "secret inject text" }],
+    });
+    const injectResponse = await fetch(`${url}/api/thread-resume-inject-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/inject_items",
+        thread: "abcd1234",
+        arguments: injectArgs,
+      }),
+    });
+    assert.equal(injectResponse.status, 200);
+    const injectPayload = await injectResponse.json();
+    const injectSerialized = JSON.stringify(injectPayload);
+    assert.equal(injectPayload.ok, true);
+    assert.equal(injectPayload.appServer.touched, false);
+    assert.equal(injectPayload.action.type, "thread-resume-inject-preflight");
+    assert.equal(injectPayload.action.method, "thread/inject_items");
+    assert.equal(injectPayload.action.execution, "blocked");
+    assert.equal(injectPayload.action.wouldInjectItems, false);
+    assert.equal(injectPayload.action.threadStateMutated, false);
+    assert.equal(injectPayload.request.method, "thread/inject_items");
+    assert.equal(injectPayload.request.resumeRequested, false);
+    assert.equal(injectPayload.request.injectItemsRequested, true);
+    assert.equal(injectPayload.request.itemsPresent, true);
+    assert.equal(injectPayload.request.itemCount, 1);
+    assert.equal(injectPayload.request.itemObjectCount, 1);
+    assert.equal(injectPayload.request.threadContentReturned, false);
+    assert.equal(injectPayload.request.rawPayloadReturned, false);
+    assert.equal(injectPayload.policy.itemsInjected, false);
+    assertActionPreflight(injectPayload, "thread-resume-inject-preflight", "default");
+    assert.equal(injectSerialized.includes("secret inject text"), false);
+
+    const actionRoute = await fetch(`${url}/api/thread-resume-inject-action`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        method: "thread/inject_items",
+        thread: "abcd1234",
+        arguments: injectArgs,
+        preflightToken: injectPayload.preflight.token,
       }),
     });
     assert.equal(actionRoute.status, 405);

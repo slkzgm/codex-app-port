@@ -181,6 +181,14 @@
   action audit records must not return full ids, cwd, paths, settings payloads,
   raw app-server payloads, or preflight tokens. The preflight and execution
   responses are constrained by route-specific nested response schemas.
+- Browser-facing thread resume and item injection must not expose arbitrary
+  `thread/resume` or `thread/inject_items`. The only implemented surface is a
+  local-only `/api/thread-resume-inject-preflight` check with selected-thread
+  suffix validation, official method allowlisting, JSON-object argument shape
+  validation, and no execution route. It must not touch app-server, resume a
+  thread, inject items, create model traffic, or return full ids, thread
+  content, cwd, paths, item text, argument text, secrets, raw app-server
+  payloads, or raw request payloads.
 - Browser-facing thread compaction must be blocked by default and opt-in only.
   Because `thread/compact/start` can trigger model traffic, it also requires the
   persistent session manager gate. When `CODEX_APP_PORT_ALLOW_THREAD_COMPACT=1`
