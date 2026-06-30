@@ -32690,10 +32690,10 @@ function assertSanitizedSettingsIntegrations(payload) {
   }
   assertSettingsServerBoundaries(payload);
   assertCodexAppSettingsParity(payload, {
-    availableSectionCount: 11,
-    partialSectionCount: 10,
+    availableSectionCount: 12,
+    partialSectionCount: 11,
     preflightOnlySectionCount: 1,
-    blockedSectionCount: 4,
+    blockedSectionCount: 3,
     profileState: "blocked",
   });
   if (
@@ -33141,6 +33141,7 @@ function assertCodexAppSettingsParity(
       "partial" ||
     summary.sections?.find((section) => section.key === "appearance")?.state !==
       "partial" ||
+    summary.sections?.find((section) => section.key === "codexPets")?.state !== "partial" ||
     summary.sections?.find((section) => section.key === "browser")?.state !==
       "partial" ||
     summary.sections?.find((section) => section.key === "personalization")?.state !==
@@ -33249,6 +33250,62 @@ function assertCodexAppSettingsParity(
         setting.fontNameReturned === false &&
         setting.customThemeReturned === false &&
         setting.sharingUrlReturned === false &&
+        setting.pathsReturned === false &&
+        setting.urlsReturned === false &&
+        setting.secretsReturned === false &&
+        setting.rawPayloadsReturned === false &&
+        setting.appServerTraffic === false,
+    ) ||
+    summary.codexPets?.returned !== true ||
+    summary.codexPets.state !== "partial" ||
+    summary.codexPets.settingCount !== 6 ||
+    summary.codexPets.officialSettingCount !== 6 ||
+    summary.codexPets.catalogOnlySettingCount !== 4 ||
+    summary.codexPets.blockedSettingCount !== 2 ||
+    summary.codexPets.enabledSettingCount !== 0 ||
+    summary.codexPets.petControlsReturned !== true ||
+    summary.codexPets.petCommandKeysReturned !== true ||
+    summary.codexPets.selectedPetReturned !== false ||
+    summary.codexPets.petNamesReturned !== false ||
+    summary.codexPets.customPetAssetsReturned !== false ||
+    summary.codexPets.customPetScanExecuted !== false ||
+    summary.codexPets.petOverlayLaunched !== false ||
+    summary.codexPets.overlayStateReturned !== false ||
+    summary.codexPets.activeThreadReturned !== false ||
+    summary.codexPets.hatchPetSkillInstallAvailable !== false ||
+    summary.codexPets.skillInstallExecuted !== false ||
+    summary.codexPets.skillReloadExecuted !== false ||
+    summary.codexPets.slashCommandExecuted !== false ||
+    summary.codexPets.settingValuesReturned !== false ||
+    summary.codexPets.localSettingValuesReturned !== false ||
+    summary.codexPets.mutationEnabled !== false ||
+    summary.codexPets.pathsReturned !== false ||
+    summary.codexPets.urlsReturned !== false ||
+    summary.codexPets.secretsReturned !== false ||
+    summary.codexPets.rawPayloadsReturned !== false ||
+    summary.codexPets.appServerTraffic !== false ||
+    JSON.stringify((summary.codexPets.settings ?? []).map((setting) => setting.key)) !==
+      JSON.stringify([
+        "builtInPetPicker",
+        "customPetsRefresh",
+        "slashPetCommand",
+        "wakePetCommand",
+        "tuckAwayPetCommand",
+        "hatchPetSkillInstall",
+      ]) ||
+    !summary.codexPets.settings?.every(
+      (setting) =>
+        setting.settingValueReturned === false &&
+        setting.selectedPetReturned === false &&
+        setting.petNameReturned === false &&
+        setting.customPetAssetsReturned === false &&
+        setting.customPetScanExecuted === false &&
+        setting.petOverlayLaunched === false &&
+        setting.overlayStateReturned === false &&
+        setting.activeThreadReturned === false &&
+        setting.skillInstallExecuted === false &&
+        setting.skillReloadExecuted === false &&
+        setting.slashCommandExecuted === false &&
         setting.pathsReturned === false &&
         setting.urlsReturned === false &&
         setting.secretsReturned === false &&
@@ -33427,6 +33484,13 @@ function assertCodexAppSettingsParity(
     payload.policy?.codexAppAppearanceCustomThemeReturned !== false ||
     payload.policy?.codexAppAppearanceSharingUrlsReturned !== false ||
     payload.policy?.codexAppAppearanceMutationsEnabled !== false ||
+    payload.policy?.codexAppPetSettingsReturned !== true ||
+    payload.policy?.codexAppPetValuesReturned !== false ||
+    payload.policy?.codexAppPetNamesReturned !== false ||
+    payload.policy?.codexAppPetAssetsReturned !== false ||
+    payload.policy?.codexAppPetOverlayLaunched !== false ||
+    payload.policy?.codexAppPetSkillInstallEnabled !== false ||
+    payload.policy?.codexAppPetMutationsEnabled !== false ||
     payload.policy?.codexAppBrowserSettingsReturned !== true ||
     payload.policy?.codexAppBrowserValuesReturned !== false ||
     payload.policy?.codexAppBrowserWebsiteListsReturned !== false ||
@@ -35089,10 +35153,10 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
   }
   assertSettingsServerBoundaries(payload);
   assertCodexAppSettingsParity(payload, {
-    availableSectionCount: 12,
-    partialSectionCount: 11,
+    availableSectionCount: 13,
+    partialSectionCount: 12,
     preflightOnlySectionCount: 1,
-    blockedSectionCount: 3,
+    blockedSectionCount: 2,
     profileState: "partial",
   });
   if (

@@ -492,6 +492,13 @@ Current M1 status:
   keys/groups/states/counts, with active theme values, color values, font names,
   custom theme payloads, sharing URLs, paths, secrets, raw payloads, mutations,
   and app-server traffic blocked
+- done: read-only Codex pets settings catalog inside the settings parity
+  summary, exposing only static pet picker, `/pet`, Wake Pet, Tuck Away Pet,
+  custom-pet refresh, and `hatch-pet` install control keys/groups/states/counts,
+  with selected pet values, pet names, custom pet assets, local Codex home
+  scans, overlay state, active-thread overlay data, skill install/reload,
+  slash-command execution, paths, URLs, secrets, raw payloads, mutations, and
+  app-server traffic blocked
 - done: read-only Browser settings catalog inside the settings parity summary,
   exposing only static Browser plugin, Chrome extension, site permission,
   ask-before-use, and full-CDP developer-mode control keys/groups/states/counts,

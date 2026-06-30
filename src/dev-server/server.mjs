@@ -33292,6 +33292,105 @@ function buildCodexAppAppearanceSettingsSummary() {
   };
 }
 
+const CODEX_APP_PET_SETTINGS = Object.freeze([
+  {
+    key: "builtInPetPicker",
+    group: "selection",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "customPetsRefresh",
+    group: "local-pets",
+    state: "blocked",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "slashPetCommand",
+    group: "commands",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "wakePetCommand",
+    group: "overlay",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "tuckAwayPetCommand",
+    group: "overlay",
+    state: "catalog-only",
+    source: "official-codex-app-docs",
+  },
+  {
+    key: "hatchPetSkillInstall",
+    group: "skills",
+    state: "blocked",
+    source: "official-codex-app-docs",
+  },
+]);
+
+function buildCodexAppPetSettingsSummary() {
+  const settings = CODEX_APP_PET_SETTINGS.map((setting) => ({
+    ...setting,
+    settingValueReturned: false,
+    selectedPetReturned: false,
+    petNameReturned: false,
+    customPetAssetsReturned: false,
+    customPetScanExecuted: false,
+    petOverlayLaunched: false,
+    overlayStateReturned: false,
+    activeThreadReturned: false,
+    skillInstallExecuted: false,
+    skillReloadExecuted: false,
+    slashCommandExecuted: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+    rawPayloadsReturned: false,
+    appServerTraffic: false,
+  }));
+  const catalogOnlySettingCount = settings.filter(
+    (setting) => setting.state === "catalog-only",
+  ).length;
+  const blockedSettingCount = settings.filter((setting) => setting.state === "blocked").length;
+
+  return {
+    returned: true,
+    state: catalogOnlySettingCount > 0 ? "partial" : "blocked",
+    settingCount: settings.length,
+    officialSettingCount: settings.filter(
+      (setting) => setting.source === "official-codex-app-docs",
+    ).length,
+    catalogOnlySettingCount,
+    blockedSettingCount,
+    enabledSettingCount: 0,
+    settings,
+    petControlsReturned: true,
+    petCommandKeysReturned: true,
+    selectedPetReturned: false,
+    petNamesReturned: false,
+    customPetAssetsReturned: false,
+    customPetScanExecuted: false,
+    petOverlayLaunched: false,
+    overlayStateReturned: false,
+    activeThreadReturned: false,
+    hatchPetSkillInstallAvailable: false,
+    skillInstallExecuted: false,
+    skillReloadExecuted: false,
+    slashCommandExecuted: false,
+    settingValuesReturned: false,
+    localSettingValuesReturned: false,
+    mutationEnabled: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+    rawPayloadsReturned: false,
+    appServerTraffic: false,
+  };
+}
+
 const CODEX_APP_BROWSER_SETTINGS = Object.freeze([
   {
     key: "bundledBrowserPlugin",
@@ -33584,6 +33683,7 @@ function buildCodexAppSettingsParity(payload = {}) {
   const integrationScope = payload.integrationScope ?? {};
   const keyboardShortcuts = buildCodexAppKeyboardShortcutsSummary();
   const appearance = buildCodexAppAppearanceSettingsSummary();
+  const codexPets = buildCodexAppPetSettingsSummary();
   const browser = buildCodexAppBrowserSettingsSummary();
   const notifications = buildCodexAppNotificationSettingsSummary(payload);
   const personalization = buildCodexAppPersonalizationSettingsSummary();
@@ -33634,7 +33734,7 @@ function buildCodexAppSettingsParity(payload = {}) {
       appearance.state,
       "appearance-settings-catalog",
     ),
-    codexAppSettingsSection("codexPets", "interface", "blocked", "not-implemented"),
+    codexAppSettingsSection("codexPets", "interface", codexPets.state, "pet-settings-catalog"),
     codexAppSettingsSection("git", "workspace", "partial", "read-only-git-panel"),
     codexAppSettingsSection(
       "integrationsMcp",
@@ -33694,6 +33794,7 @@ function buildCodexAppSettingsParity(payload = {}) {
     sections,
     keyboardShortcuts,
     appearance,
+    codexPets,
     browser,
     notifications,
     personalization,
@@ -34099,6 +34200,13 @@ export function sanitizeSettingsIntegrationsPayload(
       codexAppAppearanceCustomThemeReturned: false,
       codexAppAppearanceSharingUrlsReturned: false,
       codexAppAppearanceMutationsEnabled: false,
+      codexAppPetSettingsReturned: true,
+      codexAppPetValuesReturned: false,
+      codexAppPetNamesReturned: false,
+      codexAppPetAssetsReturned: false,
+      codexAppPetOverlayLaunched: false,
+      codexAppPetSkillInstallEnabled: false,
+      codexAppPetMutationsEnabled: false,
       codexAppBrowserSettingsReturned: true,
       codexAppBrowserValuesReturned: false,
       codexAppBrowserWebsiteListsReturned: false,
@@ -41647,6 +41755,13 @@ export function buildSettingsIntegrations({
       codexAppAppearanceCustomThemeReturned: false,
       codexAppAppearanceSharingUrlsReturned: false,
       codexAppAppearanceMutationsEnabled: false,
+      codexAppPetSettingsReturned: true,
+      codexAppPetValuesReturned: false,
+      codexAppPetNamesReturned: false,
+      codexAppPetAssetsReturned: false,
+      codexAppPetOverlayLaunched: false,
+      codexAppPetSkillInstallEnabled: false,
+      codexAppPetMutationsEnabled: false,
       codexAppBrowserSettingsReturned: true,
       codexAppBrowserValuesReturned: false,
       codexAppBrowserWebsiteListsReturned: false,

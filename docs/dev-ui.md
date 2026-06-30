@@ -724,6 +724,13 @@ only setting keys, groups, state/source chips, catalog counts, and redaction
 chips; active theme values, color values, font names, custom theme payloads,
 sharing URLs, paths, raw payloads, mutations, and app-server traffic remain
 blocked.
+Within that same summary, `codexPets` exposes a static review-only catalog for
+the official pet picker, `/pet`, Wake Pet, Tuck Away Pet, custom-pet refresh,
+and `hatch-pet` install surfaces. The UI shows only setting keys, groups,
+state/source chips, catalog counts, and redaction chips; selected pet values,
+pet names, custom pet assets, local Codex home scans, overlay state,
+active-thread overlay data, skill install/reload, slash-command execution,
+paths, URLs, raw payloads, mutations, and app-server traffic remain blocked.
 Within that same summary, `browser` exposes a static review-only catalog for
 the official Browser plugin, Chrome extension, site permission, ask-before-use,
 and full-CDP developer-mode controls. The UI shows only setting keys, groups,

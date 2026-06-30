@@ -407,6 +407,12 @@
   states, sources, and counts; it must not return active theme values, color
   values, font names, custom theme payloads, sharing URLs, paths, secrets, raw
   payloads, app-server payloads, or appearance mutations. Its
+  Codex pets settings catalog may expose only static setting keys, groups,
+  states, sources, and counts; it must not return selected pet values, pet
+  names, custom pet assets, local Codex home scan results, overlay state,
+  active-thread overlay data, paths, URLs, secrets, raw payloads, app-server
+  payloads, or pet mutations, and must not install or reload skills, execute
+  `/pet`, launch overlays, or refresh custom pets. Its
   Browser settings catalog may expose only static setting keys, groups, states,
   sources, and counts; it must not return Browser plugin or Chrome extension
   state, allowed or blocked site lists, origins, website permission values, CDP

@@ -20489,10 +20489,10 @@ test("dev server exposes settings and integration boundary without app-server tr
     );
     assertSettingsServerBoundaries(payload);
     assertCodexAppSettingsParity(payload, {
-      availableSectionCount: 11,
-      partialSectionCount: 10,
+      availableSectionCount: 12,
+      partialSectionCount: 11,
       preflightOnlySectionCount: 1,
-      blockedSectionCount: 4,
+      blockedSectionCount: 3,
       profileState: "blocked",
     });
     assert.equal(payload.surfaces.settings.state, "partial");
@@ -22761,10 +22761,10 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
     );
     assertSettingsServerBoundaries(payload);
     assertCodexAppSettingsParity(payload, {
-      availableSectionCount: 12,
-      partialSectionCount: 11,
+      availableSectionCount: 13,
+      partialSectionCount: 12,
       preflightOnlySectionCount: 1,
-      blockedSectionCount: 3,
+      blockedSectionCount: 2,
       profileState: "partial",
     });
     assert.equal(payload.appServer.auditedReadMethods.includes("configRequirements/read"), true);
@@ -34977,6 +34977,7 @@ function assertCodexAppSettingsParity(
     summary.sections.find((section) => section.key === "appearance")?.state,
     "partial",
   );
+  assert.equal(summary.sections.find((section) => section.key === "codexPets")?.state, "partial");
   assert.equal(summary.sections.find((section) => section.key === "browser")?.state, "partial");
   assert.equal(
     summary.sections.find((section) => section.key === "personalization")?.state,
@@ -35096,6 +35097,67 @@ function assertCodexAppSettingsParity(
         setting.fontNameReturned === false &&
         setting.customThemeReturned === false &&
         setting.sharingUrlReturned === false &&
+        setting.pathsReturned === false &&
+        setting.urlsReturned === false &&
+        setting.secretsReturned === false &&
+        setting.rawPayloadsReturned === false &&
+        setting.appServerTraffic === false,
+    ),
+    true,
+  );
+  assert.equal(summary.codexPets?.returned, true);
+  assert.equal(summary.codexPets.state, "partial");
+  assert.equal(summary.codexPets.settingCount, 6);
+  assert.equal(summary.codexPets.officialSettingCount, 6);
+  assert.equal(summary.codexPets.catalogOnlySettingCount, 4);
+  assert.equal(summary.codexPets.blockedSettingCount, 2);
+  assert.equal(summary.codexPets.enabledSettingCount, 0);
+  assert.equal(summary.codexPets.petControlsReturned, true);
+  assert.equal(summary.codexPets.petCommandKeysReturned, true);
+  assert.equal(summary.codexPets.selectedPetReturned, false);
+  assert.equal(summary.codexPets.petNamesReturned, false);
+  assert.equal(summary.codexPets.customPetAssetsReturned, false);
+  assert.equal(summary.codexPets.customPetScanExecuted, false);
+  assert.equal(summary.codexPets.petOverlayLaunched, false);
+  assert.equal(summary.codexPets.overlayStateReturned, false);
+  assert.equal(summary.codexPets.activeThreadReturned, false);
+  assert.equal(summary.codexPets.hatchPetSkillInstallAvailable, false);
+  assert.equal(summary.codexPets.skillInstallExecuted, false);
+  assert.equal(summary.codexPets.skillReloadExecuted, false);
+  assert.equal(summary.codexPets.slashCommandExecuted, false);
+  assert.equal(summary.codexPets.settingValuesReturned, false);
+  assert.equal(summary.codexPets.localSettingValuesReturned, false);
+  assert.equal(summary.codexPets.mutationEnabled, false);
+  assert.equal(summary.codexPets.pathsReturned, false);
+  assert.equal(summary.codexPets.urlsReturned, false);
+  assert.equal(summary.codexPets.secretsReturned, false);
+  assert.equal(summary.codexPets.rawPayloadsReturned, false);
+  assert.equal(summary.codexPets.appServerTraffic, false);
+  assert.deepEqual(
+    summary.codexPets.settings.map((setting) => setting.key),
+    [
+      "builtInPetPicker",
+      "customPetsRefresh",
+      "slashPetCommand",
+      "wakePetCommand",
+      "tuckAwayPetCommand",
+      "hatchPetSkillInstall",
+    ],
+  );
+  assert.equal(
+    summary.codexPets.settings.every(
+      (setting) =>
+        setting.settingValueReturned === false &&
+        setting.selectedPetReturned === false &&
+        setting.petNameReturned === false &&
+        setting.customPetAssetsReturned === false &&
+        setting.customPetScanExecuted === false &&
+        setting.petOverlayLaunched === false &&
+        setting.overlayStateReturned === false &&
+        setting.activeThreadReturned === false &&
+        setting.skillInstallExecuted === false &&
+        setting.skillReloadExecuted === false &&
+        setting.slashCommandExecuted === false &&
         setting.pathsReturned === false &&
         setting.urlsReturned === false &&
         setting.secretsReturned === false &&
@@ -35296,6 +35358,13 @@ function assertCodexAppSettingsParity(
   assert.equal(payload.policy?.codexAppAppearanceCustomThemeReturned, false);
   assert.equal(payload.policy?.codexAppAppearanceSharingUrlsReturned, false);
   assert.equal(payload.policy?.codexAppAppearanceMutationsEnabled, false);
+  assert.equal(payload.policy?.codexAppPetSettingsReturned, true);
+  assert.equal(payload.policy?.codexAppPetValuesReturned, false);
+  assert.equal(payload.policy?.codexAppPetNamesReturned, false);
+  assert.equal(payload.policy?.codexAppPetAssetsReturned, false);
+  assert.equal(payload.policy?.codexAppPetOverlayLaunched, false);
+  assert.equal(payload.policy?.codexAppPetSkillInstallEnabled, false);
+  assert.equal(payload.policy?.codexAppPetMutationsEnabled, false);
   assert.equal(payload.policy?.codexAppBrowserSettingsReturned, true);
   assert.equal(payload.policy?.codexAppBrowserValuesReturned, false);
   assert.equal(payload.policy?.codexAppBrowserWebsiteListsReturned, false);

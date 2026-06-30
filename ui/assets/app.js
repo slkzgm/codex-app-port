@@ -17,6 +17,8 @@ const elements = {
   appSettingsValuesText: document.querySelector("#app-settings-values-text"),
   appAppearanceText: document.querySelector("#app-appearance-text"),
   appAppearanceValuesText: document.querySelector("#app-appearance-values-text"),
+  appPetsText: document.querySelector("#app-pets-text"),
+  appPetsValuesText: document.querySelector("#app-pets-values-text"),
   appBrowserText: document.querySelector("#app-browser-text"),
   appBrowserValuesText: document.querySelector("#app-browser-values-text"),
   appShortcutsText: document.querySelector("#app-shortcuts-text"),
@@ -363,6 +365,7 @@ const elements = {
   integrationsDetailList: document.querySelector("#integrations-detail-list"),
   appSettingsParityList: document.querySelector("#app-settings-parity-list"),
   appAppearanceList: document.querySelector("#app-appearance-list"),
+  appPetsList: document.querySelector("#app-pets-list"),
   appBrowserList: document.querySelector("#app-browser-list"),
   appKeyboardShortcutsList: document.querySelector("#app-keyboard-shortcuts-list"),
   appNotificationsList: document.querySelector("#app-notifications-list"),
@@ -10426,6 +10429,20 @@ function renderSettingsIntegrations(payload) {
     appearance.customThemeReturned
       ? "Returned"
       : "Hidden";
+  const codexPets = codexAppSettings.codexPets ?? {};
+  elements.appPetsText.textContent = codexPets.returned
+    ? `${codexPets.catalogOnlySettingCount ?? 0} catalog / ${
+        codexPets.settingCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.appPetsValuesText.textContent =
+    codexPets.selectedPetReturned ||
+    codexPets.petNamesReturned ||
+    codexPets.customPetAssetsReturned ||
+    codexPets.overlayStateReturned ||
+    codexPets.activeThreadReturned
+      ? "Returned"
+      : "Hidden";
   const browser = codexAppSettings.browser ?? {};
   elements.appBrowserText.textContent = browser.returned
     ? `${browser.catalogOnlySettingCount ?? 0} catalog / ${
@@ -10614,6 +10631,7 @@ function renderSettingsIntegrations(payload) {
   renderIntegrationDetails(inventory);
   renderCodexAppSettingsParity(codexAppSettings);
   renderCodexAppAppearanceSettings(appearance);
+  renderCodexAppPetSettings(codexPets);
   renderCodexAppBrowserSettings(browser);
   renderCodexAppKeyboardShortcuts(keyboardShortcuts);
   renderCodexAppNotificationSettings(notifications);
@@ -12221,6 +12239,57 @@ function renderCodexAppAppearanceSettings(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.appAppearanceList.append(row);
+  }
+}
+
+function renderCodexAppPetSettings(summary) {
+  elements.appPetsList.replaceChildren();
+  const settings = Array.isArray(summary?.settings) ? summary.settings : [];
+  if (settings.length === 0) {
+    elements.appPetsList.append(emptyState("No Codex pets settings catalog returned."));
+    return;
+  }
+  for (const setting of settings) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = setting.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = setting.group ?? "pets";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      setting.state ?? "blocked",
+      setting.source ?? null,
+      setting.settingValueReturned ? "value returned" : "value hidden",
+      setting.petNameReturned ? "pet names returned" : "pet names hidden",
+      setting.customPetAssetsReturned ? "assets returned" : "assets hidden",
+      setting.customPetScanExecuted ? "local scan executed" : "local scan blocked",
+      setting.petOverlayLaunched ? "overlay launched" : "overlay blocked",
+      setting.overlayStateReturned ? "overlay state returned" : "overlay state hidden",
+      setting.skillInstallExecuted ? "skill install executed" : "skill install blocked",
+      setting.slashCommandExecuted ? "slash command executed" : "slash command blocked",
+      setting.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.appPetsList.append(row);
   }
 }
 

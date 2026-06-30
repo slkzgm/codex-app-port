@@ -81,6 +81,13 @@ Target parity with the Codex desktop workflow:
   returns only keys, groups, states, sources, and counts; active theme values,
   color values, font names, custom theme payloads, sharing URLs, paths, secrets,
   raw payloads, mutations, and app-server traffic remain blocked.
+- The same summary now includes a read-only Codex pets settings catalog for the
+  official pet picker, `/pet`, Wake Pet, Tuck Away Pet, custom-pet refresh, and
+  `hatch-pet` install surfaces. It returns only keys, groups, states, sources,
+  and counts; selected pet values, pet names, custom pet assets, local Codex
+  home scans, overlay state, active-thread overlay data, skill install/reload,
+  slash-command execution, paths, URLs, secrets, raw payloads, mutations, and
+  app-server traffic remain blocked.
 - The same summary now includes a read-only Browser settings catalog for the
   official Browser plugin, Chrome extension, site permission, ask-before-use,
   and full-CDP developer-mode controls. It returns only keys, groups, states,
