@@ -163,6 +163,11 @@ symlinked path segments before app-server traffic, and returns bounded direct
 child names plus type/count metadata, never absolute paths, relative paths,
 timestamps, file contents, hidden entries, token-like names, URLs, or raw
 payloads.
+`fs/readFile` has only a local `POST /api/fs-read-file-preflight` guard for
+now. It validates workspace-relative visible path shape and creates a local
+confirmation token, but there is no execution route, filesystem read, app-server
+traffic, path or basename disclosure, file content, `dataBase64`, or raw
+payload output.
 `thread/delete` also has a
 separate disabled-by-default destructive path:
 `POST /api/thread-delete-preflight` validates only suffix and archived-state

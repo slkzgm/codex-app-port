@@ -2549,6 +2549,36 @@
             </div>
           </dl>
           <div id="fs-directory-list" class="boundary-list compact" role="list"></div>
+          <form id="fs-read-file-form" class="turn-form">
+            <div class="thread-tools">
+              <label class="search-control" for="fs-read-file-path">
+                <span>File read</span>
+                <input id="fs-read-file-path" type="text" autocomplete="off" />
+              </label>
+              <button id="fs-read-file-button" class="secondary-button" type="submit">
+                Read Check
+              </button>
+              <span id="fs-read-file-status" class="empty-state">Blocked</span>
+            </div>
+          </form>
+          <dl class="agent-grid">
+            <div>
+              <dt>Path depth</dt>
+              <dd id="fs-read-file-depth">0</dd>
+            </div>
+            <div>
+              <dt>Path chars</dt>
+              <dd id="fs-read-file-chars">0</dd>
+            </div>
+            <div>
+              <dt>Content</dt>
+              <dd id="fs-read-file-content">Hidden</dd>
+            </div>
+            <div>
+              <dt>Traffic</dt>
+              <dd id="fs-read-file-traffic">None</dd>
+            </div>
+          </dl>
           <form id="file-action-form" class="turn-form">
             <div class="thread-tools">
               <label class="workspace-control" for="file-action-select">

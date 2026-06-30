@@ -495,6 +495,12 @@ export const ACTION_PREFLIGHT_CONFIRMATION_FIELD_CONTRACTS = Object.freeze({
     "thread",
     "arguments",
   ),
+  "fs-read-file-preflight": bodyFields(
+    "workspace",
+    "actionType",
+    "preflightToken",
+    "path",
+  ),
   "thread-rollback-preflight": bodyFields(
     "workspace",
     "actionType",
@@ -934,6 +940,10 @@ export const BROWSER_POST_BODY_CONTRACTS = Object.freeze({
     },
   ),
   "/api/thread-metadata-update-preflight": bodyContract(["workspace", "thread", "arguments"], {
+    kind: "preflight",
+    appServerTraffic: false,
+  }),
+  "/api/fs-read-file-preflight": bodyContract(["workspace", "path"], {
     kind: "preflight",
     appServerTraffic: false,
   }),
@@ -4007,6 +4017,83 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
       "secretsReturned",
       "argumentTextReturned",
       "rawPayloadsReturned",
+      "implemented",
+    ],
+    preflight: [
+      "token",
+      "tokenIssued",
+      "issuedAt",
+      "expiresAt",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseRequiredForMutation",
+      "consumed",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+  }),
+  "/api/fs-read-file-preflight": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    appServer: ["touched", "modelTraffic", "commandTraffic", "filesystemTraffic"],
+    action: [
+      "type",
+      "method",
+      "execution",
+      "wouldReadFile",
+      "filesystemRead",
+      "appServerTouched",
+      "modelTraffic",
+      "reason",
+    ],
+    target: [
+      "pathAccepted",
+      "pathCharCount",
+      "pathDepth",
+      "workspaceRelativeOnly",
+      "absolutePathReturned",
+      "pathReturned",
+      "basenameReturned",
+      "existsChecked",
+      "symlinkChecked",
+    ],
+    content: [
+      "readBlocked",
+      "contentReturned",
+      "fileContentsReturned",
+      "dataBase64Returned",
+      "contentBytesReturned",
+      "rawPayloadReturned",
+    ],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "modelTraffic",
+      "commandTraffic",
+      "filesystemTraffic",
+      "filesystemRead",
+      "fileContentRead",
+      "workspaceRelativeOnly",
+      "hiddenPathsRejected",
+      "absolutePathsRejected",
+      "parentTraversalRejected",
+      "lockFilesRejected",
+      "gitPathsRejected",
+      "symlinksAllowed",
+      "fileContentsReturned",
+      "dataBase64Returned",
+      "fullPathsReturned",
+      "basenamesReturned",
+      "pathsReturned",
+      "rawPayloadReturned",
+      "readFilePreflightEnabled",
+      "readFileEnabled",
+      "executionRouteImplemented",
+      "dedicatedExecutionRouteImplemented",
+      "executionGateEnabled",
+      "requiresApprovalPipeline",
+      "requiresExplicitEnablement",
+      "browserMethodCallsAccepted",
       "implemented",
     ],
     preflight: [
@@ -10839,6 +10926,11 @@ const BROWSER_POST_RESPONSE_ROUTE_TOP_LEVEL_KEYS = Object.freeze({
     "thread",
     "metadataUpdate",
   ),
+  "/api/fs-read-file-preflight": routeResponseTopLevelKeys(
+    ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
+    "target",
+    "content",
+  ),
   "/api/thread-rollback-preflight": routeResponseTopLevelKeys(
     ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
     "thread",
@@ -14934,6 +15026,34 @@ export async function handleRequest(request, response, options) {
     return;
   }
 
+  if (url.pathname === "/api/fs-read-file-preflight") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, ["workspace", "path"]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const payload = buildFsReadFilePreflight(body, { workspace });
+      sendJson(response, 200, attachActionPreflight(payload, { body, workspace, options }));
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid file read preflight request",
+      });
+    }
+    return;
+  }
+
   if (url.pathname === "/api/file-action") {
     if (request.method !== "POST") {
       sendJson(response, 405, { ok: false, error: "Method not allowed" });
@@ -18148,6 +18268,8 @@ async function buildConfirmableActionPreflightPayload(actionType, body, { worksp
         workspace,
         fileActionEnabled: options.fileActionEnabled,
       });
+    case "fs-read-file-preflight":
+      return buildFsReadFilePreflight(body, { workspace });
     case "live-session-control-preflight":
       return buildLiveSessionControlPreflight(body, {
         workspace,
@@ -24078,6 +24200,85 @@ export function buildTerminalBackgroundCleanBlocked(preflightPayload) {
       browserMethodCallsAccepted: false,
       implemented: false,
     },
+  };
+}
+
+export function buildFsReadFilePreflight(body, { workspace } = {}) {
+  const target = validateFsReadFileBrowserPath(body?.path);
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: publicWorkspaces([workspace])[0],
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      filesystemTraffic: false,
+    },
+    action: {
+      type: "fs-read-file-preflight",
+      method: "fs/readFile",
+      execution: "blocked",
+      wouldReadFile: false,
+      filesystemRead: false,
+      appServerTouched: false,
+      modelTraffic: false,
+      reason: "fs-read-file-execution-not-implemented",
+    },
+    target: {
+      pathAccepted: true,
+      pathCharCount: target.charCount,
+      pathDepth: target.depth,
+      workspaceRelativeOnly: true,
+      absolutePathReturned: false,
+      pathReturned: false,
+      basenameReturned: false,
+      existsChecked: false,
+      symlinkChecked: false,
+    },
+    content: {
+      readBlocked: true,
+      contentReturned: false,
+      fileContentsReturned: false,
+      dataBase64Returned: false,
+      contentBytesReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: fsReadFilePolicy(),
+  };
+}
+
+function fsReadFilePolicy() {
+  return {
+    readOnly: true,
+    appServerTraffic: false,
+    modelTraffic: false,
+    commandTraffic: false,
+    filesystemTraffic: false,
+    filesystemRead: false,
+    fileContentRead: false,
+    workspaceRelativeOnly: true,
+    hiddenPathsRejected: true,
+    absolutePathsRejected: true,
+    parentTraversalRejected: true,
+    lockFilesRejected: true,
+    gitPathsRejected: true,
+    symlinksAllowed: false,
+    fileContentsReturned: false,
+    dataBase64Returned: false,
+    fullPathsReturned: false,
+    basenamesReturned: false,
+    pathsReturned: false,
+    rawPayloadReturned: false,
+    readFilePreflightEnabled: true,
+    readFileEnabled: false,
+    executionRouteImplemented: false,
+    dedicatedExecutionRouteImplemented: false,
+    executionGateEnabled: false,
+    requiresApprovalPipeline: true,
+    requiresExplicitEnablement: true,
+    browserMethodCallsAccepted: false,
+    implemented: true,
   };
 }
 
@@ -43061,6 +43262,52 @@ function validateFileActionPath(value, { label }) {
   }
   return {
     basename: cleanBase,
+    depth: parts.length,
+  };
+}
+
+function validateFsReadFileBrowserPath(value) {
+  if (typeof value !== "string") {
+    throwRequestError("File read path must be a string", 400);
+  }
+  const clean = value.trim().replace(/\\/g, "/");
+  if (clean.length === 0) {
+    throwRequestError("File read path is required", 400);
+  }
+  if (clean.length > MAX_FILE_ACTION_PATH_CHARS) {
+    throwRequestError(
+      `File read path must be ${MAX_FILE_ACTION_PATH_CHARS} characters or fewer`,
+      400,
+    );
+  }
+  if (
+    clean.startsWith("/") ||
+    /^[A-Za-z]:\//.test(clean) ||
+    clean.includes("\0") ||
+    clean.includes("//") ||
+    clean.includes("..")
+  ) {
+    throwRequestError("File read path is invalid", 400);
+  }
+  const parts = clean.split("/").filter(Boolean);
+  if (
+    parts.length === 0 ||
+    parts.some(
+      (part) =>
+        part === "." ||
+        part.startsWith(".") ||
+        part === ".git" ||
+        part.startsWith(".git") ||
+        part.endsWith(".lock"),
+    )
+  ) {
+    throwRequestError("File read path is invalid", 400);
+  }
+  if (!safeBasename(parts.at(-1))) {
+    throwRequestError("File read path is invalid", 400);
+  }
+  return {
+    charCount: clean.length,
     depth: parts.length,
   };
 }

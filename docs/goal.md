@@ -118,6 +118,11 @@ Target parity with the Codex desktop workflow:
   child names plus type/count metadata, not absolute paths, relative paths,
   timestamps, file contents, hidden entries, token-like names, URLs, or raw
   payloads.
+- `fs/readFile` has only a local `POST /api/fs-read-file-preflight` guard for
+  now. It validates a workspace-relative visible path shape, issues a local
+  confirmation token, and keeps execution blocked without filesystem reads,
+  app-server traffic, path/basename disclosure, file contents, `dataBase64`, or
+  raw payloads.
 - `thread/delete` has a separate disabled-by-default destructive
   `POST /api/thread-delete-action` path behind
   `CODEX_APP_PORT_ALLOW_THREAD_DELETE=1`; it consumes a matching one-time

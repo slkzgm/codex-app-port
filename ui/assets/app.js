@@ -641,6 +641,14 @@ const elements = {
   fsDirectoryFileCount: document.querySelector("#fs-directory-file-count"),
   fsDirectoryTraffic: document.querySelector("#fs-directory-traffic"),
   fsDirectoryList: document.querySelector("#fs-directory-list"),
+  fsReadFileForm: document.querySelector("#fs-read-file-form"),
+  fsReadFilePath: document.querySelector("#fs-read-file-path"),
+  fsReadFileButton: document.querySelector("#fs-read-file-button"),
+  fsReadFileStatus: document.querySelector("#fs-read-file-status"),
+  fsReadFileDepth: document.querySelector("#fs-read-file-depth"),
+  fsReadFileChars: document.querySelector("#fs-read-file-chars"),
+  fsReadFileContent: document.querySelector("#fs-read-file-content"),
+  fsReadFileTraffic: document.querySelector("#fs-read-file-traffic"),
   fileActionForm: document.querySelector("#file-action-form"),
   fileActionSelect: document.querySelector("#file-action-select"),
   fileActionPath: document.querySelector("#file-action-path"),
@@ -730,6 +738,7 @@ let lastGitBranchCreatePreflight = null;
 let lastGitBranchDeletePreflight = null;
 let lastGitCommitPreflight = null;
 let lastGitWorktreePreflight = null;
+let lastFsReadFilePreflight = null;
 let lastFileActionPreflight = null;
 let lastLiveSessionControlPreflight = null;
 let lastLiveSessionBulkPreflight = null;
@@ -798,6 +807,7 @@ elements.workspaceSelect.addEventListener("change", () => {
   lastGitBranchDeletePreflight = null;
   lastGitCommitPreflight = null;
   lastGitWorktreePreflight = null;
+  lastFsReadFilePreflight = null;
   lastFileActionPreflight = null;
   lastLiveSessionControlPreflight = null;
   lastLiveSessionBulkPreflight = null;
@@ -848,6 +858,11 @@ elements.workspaceSelect.addEventListener("change", () => {
   lastApprovalQueue = [];
   approvalQueueFilter = "all";
   selectedApprovalKey = null;
+  elements.fsReadFileStatus.textContent = "Blocked";
+  elements.fsReadFileDepth.textContent = "0";
+  elements.fsReadFileChars.textContent = "0";
+  elements.fsReadFileContent.textContent = "Hidden";
+  elements.fsReadFileTraffic.textContent = "None";
   elements.fileActionButton.disabled = true;
   elements.liveSessionControlButton.disabled = true;
   elements.liveSessionBulkButton.disabled = true;
@@ -1295,9 +1310,19 @@ elements.fsDirectoryForm.addEventListener("submit", (event) => {
   loadFsDirectory();
 });
 
+elements.fsReadFileForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  runFsReadFilePreflight();
+});
+
 elements.fileActionForm.addEventListener("submit", (event) => {
   event.preventDefault();
   runFileActionPreflight();
+});
+
+elements.fsReadFilePath.addEventListener("input", () => {
+  lastFsReadFilePreflight = null;
+  elements.fsReadFileStatus.textContent = "Blocked";
 });
 
 for (const input of [
@@ -2222,6 +2247,10 @@ function fsDirectoryEndpoint() {
   }
   const query = params.toString();
   return query ? `/api/fs-directory?${query}` : "/api/fs-directory";
+}
+
+function fsReadFilePreflightEndpoint() {
+  return "/api/fs-read-file-preflight";
 }
 
 function fileActionPreflightEndpoint() {
@@ -5009,6 +5038,39 @@ async function loadFsDirectory() {
     renderError(error);
   } finally {
     elements.fsDirectoryButton.disabled = false;
+  }
+}
+
+async function runFsReadFilePreflight() {
+  lastFsReadFilePreflight = null;
+  setFsReadFileLoading(true);
+  hideError();
+  const body = {
+    workspace: selectedWorkspaceId,
+    path: elements.fsReadFilePath.value,
+  };
+
+  try {
+    const response = await fetch(fsReadFilePreflightEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify(body),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    lastFsReadFilePreflight = {
+      body,
+      token: payload.preflight?.token ?? null,
+    };
+    renderFsReadFilePreflight(payload);
+  } catch (error) {
+    elements.fsReadFileStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    setFsReadFileLoading(false);
   }
 }
 
@@ -12057,6 +12119,19 @@ function renderFsDirectory(summary, policy, appServer) {
   }
 }
 
+function renderFsReadFilePreflight(payload) {
+  const target = payload.target ?? {};
+  const content = payload.content ?? {};
+  elements.fsReadFileStatus.textContent = payload.action?.execution ?? "blocked";
+  elements.fsReadFileDepth.textContent = String(target.pathDepth ?? 0);
+  elements.fsReadFileChars.textContent = String(target.pathCharCount ?? 0);
+  elements.fsReadFileContent.textContent =
+    content.fileContentsReturned === false && content.dataBase64Returned === false
+      ? "Hidden"
+      : "Unsafe";
+  elements.fsReadFileTraffic.textContent = payload.appServer?.touched ? "App-server" : "None";
+}
+
 function renderTerminalBackgroundTerminatePreflight(payload) {
   elements.terminalBackgroundListStatus.textContent =
     payload.policy?.executionGateEnabled === true ? "Ready" : "Blocked";
@@ -12951,6 +13026,14 @@ function setTerminalBackgroundTerminatePreflightLoading(isLoading) {
     : "Terminate Check";
   if (isLoading) {
     elements.terminalBackgroundListStatus.textContent = "Checking";
+  }
+}
+
+function setFsReadFileLoading(isLoading) {
+  elements.fsReadFileButton.disabled = isLoading;
+  elements.fsReadFileButton.textContent = isLoading ? "Checking" : "Read Check";
+  if (isLoading) {
+    elements.fsReadFileStatus.textContent = "Checking";
   }
 }
 

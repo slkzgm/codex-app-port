@@ -264,6 +264,14 @@ command length and line counts; it does not echo the command, create a terminal
 session, or call app-server. Action preflights issue short-lived local tokens
 bound to a hashed intent for future mutation gates; raw intent is not stored or
 returned.
+`/api/fs-read-file-preflight` is a local-only guard for the official
+`fs/readFile` method. It accepts only a workspace-relative visible path for
+validation, rejects absolute paths, traversal, hidden paths, `.git`, lock
+files, and drive roots, and returns only path character/depth counts plus
+blocked read/content redaction flags. It does not check file existence, follow
+symlinks, read the filesystem, call app-server, expose `/api/fs-read-file`
+execution, or return paths, basenames, file contents, `dataBase64`, raw
+payloads, or app-server data.
 `/api/terminal-command` is disabled unless
 `CODEX_APP_PORT_ALLOW_TERMINAL_COMMAND=1` and
 `CODEX_APP_PORT_TERMINAL_COMMAND_ALLOWLIST=cmd1,cmd2` are set before startup.

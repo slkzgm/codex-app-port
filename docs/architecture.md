@@ -879,6 +879,10 @@ Current M1 status:
   server-resolved absolute path, and returns bounded direct child names plus
   type/count metadata without absolute paths, relative paths, timestamps, file
   contents, hidden entries, token-like names, URLs, or raw payloads
+- done: local-only `/api/fs-read-file-preflight` for official `fs/readFile`
+  path-shape validation, with no execution route, no filesystem reads, no
+  app-server traffic, no path or basename disclosure, and no file contents,
+  `dataBase64`, or raw payloads returned
 - done: fail-closed action-preflight confirmation route that consumes local
   tokens once against the same hashed intent and still blocks all mutations
 - done: strict browser JSON POST body validation for preflight, confirmation,

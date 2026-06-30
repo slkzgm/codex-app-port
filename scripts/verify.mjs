@@ -73,6 +73,7 @@ async function main() {
   await checkSettingsIntegrationsApi();
   await checkThreadRealtimeVoicesApi();
   await checkFsDirectoryApi();
+  await checkFsReadFilePreflightApi();
   await checkAccountLoginApi();
   await checkAccountLoginCancelApi();
   await checkAccountCreditsNudgeApi();
@@ -1076,6 +1077,7 @@ async function checkStrictBrowserPostBodies() {
         },
       ],
       ["/api/file-action-preflight", { action: "writeFile", path: "safe.txt", content: "ok" }],
+      ["/api/fs-read-file-preflight", { path: "src/private.txt" }],
       [
         "/api/file-action",
         {
@@ -2427,6 +2429,20 @@ function assertBrowserPostBodyContracts(cases) {
     threadMetadataUpdatePreflightContract.nestedKeySchemas.policy?.includes("unexpected")
   ) {
     throw new Error("thread-metadata-update-preflight response contract is missing nested schemas");
+  }
+  const fsReadFilePreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/fs-read-file-preflight"];
+  if (
+    fsReadFilePreflightContract.usesRouteSpecificNestedKeySchemas !== true ||
+    !Object.isFrozen(fsReadFilePreflightContract.nestedKeySchemas.policy) ||
+    !fsReadFilePreflightContract.nestedKeySchemas.target?.includes("pathCharCount") ||
+    !fsReadFilePreflightContract.nestedKeySchemas.target?.includes("basenameReturned") ||
+    !fsReadFilePreflightContract.nestedKeySchemas.content?.includes("fileContentsReturned") ||
+    !fsReadFilePreflightContract.nestedKeySchemas.content?.includes("dataBase64Returned") ||
+    !fsReadFilePreflightContract.nestedKeySchemas.policy?.includes("readFilePreflightEnabled") ||
+    fsReadFilePreflightContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("fs-read-file-preflight response contract is missing nested schemas");
   }
   const threadRollbackPreflightContract =
     BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-rollback-preflight"];
@@ -14942,6 +14958,116 @@ async function checkFsDirectoryApi() {
     await closeServer(enabled);
   }
   pass("dev server fs directory API is opt-in and path-free");
+}
+
+async function checkFsReadFilePreflightApi() {
+  let probeCalled = false;
+  const server = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    probeFn: async () => {
+      probeCalled = true;
+      return { ok: true };
+    },
+  });
+  const port = await listenWithFallback(server, { host: "127.0.0.1", port: 0 });
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  try {
+    const token = await readUiSessionToken(baseUrl);
+
+    const extraField = await fetch(`${baseUrl}/api/fs-read-file-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        path: "src/private.txt",
+        content: "secret file content",
+      }),
+    });
+    if (extraField.status !== 400) {
+      throw new Error(`fs readFile preflight extra-field request returned HTTP ${extraField.status}`);
+    }
+    assertNoMarkers(await extraField.text(), ["src/private.txt", "secret file content"]);
+
+    const invalid = await fetch(`${baseUrl}/api/fs-read-file-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        path: "/tmp/codex-app-port-verify/src/private.txt",
+      }),
+    });
+    if (invalid.status !== 400) {
+      throw new Error(`fs readFile preflight invalid-path request returned HTTP ${invalid.status}`);
+    }
+    assertNoMarkers(await invalid.text(), ["/tmp/codex-app-port-verify", "private.txt"]);
+
+    const response = await fetch(`${baseUrl}/api/fs-read-file-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({ workspace: "default", path: "src/private.txt" }),
+    });
+    if (!response.ok) {
+      throw new Error(`fs readFile preflight returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    assertSanitizedFsReadFilePreflight(payload, {
+      workspaceId: "default",
+      pathCharCount: 15,
+      pathDepth: 2,
+    });
+
+    const confirm = await fetch(`${baseUrl}/api/action-preflight-confirm`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        actionType: "fs-read-file-preflight",
+        preflightToken: payload.preflight.token,
+        path: "src/private.txt",
+      }),
+    });
+    if (!confirm.ok) {
+      throw new Error(`fs readFile preflight confirmation returned HTTP ${confirm.status}`);
+    }
+    const confirmPayload = await confirm.json();
+    if (
+      confirmPayload.action?.type !== "fs-read-file-preflight" ||
+      confirmPayload.action?.preflightConfirmed !== true ||
+      confirmPayload.action?.mutationExecuted !== false ||
+      confirmPayload.preflight?.tokenConsumed !== true ||
+      confirmPayload.preflight?.tokenReturned !== false ||
+      confirmPayload.policy?.mutationExecuted !== false
+    ) {
+      throw new Error("fs readFile preflight confirmation did not preserve blocked confirmation");
+    }
+    assertNoMarkers(JSON.stringify(confirmPayload), [
+      "src/private.txt",
+      "private.txt",
+      payload.preflight.token,
+    ]);
+
+    const action = await fetch(`${baseUrl}/api/fs-read-file`, {
+      method: "POST",
+      headers: jsonHeaders(token),
+      body: JSON.stringify({
+        workspace: "default",
+        path: "src/private.txt",
+        preflightToken: payload.preflight.token,
+      }),
+    });
+    if (action.status !== 405) {
+      throw new Error(`fs readFile execution route returned HTTP ${action.status}`);
+    }
+    assertNoMarkers(await action.text(), ["src/private.txt", "private.txt", payload.preflight.token]);
+
+    if (probeCalled) {
+      throw new Error("fs readFile preflight unexpectedly touched app-server");
+    }
+  } finally {
+    await closeServer(server);
+  }
+  pass("dev server fs readFile preflight validates without filesystem reads");
 }
 
 async function checkAccountLoginApi() {
@@ -31390,6 +31516,63 @@ function assertSanitizedFsDirectory(payload) {
   ) {
     throw new Error("fs directory policy did not preserve redaction flags");
   }
+}
+
+function assertSanitizedFsReadFilePreflight(payload, { workspaceId, pathCharCount, pathDepth }) {
+  if (!payload.ok) {
+    throw new Error("fs readFile preflight payload is not ok");
+  }
+  const serialized = JSON.stringify(payload);
+  assertNoMarkers(serialized, [
+    "src/private.txt",
+    "private.txt",
+    "/tmp/codex-app-port-verify",
+    "/tmp/verify-private-home",
+    "secret file content",
+    "verify-sensitive-agent",
+    "codexHome",
+    "userAgent",
+    "\"dataBase64Returned\":true",
+    "\"fileContentsReturned\":true",
+    "\"pathsReturned\":true",
+    "\"basenameReturned\":true",
+  ]);
+  if (
+    payload.appServer?.touched !== false ||
+    payload.appServer?.filesystemTraffic !== false ||
+    payload.action?.type !== "fs-read-file-preflight" ||
+    payload.action?.method !== "fs/readFile" ||
+    payload.action?.execution !== "blocked" ||
+    payload.action?.wouldReadFile !== false ||
+    payload.action?.filesystemRead !== false ||
+    payload.target?.pathAccepted !== true ||
+    payload.target?.pathCharCount !== pathCharCount ||
+    payload.target?.pathDepth !== pathDepth ||
+    payload.target?.workspaceRelativeOnly !== true ||
+    payload.target?.pathReturned !== false ||
+    payload.target?.basenameReturned !== false ||
+    payload.target?.absolutePathReturned !== false ||
+    payload.target?.existsChecked !== false ||
+    payload.target?.symlinkChecked !== false ||
+    payload.content?.readBlocked !== true ||
+    payload.content?.contentReturned !== false ||
+    payload.content?.fileContentsReturned !== false ||
+    payload.content?.dataBase64Returned !== false ||
+    payload.content?.rawPayloadReturned !== false ||
+    payload.policy?.readFilePreflightEnabled !== true ||
+    payload.policy?.readFileEnabled !== false ||
+    payload.policy?.executionRouteImplemented !== false ||
+    payload.policy?.appServerTraffic !== false ||
+    payload.policy?.filesystemRead !== false ||
+    payload.policy?.fileContentRead !== false ||
+    payload.policy?.fileContentsReturned !== false ||
+    payload.policy?.dataBase64Returned !== false ||
+    payload.policy?.pathsReturned !== false ||
+    payload.policy?.basenamesReturned !== false
+  ) {
+    throw new Error("fs readFile preflight payload did not preserve blocked redaction policy");
+  }
+  assertActionPreflight(payload, "fs-read-file-preflight", workspaceId);
 }
 
 function assertSanitizedSettingsIntegrationsInventory(payload) {

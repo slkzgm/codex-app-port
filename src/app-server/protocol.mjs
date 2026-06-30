@@ -48,6 +48,7 @@ export const APP_SERVER_METHODS = Object.freeze({
   processKill: "process/kill",
   fsGetMetadata: "fs/getMetadata",
   fsReadDirectory: "fs/readDirectory",
+  fsReadFile: "fs/readFile",
   configValueWrite: "config/value/write",
   configBatchWrite: "config/batchWrite",
   experimentalFeatureList: "experimentalFeature/list",

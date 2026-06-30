@@ -185,6 +185,9 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /fs-directory-form/);
     assert.match(html, /fs-directory-status/);
     assert.match(html, /fs-directory-list/);
+    assert.match(html, /fs-read-file-form/);
+    assert.match(html, /fs-read-file-status/);
+    assert.match(html, /fs-read-file-content/);
     const appResponse = await fetch(`${url}/assets/app.js`);
     assert.equal(appResponse.status, 200);
     const appScript = await appResponse.text();
@@ -210,6 +213,8 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(appScript, /renderThreadRealtimeVoices/);
     assert.match(appScript, /loadFsDirectory/);
     assert.match(appScript, /renderFsDirectory/);
+    assert.match(appScript, /runFsReadFilePreflight/);
+    assert.match(appScript, /renderFsReadFilePreflight/);
     assert.match(appScript, /manualRefreshSettingsIntegrations/);
     assert.match(appScript, /setSettingsRefreshState/);
     assert.match(appScript, /turnExecutionAuthorityText/);
@@ -462,6 +467,7 @@ test("browser POST body contracts are centralized and immutable", () => {
     "/api/thread-shell-command-preflight",
     "/api/thread-shell-command",
     "/api/file-action-preflight",
+    "/api/fs-read-file-preflight",
     "/api/file-action",
     "/api/mcp-tool-preflight",
     "/api/mcp-tool-call",
@@ -686,6 +692,10 @@ test("browser POST body contracts are centralized and immutable", () => {
     "sourcePath",
     "targetPath",
     "preflightToken",
+  ]);
+  assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/fs-read-file-preflight"].allowedFields], [
+    "workspace",
+    "path",
   ]);
   assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/mcp-tool-preflight"].allowedFields], [
     "workspace",
@@ -1769,6 +1779,18 @@ test("browser POST response contracts block unsafe response values", () => {
     threadMetadataUpdatePreflightContract.nestedKeySchemas.policy.includes("unexpected"),
     false,
   );
+  const fsReadFilePreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/fs-read-file-preflight"];
+  assert.equal(fsReadFilePreflightContract.usesRouteSpecificNestedKeySchemas, true);
+  assert.equal(fsReadFilePreflightContract.nestedKeySchemas.target.includes("pathCharCount"), true);
+  assert.equal(fsReadFilePreflightContract.nestedKeySchemas.target.includes("basenameReturned"), true);
+  assert.equal(fsReadFilePreflightContract.nestedKeySchemas.content.includes("fileContentsReturned"), true);
+  assert.equal(fsReadFilePreflightContract.nestedKeySchemas.content.includes("dataBase64Returned"), true);
+  assert.equal(
+    fsReadFilePreflightContract.nestedKeySchemas.policy.includes("readFilePreflightEnabled"),
+    true,
+  );
+  assert.equal(fsReadFilePreflightContract.nestedKeySchemas.policy.includes("unexpected"), false);
   const threadRollbackPreflightContract =
     BROWSER_POST_RESPONSE_CONTRACTS["/api/thread-rollback-preflight"];
   assert.equal(threadRollbackPreflightContract.usesRouteSpecificNestedKeySchemas, true);
@@ -19744,6 +19766,138 @@ test("dev server exposes workspace-relative fs directory metadata only behind op
     ]) {
       assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
     }
+  } finally {
+    await closeServer(server);
+  }
+});
+
+test("dev server preflights fs readFile without reading files or leaking paths", async () => {
+  let probeCalled = false;
+  const { server, url } = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    probeFn: async () => {
+      probeCalled = true;
+      return { ok: true };
+    },
+  });
+
+  try {
+    const getResponse = await fetch(`${url}/api/fs-read-file-preflight`, {
+      headers: apiHeaders(server),
+    });
+    assert.equal(getResponse.status, 405);
+
+    const extraField = await fetch(`${url}/api/fs-read-file-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        path: "src/private.txt",
+        content: "secret file content",
+      }),
+    });
+    assert.equal(extraField.status, 400);
+    const extraFieldText = await extraField.text();
+    assert.equal(extraFieldText.includes("src/private.txt"), false);
+    assert.equal(extraFieldText.includes("secret file content"), false);
+
+    const invalid = await fetch(`${url}/api/fs-read-file-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        path: "/tmp/default-workspace/src/private.txt",
+      }),
+    });
+    assert.equal(invalid.status, 400);
+    assert.equal((await invalid.text()).includes("/tmp/default-workspace"), false);
+
+    const response = await fetch(`${url}/api/fs-read-file-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        path: "src/private.txt",
+      }),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, false);
+    assert.equal(payload.appServer.filesystemTraffic, false);
+    assert.equal(payload.action.type, "fs-read-file-preflight");
+    assert.equal(payload.action.method, "fs/readFile");
+    assert.equal(payload.action.execution, "blocked");
+    assert.equal(payload.action.wouldReadFile, false);
+    assert.equal(payload.action.filesystemRead, false);
+    assert.equal(payload.target.pathAccepted, true);
+    assert.equal(payload.target.pathCharCount, 15);
+    assert.equal(payload.target.pathDepth, 2);
+    assert.equal(payload.target.workspaceRelativeOnly, true);
+    assert.equal(payload.target.pathReturned, false);
+    assert.equal(payload.target.basenameReturned, false);
+    assert.equal(payload.target.absolutePathReturned, false);
+    assert.equal(payload.target.existsChecked, false);
+    assert.equal(payload.target.symlinkChecked, false);
+    assert.equal(payload.content.readBlocked, true);
+    assert.equal(payload.content.contentReturned, false);
+    assert.equal(payload.content.fileContentsReturned, false);
+    assert.equal(payload.content.dataBase64Returned, false);
+    assert.equal(payload.content.rawPayloadReturned, false);
+    assert.equal(payload.policy.readFilePreflightEnabled, true);
+    assert.equal(payload.policy.readFileEnabled, false);
+    assert.equal(payload.policy.executionRouteImplemented, false);
+    assert.equal(payload.policy.appServerTraffic, false);
+    assert.equal(payload.policy.fileContentRead, false);
+    assert.equal(payload.policy.fileContentsReturned, false);
+    assert.equal(payload.policy.dataBase64Returned, false);
+    assert.equal(payload.policy.pathsReturned, false);
+    assert.equal(payload.policy.basenamesReturned, false);
+    assertActionPreflight(payload, "fs-read-file-preflight", "default");
+    for (const marker of [
+      "src/private.txt",
+      "private.txt",
+      "/tmp/default-workspace",
+      "secret file content",
+      "codexHome",
+      "userAgent",
+      "\"dataBase64Returned\":true",
+      "\"fileContentsReturned\":true",
+      "\"pathsReturned\":true",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+
+    const confirm = await fetch(`${url}/api/action-preflight-confirm`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        actionType: "fs-read-file-preflight",
+        preflightToken: payload.preflight.token,
+        path: "src/private.txt",
+      }),
+    });
+    assert.equal(confirm.status, 200);
+    const confirmPayload = await confirm.json();
+    const confirmSerialized = JSON.stringify(confirmPayload);
+    assertActionPreflightConfirmation(confirmPayload, "fs-read-file-preflight", "default");
+    assert.equal(confirmSerialized.includes("src/private.txt"), false);
+    assert.equal(confirmSerialized.includes("private.txt"), false);
+
+    const action = await fetch(`${url}/api/fs-read-file`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        path: "src/private.txt",
+        preflightToken: payload.preflight.token,
+      }),
+    });
+    assert.equal(action.status, 405);
+    assert.equal((await action.text()).includes("src/private.txt"), false);
+    assert.equal(probeCalled, false);
   } finally {
     await closeServer(server);
   }
