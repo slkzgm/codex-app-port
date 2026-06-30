@@ -267,6 +267,10 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /skills-extra-roots-clear-status/);
     assert.match(appScript, /runSkillsExtraRootsClearPreflight/);
     assert.match(appScript, /runSkillsExtraRootsClear/);
+    assert.match(html, /remote-control-enable-preflight-button/);
+    assert.match(html, /remote-control-enable-status/);
+    assert.match(appScript, /runRemoteControlEnablePreflight/);
+    assert.match(appScript, /renderRemoteControlEnablePreflight/);
     assert.match(html, /remote-control-disable-preflight-button/);
     assert.match(html, /remote-control-disable-button/);
     assert.match(html, /remote-control-disable-status/);
@@ -476,6 +480,7 @@ test("browser POST body contracts are centralized and immutable", () => {
     "/api/skills-config-write",
     "/api/skills-extra-roots-clear-preflight",
     "/api/skills-extra-roots-clear",
+    "/api/remote-control-enable-preflight",
     "/api/remote-control-disable-preflight",
     "/api/remote-control-disable",
     "/api/remote-control-clients",
@@ -811,6 +816,10 @@ test("browser POST body contracts are centralized and immutable", () => {
     ["workspace"],
   );
   assert.deepEqual(
+    [...BROWSER_POST_BODY_CONTRACTS["/api/remote-control-enable-preflight"].allowedFields],
+    ["workspace", "arguments"],
+  );
+  assert.deepEqual(
     [...BROWSER_POST_BODY_CONTRACTS["/api/remote-control-disable"].allowedFields],
     ["workspace", "preflightToken"],
   );
@@ -1056,6 +1065,31 @@ test("browser POST response contracts block unsafe response values", () => {
   );
   assert.equal(
     remoteControlDisablePreflightContract.nestedKeySchemas.policy.includes("unexpected"),
+    false,
+  );
+  const remoteControlEnablePreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/remote-control-enable-preflight"];
+  assert.equal(remoteControlEnablePreflightContract.usesRouteSpecificNestedKeySchemas, true);
+  assert.equal(
+    remoteControlEnablePreflightContract.nestedKeySchemas.remoteControlEnable.includes(
+      "enableExecutionBlocked",
+    ),
+    true,
+  );
+  assert.equal(
+    remoteControlEnablePreflightContract.nestedKeySchemas.remoteControlEnable.includes(
+      "ephemeralRequested",
+    ),
+    true,
+  );
+  assert.equal(
+    remoteControlEnablePreflightContract.nestedKeySchemas.policy.includes(
+      "remoteControlEnablePreflightEnabled",
+    ),
+    true,
+  );
+  assert.equal(
+    remoteControlEnablePreflightContract.nestedKeySchemas.policy.includes("unexpected"),
     false,
   );
   const remoteControlDisableContract =
@@ -18654,7 +18688,7 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.integrationScope.state, "partial");
     assert.equal(payload.integrationScope.enabledReadMethodCount, 1);
     assert.deepEqual(payload.integrationScope.enabledReadMethods, ["config/read"]);
-    assert.equal(payload.integrationScope.enabledLocalGateCount, 17);
+    assert.equal(payload.integrationScope.enabledLocalGateCount, 18);
     assert.deepEqual(payload.integrationScope.enabledLocalGates, [
       "mcp-tool-preflight",
       "mcp-oauth-login-preflight",
@@ -18667,6 +18701,7 @@ test("dev server exposes settings and integration boundary without app-server tr
       "plugin-share-action-preflight",
       "external-config-import-preflight",
       "review-feedback-preflight",
+      "remote-control-enable-preflight",
       "plugin-content-preflight",
       "config-value-preflight",
       "config-batch-preflight",
@@ -18702,6 +18737,12 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.integrationScope.appAuthLinkingEnabled, false);
     assert.equal(payload.integrationScope.externalConfigImportPreflightEnabled, true);
     assert.equal(payload.integrationScope.externalConfigImportEnabled, false);
+    assert.equal(payload.integrationScope.reviewFeedbackPreflightEnabled, true);
+    assert.equal(payload.integrationScope.reviewStartEnabled, false);
+    assert.equal(payload.integrationScope.feedbackUploadEnabled, false);
+    assert.equal(payload.integrationScope.remoteControlEnablePreflightEnabled, true);
+    assert.equal(payload.integrationScope.remoteControlEnableEnabled, false);
+    assert.equal(payload.integrationScope.remoteControlPairingEnabled, false);
     assert.equal(payload.integrationScope.skillsConfigWriteEnabled, false);
     assert.equal(payload.integrationScope.pluginInstallEnabled, false);
     assert.equal(payload.integrationScope.pluginShareEnabled, false);
@@ -18723,7 +18764,7 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.integrationLifecycle.partialSurfaceCount, 3);
     assert.equal(payload.integrationLifecycle.blockedSurfaceCount, 4);
     assert.equal(payload.integrationLifecycle.readMethodCount, 1);
-    assert.equal(payload.integrationLifecycle.localGateCount, 17);
+    assert.equal(payload.integrationLifecycle.localGateCount, 18);
     assert.equal(payload.integrationLifecycle.enabledMutationGateCount, 0);
     assert.equal(
       payload.integrationLifecycle.blockedMutationMethodCount,
@@ -18735,8 +18776,8 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.integrationLifecycle.integrationActions.returned, true);
     assert.equal(payload.integrationLifecycle.integrationActions.state, "preflight-only");
     assert.equal(payload.integrationLifecycle.integrationActions.readMethodCount, 1);
-    assert.equal(payload.integrationLifecycle.integrationActions.localGateCount, 17);
-    assert.equal(payload.integrationLifecycle.integrationActions.preflightOnlyGateCount, 17);
+    assert.equal(payload.integrationLifecycle.integrationActions.localGateCount, 18);
+    assert.equal(payload.integrationLifecycle.integrationActions.preflightOnlyGateCount, 18);
     assert.equal(payload.integrationLifecycle.integrationActions.executableActionCount, 0);
     assert.equal(payload.integrationLifecycle.integrationActions.enabledMutationGateCount, 0);
     assert.equal(
@@ -18760,8 +18801,8 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.integrationLifecycle.integrationManagement.partialSurfaceCount, 3);
     assert.equal(payload.integrationLifecycle.integrationManagement.blockedSurfaceCount, 4);
     assert.equal(payload.integrationLifecycle.integrationManagement.readMethodCount, 1);
-    assert.equal(payload.integrationLifecycle.integrationManagement.localGateCount, 17);
-    assert.equal(payload.integrationLifecycle.integrationManagement.preflightOnlyGateCount, 17);
+    assert.equal(payload.integrationLifecycle.integrationManagement.localGateCount, 18);
+    assert.equal(payload.integrationLifecycle.integrationManagement.preflightOnlyGateCount, 18);
     assert.equal(payload.integrationLifecycle.integrationManagement.executableActionCount, 0);
     assert.equal(payload.integrationLifecycle.integrationManagement.enabledMutationGateCount, 0);
     assert.equal(
@@ -18792,8 +18833,8 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.returned, true);
     assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.state, "preflight-only");
     assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.readMethodCount, 1);
-    assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.localGateCount, 17);
-    assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.preflightOnlyGateCount, 17);
+    assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.localGateCount, 18);
+    assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.preflightOnlyGateCount, 18);
     assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.executableActionCount, 0);
     assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.enabledActionFamilyCount, 0);
     assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.enabledMutationGateCount, 0);
@@ -18854,8 +18895,8 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.integrationLifecycle.integrationSafetyContract.returned, true);
     assert.equal(payload.integrationLifecycle.integrationSafetyContract.state, "preflight-only");
     assert.equal(payload.integrationLifecycle.integrationSafetyContract.readMethodCount, 1);
-    assert.equal(payload.integrationLifecycle.integrationSafetyContract.localGateCount, 17);
-    assert.equal(payload.integrationLifecycle.integrationSafetyContract.preflightOnlyGateCount, 17);
+    assert.equal(payload.integrationLifecycle.integrationSafetyContract.localGateCount, 18);
+    assert.equal(payload.integrationLifecycle.integrationSafetyContract.preflightOnlyGateCount, 18);
     assert.equal(payload.integrationLifecycle.integrationSafetyContract.executableActionCount, 0);
     assert.equal(payload.integrationLifecycle.integrationSafetyContract.enabledActionFamilyCount, 0);
     assert.equal(payload.integrationLifecycle.integrationSafetyContract.enabledMutationGateCount, 0);
@@ -18899,8 +18940,8 @@ test("dev server exposes settings and integration boundary without app-server tr
       state: "preflight-only",
       routingMode: "local-preflight-only",
       readMethodCount: 1,
-      localGateCount: 17,
-      preflightOnlyGateCount: 17,
+      localGateCount: 18,
+      preflightOnlyGateCount: 18,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -18929,8 +18970,8 @@ test("dev server exposes settings and integration boundary without app-server tr
       partialSurfaceCount: 3,
       blockedSurfaceCount: 4,
       readMethodCount: 1,
-      localGateCount: 17,
-      preflightOnlyGateCount: 17,
+      localGateCount: 18,
+      preflightOnlyGateCount: 18,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -18964,8 +19005,8 @@ test("dev server exposes settings and integration boundary without app-server tr
       workflowMode: "preflight-review",
       routingMode: "local-preflight-only",
       readMethodCount: 1,
-      localGateCount: 17,
-      preflightOnlyGateCount: 17,
+      localGateCount: 18,
+      preflightOnlyGateCount: 18,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -18997,8 +19038,8 @@ test("dev server exposes settings and integration boundary without app-server tr
       workflowMode: "preflight-review",
       routingMode: "local-preflight-only",
       readMethodCount: 1,
-      localGateCount: 17,
-      preflightOnlyGateCount: 17,
+      localGateCount: 18,
+      preflightOnlyGateCount: 18,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -19026,8 +19067,8 @@ test("dev server exposes settings and integration boundary without app-server tr
       workflowMode: "preflight-review",
       routingMode: "local-preflight-only",
       readMethodCount: 1,
-      localGateCount: 17,
-      preflightOnlyGateCount: 17,
+      localGateCount: 18,
+      preflightOnlyGateCount: 18,
       executableActionCount: 0,
       externalActionCount: 0,
       enabledMutationGateCount: 0,
@@ -19906,7 +19947,7 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
       "config/read",
       ...optInIntegrationReadMethods(),
     ]);
-    assert.equal(payload.integrationScope.enabledLocalGateCount, 17);
+    assert.equal(payload.integrationScope.enabledLocalGateCount, 18);
     assert.equal(
       payload.integrationScope.blockedMutationMethodCount,
       blockedIntegrationMutationMethods().length,
@@ -19930,8 +19971,8 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
       state: "preflight-only",
       routingMode: "local-preflight-only",
       readMethodCount: ["config/read", ...optInIntegrationReadMethods()].length,
-      localGateCount: 17,
-      preflightOnlyGateCount: 17,
+      localGateCount: 18,
+      preflightOnlyGateCount: 18,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -19964,8 +20005,8 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
         (surface) => surface?.state === "blocked",
       ).length,
       readMethodCount: ["config/read", ...optInIntegrationReadMethods()].length,
-      localGateCount: 17,
-      preflightOnlyGateCount: 17,
+      localGateCount: 18,
+      preflightOnlyGateCount: 18,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -19999,8 +20040,8 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
       workflowMode: "preflight-review",
       routingMode: "local-preflight-only",
       readMethodCount: ["config/read", ...optInIntegrationReadMethods()].length,
-      localGateCount: 17,
-      preflightOnlyGateCount: 17,
+      localGateCount: 18,
+      preflightOnlyGateCount: 18,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -20032,8 +20073,8 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
       workflowMode: "preflight-review",
       routingMode: "local-preflight-only",
       readMethodCount: ["config/read", ...optInIntegrationReadMethods()].length,
-      localGateCount: 17,
-      preflightOnlyGateCount: 17,
+      localGateCount: 18,
+      preflightOnlyGateCount: 18,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -20061,8 +20102,8 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
       workflowMode: "preflight-review",
       routingMode: "local-preflight-only",
       readMethodCount: ["config/read", ...optInIntegrationReadMethods()].length,
-      localGateCount: 17,
-      preflightOnlyGateCount: 17,
+      localGateCount: 18,
+      preflightOnlyGateCount: 18,
       executableActionCount: 0,
       externalActionCount: 0,
       enabledMutationGateCount: 0,
@@ -23654,6 +23695,166 @@ test("dev server clears skills extra roots only behind opt-in and preflight toke
   } finally {
     await closeServer(enabled.server);
     await rm(auditDir, { recursive: true, force: true });
+  }
+});
+
+test("dev server preflights remote control enable without app-server traffic", async () => {
+  let probeCalled = false;
+  const { server, url } = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    workspaceInputs: ["/tmp/second-workspace"],
+    probeFn: async () => {
+      probeCalled = true;
+      return { ok: true };
+    },
+  });
+
+  try {
+    const getResponse = await fetch(`${url}/api/remote-control-enable-preflight`, {
+      headers: apiHeaders(server),
+    });
+    assert.equal(getResponse.status, 405);
+
+    const args = JSON.stringify({
+      ephemeral: true,
+      relayUrl: "https://private-remote-control.example/connect",
+      localPath: "/tmp/private-remote-control",
+      token: "sk-proj-remotecontrolsecret",
+    });
+    const response = await fetch(`${url}/api/remote-control-enable-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        arguments: args,
+      }),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.deepEqual(payload.workspace, {
+      id: "workspace-2",
+      label: "second-workspace",
+      isDefault: false,
+    });
+    assert.equal(payload.appServer.touched, false);
+    assert.equal(payload.appServer.modelTraffic, false);
+    assert.equal(payload.appServer.remoteControlTraffic, false);
+    assert.equal(payload.action.type, "remote-control-enable-preflight");
+    assert.equal(payload.action.method, "remoteControl/enable");
+    assert.equal(payload.action.category, "remote-control");
+    assert.equal(payload.action.execution, "blocked");
+    assert.equal(payload.action.wouldEnableRemoteControl, false);
+    assert.equal(payload.action.wouldEnrollRelay, false);
+    assert.equal(payload.action.wouldCreatePairingCode, false);
+    assert.equal(payload.action.appServerTouched, false);
+    assertActionPreflight(payload, "remote-control-enable-preflight", "workspace-2");
+    assert.equal(payload.integrationAction.method, "remoteControl/enable");
+    assert.equal(payload.integrationAction.category, "remote-control");
+    assert.equal(payload.integrationAction.arguments.charCount, args.length);
+    assert.equal(payload.integrationAction.arguments.validJsonObject, true);
+    assert.equal(payload.integrationAction.arguments.topLevelKeyCount, 4);
+    assert.equal(payload.integrationAction.arguments.textReturned, false);
+    assert.equal(payload.integrationAction.methodAllowedByAudit, true);
+    assert.equal(payload.remoteControlEnable.method, "remoteControl/enable");
+    assert.equal(payload.remoteControlEnable.argumentCharCount, args.length);
+    assert.equal(payload.remoteControlEnable.argumentTopLevelKeyCount, 4);
+    assert.equal(payload.remoteControlEnable.argumentObjectAccepted, true);
+    assert.equal(payload.remoteControlEnable.ephemeralRequested, true);
+    assert.equal(payload.remoteControlEnable.ephemeralBoolean, true);
+    assert.equal(payload.remoteControlEnable.unknownParamCount, 3);
+    assert.equal(payload.remoteControlEnable.stringArgumentCount, 3);
+    assert.equal(payload.remoteControlEnable.urlLikeArgumentCount, 1);
+    assert.equal(payload.remoteControlEnable.pathLikeArgumentCount, 1);
+    assert.equal(payload.remoteControlEnable.secretLikeArgumentCount, 1);
+    assert.equal(payload.remoteControlEnable.sensitiveKeyCount, 1);
+    assert.equal(payload.remoteControlEnable.paramsAcceptedFromBrowser, false);
+    assert.equal(payload.remoteControlEnable.enableExecutionBlocked, true);
+    assert.equal(payload.remoteControlEnable.relayEnrollmentBlocked, true);
+    assert.equal(payload.remoteControlEnable.pairingCodeCreated, false);
+    assert.equal(payload.remoteControlEnable.appServerTraffic, false);
+    assert.equal(payload.remoteControlEnable.statusValueReturned, false);
+    assert.equal(payload.remoteControlEnable.environmentIdReturned, false);
+    assert.equal(payload.remoteControlEnable.installationIdReturned, false);
+    assert.equal(payload.remoteControlEnable.serverNameReturned, false);
+    assert.equal(payload.remoteControlEnable.pathsReturned, false);
+    assert.equal(payload.remoteControlEnable.urlsReturned, false);
+    assert.equal(payload.remoteControlEnable.secretsReturned, false);
+    assert.equal(payload.remoteControlEnable.rawPayloadReturned, false);
+    assert.equal(payload.policy.appServerTraffic, false);
+    assert.equal(payload.policy.remoteControlEnable, false);
+    assert.equal(payload.policy.remoteControlEnablePreflightEnabled, true);
+    assert.equal(payload.policy.remoteControlEnableEnabled, false);
+    assert.equal(payload.policy.remoteControlPairingEnabled, false);
+    assert.equal(payload.policy.executionRouteImplemented, false);
+    assert.equal(payload.policy.dedicatedExecutionRouteImplemented, false);
+    assert.equal(payload.policy.executionGateEnabled, false);
+    assert.equal(payload.policy.paramsAcceptedFromBrowser, false);
+    assert.equal(payload.policy.identityReturned, false);
+    assert.equal(payload.policy.pairingCodesReturned, false);
+    assert.equal(payload.policy.rawPayloadsReturned, false);
+    assert.equal(probeCalled, false);
+    for (const marker of [
+      "https://private-remote-control.example/connect",
+      "/tmp/private-remote-control",
+      "sk-proj-remotecontrolsecret",
+      "/tmp/second-workspace",
+      "codexHome",
+      "userAgent",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `remote enable preflight leaked ${marker}`);
+    }
+
+    const confirm = await fetch(`${url}/api/action-preflight-confirm`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        actionType: "remote-control-enable-preflight",
+        preflightToken: payload.preflight.token,
+        arguments: args,
+      }),
+    });
+    assert.equal(confirm.status, 200);
+    const confirmPayload = await confirm.json();
+    assertActionPreflightConfirmation(
+      confirmPayload,
+      "remote-control-enable-preflight",
+      "workspace-2",
+    );
+    assert.equal(confirmPayload.action.method, "remoteControl/enable");
+    assert.equal(confirmPayload.action.mutationExecuted, false);
+    assert.equal(JSON.stringify(confirmPayload).includes(payload.preflight.token), false);
+    assert.equal(JSON.stringify(confirmPayload).includes("private-remote-control"), false);
+
+    const historyResponse = await fetch(`${url}/api/settings-integrations?workspace=workspace-2`, {
+      headers: apiHeaders(server),
+    });
+    assert.equal(historyResponse.status, 200);
+    const historyPayload = await historyResponse.json();
+    assert.equal(historyPayload.integrationScope.remoteControlEnablePreflightEnabled, true);
+    assert.equal(historyPayload.integrationScope.remoteControlEnableEnabled, false);
+    assert.equal(historyPayload.integrationScope.remoteControlPairingEnabled, false);
+    assert.equal(
+      historyPayload.integrationScope.enabledLocalGates.includes("remote-control-enable-preflight"),
+      true,
+    );
+    assert.equal(historyPayload.preflightHistory.count, 1);
+    assert.equal(historyPayload.preflightConfirmationHistory.count, 1);
+    const historySerialized = JSON.stringify(historyPayload.preflightHistory);
+    const confirmationSerialized = JSON.stringify(historyPayload.preflightConfirmationHistory);
+    for (const marker of [
+      payload.preflight.token,
+      "https://private-remote-control.example/connect",
+      "/tmp/private-remote-control",
+      "sk-proj-remotecontrolsecret",
+    ]) {
+      assert.equal(historySerialized.includes(marker), false, `history leaked ${marker}`);
+      assert.equal(confirmationSerialized.includes(marker), false, `confirmation leaked ${marker}`);
+    }
+  } finally {
+    await closeServer(server);
   }
 });
 

@@ -784,6 +784,12 @@ export const ACTION_PREFLIGHT_CONFIRMATION_FIELD_CONTRACTS = Object.freeze({
     "actionType",
     "preflightToken",
   ),
+  "remote-control-enable-preflight": bodyFields(
+    "workspace",
+    "actionType",
+    "preflightToken",
+    "arguments",
+  ),
   "remote-control-disable": bodyFields(
     "workspace",
     "preflightToken",
@@ -1257,6 +1263,10 @@ export const BROWSER_POST_BODY_CONTRACTS = Object.freeze({
     requiresPreflightToken: true,
   }),
   "/api/remote-control-disable-preflight": bodyContract(["workspace"], {
+    kind: "preflight",
+    appServerTraffic: false,
+  }),
+  "/api/remote-control-enable-preflight": bodyContract(["workspace", "arguments"], {
     kind: "preflight",
     appServerTraffic: false,
   }),
@@ -8967,6 +8977,97 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
     ],
     "preflight.scope": ["kind", "workspaceId"],
   }),
+  "/api/remote-control-enable-preflight": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    appServer: ["touched", "modelTraffic", "commandTraffic", "remoteControlTraffic"],
+    action: [
+      "type",
+      "method",
+      "category",
+      "execution",
+      "wouldEnableRemoteControl",
+      "wouldEnrollRelay",
+      "wouldCreatePairingCode",
+      "appServerTouched",
+      "modelTraffic",
+      "reason",
+    ],
+    integrationAction: ["method", "category", "arguments", "methodAllowedByAudit"],
+    "integrationAction.arguments": [
+      "present",
+      "charCount",
+      "lineCount",
+      "validJsonObject",
+      "topLevelKeyCount",
+      "textReturned",
+    ],
+    remoteControlEnable: [
+      "method",
+      "argumentCharCount",
+      "argumentTopLevelKeyCount",
+      "argumentObjectAccepted",
+      "ephemeralRequested",
+      "ephemeralBoolean",
+      "unknownParamCount",
+      "stringArgumentCount",
+      "urlLikeArgumentCount",
+      "pathLikeArgumentCount",
+      "secretLikeArgumentCount",
+      "sensitiveKeyCount",
+      "paramsAcceptedFromBrowser",
+      "enableExecutionBlocked",
+      "pairingCodeCreated",
+      "relayEnrollmentBlocked",
+      "appServerTraffic",
+      "modelTraffic",
+      "statusValueReturned",
+      "environmentIdReturned",
+      "installationIdReturned",
+      "serverNameReturned",
+      "pathsReturned",
+      "urlsReturned",
+      "secretsReturned",
+      "rawPayloadReturned",
+    ],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "modelTraffic",
+      "remoteControlEnable",
+      "remoteControlEnablePreflightEnabled",
+      "remoteControlEnableEnabled",
+      "remoteControlPairingEnabled",
+      "executionRouteImplemented",
+      "dedicatedExecutionRouteImplemented",
+      "executionGateEnabled",
+      "paramsAcceptedFromBrowser",
+      "statusValueReturned",
+      "identityReturned",
+      "pairingCodesReturned",
+      "pathsReturned",
+      "urlsReturned",
+      "secretsReturned",
+      "rawPayloadsReturned",
+      "requiresApprovalPipeline",
+      "requiresIntegrationProvenance",
+      "requiresExplicitEnablement",
+      "browserMethodCallsAccepted",
+      "implemented",
+    ],
+    preflight: [
+      "token",
+      "tokenIssued",
+      "issuedAt",
+      "expiresAt",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseRequiredForMutation",
+      "consumed",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+  }),
   "/api/remote-control-disable": responseNestedKeySchemas({
     workspace: ["id", "label", "isDefault"],
     initialize: ["platformFamily", "platformOs"],
@@ -10904,6 +11005,11 @@ const BROWSER_POST_RESPONSE_ROUTE_TOP_LEVEL_KEYS = Object.freeze({
   "/api/remote-control-disable-preflight": routeResponseTopLevelKeys(
     ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
     "remoteControlDisable",
+  ),
+  "/api/remote-control-enable-preflight": routeResponseTopLevelKeys(
+    ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
+    "integrationAction",
+    "remoteControlEnable",
   ),
   "/api/remote-control-disable": routeResponseTopLevelKeys(
     ...RESPONSE_APP_SERVER_MUTATION_TOP_LEVEL_KEYS,
@@ -16085,6 +16191,38 @@ export async function handleRequest(request, response, options) {
     return;
   }
 
+  if (url.pathname === "/api/remote-control-enable-preflight") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, ["workspace", "arguments"]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const payload = buildRemoteControlEnablePreflight(body, { workspace });
+      const attached = attachActionPreflight(payload, { body, workspace, options });
+      options.integrationPreflightLedger?.record(attached);
+      sendJson(response, 200, attached);
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error:
+          cleanDisplayText(error.message, 200) ??
+          "Invalid remote control enable preflight request",
+      });
+    }
+    return;
+  }
+
   if (url.pathname === "/api/remote-control-disable") {
     if (request.method !== "POST") {
       sendJson(response, 405, { ok: false, error: "Method not allowed" });
@@ -17718,6 +17856,10 @@ async function buildConfirmableActionPreflightPayload(actionType, body, { worksp
         workspace,
         remoteControlDisableEnabled: options.remoteControlDisableEnabled,
       });
+    case "remote-control-enable-preflight":
+      return buildRemoteControlEnablePreflight(body, {
+        workspace,
+      });
     case "remote-control-client-revoke-preflight":
       return buildRemoteControlClientRevokePreflight(body, {
         workspace,
@@ -17814,6 +17956,7 @@ function isIntegrationPreflightActionType(actionType) {
     actionType === "skills-config-preflight" ||
     actionType === "skills-extra-roots-clear-preflight" ||
     actionType === "remote-control-disable-preflight" ||
+    actionType === "remote-control-enable-preflight" ||
     actionType === "remote-control-client-revoke-preflight" ||
     actionType === "environment-add-preflight" ||
     actionType === "integration-action-preflight"
@@ -27786,6 +27929,116 @@ function summarizeSkillsExtraRootsClearResult(value) {
   };
 }
 
+export function buildRemoteControlEnablePreflight(body, { workspace } = {}) {
+  const methodAudit = integrationMethodAudit();
+  const auditEntry = methodAudit.find((entry) => entry.method === "remoteControl/enable");
+  if (!auditEntry || auditEntry.status !== "blocked") {
+    throwRequestError("Remote control enable method is not available", 400);
+  }
+  const args = validateMcpArguments(body?.arguments);
+  const argumentObject = parseIntegrationRiskArguments(body?.arguments);
+  const shape = summarizeIntegrationRiskArgumentShape(argumentObject);
+  const remoteControlEnable = summarizeRemoteControlEnableRisk(argumentObject, shape);
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: publicWorkspaces([workspace])[0],
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      remoteControlTraffic: false,
+    },
+    action: {
+      type: "remote-control-enable-preflight",
+      method: "remoteControl/enable",
+      category: auditEntry.category ?? "remote-control",
+      execution: "blocked",
+      wouldEnableRemoteControl: false,
+      wouldEnrollRelay: false,
+      wouldCreatePairingCode: false,
+      appServerTouched: false,
+      modelTraffic: false,
+      reason: "remote-control-enable-execution-not-implemented",
+    },
+    integrationAction: {
+      method: "remoteControl/enable",
+      category: auditEntry.category ?? "remote-control",
+      arguments: args,
+      methodAllowedByAudit: true,
+    },
+    remoteControlEnable: {
+      method: "remoteControl/enable",
+      argumentCharCount: args.charCount,
+      argumentTopLevelKeyCount: args.topLevelKeyCount,
+      argumentObjectAccepted: Boolean(argumentObject),
+      ephemeralRequested: remoteControlEnable.ephemeralRequested,
+      ephemeralBoolean: remoteControlEnable.ephemeralBoolean,
+      unknownParamCount: remoteControlEnable.unknownParamCount,
+      stringArgumentCount: shape.stringArgumentCount,
+      urlLikeArgumentCount: shape.urlLikeArgumentCount,
+      pathLikeArgumentCount: shape.pathLikeArgumentCount,
+      secretLikeArgumentCount: shape.secretLikeArgumentCount,
+      sensitiveKeyCount: shape.sensitiveKeyCount,
+      paramsAcceptedFromBrowser: false,
+      enableExecutionBlocked: true,
+      pairingCodeCreated: false,
+      relayEnrollmentBlocked: true,
+      appServerTraffic: false,
+      modelTraffic: false,
+      statusValueReturned: false,
+      environmentIdReturned: false,
+      installationIdReturned: false,
+      serverNameReturned: false,
+      pathsReturned: false,
+      urlsReturned: false,
+      secretsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: false,
+      modelTraffic: false,
+      remoteControlEnable: false,
+      remoteControlEnablePreflightEnabled: true,
+      remoteControlEnableEnabled: false,
+      remoteControlPairingEnabled: false,
+      executionRouteImplemented: false,
+      dedicatedExecutionRouteImplemented: false,
+      executionGateEnabled: false,
+      paramsAcceptedFromBrowser: false,
+      statusValueReturned: false,
+      identityReturned: false,
+      pairingCodesReturned: false,
+      pathsReturned: false,
+      urlsReturned: false,
+      secretsReturned: false,
+      rawPayloadsReturned: false,
+      requiresApprovalPipeline: true,
+      requiresIntegrationProvenance: true,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: false,
+      implemented: true,
+    },
+  };
+}
+
+function summarizeRemoteControlEnableRisk(argumentObject, shape) {
+  const keys = argumentObject && typeof argumentObject === "object" && !Array.isArray(argumentObject)
+    ? Object.keys(argumentObject)
+    : [];
+  return {
+    ephemeralRequested: argumentObject?.ephemeral === true,
+    ephemeralBoolean: typeof argumentObject?.ephemeral === "boolean",
+    unknownParamCount: keys.filter((key) => key !== "ephemeral").length,
+    stringArgumentCount: shape.stringArgumentCount,
+    urlLikeArgumentCount: shape.urlLikeArgumentCount,
+    pathLikeArgumentCount: shape.pathLikeArgumentCount,
+    secretLikeArgumentCount: shape.secretLikeArgumentCount,
+    sensitiveKeyCount: shape.sensitiveKeyCount,
+  };
+}
+
 export function buildRemoteControlDisablePreflight(
   _body,
   { workspace, remoteControlDisableEnabled = false } = {},
@@ -36652,6 +36905,7 @@ function buildIntegrationActionScope({
     "plugin-share-action-preflight",
     "external-config-import-preflight",
     "review-feedback-preflight",
+    "remote-control-enable-preflight",
     "plugin-content-preflight",
     "config-value-preflight",
     "config-batch-preflight",
@@ -36724,6 +36978,9 @@ function buildIntegrationActionScope({
     reviewFeedbackPreflightEnabled: true,
     reviewStartEnabled: false,
     feedbackUploadEnabled: false,
+    remoteControlEnablePreflightEnabled: true,
+    remoteControlEnableEnabled: false,
+    remoteControlPairingEnabled: false,
     skillsConfigWriteEnabled: Boolean(skillsConfigWriteEnabled),
     skillsExtraRootsClearEnabled: Boolean(skillsExtraRootsClearEnabled),
     pluginReadEnabled: Boolean(pluginReadEnabled),

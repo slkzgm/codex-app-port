@@ -712,6 +712,12 @@ Current M1 status:
   payload, and responses plus action audit records reduced to
   status/count/shape metadata without raw status payloads, server names, installation
   ids, environment ids, notifications, tokens, or raw payloads
+- done: local-only `/api/remote-control-enable-preflight` for audited
+  `remoteControl/enable` intent, with route-specific nested response schemas,
+  argument/key counts, optional `ephemeral` presence, unknown-param and
+  URL/path/secret counters, short-lived confirmation/history, and no enable
+  execution route, relay enrollment, pairing-code creation, app-server traffic,
+  identity/status output, paths, URLs, secrets, argument echo, or raw payloads
 - done: opt-in `/api/remote-control-clients` plus
   `/api/remote-control-client-revoke` behind separate
   `CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_CLIENT_LIST=1` and

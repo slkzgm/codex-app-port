@@ -379,7 +379,7 @@ with active read methods, local preflight/login/login-cancel/logout gates, and
 blocked mutation method names/counts, including MCP reload, config-value,
 config-batch, plugin-install-preflight, marketplace-action-preflight,
 plugin-share-action-preflight, external-config-import-preflight,
-review-feedback-preflight, plugin-uninstall,
+review-feedback-preflight, remote-control-enable-preflight, plugin-uninstall,
 skills-config, remote environment add, and experimental-feature gates when
 enabled; it never returns secrets, auth tokens,
 names unless the name gate is enabled, paths, URLs, hook commands, rate-limit
@@ -603,6 +603,14 @@ one-time preflight token is supplied. The app-server call is fixed to
 before app-server traffic, and responses plus action audit records return only
 status/count/shape metadata without extra roots, paths, tokens, or raw
 payloads.
+Remote control enable is kept as a local-only preflight because it can enroll
+the app with remote relay state. `/api/remote-control-enable-preflight`
+validates draft `remoteControl/enable` params locally, including optional
+`ephemeral` intent, returns only argument/key and URL/path/secret counters, and
+never calls app-server, enables remote control, creates pairing codes, or
+returns remote-control status, server names, installation ids, environment ids,
+arguments, paths, URLs, secrets, or raw payloads. There is no remote-control
+enable execution route.
 Remote control disable is also exposed only as a defensive opt-in action.
 `/api/remote-control-disable-preflight` accepts no remote-control parameters,
 and `/api/remote-control-disable` can call `remoteControl/disable` only when

@@ -153,6 +153,11 @@ The server binds to `127.0.0.1` by default and serves:
   `CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_DISABLE=1` plus a matching one-time
   preflight token; execution accepts no browser remote-control params and sends
   `null`, returning status/count/shape metadata only without identities
+- `/api/remote-control-enable-preflight`: local-only `remoteControl/enable`
+  validation; it accepts draft JSON params for count-only analysis, including
+  optional `ephemeral`, but has no execution route, no app-server traffic, no
+  relay enrollment, no pairing code creation, and no identity/status/argument
+  echo
 - `/api/remote-control-clients`,
   `/api/remote-control-client-revoke-preflight`, and
   `/api/remote-control-client-revoke`: opt-in remote connection inventory and
@@ -965,6 +970,15 @@ fields before app-server traffic, calls `remoteControl/disable` only with
 `null` params, and reduces the result to status/count/shape metadata. It does
 not return or audit raw remote-control status payloads, server names, installation
 ids, environment ids, tokens, notifications, or raw payloads.
+
+The remote-control-enable-preflight endpoint accepts draft `remoteControl/enable`
+params only for local validation. It counts argument length, top-level keys,
+optional `ephemeral` presence, unknown params, and URL/path/secret-like values,
+then issues a short-lived local token for confirmation/history. There is no
+remote-control enable execution route. It does not touch app-server, enable
+remote control, enroll relay state, create pairing codes, or return
+remote-control status, server names, installation ids, environment ids,
+argument text, paths, URLs, secrets, or raw payloads.
 
 The remote-control client list endpoint is fail-closed unless
 `CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_CLIENT_LIST=1` is enabled before launch.
@@ -1936,6 +1950,9 @@ tokens, notifications, or raw payloads, that
 `remoteControl/disable` traffic with `null` params and sanitized
 status/count/shape metadata, without accepting browser params or returning
 remote-control identities, tokens, notifications, or raw payloads, that
+`/api/remote-control-enable-preflight` blocks remote-control enablement without
+relay enrollment, pairing codes, app-server traffic, identity/status output,
+argument echo, paths, URLs, secrets, or raw payloads, that
 `/api/remote-control-clients` can execute only as opt-in remote-control client
 inventory with server-side environment resolution, opaque refs, and
 count/presence metadata, and that `/api/remote-control-client-revoke` can

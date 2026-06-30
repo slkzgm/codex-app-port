@@ -1105,6 +1105,32 @@
               <dd id="skills-extra-roots-result-text">Blocked</dd>
             </div>
           </dl>
+          <textarea
+            id="remote-control-enable-arguments-input"
+            maxlength="2000"
+            rows="3"
+            placeholder="Remote enable params JSON"
+          ></textarea>
+          <div class="turn-actions">
+            <button id="remote-control-enable-preflight-button" class="secondary-button" type="button">
+              Remote Enable Check
+            </button>
+            <span id="remote-control-enable-status" class="empty-state">Blocked</span>
+          </div>
+          <dl class="agent-grid">
+            <div>
+              <dt>Arg keys</dt>
+              <dd id="remote-control-enable-arg-keys">0</dd>
+            </div>
+            <div>
+              <dt>Ephemeral</dt>
+              <dd id="remote-control-enable-ephemeral-text">Unknown</dd>
+            </div>
+            <div>
+              <dt>Identity</dt>
+              <dd id="remote-control-enable-identity-text">Hidden</dd>
+            </div>
+          </dl>
           <div class="turn-actions">
             <button id="remote-control-disable-preflight-button" class="secondary-button" type="button">
               Remote Disable Check

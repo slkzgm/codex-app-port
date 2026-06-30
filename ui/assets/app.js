@@ -254,6 +254,20 @@ const elements = {
   skillsExtraRootsClearCount: document.querySelector("#skills-extra-roots-clear-count"),
   skillsExtraRootsBrowserText: document.querySelector("#skills-extra-roots-browser-text"),
   skillsExtraRootsResultText: document.querySelector("#skills-extra-roots-result-text"),
+  remoteControlEnableArgumentsInput: document.querySelector(
+    "#remote-control-enable-arguments-input",
+  ),
+  remoteControlEnablePreflightButton: document.querySelector(
+    "#remote-control-enable-preflight-button",
+  ),
+  remoteControlEnableStatus: document.querySelector("#remote-control-enable-status"),
+  remoteControlEnableArgKeys: document.querySelector("#remote-control-enable-arg-keys"),
+  remoteControlEnableEphemeralText: document.querySelector(
+    "#remote-control-enable-ephemeral-text",
+  ),
+  remoteControlEnableIdentityText: document.querySelector(
+    "#remote-control-enable-identity-text",
+  ),
   remoteControlDisablePreflightButton: document.querySelector(
     "#remote-control-disable-preflight-button",
   ),
@@ -1462,6 +1476,16 @@ elements.skillsExtraRootsClearButton.addEventListener("click", () => {
   runSkillsExtraRootsClear();
 });
 
+elements.remoteControlEnablePreflightButton.addEventListener("click", () => {
+  runRemoteControlEnablePreflight();
+});
+
+elements.remoteControlEnableArgumentsInput.addEventListener("input", () => {
+  elements.remoteControlEnableStatus.textContent = "Blocked";
+  elements.remoteControlEnableEphemeralText.textContent = "Unknown";
+  elements.remoteControlEnableIdentityText.textContent = "Hidden";
+});
+
 elements.remoteControlDisablePreflightButton.addEventListener("click", () => {
   runRemoteControlDisablePreflight();
 });
@@ -1941,6 +1965,10 @@ function skillsExtraRootsClearPreflightEndpoint() {
 
 function skillsExtraRootsClearEndpoint() {
   return "/api/skills-extra-roots-clear";
+}
+
+function remoteControlEnablePreflightEndpoint() {
+  return "/api/remote-control-enable-preflight";
 }
 
 function remoteControlDisablePreflightEndpoint() {
@@ -3312,6 +3340,34 @@ async function runRemoteControlDisablePreflight() {
     renderError(error);
   } finally {
     setRemoteControlDisableLoading(false);
+  }
+}
+
+async function runRemoteControlEnablePreflight() {
+  setRemoteControlEnableLoading(true);
+  hideError();
+
+  try {
+    const response = await fetch(remoteControlEnablePreflightEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify({
+        workspace: selectedWorkspaceId,
+        arguments: elements.remoteControlEnableArgumentsInput.value,
+      }),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderRemoteControlEnablePreflight(payload);
+    await refreshSettingsIntegrations().catch(() => {});
+  } catch (error) {
+    elements.remoteControlEnableStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    setRemoteControlEnableLoading(false);
   }
 }
 
@@ -10631,6 +10687,23 @@ function renderRemoteControlDisablePreflight(payload) {
     lastRemoteControlDisablePreflight.enabled !== true;
 }
 
+function renderRemoteControlEnablePreflight(payload) {
+  const result = payload.remoteControlEnable ?? {};
+  elements.remoteControlEnableStatus.textContent = payload.action?.execution ?? "blocked";
+  elements.remoteControlEnableArgKeys.textContent = String(
+    result.argumentTopLevelKeyCount ?? 0,
+  );
+  elements.remoteControlEnableEphemeralText.textContent = result.ephemeralBoolean
+    ? result.ephemeralRequested
+      ? "Requested"
+      : "False"
+    : "Unset";
+  elements.remoteControlEnableIdentityText.textContent =
+    result.serverNameReturned || result.installationIdReturned || result.environmentIdReturned
+      ? "Returned"
+      : "Hidden";
+}
+
 function renderRemoteControlDisable(payload) {
   const result = payload.remoteControlDisable ?? {};
   elements.remoteControlDisableStatus.textContent = payload.action?.execution ?? "completed";
@@ -12776,6 +12849,16 @@ function setRemoteControlDisableLoading(isLoading) {
     : "Remote Disable Check";
   if (isLoading) {
     elements.remoteControlDisableStatus.textContent = "Checking";
+  }
+}
+
+function setRemoteControlEnableLoading(isLoading) {
+  elements.remoteControlEnablePreflightButton.disabled = isLoading;
+  elements.remoteControlEnablePreflightButton.textContent = isLoading
+    ? "Checking"
+    : "Remote Enable Check";
+  if (isLoading) {
+    elements.remoteControlEnableStatus.textContent = "Checking";
   }
 }
 
