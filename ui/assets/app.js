@@ -147,6 +147,9 @@ const elements = {
   integrationsTrafficText: document.querySelector("#integrations-traffic-text"),
   integrationsAuditedText: document.querySelector("#integrations-audited-text"),
   upstreamDriftText: document.querySelector("#upstream-drift-text"),
+  serverRequestBoundaryText: document.querySelector("#server-request-boundary-text"),
+  serverNotificationBoundaryText: document.querySelector("#server-notification-boundary-text"),
+  serverBoundaryContractText: document.querySelector("#server-boundary-contract-text"),
   mcpToolForm: document.querySelector("#mcp-tool-form"),
   mcpServerInput: document.querySelector("#mcp-server-input"),
   mcpToolInput: document.querySelector("#mcp-tool-input"),
@@ -10500,6 +10503,16 @@ function renderSettingsIntegrations(payload) {
   const upstreamDrift = payload.upstreamDrift ?? {};
   elements.upstreamDriftText.textContent =
     upstreamDrift.methodCount > 0 ? `${upstreamDrift.methodCount} blocked` : "None";
+  elements.serverRequestBoundaryText.textContent = serverRequestBoundaryText(
+    payload.serverRequestBoundary,
+  );
+  elements.serverNotificationBoundaryText.textContent = serverNotificationBoundaryText(
+    payload.serverNotificationBoundary,
+  );
+  elements.serverBoundaryContractText.textContent = serverBoundaryContractText(
+    payload.serverRequestBoundary,
+    payload.serverNotificationBoundary,
+  );
   renderAccountLoginHistory(payload.accountLoginHistory);
   renderAccountResetCreditHistory(payload.accountResetCreditHistory);
   renderAccountLogoutHistory(payload.accountLogoutHistory);
@@ -10536,6 +10549,45 @@ function latestIntegrationActionText(action) {
     action.status,
     action.source,
     action.appServerTouched ? "app-server" : "local",
+  ]);
+}
+
+function serverRequestBoundaryText(boundary) {
+  if (!boundary?.returned) {
+    return "Missing";
+  }
+  return joinParts([
+    `${boundary.blockedMethodCount ?? 0} blocked`,
+    boundary.browserHandlersEnabled ? "handlers on" : "handlers off",
+  ]);
+}
+
+function serverNotificationBoundaryText(boundary) {
+  if (!boundary?.returned) {
+    return "Missing";
+  }
+  return joinParts([
+    `${boundary.blockedMethodCount ?? 0} blocked`,
+    boundary.browserStreamEnabled ? "stream on" : "stream off",
+  ]);
+}
+
+function serverBoundaryContractText(requestBoundary, notificationBoundary) {
+  if (!requestBoundary?.returned || !notificationBoundary?.returned) {
+    return "Missing";
+  }
+  const rawOmitted =
+    requestBoundary.rawPayloadsReturned === false &&
+    notificationBoundary.rawPayloadsReturned === false;
+  const tokensOmitted = requestBoundary.authTokensReturned === false;
+  const mediaOmitted =
+    notificationBoundary.transcriptTextReturned === false &&
+    notificationBoundary.audioDataReturned === false &&
+    notificationBoundary.sdpReturned === false;
+  return joinParts([
+    rawOmitted ? "raw omitted" : "raw visible",
+    tokensOmitted ? "tokens hidden" : "tokens visible",
+    mediaOmitted ? "media hidden" : "media visible",
   ]);
 }
 

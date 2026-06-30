@@ -408,6 +408,13 @@ remote-control-pairing-preflight, plugin-uninstall, plugin-enablement,
 skills-config, remote environment add, and experimental-feature gates when enabled; it never returns secrets, auth tokens,
 names unless the name gate is enabled, paths, URLs, hook commands, rate-limit
 details, or raw payloads.
+The same endpoint now returns `serverRequestBoundary` and
+`serverNotificationBoundary` summaries derived only from the local app-server
+method audit. They keep non-approval server requests and sensitive server
+notifications fail-closed: no tool-input prompts, MCP elicitation forms,
+dynamic tool-call arguments, auth/attestation tokens, current-time responses,
+realtime transcript/audio/SDP, moderation metadata, progress details, paths,
+URLs, or raw payloads are returned or handled by the browser.
 Its lifecycle response also includes sanitized integration management and
 execution-readiness metadata for the UI: blocked/read-only/preflight-only/
 actionable/inventory/history-only state, surface counts, preflight/executable

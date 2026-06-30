@@ -53,7 +53,9 @@ The server binds to `127.0.0.1` by default and serves:
 - `/api/settings-integrations`: read-only Settings/Auth/Apps/MCP/Skills/Plugins
   boundary; optional counts-only integration inventory when explicitly enabled;
   sanitized integration lifecycle state/count/latest-action metadata without
-  tokens, names, targets, arguments, paths, URLs, or raw payloads
+  tokens, names, targets, arguments, paths, URLs, or raw payloads; non-approval
+  server requests and sensitive server notifications are exposed only as
+  fail-closed method/category counts and redaction flags
 - `/api/thread-realtime-voices`: disabled-by-default enum-only
   `thread/realtime/listVoices` bridge for supported realtime voice names
 - `/api/fs-directory`: disabled-by-default workspace-relative
@@ -707,6 +709,14 @@ app-server methods absent from the stable generated schema. It returns only
 method names, count/status metadata, and local blocked policy; it does not
 return source paths, response requirements, URLs, secrets, raw payloads, or
 perform app-server traffic.
+It also exposes `serverRequestBoundary` and `serverNotificationBoundary`
+contracts for non-approval app-server requests and high-risk notifications.
+Those contracts return audited method names, category counts, blocked state, and
+redaction flags only. They do not service tool-user-input, MCP elicitation,
+dynamic tool-call, auth-token refresh, attestation, or current-time requests and
+do not expose prompts, schemas, forms, tool arguments, server names, tokens,
+timestamps, realtime transcripts, audio, SDP, moderation metadata, progress
+details, URLs, paths, or raw payloads.
 It also exposes a compact integration scope summary with active read methods,
 local preflight/login/login-cancel/logout gates, and blocked mutation method
 names/counts. That summary still omits secrets, auth tokens, paths, URLs, hook commands,
@@ -2070,7 +2080,8 @@ or argv, that
 blocked without app-server traffic by default, that its opt-in inventory is
 counts-only for config requirements, account, app/connectors, external config
 migration candidates, rate-limit buckets, MCP, skills, plugins, experimental
-features, and hooks,
+features, and hooks, that its server-request and server-notification boundaries
+remain fail-closed and payload-free,
 that successful account login cancel and account logout actions are tracked only
 as sanitized method/status/audit history without auth tokens, account
 identifiers, URLs, login references, login IDs, paths, raw payloads, or

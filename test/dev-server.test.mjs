@@ -419,6 +419,9 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /integration-audit-contract/);
     assert.match(html, /integration-provenance-contract/);
     assert.match(html, /integration-external-code-contract/);
+    assert.match(html, /server-request-boundary-text/);
+    assert.match(html, /server-notification-boundary-text/);
+    assert.match(html, /server-boundary-contract-text/);
     assert.match(appScript, /integrationExecutionReadinessText/);
     assert.match(appScript, /integrationSafetyContractText/);
     assert.match(appScript, /integrationRoutingContractText/);
@@ -426,6 +429,9 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(appScript, /integrationAuditContractText/);
     assert.match(appScript, /integrationProvenanceContractText/);
     assert.match(appScript, /integrationExternalCodeContractText/);
+    assert.match(appScript, /serverRequestBoundaryText/);
+    assert.match(appScript, /serverNotificationBoundaryText/);
+    assert.match(appScript, /serverBoundaryContractText/);
     const integrationSelectHtml =
       html.match(/<select id="integration-method-select">([\s\S]*?)<\/select>/)?.[1] ?? "";
     const integrationOptions = [
@@ -19952,6 +19958,7 @@ test("dev server exposes settings and integration boundary without app-server tr
       payload.appServer.blockedServerNotificationMethodCount,
       serverNotificationMethodNames().length,
     );
+    assertSettingsServerBoundaries(payload);
     assert.equal(payload.surfaces.settings.state, "partial");
     assert.equal(payload.surfaces.settings.readOnlySummaryAvailable, true);
     assert.equal(payload.surfaces.settings.secretsReturned, false);
@@ -22216,6 +22223,7 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
       payload.appServer.blockedServerNotificationMethodCount,
       serverNotificationMethodNames().length,
     );
+    assertSettingsServerBoundaries(payload);
     assert.equal(payload.appServer.auditedReadMethods.includes("configRequirements/read"), true);
     assert.equal(payload.appServer.auditedReadMethods.includes("model/list"), true);
     assert.equal(
@@ -34252,6 +34260,125 @@ function assertIntegrationExternalCodeContract(payload, expected) {
   assert.equal(payload.policy?.integrationExternalCodeContractTargetsReturned, false);
   assert.equal(payload.policy?.integrationExternalCodeContractArgumentsReturned, false);
   assert.equal(payload.policy?.integrationExternalCodeContractRawPayloadsReturned, false);
+}
+
+function assertSettingsServerBoundaries(payload) {
+  const request = payload.serverRequestBoundary;
+  assert.equal(request?.returned, true);
+  assert.equal(request.state, "blocked");
+  assert.equal(request.methodCount, serverRequestMethodNames().length);
+  assert.equal(request.blockedMethodCount, serverRequestMethodNames().length);
+  assert.deepEqual(
+    request.methods.map((entry) => entry.method),
+    serverRequestMethodNames(),
+  );
+  assert.equal(
+    request.methods.every(
+      (entry) =>
+        entry.status === "blocked" &&
+        entry.browserEnabled === false &&
+        entry.requiresDedicatedHandlerAudit === true,
+    ),
+    true,
+  );
+  assert.equal(request.categoryCounts?.["server-request"], serverRequestMethodNames().length);
+  assert.equal(request.approvalRequestHandlersExcluded, true);
+  assert.equal(request.nonApprovalRequestBoundary, true);
+  assert.equal(request.browserHandlersEnabled, false);
+  assert.equal(request.requestProxyEnabled, false);
+  assert.equal(request.appServerTraffic, false);
+  assert.equal(request.modelTraffic, false);
+  assert.equal(request.commandTraffic, false);
+  assert.equal(request.toolUserInputAccepted, false);
+  assert.equal(request.mcpElicitationAccepted, false);
+  assert.equal(request.dynamicToolCallsAccepted, false);
+  assert.equal(request.authTokenRefreshAccepted, false);
+  assert.equal(request.attestationAccepted, false);
+  assert.equal(request.currentTimeAccepted, false);
+  assert.equal(request.itemToolUserInputBlocked, true);
+  assert.equal(request.mcpElicitationBlocked, true);
+  assert.equal(request.dynamicToolCallBlocked, true);
+  assert.equal(request.authTokenRefreshBlocked, true);
+  assert.equal(request.attestationBlocked, true);
+  assert.equal(request.currentTimeBlocked, true);
+  assert.equal(request.promptsReturned, false);
+  assert.equal(request.schemasReturned, false);
+  assert.equal(request.formsReturned, false);
+  assert.equal(request.toolArgumentsReturned, false);
+  assert.equal(request.serverNamesReturned, false);
+  assert.equal(request.authTokensReturned, false);
+  assert.equal(request.attestationTokensReturned, false);
+  assert.equal(request.timestampsReturned, false);
+  assert.equal(request.pathsReturned, false);
+  assert.equal(request.urlsReturned, false);
+  assert.equal(request.rawPayloadsReturned, false);
+  assert.equal(request.requiresDedicatedHandlerAudit, true);
+  assert.equal(request.implemented, true);
+
+  const notification = payload.serverNotificationBoundary;
+  assert.equal(notification?.returned, true);
+  assert.equal(notification.state, "blocked");
+  assert.equal(notification.methodCount, serverNotificationMethodNames().length);
+  assert.equal(notification.blockedMethodCount, serverNotificationMethodNames().length);
+  assert.deepEqual(
+    notification.methods.map((entry) => entry.method),
+    serverNotificationMethodNames(),
+  );
+  assert.equal(
+    notification.methods.every(
+      (entry) =>
+        entry.status === "blocked" &&
+        entry.browserEnabled === false &&
+        entry.requiresDedicatedHandlerAudit === true,
+    ),
+    true,
+  );
+  assert.equal(
+    notification.categoryCounts?.["server-notification"],
+    serverNotificationMethodNames().length,
+  );
+  assert.equal(notification.browserStreamEnabled, false);
+  assert.equal(notification.notificationProxyEnabled, false);
+  assert.equal(notification.appServerTraffic, false);
+  assert.equal(notification.modelTraffic, false);
+  assert.equal(notification.commandTraffic, false);
+  assert.equal(notification.externalImportProgressAccepted, false);
+  assert.equal(notification.modelSafetyBufferingAccepted, false);
+  assert.equal(notification.turnModerationMetadataAccepted, false);
+  assert.equal(notification.realtimeNotificationsAccepted, false);
+  assert.equal(notification.externalImportProgressBlocked, true);
+  assert.equal(notification.modelSafetyBufferingBlocked, true);
+  assert.equal(notification.turnModerationMetadataBlocked, true);
+  assert.equal(notification.realtimeStartedBlocked, true);
+  assert.equal(notification.realtimeTranscriptBlocked, true);
+  assert.equal(notification.realtimeAudioBlocked, true);
+  assert.equal(notification.realtimeSdpBlocked, true);
+  assert.equal(notification.realtimeErrorsBlocked, true);
+  assert.equal(notification.progressDetailsReturned, false);
+  assert.equal(notification.safetyMetadataReturned, false);
+  assert.equal(notification.moderationMetadataReturned, false);
+  assert.equal(notification.realtimeSessionMetadataReturned, false);
+  assert.equal(notification.transcriptTextReturned, false);
+  assert.equal(notification.audioDataReturned, false);
+  assert.equal(notification.sdpReturned, false);
+  assert.equal(notification.errorDetailsReturned, false);
+  assert.equal(notification.pathsReturned, false);
+  assert.equal(notification.urlsReturned, false);
+  assert.equal(notification.rawPayloadsReturned, false);
+  assert.equal(notification.requiresDedicatedHandlerAudit, true);
+  assert.equal(notification.implemented, true);
+
+  assert.equal(payload.policy?.serverRequestBoundaryReturned, true);
+  assert.equal(payload.policy?.serverNotificationBoundaryReturned, true);
+  assert.equal(payload.policy?.serverRequestHandlersEnabled, false);
+  assert.equal(payload.policy?.serverRequestPayloadsReturned, false);
+  assert.equal(payload.policy?.serverRequestSchemasReturned, false);
+  assert.equal(payload.policy?.serverRequestTokensReturned, false);
+  assert.equal(payload.policy?.serverRequestToolArgumentsReturned, false);
+  assert.equal(payload.policy?.serverNotificationPayloadsReturned, false);
+  assert.equal(payload.policy?.serverNotificationTextReturned, false);
+  assert.equal(payload.policy?.serverNotificationAudioReturned, false);
+  assert.equal(payload.policy?.serverNotificationSdpReturned, false);
 }
 
 function assertTurnSessionRoutingContract(payload, expected) {

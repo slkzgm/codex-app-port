@@ -65,7 +65,9 @@ import {
   blockedIntegrationMutationMethods,
   integrationMethodAudit,
   optInIntegrationReadMethods,
+  serverNotificationMethodAudit,
   serverNotificationMethodNames,
+  serverRequestMethodAudit,
   serverRequestMethodNames,
 } from "../app-server/integration-policy.mjs";
 import {
@@ -32524,6 +32526,8 @@ export function sanitizeSettingsIntegrationsPayload(
   const resetCreditConsumeEnabled = Boolean(accountResetCreditConsumeEnabled);
   const logoutEnabled = Boolean(accountLogoutEnabled);
   const methodAudit = integrationMethodAudit();
+  const serverRequestBoundary = buildServerRequestBoundary();
+  const serverNotificationBoundary = buildServerNotificationBoundary();
   const preflightHistory = sanitizeIntegrationPreflightHistory(integrationPreflightHistory);
   const preflightConfirmationHistory = sanitizeIntegrationPreflightConfirmationHistory(
     integrationPreflightConfirmationHistory,
@@ -32794,6 +32798,8 @@ export function sanitizeSettingsIntegrationsPayload(
     accountResetCreditHistory: recentAccountResetCreditHistory,
     accountLogoutHistory: recentAccountLogoutHistory,
     integrationScope,
+    serverRequestBoundary,
+    serverNotificationBoundary,
     methodAudit,
     upstreamDrift,
     policy: {
@@ -32835,9 +32841,20 @@ export function sanitizeSettingsIntegrationsPayload(
       integrationAuditContractReturned: true,
       integrationProvenanceContractReturned: true,
       integrationExternalCodeContractReturned: true,
+      serverRequestBoundaryReturned: true,
+      serverNotificationBoundaryReturned: true,
       upstreamDriftReturned: true,
       upstreamDriftMethodsBrowserEnabled: false,
       upstreamDriftAppServerTraffic: false,
+      serverRequestHandlersEnabled: false,
+      serverRequestPayloadsReturned: false,
+      serverRequestSchemasReturned: false,
+      serverRequestTokensReturned: false,
+      serverRequestToolArgumentsReturned: false,
+      serverNotificationPayloadsReturned: false,
+      serverNotificationTextReturned: false,
+      serverNotificationAudioReturned: false,
+      serverNotificationSdpReturned: false,
       integrationActionTokensReturned: false,
       integrationManagementTokensReturned: false,
       integrationExecutionReadinessTokensReturned: false,
@@ -39910,6 +39927,8 @@ export function buildSettingsIntegrations({
   accountLogoutHistory = [],
 }) {
   const methodAudit = integrationMethodAudit();
+  const serverRequestBoundary = buildServerRequestBoundary();
+  const serverNotificationBoundary = buildServerNotificationBoundary();
   const loginCancelEnabled = Boolean(accountLoginCancelEnabled);
   const loginEnabled = Boolean(accountLoginEnabled);
   const creditsNudgeEnabled = Boolean(accountCreditsNudgeEnabled);
@@ -40129,6 +40148,8 @@ export function buildSettingsIntegrations({
     accountResetCreditHistory: recentAccountResetCreditHistory,
     accountLogoutHistory: recentAccountLogoutHistory,
     integrationScope,
+    serverRequestBoundary,
+    serverNotificationBoundary,
     methodAudit,
     upstreamDrift,
     policy: {
@@ -40170,9 +40191,20 @@ export function buildSettingsIntegrations({
       integrationAuditContractReturned: true,
       integrationProvenanceContractReturned: true,
       integrationExternalCodeContractReturned: true,
+      serverRequestBoundaryReturned: true,
+      serverNotificationBoundaryReturned: true,
       upstreamDriftReturned: true,
       upstreamDriftMethodsBrowserEnabled: false,
       upstreamDriftAppServerTraffic: false,
+      serverRequestHandlersEnabled: false,
+      serverRequestPayloadsReturned: false,
+      serverRequestSchemasReturned: false,
+      serverRequestTokensReturned: false,
+      serverRequestToolArgumentsReturned: false,
+      serverNotificationPayloadsReturned: false,
+      serverNotificationTextReturned: false,
+      serverNotificationAudioReturned: false,
+      serverNotificationSdpReturned: false,
       integrationActionTokensReturned: false,
       integrationManagementTokensReturned: false,
       integrationExecutionReadinessTokensReturned: false,
@@ -40216,6 +40248,123 @@ export function buildSettingsIntegrations({
   };
   result.integrationLifecycle = summarizeIntegrationLifecycle(result);
   return result;
+}
+
+function buildServerRequestBoundary(methodAudit = serverRequestMethodAudit()) {
+  const methods = sanitizeServerBoundaryAuditMethods(methodAudit);
+  const hasMethod = (name) => methods.some((entry) => entry.method === name);
+  return {
+    returned: true,
+    state: "blocked",
+    methodCount: methods.length,
+    blockedMethodCount: methods.filter((entry) => entry.status === "blocked").length,
+    categoryCounts: auditCategoryCounts(methods),
+    methods,
+    methodsReturned: true,
+    approvalRequestHandlersExcluded: true,
+    nonApprovalRequestBoundary: true,
+    browserHandlersEnabled: false,
+    requestProxyEnabled: false,
+    appServerTraffic: false,
+    modelTraffic: false,
+    commandTraffic: false,
+    toolUserInputAccepted: false,
+    mcpElicitationAccepted: false,
+    dynamicToolCallsAccepted: false,
+    authTokenRefreshAccepted: false,
+    attestationAccepted: false,
+    currentTimeAccepted: false,
+    itemToolUserInputBlocked: hasMethod("item/tool/requestUserInput"),
+    mcpElicitationBlocked: hasMethod("mcpServer/elicitation/request"),
+    dynamicToolCallBlocked: hasMethod("item/tool/call"),
+    authTokenRefreshBlocked: hasMethod("account/chatgptAuthTokens/refresh"),
+    attestationBlocked: hasMethod("attestation/generate"),
+    currentTimeBlocked: hasMethod("currentTime/read"),
+    promptsReturned: false,
+    schemasReturned: false,
+    formsReturned: false,
+    toolArgumentsReturned: false,
+    serverNamesReturned: false,
+    authTokensReturned: false,
+    attestationTokensReturned: false,
+    timestampsReturned: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    rawPayloadsReturned: false,
+    requiresDedicatedHandlerAudit: true,
+    implemented: true,
+  };
+}
+
+function buildServerNotificationBoundary(methodAudit = serverNotificationMethodAudit()) {
+  const methods = sanitizeServerBoundaryAuditMethods(methodAudit);
+  const hasMethod = (name) => methods.some((entry) => entry.method === name);
+  return {
+    returned: true,
+    state: "blocked",
+    methodCount: methods.length,
+    blockedMethodCount: methods.filter((entry) => entry.status === "blocked").length,
+    categoryCounts: auditCategoryCounts(methods),
+    methods,
+    methodsReturned: true,
+    browserStreamEnabled: false,
+    notificationProxyEnabled: false,
+    appServerTraffic: false,
+    modelTraffic: false,
+    commandTraffic: false,
+    externalImportProgressAccepted: false,
+    modelSafetyBufferingAccepted: false,
+    turnModerationMetadataAccepted: false,
+    realtimeNotificationsAccepted: false,
+    externalImportProgressBlocked: hasMethod("externalAgentConfig/import/progress"),
+    modelSafetyBufferingBlocked: hasMethod("model/safetyBuffering/updated"),
+    turnModerationMetadataBlocked: hasMethod("turn/moderationMetadata"),
+    realtimeStartedBlocked: hasMethod("thread/realtime/started"),
+    realtimeTranscriptBlocked:
+      hasMethod("thread/realtime/transcript/delta") ||
+      hasMethod("thread/realtime/transcript/done"),
+    realtimeAudioBlocked: hasMethod("thread/realtime/outputAudio/delta"),
+    realtimeSdpBlocked: hasMethod("thread/realtime/sdp"),
+    realtimeErrorsBlocked:
+      hasMethod("thread/realtime/error") || hasMethod("thread/realtime/closed"),
+    progressDetailsReturned: false,
+    safetyMetadataReturned: false,
+    moderationMetadataReturned: false,
+    realtimeSessionMetadataReturned: false,
+    transcriptTextReturned: false,
+    audioDataReturned: false,
+    sdpReturned: false,
+    errorDetailsReturned: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    rawPayloadsReturned: false,
+    requiresDedicatedHandlerAudit: true,
+    implemented: true,
+  };
+}
+
+function sanitizeServerBoundaryAuditMethods(methodAudit) {
+  if (!Array.isArray(methodAudit)) {
+    return [];
+  }
+  return methodAudit
+    .map((entry) => ({
+      method: cleanDisplayText(entry?.method, 120),
+      category: cleanDisplayText(entry?.category, 80) ?? "unknown",
+      status: cleanDisplayText(entry?.status, 40) ?? "blocked",
+      browserEnabled: false,
+      requiresDedicatedHandlerAudit: true,
+    }))
+    .filter((entry) => entry.method);
+}
+
+function auditCategoryCounts(entries) {
+  const counts = {};
+  for (const entry of entries) {
+    const category = cleanDisplayText(entry?.category, 80) ?? "unknown";
+    counts[category] = (counts[category] ?? 0) + 1;
+  }
+  return sanitizeCountMap(counts);
 }
 
 function buildIntegrationActionScope({

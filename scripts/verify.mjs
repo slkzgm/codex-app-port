@@ -32030,6 +32030,7 @@ function assertSanitizedSettingsIntegrations(payload) {
   ) {
     throw new Error("settings integrations did not expose sanitized server-side method audit metadata");
   }
+  assertSettingsServerBoundaries(payload);
   if (
     payload.surfaces?.settings?.state !== "partial" ||
     payload.surfaces?.settings?.readOnlySummaryAvailable !== true ||
@@ -32302,6 +32303,125 @@ function assertSanitizedSettingsIntegrations(payload) {
     )
   ) {
     throw new Error("settings integrations method audit did not stay fail-closed");
+  }
+}
+
+function assertSettingsServerBoundaries(payload) {
+  const request = payload.serverRequestBoundary;
+  if (
+    request?.returned !== true ||
+    request.state !== "blocked" ||
+    request.methodCount !== serverRequestMethodNames().length ||
+    request.blockedMethodCount !== serverRequestMethodNames().length ||
+    JSON.stringify((request.methods ?? []).map((entry) => entry.method)) !==
+      JSON.stringify(serverRequestMethodNames()) ||
+    !request.methods?.every(
+      (entry) =>
+        entry.status === "blocked" &&
+        entry.browserEnabled === false &&
+        entry.requiresDedicatedHandlerAudit === true,
+    ) ||
+    request.categoryCounts?.["server-request"] !== serverRequestMethodNames().length ||
+    request.approvalRequestHandlersExcluded !== true ||
+    request.nonApprovalRequestBoundary !== true ||
+    request.browserHandlersEnabled !== false ||
+    request.requestProxyEnabled !== false ||
+    request.appServerTraffic !== false ||
+    request.modelTraffic !== false ||
+    request.commandTraffic !== false ||
+    request.toolUserInputAccepted !== false ||
+    request.mcpElicitationAccepted !== false ||
+    request.dynamicToolCallsAccepted !== false ||
+    request.authTokenRefreshAccepted !== false ||
+    request.attestationAccepted !== false ||
+    request.currentTimeAccepted !== false ||
+    request.itemToolUserInputBlocked !== true ||
+    request.mcpElicitationBlocked !== true ||
+    request.dynamicToolCallBlocked !== true ||
+    request.authTokenRefreshBlocked !== true ||
+    request.attestationBlocked !== true ||
+    request.currentTimeBlocked !== true ||
+    request.promptsReturned !== false ||
+    request.schemasReturned !== false ||
+    request.formsReturned !== false ||
+    request.toolArgumentsReturned !== false ||
+    request.serverNamesReturned !== false ||
+    request.authTokensReturned !== false ||
+    request.attestationTokensReturned !== false ||
+    request.timestampsReturned !== false ||
+    request.pathsReturned !== false ||
+    request.urlsReturned !== false ||
+    request.rawPayloadsReturned !== false ||
+    request.requiresDedicatedHandlerAudit !== true ||
+    request.implemented !== true
+  ) {
+    throw new Error("settings integrations server request boundary did not stay fail-closed");
+  }
+
+  const notification = payload.serverNotificationBoundary;
+  if (
+    notification?.returned !== true ||
+    notification.state !== "blocked" ||
+    notification.methodCount !== serverNotificationMethodNames().length ||
+    notification.blockedMethodCount !== serverNotificationMethodNames().length ||
+    JSON.stringify((notification.methods ?? []).map((entry) => entry.method)) !==
+      JSON.stringify(serverNotificationMethodNames()) ||
+    !notification.methods?.every(
+      (entry) =>
+        entry.status === "blocked" &&
+        entry.browserEnabled === false &&
+        entry.requiresDedicatedHandlerAudit === true,
+    ) ||
+    notification.categoryCounts?.["server-notification"] !==
+      serverNotificationMethodNames().length ||
+    notification.browserStreamEnabled !== false ||
+    notification.notificationProxyEnabled !== false ||
+    notification.appServerTraffic !== false ||
+    notification.modelTraffic !== false ||
+    notification.commandTraffic !== false ||
+    notification.externalImportProgressAccepted !== false ||
+    notification.modelSafetyBufferingAccepted !== false ||
+    notification.turnModerationMetadataAccepted !== false ||
+    notification.realtimeNotificationsAccepted !== false ||
+    notification.externalImportProgressBlocked !== true ||
+    notification.modelSafetyBufferingBlocked !== true ||
+    notification.turnModerationMetadataBlocked !== true ||
+    notification.realtimeStartedBlocked !== true ||
+    notification.realtimeTranscriptBlocked !== true ||
+    notification.realtimeAudioBlocked !== true ||
+    notification.realtimeSdpBlocked !== true ||
+    notification.realtimeErrorsBlocked !== true ||
+    notification.progressDetailsReturned !== false ||
+    notification.safetyMetadataReturned !== false ||
+    notification.moderationMetadataReturned !== false ||
+    notification.realtimeSessionMetadataReturned !== false ||
+    notification.transcriptTextReturned !== false ||
+    notification.audioDataReturned !== false ||
+    notification.sdpReturned !== false ||
+    notification.errorDetailsReturned !== false ||
+    notification.pathsReturned !== false ||
+    notification.urlsReturned !== false ||
+    notification.rawPayloadsReturned !== false ||
+    notification.requiresDedicatedHandlerAudit !== true ||
+    notification.implemented !== true
+  ) {
+    throw new Error("settings integrations server notification boundary did not stay fail-closed");
+  }
+
+  if (
+    payload.policy?.serverRequestBoundaryReturned !== true ||
+    payload.policy?.serverNotificationBoundaryReturned !== true ||
+    payload.policy?.serverRequestHandlersEnabled !== false ||
+    payload.policy?.serverRequestPayloadsReturned !== false ||
+    payload.policy?.serverRequestSchemasReturned !== false ||
+    payload.policy?.serverRequestTokensReturned !== false ||
+    payload.policy?.serverRequestToolArgumentsReturned !== false ||
+    payload.policy?.serverNotificationPayloadsReturned !== false ||
+    payload.policy?.serverNotificationTextReturned !== false ||
+    payload.policy?.serverNotificationAudioReturned !== false ||
+    payload.policy?.serverNotificationSdpReturned !== false
+  ) {
+    throw new Error("settings integrations server boundary policy flags changed");
   }
 }
 
@@ -33940,6 +34060,7 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
   ) {
     throw new Error("settings integrations inventory did not expose server-side method audit metadata");
   }
+  assertSettingsServerBoundaries(payload);
   if (
     payload.integrationScope?.returned !== true ||
     payload.integrationScope?.state !== "partial" ||

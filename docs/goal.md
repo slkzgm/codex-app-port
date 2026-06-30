@@ -58,6 +58,14 @@ Target parity with the Codex desktop workflow:
   dynamic tool-call, MCP elicitation, auth-token refresh, attestation, current
   time, import progress, model safety buffering, and turn moderation metadata
   surfaces that must be classified before parity work continues.
+- `/api/settings-integrations` now exposes fail-closed
+  `serverRequestBoundary` and `serverNotificationBoundary` summaries for the
+  non-approval server requests and sensitive server notifications in that
+  refreshed protocol. They are method/category/count/flag only and do not handle
+  browser responses or return prompts, schemas, tool arguments, auth or
+  attestation tokens, current-time values, realtime transcripts/audio/SDP,
+  moderation/progress details, paths, URLs, raw requests, raw notifications, or
+  raw app-server payloads.
 - `permissionProfile/list` has an opt-in, counts-only inventory path; it
   returns profile counts and allowed/blocked totals only, not profile ids or
   descriptions.

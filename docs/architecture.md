@@ -586,6 +586,14 @@ Current M1 status:
   status, with `environment/info` and `thread/items/list` blocked until a
   stable generated schema exposes them; no source paths, requirements, raw
   payloads, URLs, secrets, or app-server traffic are returned
+- done: browser-facing `/api/settings-integrations` server-request and
+  server-notification boundaries derived only from local audit method lists,
+  with blocked method/category counts and redaction flags for tool-user-input,
+  MCP elicitation, dynamic tool calls, auth-token refresh, attestation,
+  current-time, import-progress, model-safety, moderation, and realtime
+  notifications, without prompts, schemas, forms, tool arguments, server names,
+  tokens, timestamps, transcript text, audio, SDP, progress details, paths,
+  URLs, raw payloads, or browser handlers
 - done: opt-in counts-only integration inventory behind
   `CODEX_APP_PORT_ALLOW_INTEGRATION_INVENTORY=1` for
   `configRequirements/read`, `model/list`, `modelProvider/capabilities/read`,

@@ -260,7 +260,11 @@ Server request methods and request-shape changes tracked by the local audit:
 Local status: all non-approval top-level server requests are explicitly listed
 in the server-request audit. The browser port does not service tool input,
 dynamic tool calls, MCP elicitation, ChatGPT auth-token refresh, attestation, or
-external time reads.
+external time reads. `/api/settings-integrations` exposes this as a
+fail-closed `serverRequestBoundary` summary with audited method names, category
+counts, and redaction flags only; it returns no prompts, schemas, forms, tool
+arguments, server names, auth tokens, attestation tokens, timestamps, paths,
+URLs, or raw request payloads.
 
 New server notifications:
 
@@ -281,7 +285,12 @@ New server notifications:
 Local status: import-progress, model-safety, turn-moderation, and realtime
 notifications are explicitly listed in the server-notification audit. Existing
 browser streams keep their separate sanitizers and do not expose raw realtime
-transport, audio, moderation, or import payloads.
+transport, audio, moderation, or import payloads. `/api/settings-integrations`
+also exposes a fail-closed `serverNotificationBoundary` summary with audited
+method names, category counts, and redaction flags only; it returns no progress
+details, safety metadata, moderation metadata, realtime session metadata,
+transcript text, audio data, SDP, error details, paths, URLs, or raw
+notification payloads.
 
 Implication for this port: keep all new mutation/control-plane methods blocked
 until each has a dedicated route, preflight, allowlist, audit record, and
@@ -592,7 +601,8 @@ schemas, `src/app-server/terminal-policy.mjs`,
 `src/app-server/integration-policy.mjs`, and deny-only policy are local evidence
 for the next implementation step. `/api/terminal-actions` and
 `/api/settings-integrations` expose audited method names as blocked browser
-methods without app-server traffic by default, and the terminal/action status
+methods plus fail-closed server-request/server-notification boundaries without
+app-server traffic by default, and the terminal/action status
 now reflects opt-in allowlisted `command/exec`, local file actions, background
 terminal cleanup, command/exec terminal control, separately gated process
 terminal control, exact-allowlisted thread shell commands, and accept-once

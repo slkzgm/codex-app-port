@@ -377,18 +377,20 @@
   permission-presence booleans, never the requested permission profile. They
   must keep tool user-input requests, dynamic tool calls, MCP elicitation,
   ChatGPT auth-token refresh, attestation generation, and current-time reads
-  unsupported until each has a dedicated response policy. Their summaries may
-  expose only sanitized kind/count/flag metadata and must not return prompts,
-  form schemas, server names, tool names, tool arguments, account ids, auth
-  tokens, attestation tokens, timestamps, URLs, paths, raw params, or raw
-  app-server payloads.
-  must not expose decision tokens, request keys, session identifiers, raw
-  approval details, paths, patches, file contents, permission paths, or network
-  grant details. Browser-side approval queue filters must operate only on the
-  already sanitized queue payload, and visible-subset deny/accept actions must
-  still submit the bounded tokenized decision batch through the normal approval
-  route. They must not create session-wide decisions or bypass decision-token
-  checks.
+  unsupported until each has a dedicated response policy.
+  `/api/settings-integrations` may expose only fail-closed
+  server-request/server-notification boundary metadata: method/category counts,
+  blocked method names, and redaction flags. It must not return prompts, form
+  schemas, server names, tool names, tool arguments, account ids, auth tokens,
+  attestation tokens, timestamps, realtime transcript text, audio, SDP,
+  moderation metadata, progress details, URLs, paths, raw params, raw
+  notifications, or raw app-server payloads. Approval summaries must not expose
+  decision tokens, request keys, session identifiers, raw approval details,
+  paths, patches, file contents, permission paths, or network grant details.
+  Browser-side approval queue filters must operate only on the already sanitized
+  queue payload, and visible-subset deny/accept actions must still submit the
+  bounded tokenized decision batch through the normal approval route. They must
+  not create session-wide decisions or bypass decision-token checks.
 - Browser-facing approval-decision history may expose only sanitized replay
   protection mode/scope and audit-persistence flags per recorded decision. It
   must not expose decision tokens, request keys, session identifiers, raw
