@@ -470,6 +470,15 @@
   secrets, raw payloads, app-server payloads, or app-server traffic, and must
   not open settings, launch browsers, execute commands, execute slash commands,
   open deep links, or mutate command state. Its
+  Codex Chrome extension catalog may expose only static official-documentation
+  keys plus local boundary keys, groups, states, sources, counts, and redaction
+  flags; it must not return extension state, Chrome profile data, site hosts,
+  allowlists, blocklists, browser history entries, page content, screenshots,
+  bookmarks, downloads, tab groups, permission states, memory content, plugin
+  names, setting values, paths, URLs, secrets, raw payloads, app-server
+  payloads, or app-server traffic, and must not touch native hosts, launch
+  Chrome, install extensions or plugins, allow websites, read browser history,
+  enable file access, access network, or mutate Chrome extension state. Its
   Codex app Features catalog may expose only static official-documentation keys
   plus local boundary keys, groups, states, sources, counts, and redaction
   flags; it must not return project names, thread ids, thread content, mode

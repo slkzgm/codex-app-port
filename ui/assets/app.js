@@ -35,6 +35,10 @@ const elements = {
   automationsCatalogValuesText: document.querySelector("#automations-catalog-values-text"),
   codexAppCommandsText: document.querySelector("#codex-app-commands-text"),
   codexAppCommandsValuesText: document.querySelector("#codex-app-commands-values-text"),
+  codexChromeExtensionText: document.querySelector("#codex-chrome-extension-text"),
+  codexChromeExtensionValuesText: document.querySelector(
+    "#codex-chrome-extension-values-text",
+  ),
   codexAppFeaturesText: document.querySelector("#codex-app-features-text"),
   codexAppFeaturesValuesText: document.querySelector("#codex-app-features-values-text"),
   appBrowserText: document.querySelector("#app-browser-text"),
@@ -402,6 +406,7 @@ const elements = {
   skillsPluginsCatalogList: document.querySelector("#skills-plugins-catalog-list"),
   automationsCatalogList: document.querySelector("#automations-catalog-list"),
   codexAppCommandsList: document.querySelector("#codex-app-commands-list"),
+  codexChromeExtensionList: document.querySelector("#codex-chrome-extension-list"),
   codexAppFeaturesList: document.querySelector("#codex-app-features-list"),
   appBrowserList: document.querySelector("#app-browser-list"),
   appComputerUseList: document.querySelector("#app-computer-use-list"),
@@ -10445,6 +10450,7 @@ function renderSettingsIntegrations(payload) {
   const skillsPluginsCatalog = payload.skillsPluginsCatalog ?? {};
   const automationsCatalog = payload.automationsCatalog ?? {};
   const codexAppCommands = payload.codexAppCommands ?? {};
+  const codexChromeExtension = payload.codexChromeExtension ?? {};
   const codexAppFeatures = payload.codexAppFeatures ?? {};
 
   elements.settingsStateText.textContent = settings.state ?? "blocked";
@@ -10584,6 +10590,44 @@ function renderSettingsIntegrations(payload) {
     codexAppCommands.secretsReturned ||
     codexAppCommands.rawPayloadsReturned ||
     codexAppCommands.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexChromeExtensionText.textContent = codexChromeExtension.returned
+    ? `${codexChromeExtension.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexChromeExtension.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexChromeExtensionValuesText.textContent =
+    codexChromeExtension.extensionStatesReturned ||
+    codexChromeExtension.chromeProfilesReturned ||
+    codexChromeExtension.siteHostsReturned ||
+    codexChromeExtension.allowlistsReturned ||
+    codexChromeExtension.blocklistsReturned ||
+    codexChromeExtension.historyEntriesReturned ||
+    codexChromeExtension.pageContentReturned ||
+    codexChromeExtension.screenshotsReturned ||
+    codexChromeExtension.bookmarksReturned ||
+    codexChromeExtension.downloadsReturned ||
+    codexChromeExtension.tabGroupsReturned ||
+    codexChromeExtension.nativeHostTouched ||
+    codexChromeExtension.permissionStatesReturned ||
+    codexChromeExtension.memoryContentReturned ||
+    codexChromeExtension.fileAccessReturned ||
+    codexChromeExtension.pluginNamesReturned ||
+    codexChromeExtension.settingValuesReturned ||
+    codexChromeExtension.chromeLaunched ||
+    codexChromeExtension.extensionInstalled ||
+    codexChromeExtension.pluginInstalled ||
+    codexChromeExtension.websitesAllowed ||
+    codexChromeExtension.browserHistoryRead ||
+    codexChromeExtension.fileAccessEnabled ||
+    codexChromeExtension.networkAccess ||
+    codexChromeExtension.mutationEnabled ||
+    codexChromeExtension.pathsReturned ||
+    codexChromeExtension.urlsReturned ||
+    codexChromeExtension.secretsReturned ||
+    codexChromeExtension.rawPayloadsReturned ||
+    codexChromeExtension.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexAppFeaturesText.textContent = codexAppFeatures.returned
@@ -11022,6 +11066,7 @@ function renderSettingsIntegrations(payload) {
   renderSkillsPluginsCatalog(skillsPluginsCatalog);
   renderAutomationsCatalog(automationsCatalog);
   renderCodexAppCommandsCatalog(codexAppCommands);
+  renderCodexChromeExtensionCatalog(codexChromeExtension);
   renderCodexAppFeaturesCatalog(codexAppFeatures);
   renderCodexAppGeneralSettings(general);
   renderCodexAppProfileSettings(profile);
@@ -12797,6 +12842,81 @@ function renderCodexAppCommandsCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexAppCommandsList.append(row);
+  }
+}
+
+function renderCodexChromeExtensionCatalog(summary) {
+  elements.codexChromeExtensionList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexChromeExtensionList.append(
+      emptyState("No Codex Chrome extension catalog returned."),
+    );
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "chrome-extension";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.extensionStateReturned ? "extension state returned" : "extension state hidden",
+      entry.chromeProfileReturned ? "Chrome profile returned" : "Chrome profile hidden",
+      entry.siteHostReturned ? "site hosts returned" : "site hosts hidden",
+      entry.allowlistReturned ? "allowlist returned" : "allowlist hidden",
+      entry.blocklistReturned ? "blocklist returned" : "blocklist hidden",
+      entry.historyEntriesReturned ? "history returned" : "history hidden",
+      entry.pageContentReturned ? "page content returned" : "page content hidden",
+      entry.screenshotsReturned ? "screenshots returned" : "screenshots hidden",
+      entry.bookmarksReturned ? "bookmarks returned" : "bookmarks hidden",
+      entry.downloadsReturned ? "downloads returned" : "downloads hidden",
+      entry.tabGroupsReturned ? "tab groups returned" : "tab groups hidden",
+      entry.nativeHostTouched ? "native host touched" : "native host blocked",
+      entry.permissionStateReturned ? "permission state returned" : "permission state hidden",
+      entry.memoryContentReturned ? "memory content returned" : "memory content hidden",
+      entry.fileAccessReturned ? "file access returned" : "file access hidden",
+      entry.pluginNameReturned ? "plugin names returned" : "plugin names hidden",
+      entry.settingValueReturned ? "setting values returned" : "setting values hidden",
+      entry.chromeLaunched ? "Chrome launched" : "Chrome launch blocked",
+      entry.extensionInstalled ? "extension installed" : "extension install blocked",
+      entry.pluginInstalled ? "plugin installed" : "plugin install blocked",
+      entry.websiteAllowed ? "website allowed" : "website allow blocked",
+      entry.browserHistoryRead ? "history read" : "history read blocked",
+      entry.fileAccessEnabled ? "file access enabled" : "file access enable blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexChromeExtensionList.append(row);
   }
 }
 

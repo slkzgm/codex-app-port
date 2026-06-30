@@ -808,6 +808,18 @@ paths, origin URLs, SSH host aliases, plugin identifiers, marketplace names or
 paths, pet names, pet image URLs, settings opens, browser launches, command or
 slash-command execution, deep-link openings, mutations, URLs, paths, raw
 payloads, or app-server traffic.
+The same response exposes `codexChromeExtension` as a static review-only
+catalog for the official Codex Chrome extension. The UI shows only catalog
+counts, entry keys, groups, state/source chips, and redaction chips for
+signed-in browser-state use cases, setup, extension permissions, website
+allow/block workflows, browser history prompts, Memories/data-control
+boundaries, troubleshooting, file upload file-access setup, and local high-risk
+boundaries. It does not show extension state, Chrome profile data, site hosts,
+allowlists, blocklists, browser history entries, page content, screenshots,
+bookmarks, downloads, tab groups, permission states, memory content, plugin
+names, setting values, paths, URLs, raw payloads, native host activity, Chrome
+launches, installs, website allow actions, browser-history reads, file-access
+enablement, network access, mutations, or app-server traffic.
 The same response exposes `codexAppFeatures` as a static review-only catalog
 for official Codex app features. The UI shows only catalog counts, feature keys,
 groups, state/source chips, and redaction chips for project multitasking,

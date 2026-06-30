@@ -571,6 +571,19 @@ Current M1 status:
   identifiers, marketplace names/paths, pet names, pet image URLs, settings
   opens, browser launches, command/slash/deep-link execution, mutations, paths,
   URLs, secrets, raw payloads, and app-server traffic blocked
+- done: read-only Codex Chrome extension catalog in `/api/settings-integrations`,
+  exposing only static official Chrome extension documentation keys plus local
+  boundary keys/groups/states/sources/counts/redaction flags for signed-in
+  browser-state use cases, Plugins setup, extension permissions, website
+  allow/block workflows, browser-history prompts, Memories/data controls,
+  troubleshooting, file upload file-access setup, native host, profile,
+  website access, Chrome launch, tab-group control, and page-content capture
+  boundaries, with extension state, Chrome profile data, site hosts,
+  allowlists, blocklists, browser history entries, page content, screenshots,
+  bookmarks, downloads, tab groups, permission states, memory content, plugin
+  names, setting values, paths, URLs, secrets, raw payloads, native host touch,
+  Chrome launch, installs, website allow, browser-history read, file-access
+  enablement, network access, mutations, and app-server traffic blocked
 - done: read-only Codex app Features catalog in `/api/settings-integrations`,
   exposing only static official Features documentation keys plus local
   boundary keys/groups/states/sources/counts/redaction flags for project

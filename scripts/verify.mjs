@@ -33849,6 +33849,304 @@ function assertCodexAppCommandsCatalog(payload) {
   }
 }
 
+function expectedCodexChromeExtensionEntries() {
+  return [
+    ["signedInBrowserStateUse", "use-cases", "catalog-only", "official-codex-chrome-extension-docs"],
+    ["signedInWebsiteTasks", "use-cases", "catalog-only", "official-codex-chrome-extension-docs"],
+    [
+      "inAppBrowserFirstForLocalPublic",
+      "tool-selection",
+      "catalog-only",
+      "official-codex-chrome-extension-docs",
+    ],
+    [
+      "toolSwitchingPluginsChromeBrowser",
+      "tool-selection",
+      "catalog-only",
+      "official-codex-chrome-extension-docs",
+    ],
+    ["pluginSetupEntryPoint", "setup", "catalog-only", "official-codex-chrome-extension-docs"],
+    ["chromePluginAdd", "setup", "catalog-only", "official-codex-chrome-extension-docs"],
+    ["webStoreExtensionInstall", "setup", "catalog-only", "official-codex-chrome-extension-docs"],
+    ["permissionPromptApproval", "setup", "catalog-only", "official-codex-chrome-extension-docs"],
+    [
+      "extensionConnectedConfirmation",
+      "setup",
+      "catalog-only",
+      "official-codex-chrome-extension-docs",
+    ],
+    ["newThreadAfterSetup", "setup", "catalog-only", "official-codex-chrome-extension-docs"],
+    [
+      "taskBasedChromeSuggestion",
+      "invocation",
+      "catalog-only",
+      "official-codex-chrome-extension-docs",
+    ],
+    [
+      "directChromeMentionInvocation",
+      "invocation",
+      "catalog-only",
+      "official-codex-chrome-extension-docs",
+    ],
+    ["openChromeIfClosed", "invocation", "catalog-only", "official-codex-chrome-extension-docs"],
+    ["threadTabGroups", "invocation", "catalog-only", "official-codex-chrome-extension-docs"],
+    ["perWebsitePrompt", "website-access", "catalog-only", "official-codex-chrome-extension-docs"],
+    [
+      "allowWebsiteForCurrentChat",
+      "website-access",
+      "catalog-only",
+      "official-codex-chrome-extension-docs",
+    ],
+    ["alwaysAllowHost", "website-access", "catalog-only", "official-codex-chrome-extension-docs"],
+    ["declineWebsite", "website-access", "catalog-only", "official-codex-chrome-extension-docs"],
+    ["domainAllowlist", "website-access", "catalog-only", "official-codex-chrome-extension-docs"],
+    ["domainBlocklist", "website-access", "catalog-only", "official-codex-chrome-extension-docs"],
+    ["removeAllowedDomain", "website-access", "catalog-only", "official-codex-chrome-extension-docs"],
+    ["removeBlockedDomain", "website-access", "catalog-only", "official-codex-chrome-extension-docs"],
+    [
+      "alwaysAllowBrowserContent",
+      "website-access",
+      "catalog-only",
+      "official-codex-chrome-extension-docs",
+    ],
+    ["historyRequestPrompt", "browser-history", "catalog-only", "official-codex-chrome-extension-docs"],
+    ["scopedHistoryAccess", "browser-history", "catalog-only", "official-codex-chrome-extension-docs"],
+    ["noAlwaysAllowHistory", "browser-history", "catalog-only", "official-codex-chrome-extension-docs"],
+    [
+      "debuggerPermission",
+      "extension-permissions",
+      "catalog-only",
+      "official-codex-chrome-extension-docs",
+    ],
+    [
+      "websiteDataPermission",
+      "extension-permissions",
+      "catalog-only",
+      "official-codex-chrome-extension-docs",
+    ],
+    [
+      "browsingHistoryPermission",
+      "extension-permissions",
+      "catalog-only",
+      "official-codex-chrome-extension-docs",
+    ],
+    [
+      "notificationsPermission",
+      "extension-permissions",
+      "catalog-only",
+      "official-codex-chrome-extension-docs",
+    ],
+    [
+      "bookmarksPermission",
+      "extension-permissions",
+      "catalog-only",
+      "official-codex-chrome-extension-docs",
+    ],
+    [
+      "downloadsPermission",
+      "extension-permissions",
+      "catalog-only",
+      "official-codex-chrome-extension-docs",
+    ],
+    [
+      "nativeApplicationsPermission",
+      "extension-permissions",
+      "catalog-only",
+      "official-codex-chrome-extension-docs",
+    ],
+    [
+      "tabGroupsPermission",
+      "extension-permissions",
+      "catalog-only",
+      "official-codex-chrome-extension-docs",
+    ],
+    ["memoriesSettingApplies", "privacy", "catalog-only", "official-codex-chrome-extension-docs"],
+    ["contextScopedStorage", "privacy", "catalog-only", "official-codex-chrome-extension-docs"],
+    ["dataControlsApply", "privacy", "catalog-only", "official-codex-chrome-extension-docs"],
+    [
+      "connectedStateTroubleshooting",
+      "troubleshooting",
+      "catalog-only",
+      "official-codex-chrome-extension-docs",
+    ],
+    [
+      "nativeHostTroubleshooting",
+      "troubleshooting",
+      "catalog-only",
+      "official-codex-chrome-extension-docs",
+    ],
+    [
+      "pluginEnabledTroubleshooting",
+      "troubleshooting",
+      "catalog-only",
+      "official-codex-chrome-extension-docs",
+    ],
+    [
+      "chromeProfileTroubleshooting",
+      "troubleshooting",
+      "catalog-only",
+      "official-codex-chrome-extension-docs",
+    ],
+    [
+      "newThreadTroubleshooting",
+      "troubleshooting",
+      "catalog-only",
+      "official-codex-chrome-extension-docs",
+    ],
+    [
+      "restartReinstallTroubleshooting",
+      "troubleshooting",
+      "catalog-only",
+      "official-codex-chrome-extension-docs",
+    ],
+    ["feedbackWithThreadId", "troubleshooting", "catalog-only", "official-codex-chrome-extension-docs"],
+    ["fileAccessForUploads", "file-uploads", "catalog-only", "official-codex-chrome-extension-docs"],
+    ["chromePluginInstallBoundary", "setup", "blocked", "local-chrome-extension-boundary"],
+    ["extensionInstallBoundary", "setup", "blocked", "local-chrome-extension-boundary"],
+    ["chromeProfileReadBoundary", "profile", "blocked", "local-chrome-extension-boundary"],
+    ["websiteAccessBoundary", "website-access", "blocked", "local-chrome-extension-boundary"],
+    ["browserHistoryReadBoundary", "browser-history", "blocked", "local-chrome-extension-boundary"],
+    ["nativeHostBoundary", "native-host", "blocked", "local-chrome-extension-boundary"],
+    ["fileAccessBoundary", "file-uploads", "blocked", "local-chrome-extension-boundary"],
+    ["chromeLaunchBoundary", "invocation", "blocked", "local-chrome-extension-boundary"],
+    ["tabGroupControlBoundary", "invocation", "blocked", "local-chrome-extension-boundary"],
+    ["pageContentCaptureBoundary", "privacy", "blocked", "local-chrome-extension-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexChromeExtensionCatalog(payload) {
+  const catalog = payload.codexChromeExtension;
+  const expectedEntries = expectedCodexChromeExtensionEntries();
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-chrome-extension-docs");
+  assert.equal(catalog.entryCount, 55);
+  assert.equal(catalog.officialEntryCount, 45);
+  assert.equal(catalog.localBoundaryEntryCount, 10);
+  assert.equal(catalog.catalogOnlyEntryCount, 45);
+  assert.equal(catalog.blockedEntryCount, 10);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({
+      key,
+      group,
+      state,
+      source,
+    })),
+    expectedEntries,
+  );
+
+  const entryRedactionFlags = [
+    "extensionStateReturned",
+    "chromeProfileReturned",
+    "siteHostReturned",
+    "allowlistReturned",
+    "blocklistReturned",
+    "historyEntriesReturned",
+    "pageContentReturned",
+    "screenshotsReturned",
+    "bookmarksReturned",
+    "downloadsReturned",
+    "tabGroupsReturned",
+    "nativeHostTouched",
+    "permissionStateReturned",
+    "memoryContentReturned",
+    "fileAccessReturned",
+    "pluginNameReturned",
+    "settingValueReturned",
+    "chromeLaunched",
+    "extensionInstalled",
+    "pluginInstalled",
+    "websiteAllowed",
+    "browserHistoryRead",
+    "fileAccessEnabled",
+    "networkAccess",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.chromeExtensionCatalogReturned, true);
+  for (const flag of [
+    "extensionStatesReturned",
+    "chromeProfilesReturned",
+    "siteHostsReturned",
+    "allowlistsReturned",
+    "blocklistsReturned",
+    "historyEntriesReturned",
+    "pageContentReturned",
+    "screenshotsReturned",
+    "bookmarksReturned",
+    "downloadsReturned",
+    "tabGroupsReturned",
+    "nativeHostTouched",
+    "permissionStatesReturned",
+    "memoryContentReturned",
+    "fileAccessReturned",
+    "pluginNamesReturned",
+    "settingValuesReturned",
+    "chromeLaunched",
+    "extensionInstalled",
+    "pluginInstalled",
+    "websitesAllowed",
+    "browserHistoryRead",
+    "fileAccessEnabled",
+    "networkAccess",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexChromeExtensionReturned", true],
+    ["codexChromeExtensionValuesReturned", false],
+    ["codexChromeExtensionStatesReturned", false],
+    ["codexChromeExtensionProfilesReturned", false],
+    ["codexChromeExtensionSiteHostsReturned", false],
+    ["codexChromeExtensionAllowlistsReturned", false],
+    ["codexChromeExtensionBlocklistsReturned", false],
+    ["codexChromeExtensionHistoryReturned", false],
+    ["codexChromeExtensionPageContentReturned", false],
+    ["codexChromeExtensionScreenshotsReturned", false],
+    ["codexChromeExtensionBookmarksReturned", false],
+    ["codexChromeExtensionDownloadsReturned", false],
+    ["codexChromeExtensionTabGroupsReturned", false],
+    ["codexChromeExtensionNativeHostTouched", false],
+    ["codexChromeExtensionPermissionStatesReturned", false],
+    ["codexChromeExtensionMemoryContentReturned", false],
+    ["codexChromeExtensionFileAccessReturned", false],
+    ["codexChromeExtensionPluginNamesReturned", false],
+    ["codexChromeExtensionChromeLaunched", false],
+    ["codexChromeExtensionInstalled", false],
+    ["codexChromeExtensionPluginInstalled", false],
+    ["codexChromeExtensionWebsiteAllowed", false],
+    ["codexChromeExtensionHistoryRead", false],
+    ["codexChromeExtensionFileAccessEnabled", false],
+    ["codexChromeExtensionNetworkAccess", false],
+    ["codexChromeExtensionMutationsEnabled", false],
+    ["codexChromeExtensionPathsReturned", false],
+    ["codexChromeExtensionUrlsReturned", false],
+    ["codexChromeExtensionRawPayloadsReturned", false],
+    ["codexChromeExtensionAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexAppFeaturesEntries() {
   return [
     ["multitaskAcrossProjects", "project-workflows", "catalog-only", "official-codex-app-features-docs"],
@@ -34140,6 +34438,7 @@ function assertCodexAppSettingsParity(
   assertSkillsPluginsCatalog(payload);
   assertAutomationsCatalog(payload);
   assertCodexAppCommandsCatalog(payload);
+  assertCodexChromeExtensionCatalog(payload);
   assertCodexAppFeaturesCatalog(payload);
   if (
     summary.sectionKeysReturned !== true ||

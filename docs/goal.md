@@ -167,6 +167,20 @@ Target parity with the Codex desktop workflow:
   marketplace names or paths, pet names, pet image URLs, paths, URLs, secrets,
   raw payloads, app-server traffic, browser launches, settings opens, command
   execution, slash-command execution, deep-link opening, or mutations.
+- `/api/settings-integrations` now also exposes a read-only Codex Chrome
+  extension catalog aligned to the official Codex Chrome extension
+  documentation. It returns only static keys, groups, states, sources, counts,
+  and redaction flags for signed-in browser-state use cases, setup through
+  Plugins, extension permissions, website allow/block workflows, browser
+  history prompts, Memories/data-control boundaries, troubleshooting, file
+  upload file-access setup, and local high-risk boundaries. It does not return
+  extension state, Chrome profile data, site hosts, allowlists, blocklists,
+  browser history entries, page content, screenshots, bookmarks, downloads,
+  tab groups, permission states, memory content, plugin names, setting values,
+  paths, URLs, secrets, raw payloads, or app-server traffic, and it does not
+  touch native hosts, launch Chrome, install extensions/plugins, allow
+  websites, read browser history, enable file access, access network, or
+  mutate Chrome extension state.
 - `/api/settings-integrations` now also exposes a read-only Codex app Features
   catalog aligned to the official Codex app Features documentation. It returns
   only static keys, groups, states, sources, counts, and redaction flags for
