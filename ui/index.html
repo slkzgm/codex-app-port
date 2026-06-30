@@ -793,6 +793,44 @@
               <dd id="plugin-read-details-text">Blocked</dd>
             </div>
           </dl>
+          <form id="plugin-install-form" class="turn-form">
+            <div class="thread-tools">
+              <label class="search-control" for="plugin-install-target-input">
+                <span>Install target</span>
+                <input id="plugin-install-target-input" type="text" autocomplete="off" maxlength="500" />
+              </label>
+            </div>
+            <textarea
+              id="plugin-install-arguments-input"
+              maxlength="8000"
+              rows="3"
+              placeholder='{"pluginName":null,"remoteMarketplaceName":null}'
+            ></textarea>
+            <div class="turn-actions">
+              <button id="plugin-install-button" class="secondary-button" type="submit">
+                Install Check
+              </button>
+              <span id="plugin-install-status" class="empty-state">Blocked</span>
+            </div>
+          </form>
+          <dl class="agent-grid">
+            <div>
+              <dt>Target chars</dt>
+              <dd id="plugin-install-target-chars">0</dd>
+            </div>
+            <div>
+              <dt>Arg keys</dt>
+              <dd id="plugin-install-arg-keys">0</dd>
+            </div>
+            <div>
+              <dt>Install</dt>
+              <dd id="plugin-install-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Provenance</dt>
+              <dd id="plugin-install-provenance-text">Required</dd>
+            </div>
+          </dl>
           <form id="plugin-uninstall-form" class="turn-form">
             <div class="thread-tools">
               <label class="search-control" for="plugin-uninstall-target-input">

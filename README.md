@@ -377,7 +377,7 @@ installs/uninstalls/sharing, and marketplace mutations are blocked.
 `/api/settings-integrations` also returns a compact integration scope summary
 with active read methods, local preflight/login/login-cancel/logout gates, and
 blocked mutation method names/counts, including MCP reload, config-value,
-config-batch, plugin-uninstall, skills-config, remote environment add, and
+config-batch, plugin-install-preflight, plugin-uninstall, skills-config, remote environment add, and
 experimental-feature gates when enabled; it never returns secrets, auth tokens,
 names unless the name gate is enabled, paths, URLs, hook commands, rate-limit
 details, or raw payloads.
@@ -510,6 +510,13 @@ argument keys are rejected before app-server traffic. Responses and action
 audit records return plugin structure counts only and omit plugin names,
 marketplace names, ids, paths, URLs, descriptions, hook keys, skill content,
 MCP server names, share context, tokens, and raw payloads.
+Plugin install has a dedicated local-only `/api/plugin-install-preflight`
+route. It validates draft `plugin/install` intent, returns target and argument
+counts plus install-risk booleans only, records a short-lived preflight token
+for confirmation/history, and never downloads, installs, materializes external
+code, calls app-server, or returns plugin names, marketplace names, paths, URLs,
+secrets, targets, arguments, or raw payloads. There is no `/api/plugin-install`
+execution route.
 Plugin uninstall is a separate mutation path, disabled unless
 `CODEX_APP_PORT_ALLOW_PLUGIN_UNINSTALL=1` is set and the plugin id exactly
 matches `CODEX_APP_PORT_PLUGIN_UNINSTALL_ALLOWLIST`. `/api/plugin-uninstall`
@@ -623,7 +630,7 @@ target/argument counts only, and does not echo targets, names, URLs, arguments,
 invoke tools, install or uninstall plugins, write settings, start auth callbacks, or touch
 app-server.
 `/api/settings-integrations` also includes a capped process-local history of
-successful MCP server-reload/OAuth/tool/resource, plugin-read/plugin-uninstall/plugin-content,
+successful MCP server-reload/OAuth/tool/resource, plugin-read/plugin-install/plugin-uninstall/plugin-content,
 skills-config, config-value, config-batch, experimental-feature, and integration mutation preflights from this server. It shows only action type,
 audited method/category,
 target/name/resource/argument counts, and redaction flags; it does not return

@@ -1154,6 +1154,7 @@ async function checkStrictBrowserPostBodies() {
           preflightToken: "preflight-1234567890abcdef",
         },
       ],
+      ["/api/plugin-install-preflight", { target: "safe-plugin", arguments: "{}" }],
       ["/api/plugin-uninstall-preflight", { target: "safe-plugin" }],
       [
         "/api/plugin-uninstall",
@@ -1793,6 +1794,24 @@ function assertBrowserPostBodyContracts(cases) {
     pluginReadContract.nestedKeySchemas.policy?.includes("unexpected")
   ) {
     throw new Error("plugin-read response contract is missing nested schemas");
+  }
+  const pluginInstallPreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/plugin-install-preflight"];
+  if (
+    pluginInstallPreflightContract.usesRouteSpecificNestedKeySchemas !== true ||
+    !Object.isFrozen(pluginInstallPreflightContract.nestedKeySchemas.policy) ||
+    !pluginInstallPreflightContract.nestedKeySchemas.pluginInstall?.includes(
+      "installExecutionBlocked",
+    ) ||
+    !pluginInstallPreflightContract.nestedKeySchemas.policy?.includes(
+      "pluginInstallPreflightEnabled",
+    ) ||
+    !pluginInstallPreflightContract.nestedKeySchemas.policy?.includes(
+      "dedicatedExecutionRouteImplemented",
+    ) ||
+    pluginInstallPreflightContract.nestedKeySchemas.policy?.includes("unexpected")
+  ) {
+    throw new Error("plugin-install-preflight response contract is missing nested schemas");
   }
   const pluginUninstallPreflightContract =
     BROWSER_POST_RESPONSE_CONTRACTS["/api/plugin-uninstall-preflight"];
@@ -4074,6 +4093,111 @@ function assertBrowserPostBodyContracts(cases) {
   });
   if (allowedNestedPluginReadShape.statusCode !== 200) {
     throw new Error("browser POST response contract rejected an allowed nested plugin-read shape");
+  }
+  const allowedNestedPluginInstallPreflightShape = applyBrowserPostResponseContract({
+    method: "POST",
+    pathname: "/api/plugin-install-preflight",
+    statusCode: 200,
+    payload: {
+      ok: true,
+      appServer: {
+        touched: false,
+        modelTraffic: false,
+        commandTraffic: false,
+        pluginMutationTraffic: false,
+      },
+      action: {
+        type: "plugin-install-preflight",
+        method: "plugin/install",
+        category: "plugins-install",
+        execution: "blocked",
+        wouldInstallPlugin: false,
+        wouldDownloadExternalCode: false,
+        wouldMaterializeExternalCode: false,
+        wouldMutatePlugins: false,
+        appServerTouched: false,
+        modelTraffic: false,
+      },
+      integrationAction: {
+        method: "plugin/install",
+        category: "plugins-install",
+        target: {
+          present: true,
+          charCount: 11,
+          lineCount: 1,
+          textReturned: false,
+        },
+        arguments: {
+          present: true,
+          charCount: 29,
+          lineCount: 1,
+          validJsonObject: true,
+          topLevelKeyCount: 1,
+          textReturned: false,
+        },
+        methodAllowedByAudit: true,
+      },
+      pluginInstall: {
+        method: "plugin/install",
+        targetCharCount: 11,
+        targetUrlLike: false,
+        targetPathLike: false,
+        argumentCharCount: 29,
+        argumentTopLevelKeyCount: 1,
+        argumentObjectAccepted: true,
+        stringArgumentCount: 1,
+        urlLikeArgumentCount: 1,
+        pathLikeArgumentCount: 0,
+        secretLikeArgumentCount: 0,
+        sensitiveKeyCount: 0,
+        pluginNamePresent: true,
+        remoteMarketplaceNamePresent: false,
+        marketplacePathPresent: false,
+        installExecutionBlocked: true,
+        externalCodeMaterialization: false,
+        downloadsExternalCode: false,
+        appServerTraffic: false,
+        pluginNamesReturned: false,
+        marketplaceNamesReturned: false,
+        pathsReturned: false,
+        urlsReturned: false,
+        secretsReturned: false,
+        rawPayloadReturned: false,
+      },
+      preflight: {
+        token: "preflight-1234567890abcdef",
+        tokenIssued: true,
+        scope: {
+          kind: "plugin-install-preflight",
+          workspaceId: "default",
+        },
+      },
+      policy: {
+        readOnly: true,
+        appServerTraffic: false,
+        pluginMutation: false,
+        pluginInstall: false,
+        pluginInstallPreflightEnabled: true,
+        pluginInstallEnabled: false,
+        installExecutionBlocked: true,
+        externalCodeMaterialization: false,
+        downloadsExternalCode: false,
+        executionRouteImplemented: false,
+        dedicatedExecutionRouteImplemented: false,
+        executionGateEnabled: false,
+        requiresApprovalPipeline: true,
+        requiresIntegrationProvenance: true,
+        requiresExternalCodeAudit: true,
+        browserMethodCallsAccepted: false,
+        pathsReturned: false,
+        urlsReturned: false,
+        rawPayloadsReturned: false,
+        implemented: true,
+      },
+    },
+  });
+  if (allowedNestedPluginInstallPreflightShape.statusCode !== 200) {
+    throw new Error("browser POST response contract rejected an allowed nested plugin-install preflight shape");
   }
   const allowedNestedPluginUninstallPreflightShape = applyBrowserPostResponseContract({
     method: "POST",
@@ -8251,6 +8375,56 @@ function assertBrowserPostBodyContracts(cases) {
     ) {
       throw new Error(
         "browser POST response contract did not block an unexpected plugin-uninstall preflight nested key",
+      );
+    }
+  }
+  for (const [payload, marker] of [
+    [
+      {
+        ok: true,
+        integrationAction: {
+          target: {
+            charCount: 11,
+            leakedPluginName: "private plugin",
+          },
+        },
+      },
+      "private",
+    ],
+    [
+      {
+        ok: true,
+        pluginInstall: {
+          installExecutionBlocked: true,
+          leakedPluginName: "private plugin",
+        },
+      },
+      "private",
+    ],
+    [
+      {
+        ok: true,
+        policy: {
+          pluginInstall: false,
+          leakedPluginPolicy: "private policy",
+        },
+      },
+      "private",
+    ],
+  ]) {
+    const unexpectedPluginInstallPreflightNestedKeyResponse =
+      applyBrowserPostResponseContract({
+        method: "POST",
+        pathname: "/api/plugin-install-preflight",
+        statusCode: 200,
+        payload,
+      });
+    if (
+      unexpectedPluginInstallPreflightNestedKeyResponse.statusCode !== 500 ||
+      JSON.stringify(unexpectedPluginInstallPreflightNestedKeyResponse.payload).includes(marker)
+    ) {
+      throw new Error(
+        "browser POST response contract did not block an unexpected plugin-install preflight nested key",
       );
     }
   }
@@ -24451,10 +24625,10 @@ function assertSanitizedAccountLoginHistory(payload, { token, workspaceId = "def
   }
   assertSanitizedIntegrationLifecycle(payload, {
     state: "gated",
-    partialSurfaceCount: 2,
-    blockedSurfaceCount: 5,
+    partialSurfaceCount: 3,
+    blockedSurfaceCount: 4,
     readMethodCount: 1,
-    localGateCount: 13,
+    localGateCount: 14,
     enabledMutationGateCount: 1,
     historyCount: 1,
     appServerTouched: false,
@@ -24942,10 +25116,10 @@ function assertSanitizedAccountLogoutHistory(payload, { token, workspaceId = "de
   }
   assertSanitizedIntegrationLifecycle(payload, {
     state: "gated",
-    partialSurfaceCount: 2,
-    blockedSurfaceCount: 5,
+    partialSurfaceCount: 3,
+    blockedSurfaceCount: 4,
     readMethodCount: 1,
-    localGateCount: 13,
+    localGateCount: 14,
     enabledMutationGateCount: 1,
     historyCount: 1,
     appServerTouched: false,
@@ -29352,11 +29526,12 @@ function assertSanitizedSettingsIntegrations(payload) {
     payload.integrationScope?.enabledReadMethodCount !== 1 ||
     JSON.stringify(payload.integrationScope?.enabledReadMethods ?? []) !==
       JSON.stringify(["config/read"]) ||
-    payload.integrationScope?.enabledLocalGateCount !== 12 ||
+    payload.integrationScope?.enabledLocalGateCount !== 13 ||
     !payload.integrationScope?.enabledLocalGates?.includes("mcp-tool-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("mcp-oauth-login-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("mcp-resource-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("plugin-read-preflight") ||
+    !payload.integrationScope?.enabledLocalGates?.includes("plugin-install-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("plugin-uninstall-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("plugin-share-checkout-preflight") ||
     !payload.integrationScope?.enabledLocalGates?.includes("plugin-content-preflight") ||
@@ -29408,10 +29583,10 @@ function assertSanitizedSettingsIntegrations(payload) {
   }
   assertSanitizedIntegrationLifecycle(payload, {
     state: "read-only",
-    partialSurfaceCount: 1,
-    blockedSurfaceCount: 6,
+    partialSurfaceCount: 2,
+    blockedSurfaceCount: 5,
     readMethodCount: 1,
-    localGateCount: 12,
+    localGateCount: 13,
     enabledMutationGateCount: 0,
     historyCount: 0,
     appServerTouched: false,
@@ -29588,7 +29763,46 @@ function assertSanitizedIntegrationLifecycle(
     lifecycle?.browserMethodCallsAccepted !== false ||
     lifecycle?.requestScopedOnly !== true
   ) {
-    throw new Error("integration lifecycle did not preserve sanitized counts");
+    throw new Error(
+      `integration lifecycle did not preserve sanitized counts: ${JSON.stringify({
+        actual: {
+          state: lifecycle?.state,
+          surfaceCount: lifecycle?.surfaceCount,
+          partialSurfaceCount: lifecycle?.partialSurfaceCount,
+          blockedSurfaceCount: lifecycle?.blockedSurfaceCount,
+          readMethodCount: lifecycle?.readMethodCount,
+          localGateCount: lifecycle?.localGateCount,
+          enabledMutationGateCount: lifecycle?.enabledMutationGateCount,
+          blockedMutationMethodCount: lifecycle?.blockedMutationMethodCount,
+          historyCount: lifecycle?.historyCount,
+          preflightHistoryCount: lifecycle?.preflightHistoryCount,
+          confirmationHistoryCount: lifecycle?.confirmationHistoryCount,
+          accountLoginHistoryCount: lifecycle?.accountLoginHistoryCount,
+          accountResetCreditHistoryCount: lifecycle?.accountResetCreditHistoryCount,
+          accountLogoutHistoryCount: lifecycle?.accountLogoutHistoryCount,
+          activeLoginFlowCount: lifecycle?.activeLoginFlowCount,
+          appServerTouched: lifecycle?.appServerTouched,
+        },
+        expected: {
+          state,
+          surfaceCount: 7,
+          partialSurfaceCount,
+          blockedSurfaceCount,
+          readMethodCount,
+          localGateCount,
+          enabledMutationGateCount,
+          blockedMutationMethodCount: blockedIntegrationMutationMethods().length,
+          historyCount,
+          preflightHistoryCount: payload.preflightHistory?.count ?? 0,
+          confirmationHistoryCount: payload.preflightConfirmationHistory?.count ?? 0,
+          accountLoginHistoryCount: payload.accountLoginHistory?.count ?? 0,
+          accountResetCreditHistoryCount: payload.accountResetCreditHistory?.count ?? 0,
+          accountLogoutHistoryCount: payload.accountLogoutHistory?.count ?? 0,
+          activeLoginFlowCount: payload.surfaces?.auth?.activeLoginFlowCount ?? 0,
+          appServerTouched,
+        },
+      })}`,
+    );
   }
   assertSanitizedIntegrationActions(payload, {
     readMethodCount,
@@ -30899,7 +31113,8 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
       ["config/read", ...optInIntegrationReadMethods()].length ||
     JSON.stringify(payload.integrationScope?.enabledReadMethods ?? []) !==
       JSON.stringify(["config/read", ...optInIntegrationReadMethods()]) ||
-    payload.integrationScope?.enabledLocalGateCount !== 12 ||
+    payload.integrationScope?.enabledLocalGateCount !== 13 ||
+    !payload.integrationScope?.enabledLocalGates?.includes("plugin-install-preflight") ||
     payload.integrationScope?.blockedMutationMethodCount !==
       blockedIntegrationMutationMethods().length ||
     payload.integrationScope?.accountLoginEnabled !== false ||
@@ -30930,7 +31145,7 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
     partialSurfaceCount: 7,
     blockedSurfaceCount: 0,
     readMethodCount: ["config/read", ...optInIntegrationReadMethods()].length,
-    localGateCount: 12,
+    localGateCount: 13,
     enabledMutationGateCount: 0,
     historyCount: 0,
     appServerTouched: true,

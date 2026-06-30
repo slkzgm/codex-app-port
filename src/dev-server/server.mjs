@@ -671,6 +671,13 @@ export const ACTION_PREFLIGHT_CONFIRMATION_FIELD_CONTRACTS = Object.freeze({
     "arguments",
     "preflightToken",
   ),
+  "plugin-install-preflight": bodyFields(
+    "workspace",
+    "actionType",
+    "preflightToken",
+    "target",
+    "arguments",
+  ),
   "plugin-uninstall-preflight": bodyFields(
     "workspace",
     "actionType",
@@ -1131,6 +1138,10 @@ export const BROWSER_POST_BODY_CONTRACTS = Object.freeze({
   "/api/plugin-read": bodyContract(["workspace", "target", "arguments", "preflightToken"], {
     kind: "mutation",
     requiresPreflightToken: true,
+  }),
+  "/api/plugin-install-preflight": bodyContract(["workspace", "target", "arguments"], {
+    kind: "preflight",
+    appServerTraffic: false,
   }),
   "/api/plugin-uninstall-preflight": bodyContract(["workspace", "target"], {
     kind: "preflight",
@@ -7228,6 +7239,101 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
       "implemented",
     ],
   }),
+  "/api/plugin-install-preflight": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    appServer: ["touched", "modelTraffic", "commandTraffic", "pluginMutationTraffic"],
+    action: [
+      "type",
+      "method",
+      "category",
+      "execution",
+      "wouldInstallPlugin",
+      "wouldDownloadExternalCode",
+      "wouldMaterializeExternalCode",
+      "wouldMutatePlugins",
+      "appServerTouched",
+      "modelTraffic",
+      "reason",
+    ],
+    integrationAction: ["method", "category", "target", "arguments", "methodAllowedByAudit"],
+    "integrationAction.target": ["present", "charCount", "lineCount", "textReturned"],
+    "integrationAction.arguments": [
+      "present",
+      "charCount",
+      "lineCount",
+      "validJsonObject",
+      "topLevelKeyCount",
+      "textReturned",
+    ],
+    pluginInstall: [
+      "method",
+      "targetCharCount",
+      "targetUrlLike",
+      "targetPathLike",
+      "argumentCharCount",
+      "argumentTopLevelKeyCount",
+      "argumentObjectAccepted",
+      "stringArgumentCount",
+      "urlLikeArgumentCount",
+      "pathLikeArgumentCount",
+      "secretLikeArgumentCount",
+      "sensitiveKeyCount",
+      "pluginNamePresent",
+      "remoteMarketplaceNamePresent",
+      "marketplacePathPresent",
+      "installExecutionBlocked",
+      "externalCodeMaterialization",
+      "downloadsExternalCode",
+      "appServerTraffic",
+      "pluginNamesReturned",
+      "marketplaceNamesReturned",
+      "pathsReturned",
+      "urlsReturned",
+      "secretsReturned",
+      "rawPayloadReturned",
+    ],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "pluginMutation",
+      "pluginInstall",
+      "pluginInstallPreflightEnabled",
+      "pluginInstallEnabled",
+      "installExecutionBlocked",
+      "externalCodeMaterialization",
+      "downloadsExternalCode",
+      "executionRouteImplemented",
+      "dedicatedExecutionRouteImplemented",
+      "executionGateEnabled",
+      "requiresApprovalPipeline",
+      "requiresIntegrationProvenance",
+      "requiresExternalCodeAudit",
+      "requiresExplicitEnablement",
+      "browserMethodCallsAccepted",
+      "pluginNamesReturned",
+      "marketplaceNamesReturned",
+      "targetReturned",
+      "argumentTextReturned",
+      "pathsReturned",
+      "urlsReturned",
+      "secretsReturned",
+      "rawPayloadsReturned",
+      "implemented",
+    ],
+    preflight: [
+      "token",
+      "tokenIssued",
+      "issuedAt",
+      "expiresAt",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseRequiredForMutation",
+      "consumed",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+  }),
   "/api/plugin-uninstall-preflight": responseNestedKeySchemas({
     workspace: ["id", "label", "isDefault"],
     appServer: ["touched", "modelTraffic", "commandTraffic", "pluginMutationTraffic"],
@@ -10084,6 +10190,11 @@ const BROWSER_POST_RESPONSE_ROUTE_TOP_LEVEL_KEYS = Object.freeze({
     "target",
     "pluginRead",
     "result",
+  ),
+  "/api/plugin-install-preflight": routeResponseTopLevelKeys(
+    ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
+    "integrationAction",
+    "pluginInstall",
   ),
   "/api/plugin-uninstall-preflight": routeResponseTopLevelKeys(
     ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
@@ -14614,6 +14725,36 @@ export async function handleRequest(request, response, options) {
     return;
   }
 
+  if (url.pathname === "/api/plugin-install-preflight") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, ["workspace", "target", "arguments"]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const payload = buildPluginInstallPreflight(body, { workspace });
+      const attached = attachActionPreflight(payload, { body, workspace, options });
+      options.integrationPreflightLedger?.record(attached);
+      sendJson(response, 200, attached);
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid plugin install preflight request",
+      });
+    }
+    return;
+  }
+
   if (url.pathname === "/api/plugin-uninstall-preflight") {
     if (request.method !== "POST") {
       sendJson(response, 405, { ok: false, error: "Method not allowed" });
@@ -16731,6 +16872,10 @@ async function buildConfirmableActionPreflightPayload(actionType, body, { worksp
         workspace,
         pluginReadEnabled: options.pluginReadEnabled,
       });
+    case "plugin-install-preflight":
+      return buildPluginInstallPreflight(body, {
+        workspace,
+      });
     case "plugin-uninstall-preflight":
       return buildPluginUninstallPreflight(body, {
         workspace,
@@ -16849,6 +16994,7 @@ function isIntegrationPreflightActionType(actionType) {
     actionType === "experimental-feature-preflight" ||
     actionType === "mcp-resource-preflight" ||
     actionType === "plugin-read-preflight" ||
+    actionType === "plugin-install-preflight" ||
     actionType === "plugin-uninstall-preflight" ||
     actionType === "plugin-share-checkout-preflight" ||
     actionType === "plugin-content-preflight" ||
@@ -24944,6 +25090,107 @@ function summarizeRawPluginReadResult(plugin) {
   };
 }
 
+export function buildPluginInstallPreflight(body, { workspace } = {}) {
+  const methodAudit = integrationMethodAudit();
+  const auditEntry = methodAudit.find((entry) => entry.method === "plugin/install");
+  const category = auditEntry?.category ?? "plugins-install";
+  const target = validateRequiredIntegrationTarget(body?.target, "Plugin install");
+  const args = validateMcpArguments(body?.arguments);
+  const risk = summarizeBlockedIntegrationActionRisk({
+    method: "plugin/install",
+    category,
+    target,
+    argumentsValue: body?.arguments,
+  });
+  const targetText = typeof body?.target === "string" ? body.target.trim() : "";
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: publicWorkspaces([workspace])[0],
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      pluginMutationTraffic: false,
+    },
+    action: {
+      type: "plugin-install-preflight",
+      method: "plugin/install",
+      category,
+      execution: "blocked",
+      wouldInstallPlugin: false,
+      wouldDownloadExternalCode: false,
+      wouldMaterializeExternalCode: false,
+      wouldMutatePlugins: false,
+      appServerTouched: false,
+      modelTraffic: false,
+      reason: "plugin-install-execution-not-implemented",
+    },
+    integrationAction: {
+      method: "plugin/install",
+      category,
+      target,
+      arguments: args,
+      methodAllowedByAudit: auditEntry?.status === "blocked",
+    },
+    pluginInstall: {
+      method: "plugin/install",
+      targetCharCount: target.charCount,
+      targetUrlLike: isUrlLikeArgument(targetText),
+      targetPathLike: isPathLikeArgument(targetText),
+      argumentCharCount: args.charCount,
+      argumentTopLevelKeyCount: args.topLevelKeyCount,
+      argumentObjectAccepted: risk.argumentObjectAccepted,
+      stringArgumentCount: risk.stringArgumentCount,
+      urlLikeArgumentCount: risk.urlLikeArgumentCount,
+      pathLikeArgumentCount: risk.pathLikeArgumentCount,
+      secretLikeArgumentCount: risk.secretLikeArgumentCount,
+      sensitiveKeyCount: risk.sensitiveKeyCount,
+      pluginNamePresent: risk.pluginInstall.pluginNamePresent,
+      remoteMarketplaceNamePresent: risk.pluginInstall.remoteMarketplaceNamePresent,
+      marketplacePathPresent: risk.pluginInstall.marketplacePathPresent,
+      installExecutionBlocked: true,
+      externalCodeMaterialization: false,
+      downloadsExternalCode: false,
+      appServerTraffic: false,
+      pluginNamesReturned: false,
+      marketplaceNamesReturned: false,
+      pathsReturned: false,
+      urlsReturned: false,
+      secretsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: false,
+      pluginMutation: false,
+      pluginInstall: false,
+      pluginInstallPreflightEnabled: true,
+      pluginInstallEnabled: false,
+      installExecutionBlocked: true,
+      externalCodeMaterialization: false,
+      downloadsExternalCode: false,
+      executionRouteImplemented: false,
+      dedicatedExecutionRouteImplemented: false,
+      executionGateEnabled: false,
+      requiresApprovalPipeline: true,
+      requiresIntegrationProvenance: true,
+      requiresExternalCodeAudit: true,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: false,
+      pluginNamesReturned: false,
+      marketplaceNamesReturned: false,
+      targetReturned: false,
+      argumentTextReturned: false,
+      pathsReturned: false,
+      urlsReturned: false,
+      secretsReturned: false,
+      rawPayloadsReturned: false,
+      implemented: true,
+    },
+  };
+}
+
 export function buildPluginUninstallPreflight(
   body,
   {
@@ -28467,18 +28714,11 @@ export function sanitizeSettingsIntegrationsPayload(
           : "skills-list-unavailable",
       },
       plugins: {
-        state:
-          inventory.plugins.ok ||
-          pluginReadEnabled ||
-          pluginShareCheckoutEnabled ||
-          pluginUninstallEnabled ||
-          pluginContentReadEnabled ||
-          pluginShareListEnabled
-            ? "partial"
-            : "blocked",
+        state: "partial",
         listingAvailable: inventory.plugins.ok,
         installedListingAvailable: inventory.installedPlugins.ok,
         detailReadEnabled: Boolean(pluginReadEnabled),
+        installPreflightEnabled: true,
         shareCheckoutEnabled: Boolean(pluginShareCheckoutEnabled),
         uninstallEnabled: Boolean(pluginUninstallEnabled),
         contentReadEnabled: Boolean(pluginContentReadEnabled),
@@ -28490,7 +28730,7 @@ export function sanitizeSettingsIntegrationsPayload(
           ? inventory.plugins.namesReturned
             ? "names-and-counts"
             : "counts-only"
-          : "plugin-list-unavailable",
+          : "plugin-install-preflight-local-only",
       },
     },
     inventory,
@@ -34953,16 +35193,10 @@ export function buildSettingsIntegrations({
         reason: "requires-explicit-inventory-enable",
       },
       plugins: {
-        state:
-          pluginReadEnabled ||
-          pluginShareCheckoutEnabled ||
-          pluginUninstallEnabled ||
-          pluginContentReadEnabled ||
-          pluginShareListEnabled
-            ? "partial"
-            : "blocked",
+        state: "partial",
         listingAvailable: false,
         detailReadEnabled: Boolean(pluginReadEnabled),
+        installPreflightEnabled: true,
         shareCheckoutEnabled: Boolean(pluginShareCheckoutEnabled),
         uninstallEnabled: Boolean(pluginUninstallEnabled),
         contentReadEnabled: Boolean(pluginContentReadEnabled),
@@ -34970,7 +35204,7 @@ export function buildSettingsIntegrations({
         installEnabled: false,
         executionEnabled: false,
         mutationEnabled: Boolean(pluginUninstallEnabled || pluginShareCheckoutEnabled),
-        reason: "requires-explicit-inventory-enable",
+        reason: "plugin-install-preflight-local-only",
       },
     },
     preflightHistory,
@@ -35102,6 +35336,7 @@ function buildIntegrationActionScope({
     "mcp-oauth-login-preflight",
     "mcp-resource-preflight",
     "plugin-read-preflight",
+    "plugin-install-preflight",
     "plugin-uninstall-preflight",
     "plugin-share-checkout-preflight",
     "plugin-content-preflight",
@@ -35175,6 +35410,7 @@ function buildIntegrationActionScope({
     skillsConfigWriteEnabled: Boolean(skillsConfigWriteEnabled),
     skillsExtraRootsClearEnabled: Boolean(skillsExtraRootsClearEnabled),
     pluginReadEnabled: Boolean(pluginReadEnabled),
+    pluginInstallPreflightEnabled: true,
     pluginShareCheckoutEnabled: Boolean(pluginShareCheckoutEnabled),
     pluginUninstallEnabled: Boolean(pluginUninstallEnabled),
     pluginInstallEnabled: false,

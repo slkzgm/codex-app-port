@@ -628,6 +628,12 @@ Current M1 status:
   reduced to plugin/app/hook/MCP server/skill/keyword counts and character
   counts without plugin or marketplace names, ids, descriptions, paths, URLs,
   hook keys, skill content, share context, tokens, or raw payloads
+- done: local-only `/api/plugin-install-preflight` for audited `plugin/install`
+  intent, with route-specific nested response schemas, target/argument counts,
+  URL/path/secret-like counters, install field-presence booleans, short-lived
+  preflight confirmation/history, and no install/download/materialization
+  route, app-server traffic, target/argument echo, plugin names, marketplace
+  names, paths, URLs, secrets, or raw payloads
 - done: opt-in `/api/plugin-uninstall` behind
   `CODEX_APP_PORT_ALLOW_PLUGIN_UNINSTALL=1`, exact
   `CODEX_APP_PORT_PLUGIN_UNINSTALL_ALLOWLIST` plugin-id match, safe plugin-id
@@ -709,10 +715,11 @@ Current M1 status:
   action audit records reduced to feature/enabled and updated/enabled/disabled
   counts without feature names, enablement values, config paths, tokens, or raw
   payloads
-- done: blocked integration mutation preflight for audited settings/auth/MCP/
-  skills/plugins mutation methods, with target/argument counts only, no target
-  or argument echo, no tool invocation, no installs, no auth callbacks, no
-  settings writes, no sharing or marketplace mutation, and no app-server traffic
+- done: blocked integration mutation preflight plus dedicated plugin-install
+  preflight for audited settings/auth/MCP/skills/plugins mutation methods, with
+  target/argument counts only, no target or argument echo, no tool invocation,
+  no installs, no auth callbacks, no settings writes, no sharing or marketplace
+  mutation, and no app-server traffic
 - done: capped process-local settings/MCP/integration preflight history exposed
   through `/api/settings-integrations` and the UI with action type, audited
   method/category, target/name/resource/argument counts, and redaction flags
@@ -847,8 +854,8 @@ Current M1 status:
 - done: route-specific nested response-key schemas for high-risk turn-start,
   approval-decision, MCP tool-call preflight/execution, MCP resource-read
   execution, MCP OAuth-login preflight/execution, MCP server-reload
-  preflight/execution, plugin-share-checkout preflight/execution, skills-config
-  preflight/execution, config-value preflight/execution, config-batch
+  preflight/execution, plugin-install preflight, plugin-share-checkout
+  preflight/execution, skills-config preflight/execution, config-value preflight/execution, config-batch
   preflight/execution, experimental-feature preflight/execution, and generic
   integration mutation preflight routes,
   fail-closing unexpected keys inside

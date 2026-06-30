@@ -91,6 +91,9 @@ The server binds to `127.0.0.1` by default and serves:
   token; responses and audit records return only plugin structure counts and
   omit plugin names, marketplace names, ids, paths, URLs, descriptions, hook
   keys, skill content, MCP server names, share context, tokens, and raw payloads
+- `/api/plugin-install-preflight`: local-only `plugin/install` validation with
+  target/argument counts and install-risk booleans only; no download, install,
+  external-code materialization, app-server traffic, or execution route
 - `/api/plugin-uninstall-preflight` and `/api/plugin-uninstall`: opt-in
   `plugin/uninstall` behind `CODEX_APP_PORT_ALLOW_PLUGIN_UNINSTALL=1`, an
   exact `CODEX_APP_PORT_PLUGIN_UNINSTALL_ALLOWLIST` plugin-id match, and a
@@ -811,6 +814,16 @@ character counts only behind its own nested response schema. It does not return
 or audit plugin names, marketplace names, ids, paths, URLs, descriptions, hook
 keys, skill content, MCP server names, share context, tokens, or raw payloads.
 
+The plugin-install-preflight endpoint accepts draft `plugin/install` intent for
+local validation behind a route-specific nested response schema. It returns
+only target length, argument length/key counts, URL/path/secret-like counters,
+and plugin-install field-presence booleans. It issues a short-lived local
+preflight token for confirmation and history, but there is no
+`/api/plugin-install` execution route. It does not download, install, check out,
+materialize external code, touch app-server, or return plugin names,
+marketplace names, paths, URLs, secrets, target text, argument text, or raw
+payloads.
+
 The plugin-uninstall-preflight endpoint accepts draft `plugin/uninstall` intent
 only for local validation behind a route-specific nested response schema. It
 returns plugin-id length and allowlist state only, does not return plugin
@@ -941,7 +954,7 @@ auth-credential, and migration counts only. It does not return target text,
 argument text, names, URLs, schemas, paths, principals, setting keys or values,
 invoke tools, install or uninstall plugins, write settings, start auth flows, or
 touch `codex app-server`.
-Successful MCP server-reload/OAuth/tool/resource, plugin-read/plugin-uninstall/plugin-content,
+Successful MCP server-reload/OAuth/tool/resource, plugin-read/plugin-install/plugin-uninstall/plugin-content,
 skills-config, config-value, config-batch, experimental-feature, and integration mutation preflights are also recorded in a capped process-local
 history returned by `/api/settings-integrations`. That history keeps only
 action type, audited method/category, target/name/resource/

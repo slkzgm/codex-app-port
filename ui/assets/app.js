@@ -151,6 +151,15 @@ const elements = {
   pluginReadArgKeys: document.querySelector("#plugin-read-arg-keys"),
   pluginReadText: document.querySelector("#plugin-read-text"),
   pluginReadDetailsText: document.querySelector("#plugin-read-details-text"),
+  pluginInstallForm: document.querySelector("#plugin-install-form"),
+  pluginInstallTargetInput: document.querySelector("#plugin-install-target-input"),
+  pluginInstallArgumentsInput: document.querySelector("#plugin-install-arguments-input"),
+  pluginInstallButton: document.querySelector("#plugin-install-button"),
+  pluginInstallStatus: document.querySelector("#plugin-install-status"),
+  pluginInstallTargetChars: document.querySelector("#plugin-install-target-chars"),
+  pluginInstallArgKeys: document.querySelector("#plugin-install-arg-keys"),
+  pluginInstallText: document.querySelector("#plugin-install-text"),
+  pluginInstallProvenanceText: document.querySelector("#plugin-install-provenance-text"),
   pluginUninstallForm: document.querySelector("#plugin-uninstall-form"),
   pluginUninstallTargetInput: document.querySelector("#plugin-uninstall-target-input"),
   pluginUninstallButton: document.querySelector("#plugin-uninstall-button"),
@@ -1277,6 +1286,19 @@ elements.pluginReadRunButton.addEventListener("click", () => {
   runPluginRead();
 });
 
+for (const input of [elements.pluginInstallTargetInput, elements.pluginInstallArgumentsInput]) {
+  input.addEventListener("input", () => {
+    elements.pluginInstallStatus.textContent = "Blocked";
+    elements.pluginInstallText.textContent = "Blocked";
+    elements.pluginInstallProvenanceText.textContent = "Required";
+  });
+}
+
+elements.pluginInstallForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  runPluginInstallPreflight();
+});
+
 elements.pluginUninstallForm.addEventListener("submit", (event) => {
   event.preventDefault();
   runPluginUninstallPreflight();
@@ -1753,6 +1775,10 @@ function pluginReadPreflightEndpoint() {
 
 function pluginReadEndpoint() {
   return "/api/plugin-read";
+}
+
+function pluginInstallPreflightEndpoint() {
+  return "/api/plugin-install-preflight";
 }
 
 function pluginUninstallPreflightEndpoint() {
@@ -2677,6 +2703,36 @@ async function runPluginRead() {
     lastPluginReadPreflight = null;
     elements.pluginReadRunButton.disabled = true;
     setPluginReadLoading(false);
+  }
+}
+
+async function runPluginInstallPreflight() {
+  setPluginInstallLoading(true);
+  hideError();
+
+  try {
+    const body = {
+      workspace: selectedWorkspaceId,
+      target: elements.pluginInstallTargetInput.value,
+      arguments: elements.pluginInstallArgumentsInput.value,
+    };
+    const response = await fetch(pluginInstallPreflightEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify(body),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderPluginInstallPreflight(payload);
+    await refreshSettingsIntegrations().catch(() => {});
+  } catch (error) {
+    elements.pluginInstallStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    setPluginInstallLoading(false);
   }
 }
 
@@ -10108,6 +10164,17 @@ function renderPluginRead(payload) {
   elements.pluginReadDetailsText.textContent = `${pluginRead.skillCount ?? 0} skills`;
 }
 
+function renderPluginInstallPreflight(payload) {
+  const install = payload.pluginInstall ?? {};
+  elements.pluginInstallStatus.textContent = payload.action?.execution ?? "blocked";
+  elements.pluginInstallTargetChars.textContent = String(install.targetCharCount ?? 0);
+  elements.pluginInstallArgKeys.textContent = String(install.argumentTopLevelKeyCount ?? 0);
+  elements.pluginInstallText.textContent = payload.policy?.pluginInstall ? "Enabled" : "Blocked";
+  elements.pluginInstallProvenanceText.textContent = payload.policy?.requiresIntegrationProvenance
+    ? "Required"
+    : "Unknown";
+}
+
 function renderPluginUninstallPreflight(payload) {
   const plugin = payload.pluginUninstall ?? {};
   elements.pluginUninstallStatus.textContent = payload.action?.execution ?? "blocked";
@@ -12257,6 +12324,14 @@ function setPluginReadLoading(isLoading) {
   elements.pluginReadButton.textContent = isLoading ? "Checking" : "Plugin Read Check";
   if (isLoading) {
     elements.pluginReadStatus.textContent = "Checking";
+  }
+}
+
+function setPluginInstallLoading(isLoading) {
+  elements.pluginInstallButton.disabled = isLoading;
+  elements.pluginInstallButton.textContent = isLoading ? "Checking" : "Install Check";
+  if (isLoading) {
+    elements.pluginInstallStatus.textContent = "Checking";
   }
 }
 
