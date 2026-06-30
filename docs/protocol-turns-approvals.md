@@ -115,6 +115,12 @@ New client request methods:
 - `thread/search`
 - `thread/settings/update`
 
+`memory/reset` remains blocked as a generic browser mutation and is exposed only
+through `/api/memory-reset-preflight` for local validation. The route accepts no
+browser params, requires the official null-params shape, has no execution route,
+deletes no memories, performs no app-server traffic, and returns no memory
+files, memory content, memory paths, secrets, or raw payloads.
+
 Current local status: `permissionProfile/list`, `account/usage/read`,
 `account/workspaceMessages/read`, `externalAgentConfig/import/readHistories`,
 `plugin/installed`, and `remoteControl/status/read` are exposed only through the

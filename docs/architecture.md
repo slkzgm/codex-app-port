@@ -680,6 +680,11 @@ Current M1 status:
   feedback execution route, app-server traffic, thread ids, branches, SHAs,
   titles, instructions, feedback reason, log paths, tags, URLs, secrets, or raw
   payloads
+- done: local-only `/api/memory-reset-preflight` for audited `memory/reset`
+  intent, with route-specific nested response schemas, no browser params,
+  official null-params requirement, short-lived preflight confirmation/history,
+  and no memory reset execution route, app-server traffic, memory deletion,
+  memory files, memory content, memory paths, secrets, or raw payloads
 - done: opt-in `/api/plugin-content-read` behind
   `CODEX_APP_PORT_ALLOW_PLUGIN_CONTENT_READ=1` for `plugin/skill/read` and
   `CODEX_APP_PORT_ALLOW_PLUGIN_SHARE_LIST=1` for `plugin/share/list`, with

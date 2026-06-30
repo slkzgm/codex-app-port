@@ -136,6 +136,11 @@ const elements = {
   reviewFeedbackArgKeys: document.querySelector("#review-feedback-arg-keys"),
   reviewFeedbackReviewText: document.querySelector("#review-feedback-review-text"),
   reviewFeedbackLogsText: document.querySelector("#review-feedback-logs-text"),
+  memoryResetPreflightButton: document.querySelector("#memory-reset-preflight-button"),
+  memoryResetStatus: document.querySelector("#memory-reset-status"),
+  memoryResetParamsText: document.querySelector("#memory-reset-params-text"),
+  memoryResetDeletedText: document.querySelector("#memory-reset-deleted-text"),
+  memoryResetContentText: document.querySelector("#memory-reset-content-text"),
   skillsStateText: document.querySelector("#skills-state-text"),
   pluginsStateText: document.querySelector("#plugins-state-text"),
   installedPluginsStateText: document.querySelector("#installed-plugins-state-text"),
@@ -1635,6 +1640,10 @@ elements.reviewFeedbackForm.addEventListener("submit", (event) => {
   runReviewFeedbackPreflight();
 });
 
+elements.memoryResetPreflightButton.addEventListener("click", () => {
+  runMemoryResetPreflight();
+});
+
 for (const input of [
   elements.reviewFeedbackMethodSelect,
   elements.reviewFeedbackTargetInput,
@@ -2066,6 +2075,10 @@ function externalConfigImportPreflightEndpoint() {
 
 function reviewFeedbackPreflightEndpoint() {
   return "/api/review-feedback-preflight";
+}
+
+function memoryResetPreflightEndpoint() {
+  return "/api/memory-reset-preflight";
 }
 
 function accountLoginPreflightEndpoint() {
@@ -3952,6 +3965,33 @@ async function runReviewFeedbackPreflight() {
     renderError(error);
   } finally {
     setReviewFeedbackLoading(false);
+  }
+}
+
+async function runMemoryResetPreflight() {
+  setMemoryResetLoading(true);
+  hideError();
+
+  try {
+    const response = await fetch(memoryResetPreflightEndpoint(), {
+      method: "POST",
+      headers: jsonHeaders(),
+      cache: "no-store",
+      body: JSON.stringify({
+        workspace: selectedWorkspaceId,
+      }),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderMemoryResetPreflight(payload);
+    await refreshSettingsIntegrations().catch(() => {});
+  } catch (error) {
+    elements.memoryResetStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    setMemoryResetLoading(false);
   }
 }
 
@@ -11012,6 +11052,23 @@ function renderReviewFeedbackPreflight(payload) {
   ]);
 }
 
+function renderMemoryResetPreflight(payload) {
+  const memoryReset = payload.memoryReset ?? {};
+  elements.memoryResetStatus.textContent = payload.action?.execution ?? "blocked";
+  elements.memoryResetParamsText.textContent = memoryReset.paramsAcceptedFromBrowser
+    ? "Accepted"
+    : "Rejected";
+  elements.memoryResetDeletedText.textContent = memoryReset.memoriesDeleted
+    ? "Deleted"
+    : "Preserved";
+  elements.memoryResetContentText.textContent =
+    memoryReset.memoryFilesReturned ||
+    memoryReset.memoryContentReturned ||
+    memoryReset.memoryPathsReturned
+      ? "Returned"
+      : "Hidden";
+}
+
 function renderAccountLoginPreflight(payload) {
   elements.accountLoginStatus.textContent = payload.policy?.executionGateEnabled
     ? "Login ready"
@@ -13040,6 +13097,14 @@ function setReviewFeedbackLoading(isLoading) {
   elements.reviewFeedbackButton.textContent = isLoading ? "Checking" : "Review/Feedback Check";
   if (isLoading) {
     elements.reviewFeedbackStatus.textContent = "Checking";
+  }
+}
+
+function setMemoryResetLoading(isLoading) {
+  elements.memoryResetPreflightButton.disabled = isLoading;
+  elements.memoryResetPreflightButton.textContent = isLoading ? "Checking" : "Memory Reset Check";
+  if (isLoading) {
+    elements.memoryResetStatus.textContent = "Checking";
   }
 }
 

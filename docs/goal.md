@@ -158,6 +158,11 @@ Target parity with the Codex desktop workflow:
   matching one-time preflight token, accepts no browser roots/paths/arguments,
   sends only `{"extraRoots":[]}`, and returns only status/count/shape metadata,
   not extra roots, paths, notifications, preflight tokens, or raw payloads.
+- `memory/reset` has a separate local-only preflight path. It accepts no browser
+  params, requires the official null-params contract, never deletes memories,
+  never touches app-server, and returns no memory files, memory content, memory
+  paths, secrets, preflight tokens, or raw payloads. There is no memory reset
+  execution route.
 - `remoteControl/disable` has a separate disabled-by-default defensive path
   behind `CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_DISABLE=1`; it consumes a
   matching one-time preflight token, accepts no browser remote-control params,

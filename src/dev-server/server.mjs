@@ -741,6 +741,11 @@ export const ACTION_PREFLIGHT_CONFIRMATION_FIELD_CONTRACTS = Object.freeze({
     "target",
     "arguments",
   ),
+  "memory-reset-preflight": bodyFields(
+    "workspace",
+    "actionType",
+    "preflightToken",
+  ),
   "plugin-share-checkout": bodyFields(
     "workspace",
     "target",
@@ -1239,6 +1244,10 @@ export const BROWSER_POST_BODY_CONTRACTS = Object.freeze({
       appServerTraffic: false,
     },
   ),
+  "/api/memory-reset-preflight": bodyContract(["workspace"], {
+    kind: "preflight",
+    appServerTraffic: false,
+  }),
   "/api/plugin-share-checkout": bodyContract(["workspace", "target", "preflightToken"], {
     kind: "mutation",
     requiresPreflightToken: true,
@@ -8238,6 +8247,71 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
     ],
     "preflight.scope": ["kind", "workspaceId"],
   }),
+  "/api/memory-reset-preflight": responseNestedKeySchemas({
+    workspace: ["id", "label", "isDefault"],
+    appServer: ["touched", "modelTraffic", "commandTraffic", "memoryTraffic"],
+    action: [
+      "type",
+      "method",
+      "category",
+      "execution",
+      "wouldResetMemories",
+      "appServerTouched",
+      "modelTraffic",
+      "reason",
+    ],
+    integrationAction: ["method", "category", "methodAllowedByAudit"],
+    memoryReset: [
+      "method",
+      "paramsAcceptedFromBrowser",
+      "nullParamsRequired",
+      "resetExecutionBlocked",
+      "memoriesDeleted",
+      "appServerTraffic",
+      "modelTraffic",
+      "responseObjectReturned",
+      "memoryFilesReturned",
+      "memoryContentReturned",
+      "memoryPathsReturned",
+      "secretsReturned",
+      "rawPayloadReturned",
+    ],
+    policy: [
+      "readOnly",
+      "appServerTraffic",
+      "modelTraffic",
+      "memoryReset",
+      "memoryResetPreflightEnabled",
+      "memoryResetEnabled",
+      "executionRouteImplemented",
+      "dedicatedExecutionRouteImplemented",
+      "executionGateEnabled",
+      "paramsAcceptedFromBrowser",
+      "memoryFilesReturned",
+      "memoryContentReturned",
+      "memoryPathsReturned",
+      "secretsReturned",
+      "rawPayloadsReturned",
+      "requiresApprovalPipeline",
+      "requiresIntegrationProvenance",
+      "requiresExplicitEnablement",
+      "browserMethodCallsAccepted",
+      "implemented",
+    ],
+    preflight: [
+      "token",
+      "tokenIssued",
+      "issuedAt",
+      "expiresAt",
+      "scope",
+      "rawIntentStored",
+      "rawIntentReturned",
+      "intentHashReturned",
+      "oneTimeUseRequiredForMutation",
+      "consumed",
+    ],
+    "preflight.scope": ["kind", "workspaceId"],
+  }),
   "/api/plugin-share-checkout": responseNestedKeySchemas({
     workspace: ["id", "label", "isDefault"],
     initialize: ["platformFamily", "platformOs"],
@@ -11082,6 +11156,11 @@ const BROWSER_POST_RESPONSE_ROUTE_TOP_LEVEL_KEYS = Object.freeze({
     ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
     "integrationAction",
     "reviewFeedback",
+  ),
+  "/api/memory-reset-preflight": routeResponseTopLevelKeys(
+    ...RESPONSE_PREFLIGHT_TOP_LEVEL_KEYS,
+    "integrationAction",
+    "memoryReset",
   ),
   "/api/plugin-share-checkout": routeResponseTopLevelKeys(
     ...RESPONSE_APP_SERVER_MUTATION_TOP_LEVEL_KEYS,
@@ -15911,6 +15990,36 @@ export async function handleRequest(request, response, options) {
     return;
   }
 
+  if (url.pathname === "/api/memory-reset-preflight") {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const body = await readStrictJsonObjectBody(request, ["workspace"]);
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        body.workspace ?? url.searchParams.get("workspace"),
+      );
+      const payload = buildMemoryResetPreflight(body, { workspace });
+      const attached = attachActionPreflight(payload, { body, workspace, options });
+      options.integrationPreflightLedger?.record(attached);
+      sendJson(response, 200, attached);
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 400, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid memory reset preflight request",
+      });
+    }
+    return;
+  }
+
   if (url.pathname === "/api/plugin-share-checkout") {
     if (request.method !== "POST") {
       sendJson(response, 405, { ok: false, error: "Method not allowed" });
@@ -17989,6 +18098,10 @@ async function buildConfirmableActionPreflightPayload(actionType, body, { worksp
       return buildReviewFeedbackPreflight(body, {
         workspace,
       });
+    case "memory-reset-preflight":
+      return buildMemoryResetPreflight(body, {
+        workspace,
+      });
     case "plugin-content-preflight":
       return buildPluginContentPreflight(body, {
         workspace,
@@ -18110,6 +18223,7 @@ function isIntegrationPreflightActionType(actionType) {
     actionType === "plugin-share-action-preflight" ||
     actionType === "external-config-import-preflight" ||
     actionType === "review-feedback-preflight" ||
+    actionType === "memory-reset-preflight" ||
     actionType === "plugin-content-preflight" ||
     actionType === "skills-config-preflight" ||
     actionType === "skills-extra-roots-clear-preflight" ||
@@ -27132,6 +27246,77 @@ export function buildReviewFeedbackPreflight(body, { workspace } = {}) {
       urlsReturned: false,
       secretsReturned: false,
       rawPayloadsReturned: false,
+      implemented: true,
+    },
+  };
+}
+
+export function buildMemoryResetPreflight(_body, { workspace } = {}) {
+  const methodAudit = integrationMethodAudit();
+  const auditEntry = methodAudit.find((entry) => entry.method === "memory/reset");
+  if (!auditEntry || auditEntry.status !== "blocked") {
+    throwRequestError("Memory reset method is not available", 400);
+  }
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: publicWorkspaces([workspace])[0],
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      memoryTraffic: false,
+    },
+    action: {
+      type: "memory-reset-preflight",
+      method: "memory/reset",
+      category: auditEntry.category ?? "memory-mutation",
+      execution: "blocked",
+      wouldResetMemories: false,
+      appServerTouched: false,
+      modelTraffic: false,
+      reason: "memory-reset-execution-not-implemented",
+    },
+    integrationAction: {
+      method: "memory/reset",
+      category: auditEntry.category ?? "memory-mutation",
+      methodAllowedByAudit: true,
+    },
+    memoryReset: {
+      method: "memory/reset",
+      paramsAcceptedFromBrowser: false,
+      nullParamsRequired: true,
+      resetExecutionBlocked: true,
+      memoriesDeleted: false,
+      appServerTraffic: false,
+      modelTraffic: false,
+      responseObjectReturned: false,
+      memoryFilesReturned: false,
+      memoryContentReturned: false,
+      memoryPathsReturned: false,
+      secretsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: false,
+      modelTraffic: false,
+      memoryReset: false,
+      memoryResetPreflightEnabled: true,
+      memoryResetEnabled: false,
+      executionRouteImplemented: false,
+      dedicatedExecutionRouteImplemented: false,
+      executionGateEnabled: false,
+      paramsAcceptedFromBrowser: false,
+      memoryFilesReturned: false,
+      memoryContentReturned: false,
+      memoryPathsReturned: false,
+      secretsReturned: false,
+      rawPayloadsReturned: false,
+      requiresApprovalPipeline: true,
+      requiresIntegrationProvenance: true,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: false,
       implemented: true,
     },
   };
@@ -37191,6 +37376,7 @@ function buildIntegrationActionScope({
     "plugin-share-action-preflight",
     "external-config-import-preflight",
     "review-feedback-preflight",
+    "memory-reset-preflight",
     "remote-control-enable-preflight",
     "remote-control-pairing-preflight",
     "plugin-content-preflight",
@@ -37265,6 +37451,8 @@ function buildIntegrationActionScope({
     reviewFeedbackPreflightEnabled: true,
     reviewStartEnabled: false,
     feedbackUploadEnabled: false,
+    memoryResetPreflightEnabled: true,
+    memoryResetEnabled: false,
     remoteControlEnablePreflightEnabled: true,
     remoteControlEnableEnabled: false,
     remoteControlPairingPreflightEnabled: true,

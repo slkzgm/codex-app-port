@@ -128,6 +128,10 @@ The server binds to `127.0.0.1` by default and serves:
   review or feedback route, and no thread ids, branches, SHAs, titles,
   instructions, feedback reason, log paths, tags, URLs, secrets,
   target/argument text, or raw payloads
+- `/api/memory-reset-preflight`: local-only validation for `memory/reset`; it
+  accepts no browser params, never deletes memories, never touches app-server,
+  and returns no memory files, memory content, memory paths, secrets, or raw
+  payloads
 - `/api/plugin-content-preflight`: local plugin skill/share-list validation
   with skill text, sharing state, plugin/marketplace text, and app-server reads
   blocked
@@ -926,6 +930,13 @@ touch app-server, or return thread ids, branch names, SHAs, titles,
 instructions, feedback reason, log paths, tags, URLs, secrets, target text,
 argument text, or raw payloads.
 
+The memory-reset-preflight endpoint accepts no browser parameters beyond the
+workspace selector and validates only the audited `memory/reset` method shape.
+It requires the official null-params contract, issues a short-lived local
+preflight token for confirmation/history, and has no execution route. It does
+not delete memories, touch app-server, or return memory files, memory content,
+memory paths, secrets, argument text, or raw payloads.
+
 The plugin-content-preflight endpoint accepts only audited blocked
 `plugin/skill/read` and `plugin/share/list` intent for local validation behind a
 route-specific nested response schema. It returns method, target, and argument
@@ -1052,7 +1063,7 @@ argument text, names, URLs, schemas, paths, principals, setting keys or values,
 invoke tools, install or uninstall plugins, write settings, start auth flows, or
 touch `codex app-server`.
 Successful MCP server-reload/OAuth/tool/resource, plugin-read/plugin-install/plugin-share-action/plugin-uninstall/plugin-content,
-skills-config, config-value, config-batch, experimental-feature, and integration mutation preflights are also recorded in a capped process-local
+skills-config, config-value, config-batch, experimental-feature, review/feedback, memory-reset, and integration mutation preflights are also recorded in a capped process-local
 history returned by `/api/settings-integrations`. That history keeps only
 action type, audited method/category, target/name/resource/
 argument counts, JSON top-level key counts, sanitized high-risk summaries, and
@@ -1947,6 +1958,9 @@ secrets, target/argument echo, or app-server traffic, that
 schema-backed `/api/review-feedback-preflight` blocks review and feedback
 actions without thread ids, branches, SHAs, titles, instructions, feedback
 reason, log paths, tags, URLs, secrets, target/argument echo, or app-server
+traffic, that
+schema-backed `/api/memory-reset-preflight` blocks memory reset execution
+without deleting memories, returning memory files/content/paths, or app-server
 traffic, that
 schema-backed `/api/plugin-content-preflight` blocks plugin skill/share-list
 reads without skill text, sharing URLs/principals, plugin/marketplace/path

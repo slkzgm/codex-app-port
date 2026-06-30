@@ -311,6 +311,10 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /review-feedback-button/);
     assert.match(appScript, /runReviewFeedbackPreflight/);
     assert.match(appScript, /renderReviewFeedbackPreflight/);
+    assert.match(html, /memory-reset-preflight-button/);
+    assert.match(html, /memory-reset-status/);
+    assert.match(appScript, /runMemoryResetPreflight/);
+    assert.match(appScript, /renderMemoryResetPreflight/);
     assert.match(html, /config-value-form/);
     assert.match(html, /config-value-status/);
     assert.match(html, /config-value-run-button/);
@@ -477,6 +481,7 @@ test("browser POST body contracts are centralized and immutable", () => {
     "/api/plugin-share-action-preflight",
     "/api/external-config-import-preflight",
     "/api/review-feedback-preflight",
+    "/api/memory-reset-preflight",
     "/api/plugin-share-checkout",
     "/api/plugin-content-preflight",
     "/api/plugin-content-read",
@@ -617,6 +622,9 @@ test("browser POST body contracts are centralized and immutable", () => {
     "workspace",
     "loginRef",
     "preflightToken",
+  ]);
+  assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/memory-reset-preflight"].allowedFields], [
+    "workspace",
   ]);
   assert.deepEqual([...BROWSER_POST_BODY_CONTRACTS["/api/process-spawn"].allowedFields], [
     "workspace",
@@ -1466,6 +1474,27 @@ test("browser POST response contracts block unsafe response values", () => {
   );
   assert.equal(
     reviewFeedbackPreflightContract.nestedKeySchemas.policy.includes("unexpected"),
+    false,
+  );
+  const memoryResetPreflightContract =
+    BROWSER_POST_RESPONSE_CONTRACTS["/api/memory-reset-preflight"];
+  assert.equal(memoryResetPreflightContract.usesRouteSpecificNestedKeySchemas, true);
+  assert.equal(
+    memoryResetPreflightContract.nestedKeySchemas.memoryReset.includes("resetExecutionBlocked"),
+    true,
+  );
+  assert.equal(
+    memoryResetPreflightContract.nestedKeySchemas.memoryReset.includes("memoryContentReturned"),
+    true,
+  );
+  assert.equal(
+    memoryResetPreflightContract.nestedKeySchemas.policy.includes(
+      "memoryResetPreflightEnabled",
+    ),
+    true,
+  );
+  assert.equal(
+    memoryResetPreflightContract.nestedKeySchemas.policy.includes("unexpected"),
     false,
   );
   const pluginShareCheckoutContract =
@@ -18722,7 +18751,7 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.integrationScope.state, "partial");
     assert.equal(payload.integrationScope.enabledReadMethodCount, 1);
     assert.deepEqual(payload.integrationScope.enabledReadMethods, ["config/read"]);
-    assert.equal(payload.integrationScope.enabledLocalGateCount, 19);
+    assert.equal(payload.integrationScope.enabledLocalGateCount, 20);
     assert.deepEqual(payload.integrationScope.enabledLocalGates, [
       "mcp-tool-preflight",
       "mcp-oauth-login-preflight",
@@ -18735,6 +18764,7 @@ test("dev server exposes settings and integration boundary without app-server tr
       "plugin-share-action-preflight",
       "external-config-import-preflight",
       "review-feedback-preflight",
+      "memory-reset-preflight",
       "remote-control-enable-preflight",
       "remote-control-pairing-preflight",
       "plugin-content-preflight",
@@ -18775,6 +18805,8 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.integrationScope.reviewFeedbackPreflightEnabled, true);
     assert.equal(payload.integrationScope.reviewStartEnabled, false);
     assert.equal(payload.integrationScope.feedbackUploadEnabled, false);
+    assert.equal(payload.integrationScope.memoryResetPreflightEnabled, true);
+    assert.equal(payload.integrationScope.memoryResetEnabled, false);
     assert.equal(payload.integrationScope.remoteControlEnablePreflightEnabled, true);
     assert.equal(payload.integrationScope.remoteControlEnableEnabled, false);
     assert.equal(payload.integrationScope.remoteControlPairingPreflightEnabled, true);
@@ -18802,7 +18834,7 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.integrationLifecycle.partialSurfaceCount, 3);
     assert.equal(payload.integrationLifecycle.blockedSurfaceCount, 4);
     assert.equal(payload.integrationLifecycle.readMethodCount, 1);
-    assert.equal(payload.integrationLifecycle.localGateCount, 19);
+    assert.equal(payload.integrationLifecycle.localGateCount, 20);
     assert.equal(payload.integrationLifecycle.enabledMutationGateCount, 0);
     assert.equal(
       payload.integrationLifecycle.blockedMutationMethodCount,
@@ -18814,8 +18846,8 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.integrationLifecycle.integrationActions.returned, true);
     assert.equal(payload.integrationLifecycle.integrationActions.state, "preflight-only");
     assert.equal(payload.integrationLifecycle.integrationActions.readMethodCount, 1);
-    assert.equal(payload.integrationLifecycle.integrationActions.localGateCount, 19);
-    assert.equal(payload.integrationLifecycle.integrationActions.preflightOnlyGateCount, 19);
+    assert.equal(payload.integrationLifecycle.integrationActions.localGateCount, 20);
+    assert.equal(payload.integrationLifecycle.integrationActions.preflightOnlyGateCount, 20);
     assert.equal(payload.integrationLifecycle.integrationActions.executableActionCount, 0);
     assert.equal(payload.integrationLifecycle.integrationActions.enabledMutationGateCount, 0);
     assert.equal(
@@ -18839,8 +18871,8 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.integrationLifecycle.integrationManagement.partialSurfaceCount, 3);
     assert.equal(payload.integrationLifecycle.integrationManagement.blockedSurfaceCount, 4);
     assert.equal(payload.integrationLifecycle.integrationManagement.readMethodCount, 1);
-    assert.equal(payload.integrationLifecycle.integrationManagement.localGateCount, 19);
-    assert.equal(payload.integrationLifecycle.integrationManagement.preflightOnlyGateCount, 19);
+    assert.equal(payload.integrationLifecycle.integrationManagement.localGateCount, 20);
+    assert.equal(payload.integrationLifecycle.integrationManagement.preflightOnlyGateCount, 20);
     assert.equal(payload.integrationLifecycle.integrationManagement.executableActionCount, 0);
     assert.equal(payload.integrationLifecycle.integrationManagement.enabledMutationGateCount, 0);
     assert.equal(
@@ -18871,8 +18903,8 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.returned, true);
     assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.state, "preflight-only");
     assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.readMethodCount, 1);
-    assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.localGateCount, 19);
-    assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.preflightOnlyGateCount, 19);
+    assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.localGateCount, 20);
+    assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.preflightOnlyGateCount, 20);
     assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.executableActionCount, 0);
     assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.enabledActionFamilyCount, 0);
     assert.equal(payload.integrationLifecycle.integrationExecutionReadiness.enabledMutationGateCount, 0);
@@ -18933,8 +18965,8 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.integrationLifecycle.integrationSafetyContract.returned, true);
     assert.equal(payload.integrationLifecycle.integrationSafetyContract.state, "preflight-only");
     assert.equal(payload.integrationLifecycle.integrationSafetyContract.readMethodCount, 1);
-    assert.equal(payload.integrationLifecycle.integrationSafetyContract.localGateCount, 19);
-    assert.equal(payload.integrationLifecycle.integrationSafetyContract.preflightOnlyGateCount, 19);
+    assert.equal(payload.integrationLifecycle.integrationSafetyContract.localGateCount, 20);
+    assert.equal(payload.integrationLifecycle.integrationSafetyContract.preflightOnlyGateCount, 20);
     assert.equal(payload.integrationLifecycle.integrationSafetyContract.executableActionCount, 0);
     assert.equal(payload.integrationLifecycle.integrationSafetyContract.enabledActionFamilyCount, 0);
     assert.equal(payload.integrationLifecycle.integrationSafetyContract.enabledMutationGateCount, 0);
@@ -18978,8 +19010,8 @@ test("dev server exposes settings and integration boundary without app-server tr
       state: "preflight-only",
       routingMode: "local-preflight-only",
       readMethodCount: 1,
-      localGateCount: 19,
-      preflightOnlyGateCount: 19,
+      localGateCount: 20,
+      preflightOnlyGateCount: 20,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -19008,8 +19040,8 @@ test("dev server exposes settings and integration boundary without app-server tr
       partialSurfaceCount: 3,
       blockedSurfaceCount: 4,
       readMethodCount: 1,
-      localGateCount: 19,
-      preflightOnlyGateCount: 19,
+      localGateCount: 20,
+      preflightOnlyGateCount: 20,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -19043,8 +19075,8 @@ test("dev server exposes settings and integration boundary without app-server tr
       workflowMode: "preflight-review",
       routingMode: "local-preflight-only",
       readMethodCount: 1,
-      localGateCount: 19,
-      preflightOnlyGateCount: 19,
+      localGateCount: 20,
+      preflightOnlyGateCount: 20,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -19076,8 +19108,8 @@ test("dev server exposes settings and integration boundary without app-server tr
       workflowMode: "preflight-review",
       routingMode: "local-preflight-only",
       readMethodCount: 1,
-      localGateCount: 19,
-      preflightOnlyGateCount: 19,
+      localGateCount: 20,
+      preflightOnlyGateCount: 20,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -19105,8 +19137,8 @@ test("dev server exposes settings and integration boundary without app-server tr
       workflowMode: "preflight-review",
       routingMode: "local-preflight-only",
       readMethodCount: 1,
-      localGateCount: 19,
-      preflightOnlyGateCount: 19,
+      localGateCount: 20,
+      preflightOnlyGateCount: 20,
       executableActionCount: 0,
       externalActionCount: 0,
       enabledMutationGateCount: 0,
@@ -19985,7 +20017,7 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
       "config/read",
       ...optInIntegrationReadMethods(),
     ]);
-    assert.equal(payload.integrationScope.enabledLocalGateCount, 19);
+    assert.equal(payload.integrationScope.enabledLocalGateCount, 20);
     assert.equal(
       payload.integrationScope.blockedMutationMethodCount,
       blockedIntegrationMutationMethods().length,
@@ -19996,6 +20028,8 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
     assert.equal(payload.integrationScope.namesReturned, false);
     assert.equal(payload.integrationScope.mcpToolInvocationEnabled, false);
     assert.equal(payload.integrationScope.externalConfigImportPreflightEnabled, true);
+    assert.equal(payload.integrationScope.memoryResetPreflightEnabled, true);
+    assert.equal(payload.integrationScope.memoryResetEnabled, false);
     assert.equal(payload.integrationScope.pluginInstallEnabled, false);
     assert.equal(payload.integrationScope.pluginContentReadEnabled, false);
     assert.equal(payload.integrationScope.pluginShareListEnabled, false);
@@ -20009,8 +20043,8 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
       state: "preflight-only",
       routingMode: "local-preflight-only",
       readMethodCount: ["config/read", ...optInIntegrationReadMethods()].length,
-      localGateCount: 19,
-      preflightOnlyGateCount: 19,
+      localGateCount: 20,
+      preflightOnlyGateCount: 20,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -20043,8 +20077,8 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
         (surface) => surface?.state === "blocked",
       ).length,
       readMethodCount: ["config/read", ...optInIntegrationReadMethods()].length,
-      localGateCount: 19,
-      preflightOnlyGateCount: 19,
+      localGateCount: 20,
+      preflightOnlyGateCount: 20,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -20078,8 +20112,8 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
       workflowMode: "preflight-review",
       routingMode: "local-preflight-only",
       readMethodCount: ["config/read", ...optInIntegrationReadMethods()].length,
-      localGateCount: 19,
-      preflightOnlyGateCount: 19,
+      localGateCount: 20,
+      preflightOnlyGateCount: 20,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -20111,8 +20145,8 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
       workflowMode: "preflight-review",
       routingMode: "local-preflight-only",
       readMethodCount: ["config/read", ...optInIntegrationReadMethods()].length,
-      localGateCount: 19,
-      preflightOnlyGateCount: 19,
+      localGateCount: 20,
+      preflightOnlyGateCount: 20,
       executableActionCount: 0,
       enabledActionFamilyCount: 0,
       enabledMutationGateCount: 0,
@@ -20140,8 +20174,8 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
       workflowMode: "preflight-review",
       routingMode: "local-preflight-only",
       readMethodCount: ["config/read", ...optInIntegrationReadMethods()].length,
-      localGateCount: 19,
-      preflightOnlyGateCount: 19,
+      localGateCount: 20,
+      preflightOnlyGateCount: 20,
       executableActionCount: 0,
       externalActionCount: 0,
       enabledMutationGateCount: 0,
@@ -26918,6 +26952,179 @@ test("dev server preflights review and feedback actions without app-server traff
       "private-ticket",
       "private-account",
       "sk-proj-feedbacksecret",
+    ]) {
+      assert.equal(historySerialized.includes(marker), false, `history leaked ${marker}`);
+      assert.equal(confirmationSerialized.includes(marker), false, `confirmation leaked ${marker}`);
+    }
+  } finally {
+    await closeServer(server);
+  }
+});
+
+test("dev server preflights memory reset without app-server traffic", async () => {
+  let probeCalled = false;
+  const { server, url } = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    workspaceInputs: ["/tmp/second-workspace"],
+    probeFn: async () => {
+      probeCalled = true;
+      return { ok: true };
+    },
+  });
+
+  try {
+    const getResponse = await fetch(`${url}/api/memory-reset-preflight`, {
+      headers: apiHeaders(server),
+    });
+    assert.equal(getResponse.status, 405);
+
+    const rejectedResponse = await fetch(`${url}/api/memory-reset-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        arguments: JSON.stringify({
+          memoryPath: "~/.codex/memories/private.md",
+          localPath: "/tmp/private-memory-reset",
+          token: "sk-proj-memorysecret",
+        }),
+      }),
+    });
+    assert.equal(rejectedResponse.status, 400);
+    const rejectedSerialized = await rejectedResponse.text();
+    assert.equal(rejectedSerialized.includes("~/.codex/memories"), false);
+    assert.equal(rejectedSerialized.includes("/tmp/private-memory-reset"), false);
+    assert.equal(rejectedSerialized.includes("sk-proj-memorysecret"), false);
+
+    const response = await fetch(`${url}/api/memory-reset-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+      }),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.deepEqual(payload.workspace, {
+      id: "workspace-2",
+      label: "second-workspace",
+      isDefault: false,
+    });
+    assert.equal(payload.appServer.touched, false);
+    assert.equal(payload.appServer.modelTraffic, false);
+    assert.equal(payload.appServer.commandTraffic, false);
+    assert.equal(payload.appServer.memoryTraffic, false);
+    assert.equal(payload.action.type, "memory-reset-preflight");
+    assert.equal(payload.action.method, "memory/reset");
+    assert.equal(payload.action.category, "memory-mutation");
+    assert.equal(payload.action.execution, "blocked");
+    assert.equal(payload.action.wouldResetMemories, false);
+    assert.equal(payload.action.appServerTouched, false);
+    assert.equal(payload.action.modelTraffic, false);
+    assert.equal(payload.action.reason, "memory-reset-execution-not-implemented");
+    assertActionPreflight(payload, "memory-reset-preflight", "workspace-2");
+    assert.equal(payload.integrationAction.method, "memory/reset");
+    assert.equal(payload.integrationAction.category, "memory-mutation");
+    assert.equal(payload.integrationAction.methodAllowedByAudit, true);
+    assert.equal(payload.memoryReset.method, "memory/reset");
+    assert.equal(payload.memoryReset.paramsAcceptedFromBrowser, false);
+    assert.equal(payload.memoryReset.nullParamsRequired, true);
+    assert.equal(payload.memoryReset.resetExecutionBlocked, true);
+    assert.equal(payload.memoryReset.memoriesDeleted, false);
+    assert.equal(payload.memoryReset.appServerTraffic, false);
+    assert.equal(payload.memoryReset.modelTraffic, false);
+    assert.equal(payload.memoryReset.responseObjectReturned, false);
+    assert.equal(payload.memoryReset.memoryFilesReturned, false);
+    assert.equal(payload.memoryReset.memoryContentReturned, false);
+    assert.equal(payload.memoryReset.memoryPathsReturned, false);
+    assert.equal(payload.memoryReset.secretsReturned, false);
+    assert.equal(payload.memoryReset.rawPayloadReturned, false);
+    assert.equal(payload.policy.memoryReset, false);
+    assert.equal(payload.policy.memoryResetPreflightEnabled, true);
+    assert.equal(payload.policy.memoryResetEnabled, false);
+    assert.equal(payload.policy.executionRouteImplemented, false);
+    assert.equal(payload.policy.dedicatedExecutionRouteImplemented, false);
+    assert.equal(payload.policy.executionGateEnabled, false);
+    assert.equal(payload.policy.paramsAcceptedFromBrowser, false);
+    assert.equal(payload.policy.memoryFilesReturned, false);
+    assert.equal(payload.policy.memoryContentReturned, false);
+    assert.equal(payload.policy.memoryPathsReturned, false);
+    assert.equal(payload.policy.secretsReturned, false);
+    assert.equal(payload.policy.rawPayloadsReturned, false);
+    assert.equal(payload.policy.browserMethodCallsAccepted, false);
+    assert.equal(payload.policy.implemented, true);
+    assert.equal(probeCalled, false);
+    for (const marker of [
+      "~/.codex/memories",
+      "/tmp/private-memory-reset",
+      "sk-proj-memorysecret",
+      "/tmp/second-workspace",
+      "codexHome",
+      "userAgent",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `memory reset preflight leaked ${marker}`);
+    }
+
+    const confirm = await fetch(`${url}/api/action-preflight-confirm`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "workspace-2",
+        actionType: "memory-reset-preflight",
+        preflightToken: payload.preflight.token,
+      }),
+    });
+    assert.equal(confirm.status, 200);
+    const confirmPayload = await confirm.json();
+    const confirmSerialized = JSON.stringify(confirmPayload);
+    assertActionPreflightConfirmation(confirmPayload, "memory-reset-preflight", "workspace-2");
+    assert.equal(confirmPayload.action.method, "memory/reset");
+    assert.equal(confirmPayload.action.mutationExecuted, false);
+    assert.equal(confirmSerialized.includes(payload.preflight.token), false);
+    assert.equal(confirmSerialized.includes("~/.codex/memories"), false);
+
+    const historyResponse = await fetch(`${url}/api/settings-integrations?workspace=workspace-2`, {
+      headers: apiHeaders(server),
+    });
+    assert.equal(historyResponse.status, 200);
+    const historyPayload = await historyResponse.json();
+    const historySerialized = JSON.stringify(historyPayload.preflightHistory);
+    const confirmationSerialized = JSON.stringify(historyPayload.preflightConfirmationHistory);
+    assert.equal(historyPayload.integrationScope.memoryResetPreflightEnabled, true);
+    assert.equal(historyPayload.integrationScope.memoryResetEnabled, false);
+    assert.equal(
+      historyPayload.integrationScope.enabledLocalGates.includes("memory-reset-preflight"),
+      true,
+    );
+    assert.equal(historyPayload.preflightHistory.count, 1);
+    assert.equal(historyPayload.preflightHistory.preflightTokensReturned, false);
+    assert.equal(historyPayload.preflightHistory.argumentTextReturned, false);
+    assert.equal(historyPayload.preflightConfirmationHistory.count, 1);
+    assert.equal(historyPayload.preflightConfirmationHistory.preflightTokensReturned, false);
+    assert.equal(
+      historyPayload.preflightHistory.items.some(
+        (item) =>
+          item.action.type === "memory-reset-preflight" &&
+          item.action.method === "memory/reset",
+      ),
+      true,
+    );
+    assert.equal(
+      historyPayload.preflightConfirmationHistory.items.some(
+        (item) =>
+          item.action.type === "memory-reset-preflight" &&
+          item.action.method === "memory/reset" &&
+          item.preflight.tokenConsumed === true,
+      ),
+      true,
+    );
+    for (const marker of [
+      payload.preflight.token,
+      "~/.codex/memories",
+      "/tmp/private-memory-reset",
+      "sk-proj-memorysecret",
     ]) {
       assert.equal(historySerialized.includes(marker), false, `history leaked ${marker}`);
       assert.equal(confirmationSerialized.includes(marker), false, `confirmation leaked ${marker}`);
