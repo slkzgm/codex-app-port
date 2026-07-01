@@ -14288,6 +14288,151 @@ test("dev server logs out account only behind explicit opt-in and preflight toke
   }
 });
 
+test("dev server exposes account read only behind explicit opt-in and redacts identity", async () => {
+  const blockedCalls = [];
+  const blockedServer = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    accountReadFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+
+  try {
+    const settingsResponse = await fetch(`${blockedServer.url}/api/settings-integrations`, {
+      headers: apiHeaders(blockedServer.server),
+    });
+    assert.equal(settingsResponse.status, 200);
+    const settingsPayload = await settingsResponse.json();
+    assert.equal(settingsPayload.surfaces.auth.accountReadAvailable, true);
+    assert.equal(settingsPayload.surfaces.auth.accountReadEnabled, false);
+    assert.equal(settingsPayload.surfaces.auth.stateVisible, false);
+    assert.equal(settingsPayload.integrationScope.accountReadEnabled, false);
+
+    const blockedResponse = await fetch(`${blockedServer.url}/api/account-read`, {
+      headers: apiHeaders(blockedServer.server),
+    });
+    assert.equal(blockedResponse.status, 200);
+    const blockedPayload = await blockedResponse.json();
+    const blockedSerialized = JSON.stringify(blockedPayload);
+    assert.equal(blockedPayload.ok, true);
+    assert.equal(blockedPayload.appServer.touched, false);
+    assert.equal(blockedPayload.auth.state, "blocked");
+    assert.equal(blockedPayload.auth.accountReadEnabled, false);
+    assert.equal(blockedPayload.policy.appServerTraffic, false);
+    assert.equal(blockedCalls.length, 0);
+    assert.equal(blockedSerialized.includes("/tmp/default-workspace"), false);
+  } finally {
+    await closeServer(blockedServer.server);
+  }
+
+  const calls = [];
+  const enabledServer = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    accountReadEnabled: true,
+    accountReadFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-07-01T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/private-home",
+          userAgent: "mock/0.0.0",
+        },
+        probes: {
+          accountRead: {
+            method: "account/read",
+            ok: true,
+            requiresOpenaiAuth: false,
+            hasAccount: true,
+            accountType: "chatgpt",
+            email: "person@example.test",
+            token: "secret-token",
+            tokenReturned: true,
+            emailReturned: true,
+            accountIdentifiersReturned: true,
+            rawPayloadReturned: true,
+          },
+        },
+        rawAccount: {
+          email: "person@example.test",
+          token: "secret-token",
+        },
+        notifications: {},
+      };
+    },
+  });
+
+  try {
+    const settingsResponse = await fetch(`${enabledServer.url}/api/settings-integrations`, {
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(settingsResponse.status, 200);
+    const settingsPayload = await settingsResponse.json();
+    assert.equal(settingsPayload.surfaces.auth.accountReadAvailable, true);
+    assert.equal(settingsPayload.surfaces.auth.accountReadEnabled, true);
+    assert.equal(settingsPayload.surfaces.auth.stateVisible, true);
+    assert.equal(settingsPayload.surfaces.auth.mutationEnabled, false);
+    assert.equal(settingsPayload.integrationScope.accountReadEnabled, true);
+    assert.equal(settingsPayload.integrationScope.enabledReadMethods.includes("account/read"), true);
+    assert.equal(settingsPayload.integrationScope.enabledLocalGates.includes("account/read"), false);
+
+    const methodResponse = await fetch(`${enabledServer.url}/api/account-read`, {
+      method: "POST",
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(methodResponse.status, 405);
+
+    const response = await fetch(`${enabledServer.url}/api/account-read`, {
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, true);
+    assert.equal(payload.appServer.modelTraffic, false);
+    assert.deepEqual(payload.appServer.auditedMethods, ["account/read"]);
+    assert.equal(payload.auth.state, "signed-in");
+    assert.equal(payload.auth.accountReadEnabled, true);
+    assert.equal(payload.auth.hasAccount, true);
+    assert.equal(payload.auth.accountType, "chatgpt");
+    assert.equal(payload.auth.emailReturned, false);
+    assert.equal(payload.auth.tokenReturned, false);
+    assert.equal(payload.auth.accountIdentifiersReturned, false);
+    assert.equal(payload.auth.rawPayloadReturned, false);
+    assert.equal(payload.result.accountTypeReturned, true);
+    assert.equal(payload.result.emailReturned, false);
+    assert.equal(payload.result.tokenReturned, false);
+    assert.equal(payload.policy.readOnly, true);
+    assert.equal(payload.policy.authMutations, false);
+    assert.equal(payload.policy.tokensReturned, false);
+    assert.equal(payload.policy.accountIdentifiersReturned, false);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].cwd, "/tmp/default-workspace");
+    for (const marker of [
+      "/tmp/default-workspace",
+      "/tmp/private-home",
+      "codexHome",
+      "userAgent",
+      "person@example.test",
+      "secret-token",
+      "\"tokenReturned\":true",
+      "\"emailReturned\":true",
+      "\"accountIdentifiersReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    await closeServer(enabledServer.server);
+  }
+});
+
 test("dev server starts account device-code login only behind explicit opt-in and preflight token", async () => {
   const calls = [];
   const actionAuditDir = await mkdtemp(join(tmpdir(), "codex-account-login-action-audit-"));

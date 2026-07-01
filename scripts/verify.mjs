@@ -80,6 +80,7 @@ async function main() {
   await checkFsReadFilePreflightApi();
   await checkFsWatchPreflightApi();
   await checkFuzzyFileSearchPreflightApi();
+  await checkAccountReadApi();
   await checkAccountLoginApi();
   await checkAccountLoginCancelApi();
   await checkAccountCreditsNudgeApi();
@@ -17446,6 +17447,177 @@ async function checkFuzzyFileSearchPreflightApi() {
     await closeServer(server);
   }
   pass("dev server fuzzy file search preflight validates without sessions");
+}
+
+async function checkAccountReadApi() {
+  const blockedCalls = [];
+  const blockedServer = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    accountReadFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+  const blockedPort = await listenWithFallback(blockedServer, { host: "127.0.0.1", port: 0 });
+  const blockedBaseUrl = `http://127.0.0.1:${blockedPort}`;
+
+  try {
+    const token = await readUiSessionToken(blockedBaseUrl);
+    const settingsResponse = await fetch(`${blockedBaseUrl}/api/settings-integrations`, {
+      headers: apiHeaders(token),
+    });
+    if (!settingsResponse.ok) {
+      throw new Error(`settings integrations for blocked account read returned HTTP ${settingsResponse.status}`);
+    }
+    const settingsPayload = await settingsResponse.json();
+    if (
+      settingsPayload.surfaces?.auth?.accountReadAvailable !== true ||
+      settingsPayload.surfaces?.auth?.accountReadEnabled !== false ||
+      settingsPayload.surfaces?.auth?.stateVisible !== false ||
+      settingsPayload.integrationScope?.accountReadEnabled !== false
+    ) {
+      throw new Error("settings integrations did not expose the blocked account read gate safely");
+    }
+
+    const response = await fetch(`${blockedBaseUrl}/api/account-read`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`blocked account read returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (
+      payload.appServer?.touched !== false ||
+      payload.auth?.state !== "blocked" ||
+      payload.auth?.accountReadEnabled !== false ||
+      payload.policy?.appServerTraffic !== false
+    ) {
+      throw new Error("blocked account read did not fail closed without app-server traffic");
+    }
+    if (blockedCalls.length !== 0) {
+      throw new Error("blocked account read unexpectedly touched app-server");
+    }
+    assertNoMarkers(JSON.stringify(payload), ["/tmp/codex-app-port-verify"]);
+  } finally {
+    await closeServer(blockedServer);
+  }
+
+  const calls = [];
+  const server = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    accountReadEnabled: true,
+    accountReadFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-07-01T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/verify-private-home",
+          userAgent: "verify-private-agent",
+        },
+        probes: {
+          accountRead: {
+            method: "account/read",
+            ok: true,
+            requiresOpenaiAuth: false,
+            hasAccount: true,
+            accountType: "chatgpt",
+            email: "person@example.test",
+            token: "secret-token",
+            tokenReturned: true,
+            emailReturned: true,
+            accountIdentifiersReturned: true,
+            rawPayloadReturned: true,
+          },
+        },
+        rawAccount: {
+          email: "person@example.test",
+          token: "secret-token",
+        },
+        notifications: {},
+      };
+    },
+  });
+  const port = await listenWithFallback(server, { host: "127.0.0.1", port: 0 });
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  try {
+    const token = await readUiSessionToken(baseUrl);
+    const settingsResponse = await fetch(`${baseUrl}/api/settings-integrations`, {
+      headers: apiHeaders(token),
+    });
+    if (!settingsResponse.ok) {
+      throw new Error(`settings integrations for account read returned HTTP ${settingsResponse.status}`);
+    }
+    const settingsPayload = await settingsResponse.json();
+    if (
+      settingsPayload.surfaces?.auth?.accountReadAvailable !== true ||
+      settingsPayload.surfaces?.auth?.accountReadEnabled !== true ||
+      settingsPayload.surfaces?.auth?.stateVisible !== true ||
+      settingsPayload.surfaces?.auth?.mutationEnabled !== false ||
+      settingsPayload.integrationScope?.accountReadEnabled !== true ||
+      !settingsPayload.integrationScope?.enabledReadMethods?.includes("account/read") ||
+      settingsPayload.integrationScope?.enabledLocalGates?.includes("account/read")
+    ) {
+      throw new Error("settings integrations did not expose the account read gate safely");
+    }
+
+    const wrongMethod = await fetch(`${baseUrl}/api/account-read`, {
+      method: "POST",
+      headers: apiHeaders(token),
+    });
+    if (wrongMethod.status !== 405) {
+      throw new Error(`account read POST returned HTTP ${wrongMethod.status}`);
+    }
+
+    const response = await fetch(`${baseUrl}/api/account-read`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`account read returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (
+      payload.appServer?.touched !== true ||
+      payload.appServer?.modelTraffic !== false ||
+      payload.auth?.state !== "signed-in" ||
+      payload.auth?.accountReadEnabled !== true ||
+      payload.auth?.hasAccount !== true ||
+      payload.auth?.accountType !== "chatgpt" ||
+      payload.auth?.emailReturned !== false ||
+      payload.auth?.tokenReturned !== false ||
+      payload.auth?.accountIdentifiersReturned !== false ||
+      payload.result?.accountTypeReturned !== true ||
+      payload.policy?.readOnly !== true ||
+      payload.policy?.authMutations !== false ||
+      payload.policy?.tokensReturned !== false
+    ) {
+      throw new Error("account read did not return the safe account summary shape");
+    }
+    if (calls.length !== 1 || calls[0].cwd !== "/tmp/codex-app-port-verify") {
+      throw new Error("account read did not call the app-server read path once");
+    }
+    assertNoMarkers(JSON.stringify(payload), [
+      "/tmp/codex-app-port-verify",
+      "/tmp/verify-private-home",
+      "verify-private-agent",
+      "codexHome",
+      "userAgent",
+      "person@example.test",
+      "secret-token",
+      "\"tokenReturned\":true",
+      "\"emailReturned\":true",
+      "\"accountIdentifiersReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]);
+  } finally {
+    await closeServer(server);
+  }
+  pass("dev server account read exposes auth state behind opt-in without returning identity secrets");
 }
 
 async function checkAccountLoginApi() {

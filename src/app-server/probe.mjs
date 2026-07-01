@@ -2705,6 +2705,73 @@ export async function runIntegrationsInventoryProbe({
   }
 }
 
+export async function runAccountReadProbe({
+  codexBin = process.env.CODEX_BIN || "codex",
+  codexArgs = ["app-server", "--listen", "stdio://"],
+  cwd = process.cwd(),
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+  onNotification = null,
+} = {}) {
+  if (process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_READ !== "1") {
+    throw new Error(
+      "account/read requires CODEX_APP_PORT_ALLOW_ACCOUNT_READ=1 because it inspects local auth state",
+    );
+  }
+
+  const notifications = [];
+  const client = new JsonlRpcClient({
+    command: codexBin,
+    args: codexArgs,
+    cwd,
+    timeoutMs,
+    onNotification(notification) {
+      notifications.push({
+        method: notification.method,
+      });
+      onNotification?.(notification);
+    },
+  });
+
+  await client.start();
+
+  try {
+    const initialize = normalizeInitializeResponse(
+      await client.request(APP_SERVER_METHODS.initialize, {
+        clientInfo: {
+          name: "codex_app_port",
+          title: "Codex App Port",
+          version: "0.1.0",
+        },
+        capabilities: {
+          experimentalApi: false,
+          requestAttestation: false,
+        },
+      }),
+    );
+
+    client.notify(APP_SERVER_METHODS.initialized);
+    const accountRead = await client.request(
+      APP_SERVER_METHODS.accountRead,
+      { refreshToken: false },
+      { timeoutMs },
+    );
+
+    return {
+      ok: true,
+      generatedAt: new Date().toISOString(),
+      transport: "stdio-jsonl",
+      protocol: "json-rpc-2.0-without-jsonrpc-field",
+      initialize: summarizeInitialize(initialize),
+      probes: {
+        accountRead: summarizeAccountInventory({ ok: true, result: accountRead }),
+      },
+      notifications: notificationCounts(notifications),
+    };
+  } finally {
+    await client.close();
+  }
+}
+
 export async function runMcpServerReloadProbe({
   codexBin = process.env.CODEX_BIN || "codex",
   codexArgs = ["app-server", "--listen", "stdio://"],
@@ -5759,6 +5826,7 @@ function summarizeAccountInventory(section) {
   const result = section.ok ? section.result ?? {} : {};
   const account = result.account && typeof result.account === "object" ? result.account : null;
   return {
+    method: APP_SERVER_METHODS.accountRead,
     ok: section.ok,
     requiresOpenaiAuth: Boolean(result.requiresOpenaiAuth),
     hasAccount: Boolean(account),

@@ -38,6 +38,10 @@
   interfaces.
 - Do not expose loopback API actions without a local session token or an
   equivalent same-origin guard.
+- Browser-facing auth-state reads must be opt-in, narrow, and sanitized. The
+  dedicated `account/read` bridge may report only coarse signed-in state and
+  account type; email addresses, tokens, account identifiers, auth URLs, cwd,
+  paths, and raw app-server payloads must stay server-side.
 - Browser-facing JSON `POST` routes must have a centralized audited body
   contract before side effects. Unsupported fields must be rejected before
   probes, app-server calls, filesystem access, token consumption, or audit-log

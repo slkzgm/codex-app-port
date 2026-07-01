@@ -71,6 +71,10 @@ The server binds to `127.0.0.1` by default and serves:
   `fuzzyFileSearch/sessionStart|sessionUpdate|sessionStop` preflight that
   validates roots/query/session-id shape without search sessions, results,
   paths, file names, notifications, or app-server traffic
+- `/api/account-read`: disabled-by-default read-only `account/read` bridge
+  behind `CODEX_APP_PORT_ALLOW_ACCOUNT_READ=1`; when enabled it returns only
+  signed-in/signed-out state plus account type and redaction flags, never email
+  addresses, tokens, account identifiers, auth URLs, raw payloads, cwd, or paths
 - `/api/account-login-preflight` and `/api/account-login-start`: local auth
   login confirmation plus opt-in app-server `account/login/start` device-code
   flow behind `CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN=1` and a matching one-time
@@ -1735,6 +1739,14 @@ explicit install/execution/import/marketplace/hook-command blocks, preflight and
 allowlist requirements, and sanitized audit requirements without tokens,
 targets, arguments, resource content, skill content, names, URLs, paths,
 secrets, raw payloads, or app-server payloads.
+
+`/api/account-read` is the only dedicated account auth-state read route. It is
+disabled unless `CODEX_APP_PORT_ALLOW_ACCOUNT_READ=1` is set; when enabled, it
+calls only `account/read` with `refreshToken:false` and returns signed-in,
+signed-out, or sign-in-required state plus account type. It never returns email
+addresses, tokens, account identifiers, auth URLs, cwd, paths, or raw
+app-server payloads, and `/api/settings-integrations` marks it as a read gate
+rather than a mutation.
 
 Device-code account login, login cancel, account credits nudge, account reset
 credit consumption, and account logout are the only dedicated account

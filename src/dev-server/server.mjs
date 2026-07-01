@@ -6,13 +6,14 @@ import { basename, extname, join, normalize, resolve } from "node:path";
 import process from "node:process";
 
 import {
-	  DEFAULT_TIMEOUT_MS,
-	  DEFAULT_LOADED_SESSION_LIMIT,
-	  openReadOnlyNotificationStream,
-	  runAccountCreditsNudgeProbe,
-	  runAccountLoginCancelProbe,
-	  runAccountLoginStartProbe,
-	  runAccountLogoutProbe,
+  DEFAULT_TIMEOUT_MS,
+  DEFAULT_LOADED_SESSION_LIMIT,
+  openReadOnlyNotificationStream,
+  runAccountCreditsNudgeProbe,
+  runAccountLoginCancelProbe,
+  runAccountLoginStartProbe,
+  runAccountLogoutProbe,
+  runAccountReadProbe,
   runAccountRateLimitResetCreditConsumeProbe,
   runAppServerProbe,
   runConfigBatchWriteProbe,
@@ -13052,6 +13053,7 @@ export function createDevServer({
   threadRealtimeVoicesFn = runThreadRealtimeVoicesProbe,
   threadRollbackFn = runThreadRollbackProbe,
   threadSafetyLockFn = runThreadSafetyLockProbe,
+  accountReadFn = runAccountReadProbe,
   accountLoginCancelFn = runAccountLoginCancelProbe,
   accountLoginStartFn = runAccountLoginStartProbe,
   accountCreditsNudgeFn = runAccountCreditsNudgeProbe,
@@ -13116,6 +13118,7 @@ export function createDevServer({
   threadRollbackEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_ROLLBACK === "1",
   threadSafetyLockEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_SAFETY_LOCK === "1",
   threadCompactEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_COMPACT === "1",
+  accountReadEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_READ === "1",
   accountLoginCancelEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN_CANCEL === "1",
   accountLoginEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN === "1",
   accountCreditsNudgeEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_CREDITS_NUDGE === "1",
@@ -13259,6 +13262,7 @@ export function createDevServer({
       threadRealtimeVoicesFn,
       threadRollbackFn,
       threadSafetyLockFn,
+      accountReadFn,
       accountLoginCancelFn,
       accountLoginStartFn,
       accountCreditsNudgeFn,
@@ -13320,6 +13324,7 @@ export function createDevServer({
       threadRollbackEnabled,
       threadSafetyLockEnabled,
       threadCompactEnabled,
+      accountReadEnabled,
       accountLoginCancelEnabled,
       accountLoginEnabled,
       accountCreditsNudgeEnabled,
@@ -14643,6 +14648,48 @@ export async function handleRequest(request, response, options) {
       sendJson(response, error.statusCode ?? 400, {
         ok: false,
         error: cleanDisplayText(error.message, 200) ?? "Invalid thread compact request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/account-read") {
+    if (request.method !== "GET") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        url.searchParams.get("workspace"),
+      );
+      if (!options.accountReadEnabled) {
+        sendJson(response, 200, buildAccountReadBlockedPayload({ workspace }));
+        return;
+      }
+      const payload = await options.accountReadFn({
+        codexBin: options.codexBin,
+        cwd: workspace.cwd,
+        timeoutMs: options.timeoutMs,
+      });
+      sendJson(
+        response,
+        200,
+        sanitizeAccountReadPayload(payload, {
+          workspace,
+          enabled: true,
+        }),
+      );
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 502, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid account read request",
       });
     }
     return;
@@ -19311,6 +19358,7 @@ export async function handleRequest(request, response, options) {
           sanitizeSettingsIntegrationsPayload(payload, {
             workspace,
             integrationNamesEnabled: options.integrationNamesEnabled,
+            accountReadEnabled: options.accountReadEnabled,
             accountLoginCancelEnabled: options.accountLoginCancelEnabled,
             accountLoginEnabled: options.accountLoginEnabled,
             accountCreditsNudgeEnabled: options.accountCreditsNudgeEnabled,
@@ -19349,6 +19397,7 @@ export async function handleRequest(request, response, options) {
         200,
         buildSettingsIntegrations({
           workspace,
+          accountReadEnabled: options.accountReadEnabled,
           accountLoginCancelEnabled: options.accountLoginCancelEnabled,
           accountLoginEnabled: options.accountLoginEnabled,
           accountCreditsNudgeEnabled: options.accountCreditsNudgeEnabled,
@@ -50907,6 +50956,7 @@ export function sanitizeSettingsIntegrationsPayload(
   {
     workspace = null,
     integrationNamesEnabled = false,
+    accountReadEnabled = false,
     accountLoginCancelEnabled = false,
     accountLoginEnabled = false,
     accountCreditsNudgeEnabled = false,
@@ -50941,6 +50991,7 @@ export function sanitizeSettingsIntegrationsPayload(
   const inventory = sanitizeIntegrationsInventory(payload?.probes?.integrationsInventory, {
     namesEnabled: integrationNamesEnabled,
   });
+  const readEnabled = Boolean(accountReadEnabled);
   const loginEnabled = Boolean(accountLoginEnabled);
   const loginCancelEnabled = Boolean(accountLoginCancelEnabled);
   const creditsNudgeEnabled = Boolean(accountCreditsNudgeEnabled);
@@ -50975,6 +51026,7 @@ export function sanitizeSettingsIntegrationsPayload(
   );
   const integrationScope = buildIntegrationActionScope({
     enabledReadMethods: ["config/read", ...optInIntegrationReadMethods()],
+    accountReadEnabled: readEnabled,
     accountLoginCancelEnabled: loginCancelEnabled,
     accountLoginEnabled: loginEnabled,
     accountCreditsNudgeEnabled: creditsNudgeEnabled,
@@ -51067,6 +51119,7 @@ export function sanitizeSettingsIntegrationsPayload(
       auth: {
         state:
           inventory.account.ok ||
+          readEnabled ||
           inventory.rateLimits.ok ||
           loginEnabled ||
           loginCancelEnabled ||
@@ -51075,7 +51128,9 @@ export function sanitizeSettingsIntegrationsPayload(
           logoutEnabled
             ? "partial"
             : "blocked",
-        stateVisible: inventory.account.ok,
+        stateVisible: inventory.account.ok || readEnabled,
+        accountReadAvailable: true,
+        accountReadEnabled: readEnabled,
         rateLimitsAvailable: inventory.rateLimits.ok,
         rateLimitReached: Boolean(inventory.rateLimits.rateLimitReached),
         usageAvailable: inventory.accountUsage.ok,
@@ -51101,7 +51156,9 @@ export function sanitizeSettingsIntegrationsPayload(
           creditsNudgeEnabled ||
           resetCreditConsumeEnabled ||
           logoutEnabled,
-        reason: loginEnabled
+        reason: readEnabled
+          ? "account-read-opt-in-only"
+          : loginEnabled
           ? "account-login-device-code-opt-in-only"
           : loginCancelEnabled
           ? "account-login-cancel-opt-in-only"
@@ -56528,6 +56585,150 @@ export function buildAccountLoginBlocked(preflightPayload) {
   };
 }
 
+export function buildAccountReadBlockedPayload({ workspace } = {}) {
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["account/read"],
+    },
+    auth: {
+      state: "blocked",
+      accountReadAvailable: true,
+      accountReadEnabled: false,
+      appServerTraffic: false,
+      requiresOpenaiAuth: false,
+      hasAccount: false,
+      accountType: null,
+      tokenAccess: false,
+      callbackHandlersEnabled: false,
+      emailReturned: false,
+      tokenReturned: false,
+      accountIdentifiersReturned: false,
+      authUrlsReturned: false,
+      rawPayloadReturned: false,
+      reason: "account-read-requires-opt-in",
+    },
+    probes: {
+      accountRead: sanitizeAccountReadProbe(null),
+    },
+    result: {
+      status: "blocked",
+      accountReadEnabled: false,
+      appServerTraffic: false,
+      accountTypeReturned: false,
+      emailReturned: false,
+      tokenReturned: false,
+      accountIdentifiersReturned: false,
+      authUrlsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      settingsWrites: false,
+      authCallbacks: false,
+      authMutations: false,
+      toolInvocation: false,
+      installsEnabled: false,
+      secretsReturned: false,
+      tokensReturned: false,
+      accountIdentifiersReturned: false,
+      authUrlsReturned: false,
+      urlsReturned: false,
+      pathsReturned: false,
+      rawPayloadReturned: false,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: true,
+      implemented: true,
+    },
+    notifications: sanitizeNotificationCounts(null),
+  };
+}
+
+export function sanitizeAccountReadPayload(payload, { workspace = null, enabled = false } = {}) {
+  const accountRead = sanitizeAccountReadProbe(payload?.probes?.accountRead);
+  const hasAccount = Boolean(accountRead.hasAccount);
+  const status = hasAccount
+    ? "signed-in"
+    : accountRead.requiresOpenaiAuth
+      ? "sign-in-required"
+      : "signed-out";
+  return {
+    ok: Boolean(payload?.ok),
+    generatedAt: payload?.generatedAt ?? new Date().toISOString(),
+    transport: cleanDisplayText(payload?.transport, 80),
+    protocol: cleanDisplayText(payload?.protocol, 80),
+    initialize: sanitizeInitialize(payload?.initialize),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: Boolean(enabled),
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["account/read"],
+    },
+    auth: {
+      state: status,
+      accountReadAvailable: true,
+      accountReadEnabled: Boolean(enabled),
+      appServerTraffic: Boolean(enabled),
+      requiresOpenaiAuth: Boolean(accountRead.requiresOpenaiAuth),
+      hasAccount,
+      accountType: accountRead.accountType,
+      tokenAccess: false,
+      callbackHandlersEnabled: false,
+      emailReturned: false,
+      tokenReturned: false,
+      accountIdentifiersReturned: false,
+      authUrlsReturned: false,
+      rawPayloadReturned: false,
+      reason: Boolean(enabled) ? "account-read-counts-only" : "account-read-requires-opt-in",
+    },
+    probes: {
+      accountRead,
+    },
+    result: {
+      status,
+      accountReadEnabled: Boolean(enabled),
+      appServerTraffic: Boolean(enabled),
+      accountTypeReturned: Boolean(accountRead.accountType),
+      emailReturned: false,
+      tokenReturned: false,
+      accountIdentifiersReturned: false,
+      authUrlsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: Boolean(enabled),
+      modelTraffic: false,
+      commandTraffic: false,
+      settingsWrites: false,
+      authCallbacks: false,
+      authMutations: false,
+      toolInvocation: false,
+      installsEnabled: false,
+      secretsReturned: false,
+      tokensReturned: false,
+      accountIdentifiersReturned: false,
+      authUrlsReturned: false,
+      urlsReturned: false,
+      pathsReturned: false,
+      rawPayloadReturned: false,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: true,
+      implemented: true,
+    },
+    notifications: sanitizeNotificationCounts(payload?.notifications),
+  };
+}
+
 export function buildAccountLoginCancelPreflight(
   body,
   { workspace, accountLoginCancelEnabled = false, accountLoginFlowRegistry = null } = {},
@@ -60655,6 +60856,7 @@ function liveSessionsPolicy({ appServerTraffic }) {
 
 export function buildSettingsIntegrations({
   workspace,
+  accountReadEnabled = false,
   accountLoginCancelEnabled = false,
   accountLoginEnabled = false,
   accountCreditsNudgeEnabled = false,
@@ -60688,6 +60890,7 @@ export function buildSettingsIntegrations({
   const methodAudit = integrationMethodAudit();
   const serverRequestBoundary = buildServerRequestBoundary();
   const serverNotificationBoundary = buildServerNotificationBoundary();
+  const readEnabled = Boolean(accountReadEnabled);
   const loginCancelEnabled = Boolean(accountLoginCancelEnabled);
   const loginEnabled = Boolean(accountLoginEnabled);
   const creditsNudgeEnabled = Boolean(accountCreditsNudgeEnabled);
@@ -60707,7 +60910,8 @@ export function buildSettingsIntegrations({
   const recentAccountLogoutHistory = sanitizeAccountLogoutHistory(accountLogoutHistory);
   const upstreamDrift = buildUpstreamDriftSummary();
   const integrationScope = buildIntegrationActionScope({
-    enabledReadMethods: ["config/read"],
+    enabledReadMethods: readEnabled ? ["config/read", "account/read"] : ["config/read"],
+    accountReadEnabled: readEnabled,
     accountLoginCancelEnabled: loginCancelEnabled,
     accountLoginEnabled: loginEnabled,
     accountCreditsNudgeEnabled: creditsNudgeEnabled,
@@ -60738,7 +60942,7 @@ export function buildSettingsIntegrations({
     appServer: {
       touched: false,
       modelTraffic: false,
-      auditedReadMethods: ["config/read"],
+      auditedReadMethods: readEnabled ? ["config/read", "account/read"] : ["config/read"],
       auditedMutationMethods: [],
       blockedMutationMethods: blockedIntegrationMutationMethods(),
       blockedMethodCount: methodAudit.filter((method) => method.status === "blocked").length,
@@ -60790,6 +60994,7 @@ export function buildSettingsIntegrations({
       },
       auth: {
         state:
+          readEnabled ||
           loginEnabled ||
           loginCancelEnabled ||
           creditsNudgeEnabled ||
@@ -60797,7 +61002,9 @@ export function buildSettingsIntegrations({
           logoutEnabled
             ? "partial"
             : "blocked",
-        stateVisible: false,
+        stateVisible: readEnabled,
+        accountReadAvailable: true,
+        accountReadEnabled: readEnabled,
         rateLimitsAvailable: false,
         rateLimitReached: false,
         tokenAccess: false,
@@ -60820,7 +61027,9 @@ export function buildSettingsIntegrations({
           creditsNudgeEnabled ||
           resetCreditConsumeEnabled ||
           logoutEnabled,
-        reason: loginEnabled
+        reason: readEnabled
+          ? "account-read-opt-in-only"
+          : loginEnabled
           ? "account-login-device-code-opt-in-only"
           : loginCancelEnabled
           ? "account-login-cancel-opt-in-only"
@@ -63308,6 +63517,7 @@ function auditCategoryCounts(entries) {
 
 function buildIntegrationActionScope({
   enabledReadMethods = [],
+  accountReadEnabled = false,
   accountLoginCancelEnabled = false,
   accountLoginEnabled = false,
   accountCreditsNudgeEnabled = false,
@@ -63390,6 +63600,7 @@ function buildIntegrationActionScope({
     enabledLocalGates: localGates,
     blockedMutationMethodCount: blockedMutationMethods.length,
     blockedMutationMethods,
+    accountReadEnabled: Boolean(accountReadEnabled),
     accountLoginEnabled: Boolean(accountLoginEnabled),
     authDeviceCodeLoginEnabled: Boolean(accountLoginEnabled),
     accountLoginCancelEnabled: Boolean(accountLoginCancelEnabled),
@@ -66507,6 +66718,24 @@ function sanitizeAccountLogoutProbe(accountLogout) {
     tokensReturned: false,
     accountIdentifiersReturned: false,
     urlsReturned: false,
+    rawPayloadReturned: false,
+  };
+}
+
+function sanitizeAccountReadProbe(accountRead) {
+  return {
+    method: "account/read",
+    ok: Boolean(accountRead?.ok),
+    requiresOpenaiAuth: Boolean(accountRead?.requiresOpenaiAuth),
+    hasAccount: Boolean(accountRead?.hasAccount),
+    accountType: cleanDisplayText(accountRead?.accountType, 80),
+    modelTraffic: false,
+    authMutation: false,
+    tokenReturned: false,
+    emailReturned: false,
+    tokensReturned: false,
+    accountIdentifiersReturned: false,
+    authUrlsReturned: false,
     rawPayloadReturned: false,
   };
 }

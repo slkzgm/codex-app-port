@@ -1,6 +1,7 @@
 export const APP_SERVER_METHODS = Object.freeze({
   initialize: "initialize",
   initialized: "initialized",
+  accountRead: "account/read",
   accountUsageRead: "account/usage/read",
   accountWorkspaceMessagesRead: "account/workspaceMessages/read",
   accountLoginStart: "account/login/start",

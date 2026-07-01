@@ -5,6 +5,7 @@ import process from "node:process";
 import { JsonlRpcClient, JsonlRpcError } from "../src/app-server/jsonl-rpc.mjs";
 import {
   runAccountLogoutProbe,
+  runAccountReadProbe,
   runConfigBatchWriteProbe,
   runConfigValueWriteProbe,
   runEnvironmentAddProbe,
@@ -2119,6 +2120,39 @@ test("runAccountLogoutProbe logs out without returning auth secrets", async () =
       delete process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_LOGOUT;
     } else {
       process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_LOGOUT = previous;
+    }
+  }
+});
+
+test("runAccountReadProbe returns account state without identity secrets", async () => {
+  const previous = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_READ;
+  process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_READ = "1";
+  try {
+    const summary = await runAccountReadProbe({
+      codexBin: process.execPath,
+      codexArgs: [mockServer.pathname],
+      cwd: process.cwd(),
+      timeoutMs: 1_000,
+    });
+    const account = summary.probes.accountRead;
+    const serialized = JSON.stringify(summary);
+    assert.equal(summary.ok, true);
+    assert.equal(account.method, "account/read");
+    assert.equal(account.ok, true);
+    assert.equal(account.requiresOpenaiAuth, false);
+    assert.equal(account.hasAccount, true);
+    assert.equal(account.accountType, "chatgpt");
+    assert.equal(account.emailReturned, false);
+    assert.equal(account.tokenReturned, false);
+    assert.equal(serialized.includes("person@example.test"), false);
+    assert.equal(serialized.includes("secret-token"), false);
+    assert.equal(serialized.includes("\"emailReturned\":true"), false);
+    assert.equal(serialized.includes("\"tokenReturned\":true"), false);
+  } finally {
+    if (previous === undefined) {
+      delete process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_READ;
+    } else {
+      process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_READ = previous;
     }
   }
 });
