@@ -41,6 +41,12 @@ const elements = {
   codexMemoriesValuesText: document.querySelector("#codex-memories-values-text"),
   codexAgentsGuidanceText: document.querySelector("#codex-agents-guidance-text"),
   codexAgentsGuidanceValuesText: document.querySelector("#codex-agents-guidance-values-text"),
+  codexThirdPartyIntegrationsText: document.querySelector(
+    "#codex-third-party-integrations-text",
+  ),
+  codexThirdPartyIntegrationsValuesText: document.querySelector(
+    "#codex-third-party-integrations-values-text",
+  ),
   codexCustomPromptsText: document.querySelector("#codex-custom-prompts-text"),
   codexCustomPromptsValuesText: document.querySelector("#codex-custom-prompts-values-text"),
   codexCustomizationText: document.querySelector("#codex-customization-text"),
@@ -523,6 +529,9 @@ const elements = {
   codexChronicleList: document.querySelector("#codex-chronicle-list"),
   codexMemoriesList: document.querySelector("#codex-memories-list"),
   codexAgentsGuidanceList: document.querySelector("#codex-agents-guidance-list"),
+  codexThirdPartyIntegrationsList: document.querySelector(
+    "#codex-third-party-integrations-list",
+  ),
   codexCustomPromptsList: document.querySelector("#codex-custom-prompts-list"),
   codexCustomizationList: document.querySelector("#codex-customization-list"),
   codexSecurityList: document.querySelector("#codex-security-list"),
@@ -10611,6 +10620,7 @@ function renderSettingsIntegrations(payload) {
   const codexChronicle = payload.codexChronicle ?? {};
   const codexMemories = payload.codexMemories ?? {};
   const codexAgentsGuidance = payload.codexAgentsGuidance ?? {};
+  const codexThirdPartyIntegrations = payload.codexThirdPartyIntegrations ?? {};
   const codexCustomPrompts = payload.codexCustomPrompts ?? {};
   const codexCustomization = payload.codexCustomization ?? {};
   const codexSecurity = payload.codexSecurity ?? {};
@@ -10922,6 +10932,56 @@ function renderSettingsIntegrations(payload) {
     codexAgentsGuidance.secretsReturned ||
     codexAgentsGuidance.rawPayloadsReturned ||
     codexAgentsGuidance.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexThirdPartyIntegrationsText.textContent = codexThirdPartyIntegrations.returned
+    ? `${codexThirdPartyIntegrations.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexThirdPartyIntegrations.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexThirdPartyIntegrationsValuesText.textContent =
+    codexThirdPartyIntegrations.linearIssueContentsReturned ||
+    codexThirdPartyIntegrations.linearIssueMetadataReturned ||
+    codexThirdPartyIntegrations.linearCommentContentsReturned ||
+    codexThirdPartyIntegrations.linearWorkspaceDataReturned ||
+    codexThirdPartyIntegrations.linearAccountDataReturned ||
+    codexThirdPartyIntegrations.linearConnectorStatesReturned ||
+    codexThirdPartyIntegrations.linearMcpConfigsReturned ||
+    codexThirdPartyIntegrations.slackMessageContentsReturned ||
+    codexThirdPartyIntegrations.slackThreadHistoriesReturned ||
+    codexThirdPartyIntegrations.slackWorkspaceDataReturned ||
+    codexThirdPartyIntegrations.slackChannelDataReturned ||
+    codexThirdPartyIntegrations.slackConnectorStatesReturned ||
+    codexThirdPartyIntegrations.cloudTaskDataReturned ||
+    codexThirdPartyIntegrations.taskLinksReturned ||
+    codexThirdPartyIntegrations.taskResultsReturned ||
+    codexThirdPartyIntegrations.environmentNamesReturned ||
+    codexThirdPartyIntegrations.repoNamesReturned ||
+    codexThirdPartyIntegrations.adminSettingValuesReturned ||
+    codexThirdPartyIntegrations.externalUrlsReturned ||
+    codexThirdPartyIntegrations.privacyPolicyUrlsReturned ||
+    codexThirdPartyIntegrations.mcpServerNamesReturned ||
+    codexThirdPartyIntegrations.mcpConfigsReturned ||
+    codexThirdPartyIntegrations.connectorInstallsStarted ||
+    codexThirdPartyIntegrations.accountLinksStarted ||
+    codexThirdPartyIntegrations.issueAssignmentsStarted ||
+    codexThirdPartyIntegrations.commentsPosted ||
+    codexThirdPartyIntegrations.triageRulesWritten ||
+    codexThirdPartyIntegrations.slackAppsInstalled ||
+    codexThirdPartyIntegrations.slackMessagesPosted ||
+    codexThirdPartyIntegrations.cloudTasksStarted ||
+    codexThirdPartyIntegrations.mcpServersConfigured ||
+    codexThirdPartyIntegrations.mcpLoginsStarted ||
+    codexThirdPartyIntegrations.filesystemReads ||
+    codexThirdPartyIntegrations.filesystemWrites ||
+    codexThirdPartyIntegrations.networkAccess ||
+    codexThirdPartyIntegrations.modelTraffic ||
+    codexThirdPartyIntegrations.mutationEnabled ||
+    codexThirdPartyIntegrations.pathsReturned ||
+    codexThirdPartyIntegrations.urlsReturned ||
+    codexThirdPartyIntegrations.secretsReturned ||
+    codexThirdPartyIntegrations.rawPayloadsReturned ||
+    codexThirdPartyIntegrations.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexCustomPromptsText.textContent = codexCustomPrompts.returned
@@ -13257,6 +13317,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexChronicleCatalog(codexChronicle);
   renderCodexMemoriesCatalog(codexMemories);
   renderCodexAgentsGuidanceCatalog(codexAgentsGuidance);
+  renderCodexThirdPartyIntegrationsCatalog(codexThirdPartyIntegrations);
   renderCodexCustomPromptsCatalog(codexCustomPrompts);
   renderCodexCustomizationCatalog(codexCustomization);
   renderCodexSecurityCatalog(codexSecurity);
@@ -15501,6 +15562,93 @@ function renderCodexAgentsGuidanceCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexAgentsGuidanceList.append(row);
+  }
+}
+
+function renderCodexThirdPartyIntegrationsCatalog(summary) {
+  elements.codexThirdPartyIntegrationsList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexThirdPartyIntegrationsList.append(
+      emptyState("No Codex Linear / Slack catalog returned."),
+    );
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "third-party-integrations";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.linearIssueContentReturned ? "Linear issue content returned" : "Linear issue content hidden",
+      entry.linearIssueMetadataReturned ? "Linear issue metadata returned" : "Linear issue metadata hidden",
+      entry.linearCommentContentReturned ? "Linear comments returned" : "Linear comments hidden",
+      entry.linearWorkspaceDataReturned ? "Linear workspace data returned" : "Linear workspace data hidden",
+      entry.linearAccountDataReturned ? "Linear account data returned" : "Linear account data hidden",
+      entry.linearConnectorStateReturned ? "Linear connector state returned" : "Linear connector state hidden",
+      entry.linearMcpConfigReturned ? "Linear MCP config returned" : "Linear MCP config hidden",
+      entry.slackMessageContentReturned ? "Slack messages returned" : "Slack messages hidden",
+      entry.slackThreadHistoryReturned ? "Slack thread history returned" : "Slack thread history hidden",
+      entry.slackWorkspaceDataReturned ? "Slack workspace data returned" : "Slack workspace data hidden",
+      entry.slackChannelDataReturned ? "Slack channel data returned" : "Slack channel data hidden",
+      entry.slackConnectorStateReturned ? "Slack connector state returned" : "Slack connector state hidden",
+      entry.cloudTaskDataReturned ? "cloud task data returned" : "cloud task data hidden",
+      entry.taskLinkReturned ? "task links returned" : "task links hidden",
+      entry.taskResultReturned ? "task results returned" : "task results hidden",
+      entry.environmentNameReturned ? "environment names returned" : "environment names hidden",
+      entry.repoNameReturned ? "repo names returned" : "repo names hidden",
+      entry.adminSettingValueReturned ? "admin settings returned" : "admin settings hidden",
+      entry.externalUrlReturned ? "external URLs returned" : "external URLs hidden",
+      entry.privacyPolicyUrlReturned ? "policy URLs returned" : "policy URLs hidden",
+      entry.mcpServerNameReturned ? "MCP server names returned" : "MCP server names hidden",
+      entry.mcpConfigReturned ? "MCP config returned" : "MCP config hidden",
+      entry.connectorInstallStarted ? "connector install started" : "connector install blocked",
+      entry.accountLinkStarted ? "account link started" : "account linking blocked",
+      entry.issueAssigned ? "issue assignment started" : "issue assignment blocked",
+      entry.commentPosted ? "comments posted" : "comment posting blocked",
+      entry.triageRuleWritten ? "triage rules written" : "triage writes blocked",
+      entry.slackAppInstalled ? "Slack app installed" : "Slack app install blocked",
+      entry.slackMessagePosted ? "Slack messages posted" : "Slack posting blocked",
+      entry.cloudTaskStarted ? "cloud tasks started" : "cloud task starts blocked",
+      entry.mcpServerConfigured ? "MCP configured" : "MCP configuration blocked",
+      entry.mcpLoginStarted ? "MCP login started" : "MCP login blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.modelTraffic ? "model traffic" : "model traffic blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexThirdPartyIntegrationsList.append(row);
   }
 }
 

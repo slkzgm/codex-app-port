@@ -421,6 +421,22 @@ Target parity with the Codex desktop workflow:
   app-server traffic, and it does not read plaintext logs, session logs,
   config, or guidance files, run verification commands, access files, create
   model traffic, or mutate guidance state.
+- `/api/settings-integrations` now also exposes a read-only Codex third-party
+  integrations catalog aligned to the official Linear and Slack guides. It
+  returns only static keys, groups, states, sources, counts, and redaction flags
+  for issue delegation, connector setup, account linking, issue assignment,
+  comment mentions, repo pinning, progress tracking, environment selection,
+  triage rules, data usage, Linear MCP setup, Slack app setup, channel mention
+  workflow, thread context, environment/repo hints, task links, enterprise
+  answer controls, and troubleshooting. It does not return Linear issue content
+  or metadata, Linear comments, Linear workspace/account/connector/MCP data,
+  Slack messages, Slack thread history, Slack workspace/channel/connector data,
+  cloud task data, task links or results, environment names, repo names, admin
+  setting values, external or policy URLs, MCP server names/config, paths,
+  secrets, raw payloads, or app-server traffic, and it does not install
+  connectors or Slack apps, link accounts, assign issues, post comments or
+  messages, write triage rules, start cloud tasks, configure or log into MCP,
+  access files/network, create model traffic, or mutate integration state.
 - `/api/settings-integrations` now also exposes a read-only Codex Custom
   Prompts catalog aligned to the official Custom Prompts guidance. It returns
   only static keys, groups, states, sources, counts, and redaction flags for the

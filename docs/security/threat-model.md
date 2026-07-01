@@ -617,6 +617,17 @@
   app-server payloads, or app-server traffic, and must not read plaintext logs,
   session logs, config, or guidance files, run verification commands, access
   filesystem, create model traffic, or mutate guidance state. Its
+  Codex third-party integrations catalog may expose only static official Linear
+  and Slack documentation keys plus local boundary keys, groups, states,
+  sources, counts, and redaction flags; it must not return Linear issue
+  content/metadata/comments/workspace/account/connector/MCP data, Slack
+  messages/thread history/workspace/channel/connector data, cloud task data,
+  task links/results, environment names, repo names, admin setting values,
+  external/policy URLs, MCP server names/config, paths, secrets, raw payloads,
+  app-server payloads, or app-server traffic, and must not install connectors
+  or Slack apps, link accounts, assign issues, post comments or messages, write
+  triage rules, start cloud tasks, configure or log into MCP, access
+  filesystem/network, create model traffic, or mutate integration state. Its
   Codex Security catalog may expose only static official-documentation keys
   plus local boundary keys, groups, states, sources, counts, and redaction
   flags; it must not return plugin install state, scan prompts, setup
@@ -749,7 +760,18 @@
   raw payloads, app-server payloads, or app-server traffic, and must not read
   plaintext logs, session logs, config, or guidance files, run verification
   commands, access filesystem, create model traffic, or mutate guidance state.
-  Its Codex CLI command reference catalog
+  Its Codex third-party integrations catalog may expose only static official
+  Linear and Slack documentation keys plus local boundary keys, groups, states,
+  sources, counts, and redaction flags; it must not return Linear issue
+  content/metadata/comments/workspace/account/connector/MCP data, Slack
+  messages/thread history/workspace/channel/connector data, cloud task data,
+  task links/results, environment names, repo names, admin setting values,
+  external/policy URLs, MCP server names/config, paths, secrets, raw payloads,
+  app-server payloads, or app-server traffic, and must not install connectors
+  or Slack apps, link accounts, assign issues, post comments or messages, write
+  triage rules, start cloud tasks, configure or log into MCP, access
+  filesystem/network, create model traffic, or mutate integration state. Its
+  Codex CLI command reference catalog
   may expose only static official-documentation keys plus local boundary keys,
   groups, states, sources, counts, and redaction flags; it must not return exact
   command names, flag names, option values, prompt text, config keys or values,

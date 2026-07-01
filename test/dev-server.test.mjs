@@ -36098,6 +36098,221 @@ function assertCodexAgentsGuidanceCatalog(payload) {
   }
 }
 
+function expectedCodexThirdPartyIntegrationsEntries() {
+  return [
+    ["linearDelegationOverview", "linear", "catalog-only", "official-codex-linear-docs"],
+    ["linearPaidPlanAvailability", "linear", "catalog-only", "official-codex-linear-docs"],
+    ["linearEnterpriseEnablement", "linear-enterprise", "catalog-only", "official-codex-linear-docs"],
+    ["linearCloudTaskPrerequisites", "linear-setup", "catalog-only", "official-codex-linear-docs"],
+    ["linearConnectorInstall", "linear-setup", "catalog-only", "official-codex-linear-docs"],
+    ["linearAccountLinking", "linear-setup", "catalog-only", "official-codex-linear-docs"],
+    ["linearIssueAssignment", "linear-delegation", "catalog-only", "official-codex-linear-docs"],
+    ["linearCommentMention", "linear-delegation", "catalog-only", "official-codex-linear-docs"],
+    ["linearRepoPinning", "linear-routing", "catalog-only", "official-codex-linear-docs"],
+    ["linearProgressTracking", "linear-progress", "catalog-only", "official-codex-linear-docs"],
+    ["linearTaskCompletionPr", "linear-progress", "catalog-only", "official-codex-linear-docs"],
+    ["linearEnvironmentSelection", "linear-routing", "catalog-only", "official-codex-linear-docs"],
+    ["linearTriageRules", "linear-automation", "catalog-only", "official-codex-linear-docs"],
+    ["linearDataUsage", "linear-security", "catalog-only", "official-codex-linear-docs"],
+    ["linearLocalMcpSetup", "linear-mcp", "catalog-only", "official-codex-linear-docs"],
+    ["slackDelegationOverview", "slack", "catalog-only", "official-codex-slack-docs"],
+    ["slackPlanPrerequisites", "slack-setup", "catalog-only", "official-codex-slack-docs"],
+    ["slackAppInstall", "slack-setup", "catalog-only", "official-codex-slack-docs"],
+    ["slackChannelInvite", "slack-setup", "catalog-only", "official-codex-slack-docs"],
+    ["slackMentionTaskStart", "slack-delegation", "catalog-only", "official-codex-slack-docs"],
+    ["slackThreadContextUse", "slack-context", "catalog-only", "official-codex-slack-docs"],
+    ["slackEnvironmentRepoHint", "slack-routing", "catalog-only", "official-codex-slack-docs"],
+    ["slackProgressReaction", "slack-progress", "catalog-only", "official-codex-slack-docs"],
+    ["slackTaskLinkCompletion", "slack-progress", "catalog-only", "official-codex-slack-docs"],
+    ["slackEnvironmentSelection", "slack-routing", "catalog-only", "official-codex-slack-docs"],
+    ["slackEnterpriseAnswerControl", "slack-enterprise", "catalog-only", "official-codex-slack-docs"],
+    ["slackDataUsage", "slack-security", "catalog-only", "official-codex-slack-docs"],
+    ["slackTroubleshooting", "slack-troubleshooting", "catalog-only", "official-codex-slack-docs"],
+    ["linearIssueContentBoundary", "linear", "blocked", "local-third-party-integration-boundary"],
+    ["linearIssueMetadataBoundary", "linear", "blocked", "local-third-party-integration-boundary"],
+    ["linearCommentContentBoundary", "linear", "blocked", "local-third-party-integration-boundary"],
+    ["linearWorkspaceDataBoundary", "linear", "blocked", "local-third-party-integration-boundary"],
+    ["linearAccountBoundary", "linear", "blocked", "local-third-party-integration-boundary"],
+    ["linearConnectorBoundary", "linear", "blocked", "local-third-party-integration-boundary"],
+    ["linearTriageMutationBoundary", "linear-automation", "blocked", "local-third-party-integration-boundary"],
+    ["linearMcpBoundary", "linear-mcp", "blocked", "local-third-party-integration-boundary"],
+    ["slackMessageContentBoundary", "slack", "blocked", "local-third-party-integration-boundary"],
+    ["slackThreadHistoryBoundary", "slack", "blocked", "local-third-party-integration-boundary"],
+    ["slackWorkspaceDataBoundary", "slack", "blocked", "local-third-party-integration-boundary"],
+    ["slackChannelBoundary", "slack", "blocked", "local-third-party-integration-boundary"],
+    ["slackAppInstallBoundary", "slack-setup", "blocked", "local-third-party-integration-boundary"],
+    ["slackPostingBoundary", "slack-progress", "blocked", "local-third-party-integration-boundary"],
+    ["cloudTaskBoundary", "cloud-task", "blocked", "local-third-party-integration-boundary"],
+    ["environmentRepoBoundary", "routing", "blocked", "local-third-party-integration-boundary"],
+    ["taskResultBoundary", "cloud-task", "blocked", "local-third-party-integration-boundary"],
+    ["networkModelBoundary", "runtime", "blocked", "local-third-party-integration-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexThirdPartyIntegrationsCatalog(payload) {
+  const catalog = payload.codexThirdPartyIntegrations;
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-linear-slack-docs");
+  assert.equal(catalog.entryCount, 46);
+  assert.equal(catalog.officialEntryCount, 28);
+  assert.equal(catalog.localBoundaryEntryCount, 18);
+  assert.equal(catalog.catalogOnlyEntryCount, 28);
+  assert.equal(catalog.blockedEntryCount, 18);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({ key, group, state, source })),
+    expectedCodexThirdPartyIntegrationsEntries(),
+  );
+
+  const entryRedactionFlags = [
+    "linearIssueContentReturned",
+    "linearIssueMetadataReturned",
+    "linearCommentContentReturned",
+    "linearWorkspaceDataReturned",
+    "linearAccountDataReturned",
+    "linearConnectorStateReturned",
+    "linearMcpConfigReturned",
+    "slackMessageContentReturned",
+    "slackThreadHistoryReturned",
+    "slackWorkspaceDataReturned",
+    "slackChannelDataReturned",
+    "slackConnectorStateReturned",
+    "cloudTaskDataReturned",
+    "taskLinkReturned",
+    "taskResultReturned",
+    "environmentNameReturned",
+    "repoNameReturned",
+    "adminSettingValueReturned",
+    "externalUrlReturned",
+    "privacyPolicyUrlReturned",
+    "mcpServerNameReturned",
+    "mcpConfigReturned",
+    "connectorInstallStarted",
+    "accountLinkStarted",
+    "issueAssigned",
+    "commentPosted",
+    "triageRuleWritten",
+    "slackAppInstalled",
+    "slackMessagePosted",
+    "cloudTaskStarted",
+    "mcpServerConfigured",
+    "mcpLoginStarted",
+    "filesystemRead",
+    "filesystemWrite",
+    "networkAccess",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.thirdPartyIntegrationsCatalogReturned, true);
+  for (const flag of [
+    "linearIssueContentsReturned",
+    "linearIssueMetadataReturned",
+    "linearCommentContentsReturned",
+    "linearWorkspaceDataReturned",
+    "linearAccountDataReturned",
+    "linearConnectorStatesReturned",
+    "linearMcpConfigsReturned",
+    "slackMessageContentsReturned",
+    "slackThreadHistoriesReturned",
+    "slackWorkspaceDataReturned",
+    "slackChannelDataReturned",
+    "slackConnectorStatesReturned",
+    "cloudTaskDataReturned",
+    "taskLinksReturned",
+    "taskResultsReturned",
+    "environmentNamesReturned",
+    "repoNamesReturned",
+    "adminSettingValuesReturned",
+    "externalUrlsReturned",
+    "privacyPolicyUrlsReturned",
+    "mcpServerNamesReturned",
+    "mcpConfigsReturned",
+    "connectorInstallsStarted",
+    "accountLinksStarted",
+    "issueAssignmentsStarted",
+    "commentsPosted",
+    "triageRulesWritten",
+    "slackAppsInstalled",
+    "slackMessagesPosted",
+    "cloudTasksStarted",
+    "mcpServersConfigured",
+    "mcpLoginsStarted",
+    "filesystemReads",
+    "filesystemWrites",
+    "networkAccess",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexThirdPartyIntegrationsReturned", true],
+    ["codexThirdPartyIntegrationsValuesReturned", false],
+    ["codexThirdPartyIntegrationsLinearIssueContentsReturned", false],
+    ["codexThirdPartyIntegrationsLinearIssueMetadataReturned", false],
+    ["codexThirdPartyIntegrationsLinearCommentContentsReturned", false],
+    ["codexThirdPartyIntegrationsLinearWorkspaceDataReturned", false],
+    ["codexThirdPartyIntegrationsLinearAccountDataReturned", false],
+    ["codexThirdPartyIntegrationsLinearConnectorStatesReturned", false],
+    ["codexThirdPartyIntegrationsLinearMcpConfigsReturned", false],
+    ["codexThirdPartyIntegrationsSlackMessageContentsReturned", false],
+    ["codexThirdPartyIntegrationsSlackThreadHistoriesReturned", false],
+    ["codexThirdPartyIntegrationsSlackWorkspaceDataReturned", false],
+    ["codexThirdPartyIntegrationsSlackChannelDataReturned", false],
+    ["codexThirdPartyIntegrationsSlackConnectorStatesReturned", false],
+    ["codexThirdPartyIntegrationsCloudTaskDataReturned", false],
+    ["codexThirdPartyIntegrationsTaskLinksReturned", false],
+    ["codexThirdPartyIntegrationsTaskResultsReturned", false],
+    ["codexThirdPartyIntegrationsEnvironmentNamesReturned", false],
+    ["codexThirdPartyIntegrationsRepoNamesReturned", false],
+    ["codexThirdPartyIntegrationsAdminSettingValuesReturned", false],
+    ["codexThirdPartyIntegrationsExternalUrlsReturned", false],
+    ["codexThirdPartyIntegrationsPrivacyPolicyUrlsReturned", false],
+    ["codexThirdPartyIntegrationsMcpServerNamesReturned", false],
+    ["codexThirdPartyIntegrationsMcpConfigsReturned", false],
+    ["codexThirdPartyIntegrationsConnectorInstallEnabled", false],
+    ["codexThirdPartyIntegrationsAccountLinkEnabled", false],
+    ["codexThirdPartyIntegrationsIssueAssignmentEnabled", false],
+    ["codexThirdPartyIntegrationsCommentPostEnabled", false],
+    ["codexThirdPartyIntegrationsTriageRuleWriteEnabled", false],
+    ["codexThirdPartyIntegrationsSlackAppInstallEnabled", false],
+    ["codexThirdPartyIntegrationsSlackMessagePostEnabled", false],
+    ["codexThirdPartyIntegrationsCloudTaskStartEnabled", false],
+    ["codexThirdPartyIntegrationsMcpServerConfigureEnabled", false],
+    ["codexThirdPartyIntegrationsMcpLoginEnabled", false],
+    ["codexThirdPartyIntegrationsFilesystemAccess", false],
+    ["codexThirdPartyIntegrationsNetworkAccess", false],
+    ["codexThirdPartyIntegrationsModelTraffic", false],
+    ["codexThirdPartyIntegrationsMutationsEnabled", false],
+    ["codexThirdPartyIntegrationsPathsReturned", false],
+    ["codexThirdPartyIntegrationsUrlsReturned", false],
+    ["codexThirdPartyIntegrationsSecretsReturned", false],
+    ["codexThirdPartyIntegrationsRawPayloadsReturned", false],
+    ["codexThirdPartyIntegrationsAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexCustomPromptsEntries() {
   return [
     ["deprecatedCustomPrompts", "lifecycle", "catalog-only", "official-codex-custom-prompts-docs"],
@@ -45562,6 +45777,7 @@ function assertCodexAppSettingsParity(
   assertCodexChronicleCatalog(payload);
   assertCodexMemoriesCatalog(payload);
   assertCodexAgentsGuidanceCatalog(payload);
+  assertCodexThirdPartyIntegrationsCatalog(payload);
   assertCodexCustomPromptsCatalog(payload);
   assertCodexCustomizationCatalog(payload);
   assertCodexSecurityCatalog(payload);

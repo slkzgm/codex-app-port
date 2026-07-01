@@ -818,6 +818,22 @@ Current M1 status:
   config reads/writes, guidance file reads/writes, verification command
   execution, filesystem access, model traffic, mutations, paths, URLs, secrets,
   raw payloads, and app-server traffic blocked
+- done: read-only Codex third-party integrations catalog in
+  `/api/settings-integrations`, exposing only static official Linear and Slack
+  documentation keys plus local boundary keys/groups/states/sources/counts/
+  redaction flags for Linear issue delegation, paid-plan and enterprise setup,
+  connector install, account linking, issue assignment, comment mentions, repo
+  pinning, progress tracking, environment selection, triage rules, data usage,
+  Linear MCP setup, Slack app setup, channel mention workflow, thread context,
+  environment/repo hints, progress reactions, task links, enterprise answer
+  controls, and troubleshooting, with Linear issue content/metadata/comments/
+  workspace/account/connector/MCP data, Slack messages/thread history/workspace/
+  channel/connector data, cloud task data, task links/results, environment
+  names, repo names, admin setting values, external/policy URLs, MCP server
+  names/config, connector installs, account linking, issue assignment, comment
+  posting, triage writes, Slack app installs, Slack posting, cloud task starts,
+  MCP configuration/login, filesystem access, network access, model traffic,
+  mutations, paths, URLs, secrets, raw payloads, and app-server traffic blocked
 - done: read-only Codex Custom Prompts catalog in `/api/settings-integrations`,
   exposing only static official Custom Prompts documentation keys plus local
   boundary keys/groups/states/sources/counts/redaction flags for the deprecated

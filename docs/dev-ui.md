@@ -875,6 +875,23 @@ paths, secrets, raw payloads, or app-server traffic, and it must not read
 plaintext logs, session logs, config, or guidance files, run verification
 commands, access files, create model traffic, or mutate guidance state.
 
+The same response exposes `codexThirdPartyIntegrations` as a static review-only
+catalog for the official Codex Linear and Slack guides. The UI shows only
+catalog counts, entry keys, groups, state/source chips, and negative redaction
+chips for issue delegation, connector setup, account linking, issue assignment,
+comment mentions, repo pinning, progress tracking, environment selection,
+triage rules, data usage, Linear MCP setup, Slack app setup, channel mention
+workflow, thread context, environment/repo hints, task links, enterprise answer
+controls, and troubleshooting. It must not show Linear issue content or
+metadata, Linear comments, Linear workspace/account/connector/MCP data, Slack
+messages, Slack thread history, Slack workspace/channel/connector data, cloud
+task data, task links or results, environment names, repo names, admin setting
+values, external or policy URLs, MCP server names/config, paths, secrets, raw
+payloads, or app-server traffic, and it must not install connectors or Slack
+apps, link accounts, assign issues, post comments or messages, write triage
+rules, start cloud tasks, configure or log into MCP, access files/network,
+create model traffic, or mutate integration state.
+
 The same response exposes `codexCustomPrompts` as a static review-only catalog
 for the official Custom Prompts guidance. The UI shows only catalog counts,
 entry keys, groups, state/source chips, and negative redaction chips for the
