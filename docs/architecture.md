@@ -901,9 +901,11 @@ Current M1 status:
   boundary keys/groups/states/sources/counts/redaction flags for MCP purpose,
   CLI/IDE support, STDIO and streamable HTTP transports, bearer-token and OAuth
   authentication, server instructions, config storage/scoping, CLI/config/TUI
-  management paths, STDIO command/args/env/cwd/remote-environment options, HTTP
-  URL/header/env-header options, runtime timeouts, enablement/required flags,
-  tool allow/deny lists, approval modes, OAuth callback/scopes behavior,
+  management paths, CLI help discovery, IDE config opening, STDIO
+  command/args/env/cwd/remote-environment options, local/remote env-var source
+  selection, HTTP URL/header/env-header options, runtime timeouts,
+  enablement/required flags, tool allow/deny lists, disabled-after-enabled tool
+  policy, approval modes, OAuth callback/scopes behavior,
   plugin-provided servers, plugin policy overrides, and example-server concepts,
   with server listings/names/URLs, command text, arguments, env var names/
   values, bearer-token env vars, header names/values, OAuth URLs/tokens,

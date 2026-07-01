@@ -35131,16 +35131,20 @@ function expectedCodexMcpEntries() {
     ["oauthAuthentication", "authentication", "catalog-only", "official-codex-mcp-docs"],
     ["serverInstructions", "instructions", "catalog-only", "official-codex-mcp-docs"],
     ["instructionAuthoringGuidance", "instructions", "catalog-only", "official-codex-mcp-docs"],
+    ["instructionFirst512Guidance", "instructions", "catalog-only", "official-codex-mcp-docs"],
     ["globalConfigStorage", "configuration", "catalog-only", "official-codex-mcp-docs"],
     ["projectScopedConfig", "configuration", "catalog-only", "official-codex-mcp-docs"],
     ["cliIdeSharedConfig", "configuration", "catalog-only", "official-codex-mcp-docs"],
     ["cliManagementPath", "management", "catalog-only", "official-codex-mcp-docs"],
+    ["cliHelpManagementPath", "management", "catalog-only", "official-codex-mcp-docs"],
     ["configTomlManagementPath", "management", "catalog-only", "official-codex-mcp-docs"],
+    ["ideOpenConfigTomlManagementPath", "management", "catalog-only", "official-codex-mcp-docs"],
     ["tuiServerView", "management", "catalog-only", "official-codex-mcp-docs"],
     ["stdioCommandOption", "stdio-options", "catalog-only", "official-codex-mcp-docs"],
     ["stdioArgsOption", "stdio-options", "catalog-only", "official-codex-mcp-docs"],
     ["stdioEnvOption", "stdio-options", "catalog-only", "official-codex-mcp-docs"],
     ["stdioEnvVarsForwarding", "stdio-options", "catalog-only", "official-codex-mcp-docs"],
+    ["stdioEnvVarsSourceSelection", "stdio-options", "catalog-only", "official-codex-mcp-docs"],
     ["stdioCwdOption", "stdio-options", "catalog-only", "official-codex-mcp-docs"],
     ["remoteStdioEnvironment", "stdio-options", "catalog-only", "official-codex-mcp-docs"],
     ["httpUrlOption", "http-options", "catalog-only", "official-codex-mcp-docs"],
@@ -35153,6 +35157,7 @@ function expectedCodexMcpEntries() {
     ["requiredOption", "runtime-options", "catalog-only", "official-codex-mcp-docs"],
     ["enabledToolsOption", "tool-policy", "catalog-only", "official-codex-mcp-docs"],
     ["disabledToolsOption", "tool-policy", "catalog-only", "official-codex-mcp-docs"],
+    ["disabledToolsAfterEnabledTools", "tool-policy", "catalog-only", "official-codex-mcp-docs"],
     ["defaultToolApprovalMode", "tool-policy", "catalog-only", "official-codex-mcp-docs"],
     ["perToolApprovalMode", "tool-policy", "catalog-only", "official-codex-mcp-docs"],
     ["oauthCallbackPortOption", "oauth", "catalog-only", "official-codex-mcp-docs"],
@@ -35200,10 +35205,10 @@ function assertCodexMcpCatalog(payload) {
   });
   assert.equal(catalog.state, "partial");
   assert.equal(catalog.officialSource, "official-codex-mcp-docs");
-  assert.equal(catalog.entryCount, 66);
-  assert.equal(catalog.officialEntryCount, 49);
+  assert.equal(catalog.entryCount, 71);
+  assert.equal(catalog.officialEntryCount, 54);
   assert.equal(catalog.localBoundaryEntryCount, 17);
-  assert.equal(catalog.catalogOnlyEntryCount, 49);
+  assert.equal(catalog.catalogOnlyEntryCount, 54);
   assert.equal(catalog.blockedEntryCount, 17);
   assert.equal(catalog.enabledEntryCount, 0);
   assert.deepEqual(
