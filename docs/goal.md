@@ -1103,6 +1103,13 @@ Target parity with the Codex desktop workflow:
   dependency commands, dependency descriptions, dependency URLs, and raw
   payloads remain hidden; opt-in names mode may return only bounded safe skill
   names and boolean presence flags.
+- `hooks/list` has both a dedicated opt-in `/api/hooks-list` route behind
+  `CODEX_APP_PORT_ALLOW_HOOKS_LIST=1` and an opt-in inventory path. It returns
+  only workspace/hook/enabled/disabled/managed/error/warning counts plus
+  allowlisted event, handler, source, and trust-status buckets. Hook commands,
+  paths, keys, matchers, plugin ids, status messages, timeouts, trust hashes,
+  hook execution, config writes, filesystem access, and raw payloads remain
+  hidden or blocked.
 - `externalAgentConfig/import/readHistories` has both a dedicated opt-in
   `/api/external-agent-import-histories` route behind
   `CODEX_APP_PORT_ALLOW_EXTERNAL_AGENT_IMPORT_HISTORIES=1` and an opt-in

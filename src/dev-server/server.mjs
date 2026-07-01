@@ -27,6 +27,7 @@ import {
   runExperimentalFeatureEnablementSetProbe,
   runExternalAgentConfigImportHistoriesReadProbe,
   runFsDirectoryProbe,
+  runHooksListReadProbe,
   runInstalledPluginsReadProbe,
   runIntegrationsInventoryProbe,
   runLiveSessionControlProbe,
@@ -160,6 +161,34 @@ const SAFE_EXTERNAL_AGENT_CONFIG_ITEM_TYPES = [
   "SESSIONS",
   "unknown",
 ];
+const SAFE_HOOK_EVENTS = [
+  "preToolUse",
+  "permissionRequest",
+  "postToolUse",
+  "preCompact",
+  "postCompact",
+  "sessionStart",
+  "userPromptSubmit",
+  "subagentStart",
+  "subagentStop",
+  "stop",
+  "unknown",
+];
+const SAFE_HOOK_HANDLER_TYPES = ["command", "prompt", "agent", "unknown"];
+const SAFE_HOOK_SOURCES = [
+  "system",
+  "user",
+  "project",
+  "mdm",
+  "sessionFlags",
+  "plugin",
+  "cloudRequirements",
+  "cloudManagedConfig",
+  "legacyManagedConfigFile",
+  "legacyManagedConfigMdm",
+  "unknown",
+];
+const SAFE_HOOK_TRUST_STATUSES = ["managed", "untrusted", "trusted", "modified", "unknown"];
 const SAFE_SKILL_SCOPES = ["user", "repo", "system", "admin", "unknown"];
 const SAFE_PLUGIN_SOURCE_TYPES = ["local", "git", "remote", "unknown"];
 const SAFE_PLUGIN_INSTALL_POLICIES = [
@@ -13129,6 +13158,7 @@ export function createDevServer({
   remoteControlStatusFn = runRemoteControlStatusReadProbe,
   installedPluginsFn = runInstalledPluginsReadProbe,
   externalAgentImportHistoriesFn = runExternalAgentConfigImportHistoriesReadProbe,
+  hooksListFn = runHooksListReadProbe,
   accountLoginCancelFn = runAccountLoginCancelProbe,
   accountLoginStartFn = runAccountLoginStartProbe,
   accountCreditsNudgeFn = runAccountCreditsNudgeProbe,
@@ -13204,6 +13234,7 @@ export function createDevServer({
   installedPluginsEnabled = process.env.CODEX_APP_PORT_ALLOW_INSTALLED_PLUGINS === "1",
   externalAgentImportHistoriesEnabled =
     process.env.CODEX_APP_PORT_ALLOW_EXTERNAL_AGENT_IMPORT_HISTORIES === "1",
+  hooksListEnabled = process.env.CODEX_APP_PORT_ALLOW_HOOKS_LIST === "1",
   accountLoginCancelEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN_CANCEL === "1",
   accountLoginEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN === "1",
   accountCreditsNudgeEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_CREDITS_NUDGE === "1",
@@ -13361,6 +13392,7 @@ export function createDevServer({
       remoteControlStatusFn,
       installedPluginsFn,
       externalAgentImportHistoriesFn,
+      hooksListFn,
       accountLoginCancelFn,
       accountLoginStartFn,
       accountCreditsNudgeFn,
@@ -13430,6 +13462,7 @@ export function createDevServer({
       remoteControlStatusEnabled,
       installedPluginsEnabled,
       externalAgentImportHistoriesEnabled,
+      hooksListEnabled,
       accountLoginCancelEnabled,
       accountLoginEnabled,
       accountCreditsNudgeEnabled,
@@ -15092,6 +15125,48 @@ export async function handleRequest(request, response, options) {
         ok: false,
         error:
           cleanDisplayText(error.message, 200) ?? "Invalid external agent import histories request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/hooks-list") {
+    if (request.method !== "GET") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        url.searchParams.get("workspace"),
+      );
+      if (!options.hooksListEnabled) {
+        sendJson(response, 200, buildHooksListBlockedPayload({ workspace }));
+        return;
+      }
+      const payload = await options.hooksListFn({
+        codexBin: options.codexBin,
+        cwd: workspace.cwd,
+        timeoutMs: options.timeoutMs,
+      });
+      sendJson(
+        response,
+        200,
+        sanitizeHooksListPayload(payload, {
+          workspace,
+          enabled: true,
+        }),
+      );
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 502, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid hooks list request",
       });
     }
     return;
@@ -19794,6 +19869,7 @@ export async function handleRequest(request, response, options) {
             installedPluginsEnabled: options.installedPluginsEnabled,
             externalAgentImportHistoriesEnabled:
               options.externalAgentImportHistoriesEnabled,
+            hooksListEnabled: options.hooksListEnabled,
             accountLoginCancelEnabled: options.accountLoginCancelEnabled,
             accountLoginEnabled: options.accountLoginEnabled,
             accountCreditsNudgeEnabled: options.accountCreditsNudgeEnabled,
@@ -19840,6 +19916,7 @@ export async function handleRequest(request, response, options) {
           remoteControlStatusEnabled: options.remoteControlStatusEnabled,
           installedPluginsEnabled: options.installedPluginsEnabled,
           externalAgentImportHistoriesEnabled: options.externalAgentImportHistoriesEnabled,
+          hooksListEnabled: options.hooksListEnabled,
           accountLoginCancelEnabled: options.accountLoginCancelEnabled,
           accountLoginEnabled: options.accountLoginEnabled,
           accountCreditsNudgeEnabled: options.accountCreditsNudgeEnabled,
@@ -52140,6 +52217,7 @@ export function sanitizeSettingsIntegrationsPayload(
     remoteControlStatusEnabled = false,
     installedPluginsEnabled = false,
     externalAgentImportHistoriesEnabled = false,
+    hooksListEnabled = false,
     accountLoginCancelEnabled = false,
     accountLoginEnabled = false,
     accountCreditsNudgeEnabled = false,
@@ -52182,6 +52260,7 @@ export function sanitizeSettingsIntegrationsPayload(
   const remoteStatusEnabled = Boolean(remoteControlStatusEnabled);
   const installedPluginReadEnabled = Boolean(installedPluginsEnabled);
   const importHistoriesEnabled = Boolean(externalAgentImportHistoriesEnabled);
+  const hooksReadEnabled = Boolean(hooksListEnabled);
   const loginEnabled = Boolean(accountLoginEnabled);
   const loginCancelEnabled = Boolean(accountLoginCancelEnabled);
   const creditsNudgeEnabled = Boolean(accountCreditsNudgeEnabled);
@@ -52225,6 +52304,7 @@ export function sanitizeSettingsIntegrationsPayload(
     remoteControlStatusEnabled: remoteStatusEnabled,
     installedPluginsEnabled: installedPluginReadEnabled,
     externalAgentImportHistoriesEnabled: importHistoriesEnabled,
+    hooksListEnabled: hooksReadEnabled,
     accountLoginCancelEnabled: loginCancelEnabled,
     accountLoginEnabled: loginEnabled,
     accountCreditsNudgeEnabled: creditsNudgeEnabled,
@@ -52286,7 +52366,8 @@ export function sanitizeSettingsIntegrationsPayload(
         remoteControlStatusEnabled: remoteStatusEnabled,
         remoteControlDisableEnabled: Boolean(remoteControlDisableEnabled),
         environmentAddEnabled: Boolean(environmentAddEnabled),
-        hookListingAvailable: inventory.hooks.ok,
+        hookListingAvailable: inventory.hooks.ok || hooksReadEnabled,
+        hooksListEnabled: hooksReadEnabled,
         appListingAvailable: inventory.apps.ok,
         externalAgentConfigDetectionAvailable: inventory.externalAgentConfig.ok,
         experimentalFeatureListingAvailable: inventory.experimentalFeatures.ok,
@@ -59139,6 +59220,205 @@ export function sanitizeExternalAgentImportHistoriesPayload(
   };
 }
 
+export function buildHooksListBlockedPayload({ workspace } = {}) {
+  const hooks = sanitizeHooksInventory(null);
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["hooks/list"],
+    },
+    settings: {
+      hookListingAvailable: true,
+      hooksListEnabled: false,
+      appServerTraffic: false,
+      commandsReturned: false,
+      pathsReturned: false,
+      keysReturned: false,
+      matchersReturned: false,
+      pluginIdsReturned: false,
+      statusMessagesReturned: false,
+      timeoutsReturned: false,
+      trustHashesReturned: false,
+      errorsReturned: false,
+      warningsReturned: false,
+      rawPayloadReturned: false,
+      reason: "hooks-list-requires-opt-in",
+    },
+    probes: {
+      hooks,
+    },
+    result: {
+      status: "blocked",
+      hooksListEnabled: false,
+      appServerTraffic: false,
+      workspaceCount: 0,
+      hookCount: 0,
+      enabledCount: 0,
+      disabledCount: 0,
+      managedCount: 0,
+      errorCount: 0,
+      warningCount: 0,
+      eventCounts: {},
+      handlerTypeCounts: {},
+      sourceCounts: {},
+      trustStatusCounts: {},
+      commandsReturned: false,
+      pathsReturned: false,
+      keysReturned: false,
+      matchersReturned: false,
+      pluginIdsReturned: false,
+      statusMessagesReturned: false,
+      timeoutsReturned: false,
+      trustHashesReturned: false,
+      errorsReturned: false,
+      warningsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      commandExecution: false,
+      hookExecution: false,
+      settingsWrites: false,
+      hookConfigWrites: false,
+      trustWrites: false,
+      disableWrites: false,
+      filesystemReads: false,
+      filesystemWrites: false,
+      secretsReturned: false,
+      tokensReturned: false,
+      namesReturned: false,
+      idsReturned: false,
+      urlsReturned: false,
+      pathsReturned: false,
+      commandsReturned: false,
+      keysReturned: false,
+      matchersReturned: false,
+      pluginIdsReturned: false,
+      statusMessagesReturned: false,
+      timeoutsReturned: false,
+      trustHashesReturned: false,
+      errorsReturned: false,
+      warningsReturned: false,
+      rawPayloadReturned: false,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: true,
+      implemented: true,
+    },
+    notifications: sanitizeNotificationCounts(null),
+  };
+}
+
+export function sanitizeHooksListPayload(
+  payload,
+  { workspace = null, enabled = false } = {},
+) {
+  const hooks = sanitizeHooksInventory(payload?.probes?.hooks);
+  const status = enabled ? "available" : "blocked";
+  return {
+    ok: Boolean(payload?.ok),
+    generatedAt: payload?.generatedAt ?? new Date().toISOString(),
+    transport: cleanDisplayText(payload?.transport, 80),
+    protocol: cleanDisplayText(payload?.protocol, 80),
+    initialize: sanitizeInitialize(payload?.initialize),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: Boolean(enabled),
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["hooks/list"],
+    },
+    settings: {
+      hookListingAvailable: true,
+      hooksListEnabled: Boolean(enabled),
+      appServerTraffic: Boolean(enabled),
+      commandsReturned: false,
+      pathsReturned: false,
+      keysReturned: false,
+      matchersReturned: false,
+      pluginIdsReturned: false,
+      statusMessagesReturned: false,
+      timeoutsReturned: false,
+      trustHashesReturned: false,
+      errorsReturned: false,
+      warningsReturned: false,
+      rawPayloadReturned: false,
+      reason: Boolean(enabled) ? "hooks-list-counts-only" : "hooks-list-requires-opt-in",
+    },
+    probes: {
+      hooks,
+    },
+    result: {
+      status,
+      hooksListEnabled: Boolean(enabled),
+      appServerTraffic: Boolean(enabled),
+      workspaceCount: hooks.workspaceCount,
+      hookCount: hooks.hookCount,
+      enabledCount: hooks.enabledCount,
+      disabledCount: hooks.disabledCount,
+      managedCount: hooks.managedCount,
+      errorCount: hooks.errorCount,
+      warningCount: hooks.warningCount,
+      eventCounts: hooks.eventCounts,
+      handlerTypeCounts: hooks.handlerTypeCounts,
+      sourceCounts: hooks.sourceCounts,
+      trustStatusCounts: hooks.trustStatusCounts,
+      commandsReturned: false,
+      pathsReturned: false,
+      keysReturned: false,
+      matchersReturned: false,
+      pluginIdsReturned: false,
+      statusMessagesReturned: false,
+      timeoutsReturned: false,
+      trustHashesReturned: false,
+      errorsReturned: false,
+      warningsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: Boolean(enabled),
+      modelTraffic: false,
+      commandTraffic: false,
+      commandExecution: false,
+      hookExecution: false,
+      settingsWrites: false,
+      hookConfigWrites: false,
+      trustWrites: false,
+      disableWrites: false,
+      filesystemReads: false,
+      filesystemWrites: false,
+      secretsReturned: false,
+      tokensReturned: false,
+      namesReturned: false,
+      idsReturned: false,
+      urlsReturned: false,
+      pathsReturned: false,
+      commandsReturned: false,
+      keysReturned: false,
+      matchersReturned: false,
+      pluginIdsReturned: false,
+      statusMessagesReturned: false,
+      timeoutsReturned: false,
+      trustHashesReturned: false,
+      errorsReturned: false,
+      warningsReturned: false,
+      rawPayloadReturned: false,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: true,
+      implemented: true,
+    },
+    notifications: sanitizeNotificationCounts(payload?.notifications),
+  };
+}
+
 export function buildAccountLoginCancelPreflight(
   body,
   { workspace, accountLoginCancelEnabled = false, accountLoginFlowRegistry = null } = {},
@@ -63375,6 +63655,7 @@ export function buildSettingsIntegrations({
   remoteControlStatusEnabled = false,
   installedPluginsEnabled = false,
   externalAgentImportHistoriesEnabled = false,
+  hooksListEnabled = false,
   accountLoginCancelEnabled = false,
   accountLoginEnabled = false,
   accountCreditsNudgeEnabled = false,
@@ -63417,6 +63698,7 @@ export function buildSettingsIntegrations({
   const remoteStatusEnabled = Boolean(remoteControlStatusEnabled);
   const installedPluginReadEnabled = Boolean(installedPluginsEnabled);
   const importHistoriesEnabled = Boolean(externalAgentImportHistoriesEnabled);
+  const hooksReadEnabled = Boolean(hooksListEnabled);
   const loginCancelEnabled = Boolean(accountLoginCancelEnabled);
   const loginEnabled = Boolean(accountLoginEnabled);
   const creditsNudgeEnabled = Boolean(accountCreditsNudgeEnabled);
@@ -63442,6 +63724,7 @@ export function buildSettingsIntegrations({
       remoteStatusEnabled ? "remoteControl/status/read" : null,
       installedPluginReadEnabled ? "plugin/installed" : null,
       importHistoriesEnabled ? "externalAgentConfig/import/readHistories" : null,
+      hooksReadEnabled ? "hooks/list" : null,
       readEnabled ? "account/read" : null,
       rateLimitsEnabled ? "account/rateLimits/read" : null,
       usageEnabled ? "account/usage/read" : null,
@@ -63455,6 +63738,7 @@ export function buildSettingsIntegrations({
     remoteControlStatusEnabled: remoteStatusEnabled,
     installedPluginsEnabled: installedPluginReadEnabled,
     externalAgentImportHistoriesEnabled: importHistoriesEnabled,
+    hooksListEnabled: hooksReadEnabled,
     accountLoginCancelEnabled: loginCancelEnabled,
     accountLoginEnabled: loginEnabled,
     accountCreditsNudgeEnabled: creditsNudgeEnabled,
@@ -63492,6 +63776,7 @@ export function buildSettingsIntegrations({
         remoteStatusEnabled ? "remoteControl/status/read" : null,
         installedPluginReadEnabled ? "plugin/installed" : null,
         importHistoriesEnabled ? "externalAgentConfig/import/readHistories" : null,
+        hooksReadEnabled ? "hooks/list" : null,
         readEnabled ? "account/read" : null,
         rateLimitsEnabled ? "account/rateLimits/read" : null,
         usageEnabled ? "account/usage/read" : null,
@@ -63517,7 +63802,8 @@ export function buildSettingsIntegrations({
         permissionProfilesEnabled: profilesEnabled,
         remoteControlStatusAvailable: remoteStatusEnabled,
         remoteControlStatusEnabled: remoteStatusEnabled,
-        hookListingAvailable: false,
+        hookListingAvailable: hooksReadEnabled,
+        hooksListEnabled: hooksReadEnabled,
         appListingAvailable: false,
         externalAgentConfigDetectionAvailable: false,
         experimentalFeatureListingAvailable: false,
@@ -66183,6 +66469,7 @@ function buildIntegrationActionScope({
   remoteControlStatusEnabled = false,
   installedPluginsEnabled = false,
   externalAgentImportHistoriesEnabled = false,
+  hooksListEnabled = false,
   accountLoginCancelEnabled = false,
   accountLoginEnabled = false,
   accountCreditsNudgeEnabled = false,
@@ -66274,6 +66561,7 @@ function buildIntegrationActionScope({
     remoteControlStatusEnabled: Boolean(remoteControlStatusEnabled),
     installedPluginsEnabled: Boolean(installedPluginsEnabled),
     externalAgentImportHistoriesEnabled: Boolean(externalAgentImportHistoriesEnabled),
+    hooksListEnabled: Boolean(hooksListEnabled),
     accountLoginEnabled: Boolean(accountLoginEnabled),
     authDeviceCodeLoginEnabled: Boolean(accountLoginEnabled),
     accountLoginCancelEnabled: Boolean(accountLoginCancelEnabled),
@@ -70558,10 +70846,10 @@ function sanitizeHooksInventory(hooks) {
     managedCount: safeCount(hooks?.managedCount),
     errorCount: safeCount(hooks?.errorCount),
     warningCount: safeCount(hooks?.warningCount),
-    eventCounts: sanitizeCountMap(hooks?.eventCounts),
-    handlerTypeCounts: sanitizeCountMap(hooks?.handlerTypeCounts),
-    sourceCounts: sanitizeCountMap(hooks?.sourceCounts),
-    trustStatusCounts: sanitizeCountMap(hooks?.trustStatusCounts),
+    eventCounts: sanitizeAllowedCountMap(hooks?.eventCounts, SAFE_HOOK_EVENTS),
+    handlerTypeCounts: sanitizeAllowedCountMap(hooks?.handlerTypeCounts, SAFE_HOOK_HANDLER_TYPES),
+    sourceCounts: sanitizeAllowedCountMap(hooks?.sourceCounts, SAFE_HOOK_SOURCES),
+    trustStatusCounts: sanitizeAllowedCountMap(hooks?.trustStatusCounts, SAFE_HOOK_TRUST_STATUSES),
     commandsReturned: false,
     pathsReturned: false,
     keysReturned: false,

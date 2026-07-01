@@ -1082,6 +1082,9 @@
             <button id="external-agent-import-histories-button" class="secondary-button" type="button">
               Import History Check
             </button>
+            <button id="hooks-list-button" class="secondary-button" type="button">
+              Hooks Check
+            </button>
             <span id="account-read-status" class="empty-state">Account read disabled by default.</span>
             <span id="account-rate-limits-status" class="empty-state">Limit read disabled by default.</span>
             <span id="account-usage-status" class="empty-state">Usage read disabled by default.</span>
@@ -1090,6 +1093,7 @@
             <span id="remote-control-status-status" class="empty-state">Remote status disabled by default.</span>
             <span id="installed-plugins-status" class="empty-state">Installed plugin read disabled by default.</span>
             <span id="external-agent-import-histories-status" class="empty-state">Import history read disabled by default.</span>
+            <span id="hooks-list-status" class="empty-state">Hooks read disabled by default.</span>
           </div>
           <dl class="agent-grid">
             <div>
@@ -1183,6 +1187,18 @@
             <div>
               <dt>Import Details</dt>
               <dd id="external-agent-import-histories-details-text">Hidden</dd>
+            </div>
+            <div>
+              <dt>Hooks</dt>
+              <dd id="hooks-list-count-text">0</dd>
+            </div>
+            <div>
+              <dt>Hooks Enabled</dt>
+              <dd id="hooks-list-enabled-text">0 / 0</dd>
+            </div>
+            <div>
+              <dt>Hook Details</dt>
+              <dd id="hooks-list-details-text">Hidden</dd>
             </div>
           </dl>
           <div class="turn-actions">

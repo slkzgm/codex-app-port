@@ -286,6 +286,11 @@ const elements = {
   externalAgentImportHistoriesDetailsText: document.querySelector(
     "#external-agent-import-histories-details-text",
   ),
+  hooksListButton: document.querySelector("#hooks-list-button"),
+  hooksListStatus: document.querySelector("#hooks-list-status"),
+  hooksListCountText: document.querySelector("#hooks-list-count-text"),
+  hooksListEnabledText: document.querySelector("#hooks-list-enabled-text"),
+  hooksListDetailsText: document.querySelector("#hooks-list-details-text"),
   accountLoginPreflightButton: document.querySelector("#account-login-preflight-button"),
   accountLoginButton: document.querySelector("#account-login-button"),
   accountLoginStatus: document.querySelector("#account-login-status"),
@@ -1250,6 +1255,10 @@ elements.workspaceSelect.addEventListener("change", () => {
   elements.externalAgentImportHistoriesCountText.textContent = "0";
   elements.externalAgentImportHistoriesResultsText.textContent = "0 / 0";
   elements.externalAgentImportHistoriesDetailsText.textContent = "Hidden";
+  elements.hooksListStatus.textContent = "Hooks read disabled by default.";
+  elements.hooksListCountText.textContent = "0";
+  elements.hooksListEnabledText.textContent = "0 / 0";
+  elements.hooksListDetailsText.textContent = "Hidden";
   lastApprovalPayload = null;
   lastApprovalQueue = [];
   approvalQueueFilter = "all";
@@ -2244,6 +2253,10 @@ elements.externalAgentImportHistoriesButton.addEventListener("click", () => {
   runExternalAgentImportHistories();
 });
 
+elements.hooksListButton.addEventListener("click", () => {
+  runHooksList();
+});
+
 elements.accountLoginPreflightButton.addEventListener("click", () => {
   runAccountLoginPreflight();
 });
@@ -2777,6 +2790,16 @@ function externalAgentImportHistoriesEndpoint() {
   const params = new URLSearchParams();
   params.set("workspace", selectedWorkspaceId);
   return `/api/external-agent-import-histories?${params.toString()}`;
+}
+
+function hooksListEndpoint() {
+  if (!selectedWorkspaceId) {
+    return "/api/hooks-list";
+  }
+
+  const params = new URLSearchParams();
+  params.set("workspace", selectedWorkspaceId);
+  return `/api/hooks-list?${params.toString()}`;
 }
 
 function accountLoginPreflightEndpoint() {
@@ -4964,6 +4987,28 @@ async function runExternalAgentImportHistories() {
     renderError(error);
   } finally {
     setExternalAgentImportHistoriesLoading(false);
+  }
+}
+
+async function runHooksList() {
+  setHooksListLoading(true);
+  hideError();
+
+  try {
+    const response = await fetch(hooksListEndpoint(), {
+      headers: apiHeaders(),
+      cache: "no-store",
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderHooksList(payload);
+  } catch (error) {
+    elements.hooksListStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    setHooksListLoading(false);
   }
 }
 
@@ -15699,6 +15744,37 @@ function renderExternalAgentImportHistories(payload) {
     : `${historyCount} imports`;
 }
 
+function renderHooksList(payload) {
+  const settings = payload.settings ?? {};
+  const result = payload.result ?? {};
+  const blocked = settings.hooksListEnabled !== true || payload.appServer?.touched !== true;
+  const hookCount = result.hookCount ?? payload.probes?.hooks?.hookCount ?? 0;
+  const enabledCount = result.enabledCount ?? payload.probes?.hooks?.enabledCount ?? 0;
+  const disabledCount = result.disabledCount ?? payload.probes?.hooks?.disabledCount ?? 0;
+  const status = result.status ?? (blocked ? "blocked" : "available");
+  elements.hooksListStatus.textContent = blocked ? "Read blocked" : status;
+  elements.hooksListCountText.textContent = String(hookCount);
+  elements.hooksListEnabledText.textContent = `${enabledCount} / ${disabledCount}`;
+  elements.hooksListDetailsText.textContent =
+    result.commandsReturned ||
+    result.pathsReturned ||
+    result.keysReturned ||
+    result.matchersReturned ||
+    result.pluginIdsReturned ||
+    result.statusMessagesReturned ||
+    result.timeoutsReturned ||
+    result.trustHashesReturned ||
+    result.errorsReturned ||
+    result.warningsReturned ||
+    result.rawPayloadReturned ||
+    settings.rawPayloadReturned
+      ? "Returned"
+      : "Hidden";
+  elements.codexHooksText.textContent = blocked
+    ? "Blocked"
+    : `${hookCount} hooks / ${result.managedCount ?? 0} managed`;
+}
+
 function renderAccountLoginPreflight(payload) {
   elements.accountLoginStatus.textContent = payload.policy?.executionGateEnabled
     ? "Login ready"
@@ -23646,6 +23722,14 @@ function setExternalAgentImportHistoriesLoading(isLoading) {
     : "Import History Check";
   if (isLoading) {
     elements.externalAgentImportHistoriesStatus.textContent = "Checking";
+  }
+}
+
+function setHooksListLoading(isLoading) {
+  elements.hooksListButton.disabled = isLoading;
+  elements.hooksListButton.textContent = isLoading ? "Checking" : "Hooks Check";
+  if (isLoading) {
+    elements.hooksListStatus.textContent = "Checking";
   }
 }
 

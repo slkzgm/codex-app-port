@@ -2176,6 +2176,14 @@ failure, field-presence, and allowlisted item-type counts. Import ids,
 timestamps, cwd values, source/target paths, messages, failure stages, error
 types, import execution, filesystem access, and raw payloads are not returned.
 
+`/api/hooks-list` is a dedicated disabled-by-default GET route for
+`hooks/list`. It requires `CODEX_APP_PORT_ALLOW_HOOKS_LIST=1`, accepts only the
+local session token and workspace selector, and returns workspace, hook,
+enabled, disabled, managed, error, and warning counts plus allowlisted event,
+handler, source, and trust-status buckets. Hook commands, paths, keys,
+matchers, plugin ids, status messages, timeouts, trust hashes, hook execution,
+config writes, filesystem access, and raw payloads are not returned.
+
 The remote-control-disable-preflight endpoint accepts no remote-control params
 and creates only a local one-time confirmation token. The matching
 `/api/remote-control-disable` route is fail-closed unless

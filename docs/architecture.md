@@ -1747,6 +1747,13 @@ Current M1 status:
   failure counts plus allowlisted item-type buckets without import ids,
   timestamps, cwd values, source/target paths, messages, failure stages, error
   types, import execution, filesystem access, or raw payloads
+- done: opt-in `/api/hooks-list` behind
+  `CODEX_APP_PORT_ALLOW_HOOKS_LIST=1`, GET-only and local-token protected,
+  calling only `hooks/list` with the selected workspace `cwd` and returning
+  workspace/hook/enabled/disabled/managed/error/warning counts plus allowlisted
+  event, handler, source, and trust-status buckets without hook commands,
+  paths, keys, matchers, plugin ids, status messages, timeouts, trust hashes,
+  hook execution, config writes, filesystem access, or raw payloads
 - done: local-only `/api/remote-control-enable-preflight` for audited
   `remoteControl/enable` intent, with route-specific nested response schemas,
   argument/key counts, optional `ephemeral` presence, unknown-param and

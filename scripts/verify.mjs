@@ -88,6 +88,7 @@ async function main() {
   await checkRemoteControlStatusApi();
   await checkInstalledPluginsApi();
   await checkExternalAgentImportHistoriesApi();
+  await checkHooksListApi();
   await checkAccountLoginApi();
   await checkAccountLoginCancelApi();
   await checkAccountCreditsNudgeApi();
@@ -19004,6 +19005,243 @@ async function checkExternalAgentImportHistoriesApi() {
     await closeServer(server);
   }
   pass("dev server external agent import histories exposes counts behind opt-in without returning import details");
+}
+
+async function checkHooksListApi() {
+  const blockedCalls = [];
+  const blockedServer = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    hooksListFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+  const blockedPort = await listenWithFallback(blockedServer, { host: "127.0.0.1", port: 0 });
+  const blockedBaseUrl = `http://127.0.0.1:${blockedPort}`;
+
+  try {
+    const token = await readUiSessionToken(blockedBaseUrl);
+    const settingsResponse = await fetch(`${blockedBaseUrl}/api/settings-integrations`, {
+      headers: apiHeaders(token),
+    });
+    if (!settingsResponse.ok) {
+      throw new Error(`settings integrations for blocked hooks list returned HTTP ${settingsResponse.status}`);
+    }
+    const settingsPayload = await settingsResponse.json();
+    if (
+      settingsPayload.surfaces?.settings?.hookListingAvailable !== false ||
+      settingsPayload.surfaces?.settings?.hooksListEnabled !== false ||
+      settingsPayload.integrationScope?.hooksListEnabled !== false
+    ) {
+      throw new Error("settings integrations did not expose the blocked hooks list gate safely");
+    }
+
+    const response = await fetch(`${blockedBaseUrl}/api/hooks-list`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`blocked hooks list returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (
+      payload.appServer?.touched !== false ||
+      payload.settings?.hooksListEnabled !== false ||
+      payload.result?.status !== "blocked" ||
+      payload.policy?.appServerTraffic !== false
+    ) {
+      throw new Error("blocked hooks list did not fail closed without app-server traffic");
+    }
+    if (blockedCalls.length !== 0) {
+      throw new Error("blocked hooks list unexpectedly touched app-server");
+    }
+    assertNoMarkers(JSON.stringify(payload), ["/tmp/codex-app-port-verify"]);
+  } finally {
+    await closeServer(blockedServer);
+  }
+
+  const calls = [];
+  const server = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    hooksListEnabled: true,
+    hooksListFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-07-01T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/verify-private-home",
+          userAgent: "verify-private-agent",
+        },
+        probes: {
+          hooks: {
+            ok: true,
+            workspaceCount: 1,
+            hookCount: 2,
+            enabledCount: 1,
+            disabledCount: 1,
+            managedCount: 1,
+            errorCount: 1,
+            warningCount: 1,
+            eventCounts: {
+              preToolUse: 1,
+              verifyPrivateEvent: 1,
+            },
+            handlerTypeCounts: {
+              command: 1,
+              verifyPrivateHandler: 1,
+            },
+            sourceCounts: {
+              project: 1,
+              verifyPrivateSource: 1,
+            },
+            trustStatusCounts: {
+              trusted: 1,
+              verifyPrivateTrust: 1,
+            },
+            commandsReturned: true,
+            pathsReturned: true,
+            keysReturned: true,
+            matchersReturned: true,
+            pluginIdsReturned: true,
+            statusMessagesReturned: true,
+            timeoutsReturned: true,
+            trustHashesReturned: true,
+            errorsReturned: true,
+            warningsReturned: true,
+            rawPayloadReturned: true,
+          },
+        },
+        rawHooks: {
+          command: "cat /tmp/codex-app-port-verify/secret.txt",
+          sourcePath: "/tmp/codex-app-port-verify/.codex/hooks/private.toml",
+          key: "verify-private-hook-key",
+          matcher: "verify-private-hook-matcher",
+          pluginId: "verify-private-plugin-id",
+          statusMessage: "verify private hook status",
+          currentHash: "verify-private-trust-hash",
+          error: "verify private hook error",
+          warning: "verify private hook warning",
+        },
+        notifications: {},
+      };
+    },
+  });
+  const port = await listenWithFallback(server, { host: "127.0.0.1", port: 0 });
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  try {
+    const token = await readUiSessionToken(baseUrl);
+    const settingsResponse = await fetch(`${baseUrl}/api/settings-integrations`, {
+      headers: apiHeaders(token),
+    });
+    if (!settingsResponse.ok) {
+      throw new Error(`settings integrations for hooks list returned HTTP ${settingsResponse.status}`);
+    }
+    const settingsPayload = await settingsResponse.json();
+    if (
+      settingsPayload.surfaces?.settings?.hookListingAvailable !== true ||
+      settingsPayload.surfaces?.settings?.hooksListEnabled !== true ||
+      settingsPayload.integrationScope?.hooksListEnabled !== true ||
+      !settingsPayload.integrationScope?.enabledReadMethods?.includes("hooks/list")
+    ) {
+      throw new Error("settings integrations did not expose the hooks list gate safely");
+    }
+
+    const wrongMethod = await fetch(`${baseUrl}/api/hooks-list`, {
+      method: "POST",
+      headers: apiHeaders(token),
+    });
+    if (wrongMethod.status !== 405) {
+      throw new Error(`hooks list POST returned HTTP ${wrongMethod.status}`);
+    }
+
+    const response = await fetch(`${baseUrl}/api/hooks-list`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`hooks list returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (
+      payload.appServer?.touched !== true ||
+      payload.appServer?.modelTraffic !== false ||
+      payload.settings?.hooksListEnabled !== true ||
+      payload.result?.status !== "available" ||
+      payload.result?.workspaceCount !== 1 ||
+      payload.result?.hookCount !== 2 ||
+      payload.result?.enabledCount !== 1 ||
+      payload.result?.disabledCount !== 1 ||
+      payload.result?.managedCount !== 1 ||
+      payload.result?.errorCount !== 1 ||
+      payload.result?.warningCount !== 1 ||
+      payload.result?.eventCounts?.preToolUse !== 1 ||
+      payload.result?.eventCounts?.verifyPrivateEvent != null ||
+      payload.result?.handlerTypeCounts?.command !== 1 ||
+      payload.result?.handlerTypeCounts?.verifyPrivateHandler != null ||
+      payload.result?.sourceCounts?.project !== 1 ||
+      payload.result?.sourceCounts?.verifyPrivateSource != null ||
+      payload.result?.trustStatusCounts?.trusted !== 1 ||
+      payload.result?.trustStatusCounts?.verifyPrivateTrust != null ||
+      payload.result?.commandsReturned !== false ||
+      payload.result?.pathsReturned !== false ||
+      payload.result?.keysReturned !== false ||
+      payload.result?.matchersReturned !== false ||
+      payload.result?.pluginIdsReturned !== false ||
+      payload.result?.statusMessagesReturned !== false ||
+      payload.result?.timeoutsReturned !== false ||
+      payload.result?.trustHashesReturned !== false ||
+      payload.result?.errorsReturned !== false ||
+      payload.result?.warningsReturned !== false ||
+      payload.result?.rawPayloadReturned !== false ||
+      payload.policy?.readOnly !== true ||
+      payload.policy?.commandExecution !== false ||
+      payload.policy?.hookExecution !== false ||
+      payload.policy?.hookConfigWrites !== false ||
+      payload.policy?.trustWrites !== false ||
+      payload.policy?.disableWrites !== false ||
+      payload.policy?.filesystemReads !== false ||
+      payload.policy?.filesystemWrites !== false ||
+      payload.policy?.rawPayloadReturned !== false
+    ) {
+      throw new Error("hooks list did not return the safe counts-only summary shape");
+    }
+    if (calls.length !== 1 || calls[0].cwd !== "/tmp/codex-app-port-verify") {
+      throw new Error("hooks list did not call the app-server read path once");
+    }
+    assertNoMarkers(JSON.stringify(payload), [
+      "/tmp/codex-app-port-verify",
+      "/tmp/verify-private-home",
+      "verify-private-agent",
+      "codexHome",
+      "userAgent",
+      "verifyPrivateEvent",
+      "verifyPrivateHandler",
+      "verifyPrivateSource",
+      "verifyPrivateTrust",
+      "verify-private-hook-key",
+      "verify-private-hook-matcher",
+      "verify-private-plugin-id",
+      "verify private hook status",
+      "verify-private-trust-hash",
+      "verify private hook error",
+      "verify private hook warning",
+      ".codex/hooks/private.toml",
+      "secret.txt",
+      "\"commandsReturned\":true",
+      "\"pathsReturned\":true",
+      "\"keysReturned\":true",
+      "\"matchersReturned\":true",
+      "\"pluginIdsReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]);
+  } finally {
+    await closeServer(server);
+  }
+  pass("dev server hooks list exposes counts behind opt-in without returning hook details");
 }
 
 async function checkAccountLoginApi() {
@@ -57717,6 +57955,11 @@ async function readUiSessionToken(baseUrl) {
     !html.includes("external-agent-import-histories-count-text") ||
     !html.includes("external-agent-import-histories-results-text") ||
     !html.includes("external-agent-import-histories-details-text") ||
+    !html.includes("hooks-list-button") ||
+    !html.includes("hooks-list-status") ||
+    !html.includes("hooks-list-count-text") ||
+    !html.includes("hooks-list-enabled-text") ||
+    !html.includes("hooks-list-details-text") ||
     !appScript.includes("runAccountRead") ||
     !appScript.includes("renderAccountRead") ||
     !appScript.includes("runAccountRateLimits") ||
@@ -57733,6 +57976,9 @@ async function readUiSessionToken(baseUrl) {
     !appScript.includes("renderInstalledPlugins") ||
     !appScript.includes("runExternalAgentImportHistories") ||
     !appScript.includes("renderExternalAgentImportHistories") ||
+    !appScript.includes("runHooksList") ||
+    !appScript.includes("renderHooksList") ||
+    !appScript.includes("setHooksListLoading") ||
     !html.includes("account-login-button") ||
     !html.includes("account-login-cancel-button") ||
     !html.includes("account-reset-credit-button") ||

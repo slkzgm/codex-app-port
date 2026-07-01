@@ -10,6 +10,7 @@ import {
   runConfigValueWriteProbe,
   runEnvironmentAddProbe,
   runExperimentalFeatureEnablementSetProbe,
+  runHooksListReadProbe,
   runIntegrationsInventoryProbe,
   runMcpServerOauthLoginProbe,
   runMcpServerReloadProbe,
@@ -2330,6 +2331,56 @@ test("runAccountReadProbe returns account state without identity secrets", async
       delete process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_READ;
     } else {
       process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_READ = previous;
+    }
+  }
+});
+
+test("runHooksListReadProbe returns hook counts without hook details", async () => {
+  const previous = process.env.CODEX_APP_PORT_ALLOW_HOOKS_LIST;
+  process.env.CODEX_APP_PORT_ALLOW_HOOKS_LIST = "1";
+  try {
+    const summary = await runHooksListReadProbe({
+      codexBin: process.execPath,
+      codexArgs: [mockServer.pathname],
+      cwd: process.cwd(),
+      timeoutMs: 1_000,
+    });
+    const hooks = summary.probes.hooks;
+    const serialized = JSON.stringify(summary);
+    assert.equal(summary.ok, true);
+    assert.equal(hooks.ok, true);
+    assert.equal(hooks.workspaceCount, 1);
+    assert.equal(hooks.hookCount, 1);
+    assert.equal(hooks.enabledCount, 1);
+    assert.equal(hooks.errorCount, 1);
+    assert.equal(hooks.warningCount, 1);
+    assert.deepEqual(hooks.eventCounts, { preToolUse: 1 });
+    assert.deepEqual(hooks.handlerTypeCounts, { command: 1 });
+    assert.deepEqual(hooks.sourceCounts, { project: 1 });
+    assert.deepEqual(hooks.trustStatusCounts, { trusted: 1 });
+    assert.equal(hooks.commandsReturned, false);
+    assert.equal(hooks.pathsReturned, false);
+    assert.equal(hooks.keysReturned, false);
+    assert.equal(hooks.matchersReturned, false);
+    assert.equal(hooks.pluginIdsReturned, false);
+    for (const marker of [
+      "/tmp/mock-workspace",
+      "secret.txt",
+      "private hook error",
+      "private hook warning",
+      "private-hash",
+      "private-hook-key",
+      "private-tool",
+      "private-plugin-id",
+      ".codex/hooks/private.toml",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    if (previous === undefined) {
+      delete process.env.CODEX_APP_PORT_ALLOW_HOOKS_LIST;
+    } else {
+      process.env.CODEX_APP_PORT_ALLOW_HOOKS_LIST = previous;
     }
   }
 });

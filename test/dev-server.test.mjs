@@ -395,6 +395,11 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /external-agent-import-histories-count-text/);
     assert.match(html, /external-agent-import-histories-results-text/);
     assert.match(html, /external-agent-import-histories-details-text/);
+    assert.match(html, /hooks-list-button/);
+    assert.match(html, /hooks-list-status/);
+    assert.match(html, /hooks-list-count-text/);
+    assert.match(html, /hooks-list-enabled-text/);
+    assert.match(html, /hooks-list-details-text/);
     assert.match(appScript, /runAccountRead/);
     assert.match(appScript, /renderAccountRead/);
     assert.match(appScript, /runAccountRateLimits/);
@@ -411,6 +416,9 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(appScript, /renderInstalledPlugins/);
     assert.match(appScript, /runExternalAgentImportHistories/);
     assert.match(appScript, /renderExternalAgentImportHistories/);
+    assert.match(appScript, /runHooksList/);
+    assert.match(appScript, /renderHooksList/);
+    assert.match(appScript, /setHooksListLoading/);
     assert.match(html, /account-login-preflight-button/);
     assert.match(html, /account-login-button/);
     assert.match(html, /thread-delete-preflight-button/);
@@ -15733,6 +15741,210 @@ test("dev server exposes external agent import histories only behind explicit op
       "\"messagesReturned\":true",
       "\"failureStagesReturned\":true",
       "\"errorTypesReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    await closeServer(enabledServer.server);
+  }
+});
+
+test("dev server exposes hooks list only behind explicit opt-in and redacts hook details", async () => {
+  const blockedCalls = [];
+  const blockedServer = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    hooksListFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+
+  try {
+    const settingsResponse = await fetch(`${blockedServer.url}/api/settings-integrations`, {
+      headers: apiHeaders(blockedServer.server),
+    });
+    assert.equal(settingsResponse.status, 200);
+    const settingsPayload = await settingsResponse.json();
+    assert.equal(settingsPayload.surfaces.settings.hookListingAvailable, false);
+    assert.equal(settingsPayload.surfaces.settings.hooksListEnabled, false);
+    assert.equal(settingsPayload.integrationScope.hooksListEnabled, false);
+
+    const response = await fetch(`${blockedServer.url}/api/hooks-list`, {
+      headers: apiHeaders(blockedServer.server),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, false);
+    assert.deepEqual(payload.appServer.auditedMethods, ["hooks/list"]);
+    assert.equal(payload.settings.hooksListEnabled, false);
+    assert.equal(payload.policy.appServerTraffic, false);
+    assert.equal(payload.result.status, "blocked");
+    assert.equal(blockedCalls.length, 0);
+    assert.equal(serialized.includes("/tmp/default-workspace"), false);
+  } finally {
+    await closeServer(blockedServer.server);
+  }
+
+  const calls = [];
+  const enabledServer = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    hooksListEnabled: true,
+    hooksListFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-07-01T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/private-home",
+          userAgent: "mock/0.0.0",
+        },
+        probes: {
+          hooks: {
+            ok: true,
+            workspaceCount: 1,
+            hookCount: 2,
+            enabledCount: 1,
+            disabledCount: 1,
+            managedCount: 1,
+            errorCount: 1,
+            warningCount: 1,
+            eventCounts: {
+              preToolUse: 1,
+              privateEventName: 1,
+            },
+            handlerTypeCounts: {
+              command: 1,
+              privateHandlerType: 1,
+            },
+            sourceCounts: {
+              project: 1,
+              privateSource: 1,
+            },
+            trustStatusCounts: {
+              trusted: 1,
+              privateTrust: 1,
+            },
+            commandsReturned: true,
+            pathsReturned: true,
+            keysReturned: true,
+            matchersReturned: true,
+            pluginIdsReturned: true,
+            statusMessagesReturned: true,
+            timeoutsReturned: true,
+            trustHashesReturned: true,
+            errorsReturned: true,
+            warningsReturned: true,
+            rawPayloadReturned: true,
+          },
+        },
+        rawHooks: {
+          command: "cat /tmp/default-workspace/secret.txt",
+          sourcePath: "/tmp/default-workspace/.codex/hooks/private.toml",
+          key: "private-hook-key",
+          matcher: "private-hook-matcher",
+          pluginId: "private-plugin-id",
+          statusMessage: "private hook status",
+          currentHash: "private-trust-hash",
+          error: "private hook error",
+          warning: "private hook warning",
+        },
+        notifications: {},
+      };
+    },
+  });
+
+  try {
+    const settingsResponse = await fetch(`${enabledServer.url}/api/settings-integrations`, {
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(settingsResponse.status, 200);
+    const settingsPayload = await settingsResponse.json();
+    assert.equal(settingsPayload.surfaces.settings.hookListingAvailable, true);
+    assert.equal(settingsPayload.surfaces.settings.hooksListEnabled, true);
+    assert.equal(settingsPayload.integrationScope.hooksListEnabled, true);
+    assert.equal(settingsPayload.integrationScope.enabledReadMethods.includes("hooks/list"), true);
+
+    const methodResponse = await fetch(`${enabledServer.url}/api/hooks-list`, {
+      method: "POST",
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(methodResponse.status, 405);
+
+    const response = await fetch(`${enabledServer.url}/api/hooks-list`, {
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, true);
+    assert.equal(payload.appServer.modelTraffic, false);
+    assert.deepEqual(payload.appServer.auditedMethods, ["hooks/list"]);
+    assert.equal(payload.settings.hooksListEnabled, true);
+    assert.equal(payload.result.status, "available");
+    assert.equal(payload.result.workspaceCount, 1);
+    assert.equal(payload.result.hookCount, 2);
+    assert.equal(payload.result.enabledCount, 1);
+    assert.equal(payload.result.disabledCount, 1);
+    assert.equal(payload.result.managedCount, 1);
+    assert.equal(payload.result.errorCount, 1);
+    assert.equal(payload.result.warningCount, 1);
+    assert.deepEqual(payload.result.eventCounts, { preToolUse: 1 });
+    assert.deepEqual(payload.result.handlerTypeCounts, { command: 1 });
+    assert.deepEqual(payload.result.sourceCounts, { project: 1 });
+    assert.deepEqual(payload.result.trustStatusCounts, { trusted: 1 });
+    assert.equal(payload.result.commandsReturned, false);
+    assert.equal(payload.result.pathsReturned, false);
+    assert.equal(payload.result.keysReturned, false);
+    assert.equal(payload.result.matchersReturned, false);
+    assert.equal(payload.result.pluginIdsReturned, false);
+    assert.equal(payload.result.statusMessagesReturned, false);
+    assert.equal(payload.result.timeoutsReturned, false);
+    assert.equal(payload.result.trustHashesReturned, false);
+    assert.equal(payload.result.errorsReturned, false);
+    assert.equal(payload.result.warningsReturned, false);
+    assert.equal(payload.result.rawPayloadReturned, false);
+    assert.equal(payload.policy.readOnly, true);
+    assert.equal(payload.policy.commandExecution, false);
+    assert.equal(payload.policy.hookExecution, false);
+    assert.equal(payload.policy.hookConfigWrites, false);
+    assert.equal(payload.policy.trustWrites, false);
+    assert.equal(payload.policy.disableWrites, false);
+    assert.equal(payload.policy.filesystemReads, false);
+    assert.equal(payload.policy.filesystemWrites, false);
+    assert.equal(payload.policy.rawPayloadReturned, false);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].cwd, "/tmp/default-workspace");
+    for (const marker of [
+      "/tmp/default-workspace",
+      "/tmp/private-home",
+      "codexHome",
+      "userAgent",
+      "privateEventName",
+      "privateHandlerType",
+      "privateSource",
+      "privateTrust",
+      "private-hook-key",
+      "private-hook-matcher",
+      "private-plugin-id",
+      "private hook status",
+      "private-trust-hash",
+      "private hook error",
+      "private hook warning",
+      ".codex/hooks/private.toml",
+      "secret.txt",
+      "\"commandsReturned\":true",
+      "\"pathsReturned\":true",
+      "\"keysReturned\":true",
+      "\"matchersReturned\":true",
+      "\"pluginIdsReturned\":true",
       "\"rawPayloadReturned\":true",
     ]) {
       assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
