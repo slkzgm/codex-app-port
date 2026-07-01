@@ -550,10 +550,14 @@ Current M1 status:
 - done: read-only Skills & Plugins catalog in `/api/settings-integrations`,
   exposing only static official Skills/Plugins documentation keys plus local
   preflight boundary keys/groups/states/sources/counts/redaction flags for
-  progressive disclosure, scope locations, enablement config, optional app
-  metadata, plugin overview, app and CLI directory browsing, marketplace
-  sharing, install/auth timing, new-thread usage, direct-task and `@`
-  invocation flows, bundled skills/apps/MCP setup, external app data terms,
+  progressive disclosure, initial context budget, initial-list truncation,
+  full instruction loading after selection, scope locations, enablement config,
+  optional app metadata, invocation-policy metadata, tool dependency metadata,
+  change-detection/restart fallback, plugin overview, app and CLI directory
+  browsing, marketplace sharing, workspace group sharing, install/auth timing,
+  new-thread usage, direct-task and `@` invocation flows, bundled skills/apps/
+  MCP setup, bundled presentation assets, lifecycle hooks, existing-folder
+  creator wiring, curated marketplace growth, external app data terms,
   uninstall semantics, plugin disable config, plugin guide references, and
   install/share/marketplace/read/uninstall/enablement/share-checkout/skills
   config boundaries, with skill names/descriptions/paths/content/scripts/

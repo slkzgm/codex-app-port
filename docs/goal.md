@@ -753,15 +753,19 @@ Target parity with the Codex desktop workflow:
   catalog aligned to the official Skills and Plugins documentation. It returns
   only static keys, groups, states, sources, counts, and redaction flags for
   skills progressive disclosure, initial context budget, explicit and implicit
-  invocation, description matching, creator/manual authoring, scope locations
-  and precedence, symlink support, plugin distribution, curated installation,
-  skill enablement config, optional skill app metadata, skill best practices,
-  plugin overview, app and CLI directory browsing, curated/shared/created
-  directory categories, marketplace sharing, documented plugin workflow
-  examples, install/auth timing, new-thread usage, direct-task and `@`
-  invocation flows, bundled skills/apps/MCP setup,
-  external app data terms, uninstall semantics, plugin disable config, plugin
-  guide references, and local install/share/marketplace/preflight plus opt-in
+  invocation, initial-list truncation, full instruction loading after
+  selection, description matching, creator/manual authoring,
+  change-detection/restart fallback, scope locations and precedence, symlink
+  support, plugin distribution, curated installation, skill enablement config,
+  optional skill app metadata, invocation-policy metadata, tool dependency
+  metadata, skill best practices, plugin overview, app and CLI directory
+  browsing, curated/shared/created directory categories, marketplace sharing,
+  workspace group sharing, documented plugin workflow examples, install/auth
+  timing, new-thread usage, direct-task and `@` invocation flows, bundled
+  skills/apps/MCP setup, bundled presentation assets, lifecycle hooks,
+  existing-folder creator wiring, curated marketplace growth, external app
+  data terms, uninstall semantics, plugin disable config, plugin guide
+  references, and local install/share/marketplace/preflight plus opt-in
   read/uninstall/enablement/share-checkout/skills-config boundaries. It does
   not return skill names, descriptions, paths, content, scripts, metadata,
   dependency tools, plugin names, ids, paths, URLs, descriptions, manifests,

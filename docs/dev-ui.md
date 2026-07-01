@@ -1376,14 +1376,18 @@ config, or auth state.
 The same Settings & Integrations response also exposes `skillsPluginsCatalog`
 as a static review-only Skills & Plugins catalog. The UI shows only catalog
 counts, setting keys, groups, state/source chips, and redaction chips for
-official Skills runtime, context-budget, invocation, authoring,
-discovery/precedence, symlink, distribution, installation, config, metadata,
-and best-practice surfaces, official Plugin overview, app and CLI directory,
-curated/shared/created directory categories, marketplace sharing, documented
-plugin workflow examples, install/auth timing, usage, permission/data-sharing,
-uninstall/disable, and guide-reference surfaces, plus
-local preflight boundaries for plugin install/share/marketplace/read/content/
-uninstall/enablement/share checkout and skills config/extra-roots writes. It
+official Skills runtime, context-budget, initial-list truncation, full
+instruction loading after selection, invocation, authoring,
+change-detection/restart fallback, discovery/precedence, symlink,
+distribution, installation, config, metadata, invocation-policy metadata, tool
+dependency metadata, and best-practice surfaces, official Plugin overview, app
+and CLI directory, curated/shared/created directory categories, marketplace
+sharing, workspace group sharing, documented plugin workflow examples,
+install/auth timing, usage, permission/data-sharing, bundled presentation
+assets, lifecycle hooks, existing-folder creator wiring, curated marketplace
+growth, uninstall/disable, and guide-reference surfaces, plus local preflight
+boundaries for plugin install/share/marketplace/read/content/uninstall/
+enablement/share checkout and skills config/extra-roots writes. It
 does not show skill names,
 descriptions, paths, content, scripts, metadata, dependency tools, plugin
 names, ids, paths, URLs, descriptions, manifests, default prompts,

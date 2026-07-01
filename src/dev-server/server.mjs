@@ -35024,6 +35024,18 @@ const CODEX_APP_SKILLS_PLUGINS_CATALOG = Object.freeze([
     source: "official-codex-skills-docs",
   },
   {
+    key: "skillInitialListDescriptionTruncation",
+    group: "skills-runtime",
+    state: "catalog-only",
+    source: "official-codex-skills-docs",
+  },
+  {
+    key: "skillFullInstructionReadAfterSelection",
+    group: "skills-runtime",
+    state: "catalog-only",
+    source: "official-codex-skills-docs",
+  },
+  {
     key: "skillExplicitInvocation",
     group: "skills-invocation",
     state: "catalog-only",
@@ -35090,7 +35102,25 @@ const CODEX_APP_SKILLS_PLUGINS_CATALOG = Object.freeze([
     source: "official-codex-skills-docs",
   },
   {
+    key: "skillChangeAutoDetection",
+    group: "skills-config",
+    state: "catalog-only",
+    source: "official-codex-skills-docs",
+  },
+  {
     key: "skillOptionalAppMetadata",
+    group: "skills-metadata",
+    state: "catalog-only",
+    source: "official-codex-skills-docs",
+  },
+  {
+    key: "skillImplicitInvocationPolicyMetadata",
+    group: "skills-metadata",
+    state: "catalog-only",
+    source: "official-codex-skills-docs",
+  },
+  {
+    key: "skillToolDependencyMetadata",
     group: "skills-metadata",
     state: "catalog-only",
     source: "official-codex-skills-docs",
@@ -35132,10 +35162,40 @@ const CODEX_APP_SKILLS_PLUGINS_CATALOG = Object.freeze([
     source: "official-codex-plugins-docs",
   },
   {
+    key: "pluginBundledPresentationAssets",
+    group: "plugin-capabilities",
+    state: "catalog-only",
+    source: "official-codex-skills-docs",
+  },
+  {
+    key: "pluginBundledLifecycleHooks",
+    group: "plugin-capabilities",
+    state: "catalog-only",
+    source: "official-codex-plugin-build-docs",
+  },
+  {
+    key: "pluginCreatorExistingFolder",
+    group: "plugin-authoring",
+    state: "catalog-only",
+    source: "official-codex-plugin-build-docs",
+  },
+  {
+    key: "pluginCuratedMarketplaceGrowth",
+    group: "plugin-marketplace",
+    state: "catalog-only",
+    source: "official-codex-plugin-build-docs",
+  },
+  {
     key: "pluginMarketplaceSharing",
     group: "plugin-sharing",
     state: "catalog-only",
     source: "official-codex-plugins-docs",
+  },
+  {
+    key: "pluginWorkspaceGroupSharing",
+    group: "plugin-sharing",
+    state: "catalog-only",
+    source: "official-codex-plugin-build-docs",
   },
   {
     key: "pluginDirectoryCuratedOpenAi",
