@@ -806,10 +806,11 @@ Target parity with the Codex desktop workflow:
   catalog aligned to the official Build plugins documentation. It returns only
   static keys, groups, states, sources, counts, and redaction flags for plugin
   creator scaffolding, local marketplace entries, repo/personal marketplace
-  locations, marketplace source/display fields, marketplace CLI actions,
-  minimal plugin manifests, stable plugin names, bundled skills/MCP configs,
-  local repo/personal install flows, restart requirements, workspace sharing,
-  admin sharing disablement, and marketplace-vs-workspace distribution. It
+  locations, marketplace source/display fields, GitHub/HTTP/SSH/local
+  marketplace source classes, Git-only sparse checkout guidance, marketplace
+  CLI actions, minimal plugin manifests, stable plugin names, bundled
+  skills/MCP configs, local repo/personal install flows, restart requirements,
+  workspace sharing, admin sharing disablement, and marketplace-vs-workspace distribution. It
   does not return plugin manifests, plugin names, versions, descriptions,
   skill names/content, MCP configs, app integrations, marketplace files,
   entries, names, sources, paths, display names, local plugin paths, workspace

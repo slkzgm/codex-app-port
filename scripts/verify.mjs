@@ -41876,6 +41876,11 @@ function expectedCodexPluginBuildEntries() {
     ["marketplaceEntrySourcePath", "marketplace", "catalog-only", "official-codex-plugin-build-docs"],
     ["marketplaceDisplayName", "marketplace", "catalog-only", "official-codex-plugin-build-docs"],
     ["marketplaceCliAdd", "marketplace-cli", "catalog-only", "official-codex-plugin-build-docs"],
+    ["marketplaceGitHubSource", "marketplace-source", "catalog-only", "official-codex-plugin-build-docs"],
+    ["marketplaceHttpGitSource", "marketplace-source", "catalog-only", "official-codex-plugin-build-docs"],
+    ["marketplaceSshGitSource", "marketplace-source", "catalog-only", "official-codex-plugin-build-docs"],
+    ["marketplaceLocalSource", "marketplace-source", "catalog-only", "official-codex-plugin-build-docs"],
+    ["marketplaceSparseGitOnly", "marketplace-source", "catalog-only", "official-codex-plugin-build-docs"],
     [
       "marketplaceCliListUpgradeRemove",
       "marketplace-cli",
@@ -41917,10 +41922,10 @@ function assertCodexPluginBuildCatalog(payload) {
   assert.equal(catalog?.returned, true);
   assert.equal(catalog.state, "partial");
   assert.equal(catalog.officialSource, "official-codex-plugin-build-docs");
-  assert.equal(catalog.entryCount, 30);
-  assert.equal(catalog.officialEntryCount, 20);
+  assert.equal(catalog.entryCount, 35);
+  assert.equal(catalog.officialEntryCount, 25);
   assert.equal(catalog.localBoundaryEntryCount, 10);
-  assert.equal(catalog.catalogOnlyEntryCount, 20);
+  assert.equal(catalog.catalogOnlyEntryCount, 25);
   assert.equal(catalog.blockedEntryCount, 10);
   assert.equal(catalog.enabledEntryCount, 0);
   assert.deepEqual(

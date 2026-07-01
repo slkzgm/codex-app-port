@@ -46555,6 +46555,36 @@ const CODEX_PLUGIN_BUILD_CATALOG = Object.freeze([
     source: "official-codex-plugin-build-docs",
   },
   {
+    key: "marketplaceGitHubSource",
+    group: "marketplace-source",
+    state: "catalog-only",
+    source: "official-codex-plugin-build-docs",
+  },
+  {
+    key: "marketplaceHttpGitSource",
+    group: "marketplace-source",
+    state: "catalog-only",
+    source: "official-codex-plugin-build-docs",
+  },
+  {
+    key: "marketplaceSshGitSource",
+    group: "marketplace-source",
+    state: "catalog-only",
+    source: "official-codex-plugin-build-docs",
+  },
+  {
+    key: "marketplaceLocalSource",
+    group: "marketplace-source",
+    state: "catalog-only",
+    source: "official-codex-plugin-build-docs",
+  },
+  {
+    key: "marketplaceSparseGitOnly",
+    group: "marketplace-source",
+    state: "catalog-only",
+    source: "official-codex-plugin-build-docs",
+  },
+  {
     key: "marketplaceCliListUpgradeRemove",
     group: "marketplace-cli",
     state: "catalog-only",

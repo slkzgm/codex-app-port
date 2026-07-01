@@ -1150,10 +1150,11 @@ Current M1 status:
   exposing only static official Build plugins documentation keys plus local
   boundary keys/groups/states/sources/counts/redaction flags for plugin
   creator scaffolding, local marketplace entries, repo/personal marketplace
-  locations, marketplace source/display fields, marketplace CLI actions,
-  minimal plugin manifests, stable plugin names, bundled skills/MCP configs,
-  local repo/personal install flows, restart requirements, workspace sharing,
-  admin sharing disablement, and marketplace-vs-workspace distribution, with
+  locations, marketplace source/display fields, GitHub/HTTP/SSH/local
+  marketplace source classes, Git-only sparse checkout guidance, marketplace
+  CLI actions, minimal plugin manifests, stable plugin names, bundled
+  skills/MCP configs, local repo/personal install flows, restart requirements,
+  workspace sharing, admin sharing disablement, and marketplace-vs-workspace distribution, with
   plugin manifests, plugin names/versions/descriptions, skill names/content,
   MCP configs, app integrations, marketplace files/entries/names/sources/paths,
   display names, local plugin paths, workspace principals, share links, admin
