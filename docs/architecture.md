@@ -667,6 +667,22 @@ Current M1 status:
   issue/settings opens, permission prompts, automation archive, prompt
   recovery, filesystem access, network access, mutations, paths, URLs, secrets,
   raw payloads, and app-server traffic blocked
+- done: read-only Codex Worktrees catalog in `/api/settings-integrations`,
+  exposing only static official Worktrees documentation keys plus local
+  boundary keys/groups/states/sources/counts/redaction flags for worktree
+  concepts, Git-repository requirements, Local/Worktree/Handoff terminology,
+  parallel/background workflows, setup flow, branch selection, detached-HEAD
+  behavior, handoff safety, exclusive worktree branch flow, managed/permanent
+  worktrees, managed worktree location, ignored-file copy guidance, branch
+  checkout limits, cleanup retention, and snapshot restore, with project names,
+  repository/worktree paths, branch names, commit SHAs, Git state, thread ids,
+  prompt text, local-environment names, ignored-file patterns, file names,
+  snapshot content, terminal commands, IDE names, setting values, Git/branch
+  reads, worktree creation, handoff, branch creation, commit/push/PR actions,
+  IDE/terminal opens, ignored-file copies, snapshot restores, cleanup setting
+  writes, permanent worktree creation, local-environment setup, filesystem
+  access, network access, Git/app mutations, paths, URLs, secrets, raw
+  payloads, and app-server traffic blocked
 - done: read-only Codex Auto-review catalog in `/api/settings-integrations`,
   exposing only static official Auto-review documentation keys plus local
   boundary keys/groups/states/sources/counts/redaction flags for reviewer-swap

@@ -37272,6 +37272,205 @@ function assertCodexTroubleshootingCatalog(payload) {
   }
 }
 
+function expectedCodexWorktreesEntries() {
+  return [
+    ["worktreeOverview", "overview", "catalog-only", "official-codex-worktrees-docs"],
+    ["gitRepositoryRequirement", "requirements", "catalog-only", "official-codex-worktrees-docs"],
+    ["localCheckoutTerminology", "terminology", "catalog-only", "official-codex-worktrees-docs"],
+    ["worktreeTerminology", "terminology", "catalog-only", "official-codex-worktrees-docs"],
+    ["handoffTerminology", "terminology", "catalog-only", "official-codex-worktrees-docs"],
+    ["parallelWorkReason", "why", "catalog-only", "official-codex-worktrees-docs"],
+    ["backgroundQueueReason", "why", "catalog-only", "official-codex-worktrees-docs"],
+    ["moveThreadToLocalReason", "why", "catalog-only", "official-codex-worktrees-docs"],
+    ["setupSelectWorktree", "setup", "catalog-only", "official-codex-worktrees-docs"],
+    ["setupStartingBranch", "setup", "catalog-only", "official-codex-worktrees-docs"],
+    ["setupSubmitPromptDetachedHead", "setup", "catalog-only", "official-codex-worktrees-docs"],
+    ["setupChooseWhereToKeepWorking", "setup", "catalog-only", "official-codex-worktrees-docs"],
+    ["handoffGitSafety", "handoff", "catalog-only", "official-codex-worktrees-docs"],
+    ["worktreeExclusiveBranchFlow", "worktree-flow", "catalog-only", "official-codex-worktrees-docs"],
+    ["handoffToLocalFlow", "handoff", "catalog-only", "official-codex-worktrees-docs"],
+    ["managedWorktrees", "advanced", "catalog-only", "official-codex-worktrees-docs"],
+    ["permanentWorktrees", "advanced", "catalog-only", "official-codex-worktrees-docs"],
+    ["managedWorktreeLocation", "advanced", "catalog-only", "official-codex-worktrees-docs"],
+    ["worktreeincludeCopy", "ignored-files", "catalog-only", "official-codex-worktrees-docs"],
+    ["sourceSymlinkSkipOverwrite", "ignored-files", "catalog-only", "official-codex-worktrees-docs"],
+    ["branchCheckoutLimitation", "branch-limits", "catalog-only", "official-codex-worktrees-docs"],
+    ["cleanupLimitAndProtection", "cleanup", "catalog-only", "official-codex-worktrees-docs"],
+    ["deletedWorktreeSnapshotRestore", "cleanup", "catalog-only", "official-codex-worktrees-docs"],
+    ["worktreePathBoundary", "paths", "blocked", "local-worktrees-boundary"],
+    ["gitRepositoryReadBoundary", "git", "blocked", "local-worktrees-boundary"],
+    ["branchSelectionBoundary", "git", "blocked", "local-worktrees-boundary"],
+    ["worktreeCreationBoundary", "creation", "blocked", "local-worktrees-boundary"],
+    ["handoffBoundary", "handoff", "blocked", "local-worktrees-boundary"],
+    ["branchCreationBoundary", "git", "blocked", "local-worktrees-boundary"],
+    ["commitPushPrBoundary", "publishing", "blocked", "local-worktrees-boundary"],
+    ["ideTerminalBoundary", "tools", "blocked", "local-worktrees-boundary"],
+    ["ignoredFileCopyBoundary", "ignored-files", "blocked", "local-worktrees-boundary"],
+    ["snapshotRestoreBoundary", "cleanup", "blocked", "local-worktrees-boundary"],
+    ["cleanupSettingsBoundary", "cleanup", "blocked", "local-worktrees-boundary"],
+    ["permanentWorktreeBoundary", "advanced", "blocked", "local-worktrees-boundary"],
+    ["localEnvironmentSetupBoundary", "setup", "blocked", "local-worktrees-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexWorktreesCatalog(payload) {
+  const catalog = payload.codexWorktrees;
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-worktrees-docs");
+  assert.equal(catalog.entryCount, 36);
+  assert.equal(catalog.officialEntryCount, 23);
+  assert.equal(catalog.localBoundaryEntryCount, 13);
+  assert.equal(catalog.catalogOnlyEntryCount, 23);
+  assert.equal(catalog.blockedEntryCount, 13);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({ key, group, state, source })),
+    expectedCodexWorktreesEntries(),
+  );
+
+  const entryRedactionFlags = [
+    "projectNameReturned",
+    "repositoryPathReturned",
+    "worktreePathReturned",
+    "branchNameReturned",
+    "commitShaReturned",
+    "gitStateReturned",
+    "threadIdReturned",
+    "promptTextReturned",
+    "localEnvironmentNameReturned",
+    "ignoredFilePatternReturned",
+    "fileNameReturned",
+    "snapshotContentReturned",
+    "terminalCommandReturned",
+    "ideNameReturned",
+    "settingValueReturned",
+    "gitRepositoryRead",
+    "branchListRead",
+    "worktreeCreated",
+    "handoffRun",
+    "branchCreated",
+    "commitStarted",
+    "pushStarted",
+    "pullRequestOpened",
+    "ideOpened",
+    "terminalOpened",
+    "ignoredFilesCopied",
+    "snapshotRestored",
+    "cleanupSettingChanged",
+    "permanentWorktreeCreated",
+    "localEnvironmentSetupRun",
+    "filesystemRead",
+    "filesystemWrite",
+    "gitMutation",
+    "networkAccess",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.worktreesCatalogReturned, true);
+  for (const flag of [
+    "projectNamesReturned",
+    "repositoryPathsReturned",
+    "worktreePathsReturned",
+    "branchNamesReturned",
+    "commitShasReturned",
+    "gitStatesReturned",
+    "threadIdsReturned",
+    "promptTextsReturned",
+    "localEnvironmentNamesReturned",
+    "ignoredFilePatternsReturned",
+    "fileNamesReturned",
+    "snapshotContentsReturned",
+    "terminalCommandsReturned",
+    "ideNamesReturned",
+    "settingValuesReturned",
+    "gitRepositoryReads",
+    "branchListReads",
+    "worktreesCreated",
+    "handoffsRun",
+    "branchesCreated",
+    "commitsStarted",
+    "pushesStarted",
+    "pullRequestsOpened",
+    "idesOpened",
+    "terminalsOpened",
+    "ignoredFilesCopied",
+    "snapshotsRestored",
+    "cleanupSettingsChanged",
+    "permanentWorktreesCreated",
+    "localEnvironmentSetupRuns",
+    "filesystemReads",
+    "filesystemWrites",
+    "gitMutations",
+    "networkAccess",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexWorktreesReturned", true],
+    ["codexWorktreesValuesReturned", false],
+    ["codexWorktreesProjectNamesReturned", false],
+    ["codexWorktreesRepositoryPathsReturned", false],
+    ["codexWorktreesWorktreePathsReturned", false],
+    ["codexWorktreesBranchNamesReturned", false],
+    ["codexWorktreesCommitShasReturned", false],
+    ["codexWorktreesGitStatesReturned", false],
+    ["codexWorktreesThreadIdsReturned", false],
+    ["codexWorktreesPromptTextsReturned", false],
+    ["codexWorktreesLocalEnvironmentNamesReturned", false],
+    ["codexWorktreesIgnoredFilePatternsReturned", false],
+    ["codexWorktreesFileNamesReturned", false],
+    ["codexWorktreesSnapshotContentsReturned", false],
+    ["codexWorktreesTerminalCommandsReturned", false],
+    ["codexWorktreesIdeNamesReturned", false],
+    ["codexWorktreesSettingValuesReturned", false],
+    ["codexWorktreesGitRepositoryReadEnabled", false],
+    ["codexWorktreesBranchListReadEnabled", false],
+    ["codexWorktreesCreationEnabled", false],
+    ["codexWorktreesHandoffEnabled", false],
+    ["codexWorktreesBranchCreateEnabled", false],
+    ["codexWorktreesCommitEnabled", false],
+    ["codexWorktreesPushEnabled", false],
+    ["codexWorktreesPullRequestEnabled", false],
+    ["codexWorktreesIdeOpenEnabled", false],
+    ["codexWorktreesTerminalOpenEnabled", false],
+    ["codexWorktreesIgnoredFileCopyEnabled", false],
+    ["codexWorktreesSnapshotRestoreEnabled", false],
+    ["codexWorktreesCleanupSettingChangeEnabled", false],
+    ["codexWorktreesPermanentCreateEnabled", false],
+    ["codexWorktreesLocalEnvironmentSetupEnabled", false],
+    ["codexWorktreesFilesystemAccess", false],
+    ["codexWorktreesGitMutationsEnabled", false],
+    ["codexWorktreesNetworkAccess", false],
+    ["codexWorktreesMutationsEnabled", false],
+    ["codexWorktreesPathsReturned", false],
+    ["codexWorktreesUrlsReturned", false],
+    ["codexWorktreesSecretsReturned", false],
+    ["codexWorktreesRawPayloadsReturned", false],
+    ["codexWorktreesAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexGovernanceEntries() {
   return [
     ["governanceVisibilityAuditability", "overview", "catalog-only", "official-codex-governance-docs"],
@@ -41625,6 +41824,7 @@ function assertCodexAppSettingsParity(
   assertCodexWorkflowGuidanceCatalog(payload);
   assertCodexOverviewQuickstartCatalog(payload);
   assertCodexTroubleshootingCatalog(payload);
+  assertCodexWorktreesCatalog(payload);
   assertCodexGovernanceCatalog(payload);
   assertCodexManagedConfigurationCatalog(payload);
   assertCodexEnvironmentVariablesCatalog(payload);

@@ -950,6 +950,23 @@ setup/version/terminal commands, upload feedback, open issues/settings, trigger
 permissions, archive automations, recover prompts, access files/network, or
 mutate state.
 
+The same response exposes `codexWorktrees` as a static review-only catalog for
+official Codex App Worktrees guidance. The UI shows only catalog counts, entry
+keys, groups, state/source chips, and negative redaction chips for worktree
+concepts, Git-repository requirements, Local/Worktree/Handoff terminology,
+parallel/background workflows, setup flow, branch selection, detached-HEAD
+behavior, handoff safety, exclusive worktree branch flow, managed/permanent
+worktrees, managed worktree location, ignored-file copy guidance, branch
+checkout limits, cleanup retention, and snapshot restore. It must not show
+project names, repository/worktree paths, branch names, commit SHAs, Git state,
+thread ids, prompt text, local-environment names, ignored-file patterns, file
+names, snapshot content, terminal commands, IDE names, setting values, paths,
+URLs, secrets, raw payloads, or app-server traffic, and it must not read Git
+repositories/branches, create worktrees, run handoff, create branches, commit,
+push, open PRs, open IDEs/terminals, copy ignored files, restore snapshots,
+change cleanup settings, create permanent worktrees, run local-environment
+setup, access files/network, or mutate Git/app state.
+
 The same response exposes `codexManagedConfiguration` as a static review-only
 catalog for official Codex managed-configuration behavior. The UI shows only
 catalog counts, entry keys, groups, state/source chips, and redaction chips for

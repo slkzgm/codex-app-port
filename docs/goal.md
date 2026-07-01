@@ -314,6 +314,23 @@ Target parity with the Codex desktop workflow:
   environments, remove projects, unarchive threads, run setup/version/terminal
   commands, upload feedback, open issues/settings, trigger permissions, archive
   automations, recover prompts, access files/network, or mutate state.
+- `/api/settings-integrations` now also exposes a read-only Codex Worktrees
+  catalog aligned to the current official app worktrees docs. It returns only
+  static keys, groups, states, sources, counts, and redaction flags for
+  worktree concepts, Git-repository requirements, Local/Worktree/Handoff
+  terminology, parallel/background workflows, setup flow, branch selection,
+  detached-HEAD behavior, handoff safety, exclusive worktree branch flow,
+  managed/permanent worktrees, managed worktree location, ignored-file copy
+  guidance, branch checkout limits, cleanup retention, and snapshot restore.
+  It does not return project names, repository/worktree paths, branch names,
+  commit SHAs, Git state, thread ids, prompt text, local-environment names,
+  ignored-file patterns, file names, snapshot content, terminal commands, IDE
+  names, setting values, paths, URLs, secrets, raw payloads, or app-server
+  traffic, and it does not read Git repositories/branches, create worktrees,
+  run handoff, create branches, commit, push, open PRs, open IDEs/terminals,
+  copy ignored files, restore snapshots, change cleanup settings, create
+  permanent worktrees, run local-environment setup, access files/network, or
+  mutate Git/app state.
 - `/api/settings-integrations` now also exposes a read-only Codex Governance
   catalog aligned to the official enterprise governance guide. It returns only
   static keys, groups, states, sources, counts, and redaction flags for

@@ -59,6 +59,8 @@ const elements = {
   codexTroubleshootingValuesText: document.querySelector(
     "#codex-troubleshooting-values-text",
   ),
+  codexWorktreesText: document.querySelector("#codex-worktrees-text"),
+  codexWorktreesValuesText: document.querySelector("#codex-worktrees-values-text"),
   codexGovernanceText: document.querySelector("#codex-governance-text"),
   codexGovernanceValuesText: document.querySelector("#codex-governance-values-text"),
   codexManagedConfigurationText: document.querySelector("#codex-managed-configuration-text"),
@@ -481,6 +483,7 @@ const elements = {
   codexWorkflowGuidanceList: document.querySelector("#codex-workflow-guidance-list"),
   codexOverviewQuickstartList: document.querySelector("#codex-overview-quickstart-list"),
   codexTroubleshootingList: document.querySelector("#codex-troubleshooting-list"),
+  codexWorktreesList: document.querySelector("#codex-worktrees-list"),
   codexGovernanceList: document.querySelector("#codex-governance-list"),
   codexManagedConfigurationList: document.querySelector("#codex-managed-configuration-list"),
   codexEnvironmentVariablesList: document.querySelector("#codex-environment-variables-list"),
@@ -10550,6 +10553,7 @@ function renderSettingsIntegrations(payload) {
   const codexWorkflowGuidance = payload.codexWorkflowGuidance ?? {};
   const codexOverviewQuickstart = payload.codexOverviewQuickstart ?? {};
   const codexTroubleshooting = payload.codexTroubleshooting ?? {};
+  const codexWorktrees = payload.codexWorktrees ?? {};
   const codexGovernance = payload.codexGovernance ?? {};
   const codexManagedConfiguration = payload.codexManagedConfiguration ?? {};
   const codexEnvironmentVariables = payload.codexEnvironmentVariables ?? {};
@@ -11122,6 +11126,54 @@ function renderSettingsIntegrations(payload) {
     codexTroubleshooting.secretsReturned ||
     codexTroubleshooting.rawPayloadsReturned ||
     codexTroubleshooting.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexWorktreesText.textContent = codexWorktrees.returned
+    ? `${codexWorktrees.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexWorktrees.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexWorktreesValuesText.textContent =
+    codexWorktrees.projectNamesReturned ||
+    codexWorktrees.repositoryPathsReturned ||
+    codexWorktrees.worktreePathsReturned ||
+    codexWorktrees.branchNamesReturned ||
+    codexWorktrees.commitShasReturned ||
+    codexWorktrees.gitStatesReturned ||
+    codexWorktrees.threadIdsReturned ||
+    codexWorktrees.promptTextsReturned ||
+    codexWorktrees.localEnvironmentNamesReturned ||
+    codexWorktrees.ignoredFilePatternsReturned ||
+    codexWorktrees.fileNamesReturned ||
+    codexWorktrees.snapshotContentsReturned ||
+    codexWorktrees.terminalCommandsReturned ||
+    codexWorktrees.ideNamesReturned ||
+    codexWorktrees.settingValuesReturned ||
+    codexWorktrees.gitRepositoryReads ||
+    codexWorktrees.branchListReads ||
+    codexWorktrees.worktreesCreated ||
+    codexWorktrees.handoffsRun ||
+    codexWorktrees.branchesCreated ||
+    codexWorktrees.commitsStarted ||
+    codexWorktrees.pushesStarted ||
+    codexWorktrees.pullRequestsOpened ||
+    codexWorktrees.idesOpened ||
+    codexWorktrees.terminalsOpened ||
+    codexWorktrees.ignoredFilesCopied ||
+    codexWorktrees.snapshotsRestored ||
+    codexWorktrees.cleanupSettingsChanged ||
+    codexWorktrees.permanentWorktreesCreated ||
+    codexWorktrees.localEnvironmentSetupRuns ||
+    codexWorktrees.filesystemReads ||
+    codexWorktrees.filesystemWrites ||
+    codexWorktrees.gitMutations ||
+    codexWorktrees.networkAccess ||
+    codexWorktrees.mutationEnabled ||
+    codexWorktrees.pathsReturned ||
+    codexWorktrees.urlsReturned ||
+    codexWorktrees.secretsReturned ||
+    codexWorktrees.rawPayloadsReturned ||
+    codexWorktrees.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexGovernanceText.textContent = codexGovernance.returned
@@ -12293,6 +12345,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexWorkflowGuidanceCatalog(codexWorkflowGuidance);
   renderCodexOverviewQuickstartCatalog(codexOverviewQuickstart);
   renderCodexTroubleshootingCatalog(codexTroubleshooting);
+  renderCodexWorktreesCatalog(codexWorktrees);
   renderCodexGovernanceCatalog(codexGovernance);
   renderCodexManagedConfigurationCatalog(codexManagedConfiguration);
   renderCodexEnvironmentVariablesCatalog(codexEnvironmentVariables);
@@ -15063,6 +15116,101 @@ function renderCodexTroubleshootingCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexTroubleshootingList.append(row);
+  }
+}
+
+function renderCodexWorktreesCatalog(summary) {
+  elements.codexWorktreesList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexWorktreesList.append(emptyState("No Codex worktrees catalog returned."));
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "worktrees";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.projectNameReturned ? "project names returned" : "project names hidden",
+      entry.repositoryPathReturned ? "repository paths returned" : "repository paths hidden",
+      entry.worktreePathReturned ? "worktree paths returned" : "worktree paths hidden",
+      entry.branchNameReturned ? "branch names returned" : "branch names hidden",
+      entry.commitShaReturned ? "commit SHAs returned" : "commit SHAs hidden",
+      entry.gitStateReturned ? "Git state returned" : "Git state hidden",
+      entry.threadIdReturned ? "thread ids returned" : "thread ids hidden",
+      entry.promptTextReturned ? "prompt text returned" : "prompt text hidden",
+      entry.localEnvironmentNameReturned
+        ? "local environment names returned"
+        : "local environment names hidden",
+      entry.ignoredFilePatternReturned
+        ? "ignored file patterns returned"
+        : "ignored file patterns hidden",
+      entry.fileNameReturned ? "file names returned" : "file names hidden",
+      entry.snapshotContentReturned ? "snapshot content returned" : "snapshot content hidden",
+      entry.terminalCommandReturned
+        ? "terminal commands returned"
+        : "terminal commands hidden",
+      entry.ideNameReturned ? "IDE names returned" : "IDE names hidden",
+      entry.settingValueReturned ? "setting values returned" : "setting values hidden",
+      entry.gitRepositoryRead ? "Git repository read" : "Git repository reads blocked",
+      entry.branchListRead ? "branch list read" : "branch list reads blocked",
+      entry.worktreeCreated ? "worktree created" : "worktree creation blocked",
+      entry.handoffRun ? "handoff run" : "handoff blocked",
+      entry.branchCreated ? "branch created" : "branch creation blocked",
+      entry.commitStarted ? "commit started" : "commit blocked",
+      entry.pushStarted ? "push started" : "push blocked",
+      entry.pullRequestOpened ? "pull request opened" : "pull request blocked",
+      entry.ideOpened ? "IDE opened" : "IDE open blocked",
+      entry.terminalOpened ? "terminal opened" : "terminal open blocked",
+      entry.ignoredFilesCopied ? "ignored files copied" : "ignored file copy blocked",
+      entry.snapshotRestored ? "snapshot restored" : "snapshot restore blocked",
+      entry.cleanupSettingChanged
+        ? "cleanup settings changed"
+        : "cleanup settings blocked",
+      entry.permanentWorktreeCreated
+        ? "permanent worktree created"
+        : "permanent worktree creation blocked",
+      entry.localEnvironmentSetupRun
+        ? "local environment setup run"
+        : "local environment setup blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      entry.gitMutation ? "Git mutation" : "Git mutations blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexWorktreesList.append(row);
   }
 }
 

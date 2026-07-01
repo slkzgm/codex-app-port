@@ -537,7 +537,18 @@
   traffic, and must not read Git/logs/local environments, remove projects,
   unarchive threads, run setup/version/terminal commands, upload feedback, open
   issues/settings, trigger permissions, archive automations, recover prompts,
-  access files/network, or mutate state. Its
+  access files/network, or mutate state. Its Codex Worktrees catalog may expose
+  only static official-documentation keys plus local boundary keys, groups,
+  states, sources, counts, and redaction flags; it must not return project
+  names, repository/worktree paths, branch names, commit SHAs, Git state,
+  thread ids, prompt text, local-environment names, ignored-file patterns, file
+  names, snapshot content, terminal commands, IDE names, setting values, paths,
+  URLs, secrets, raw payloads, app-server payloads, or app-server traffic, and
+  must not read Git repositories or branches, create worktrees, run handoff,
+  create branches, commit, push, open PRs, open IDEs or terminals, copy ignored
+  files, restore snapshots, change cleanup settings, create permanent
+  worktrees, run local-environment setup, access files/network, or mutate
+  Git/app state. Its
   Codex Auto-review catalog may expose only static official-documentation keys
   plus local boundary keys, groups, states, sources, counts, and redaction
   flags; it must not return approval requests, reviewer rationales,
