@@ -808,6 +808,21 @@ Current M1 status:
   sudo/user changes, repository checkout reads, GitHub API traffic, filesystem
   access, network access, model traffic, mutations, paths, URLs, secrets, raw
   payloads, and app-server traffic blocked
+- done: read-only Codex SDK catalog in `/api/settings-integrations`, exposing
+  only static official SDK documentation keys plus local boundary keys/groups/
+  states/sources/counts/redaction flags for programmatic control, CI/CD,
+  custom-agent, internal-tool, and application-integration use cases,
+  TypeScript server-side usage, package install concepts, start/continue/resume
+  thread flows, Python JSON-RPC app-server control, runtime requirements,
+  pinned CLI runtime dependency, prerelease selection, async usage, sandbox
+  presets, turn-scoped sandbox overrides, and default sandbox behavior, with
+  package names/versions, runtime versions, thread ids, prompt text, final
+  responses, app-server payloads, JSON-RPC payloads, model values, sandbox
+  modes, executable paths, config values, dependency versions, command text,
+  repository URLs, package installs, SDK imports, app-server/JSON-RPC starts,
+  thread starts/resumes/runs, async runtimes, sandbox changes, executable
+  launches, filesystem access, network access, model traffic, mutations, paths,
+  URLs, secrets, raw payloads, and app-server traffic blocked
 - done: read-only Codex Environment variables catalog in
   `/api/settings-integrations`, exposing only static official Environment
   variables documentation keys plus local boundary keys/groups/states/sources/

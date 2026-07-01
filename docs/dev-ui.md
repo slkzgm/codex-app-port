@@ -1033,6 +1033,22 @@ reviews/comments, upload artifacts, change sudo/users, read repository
 checkouts, call GitHub APIs, access files/network, create model traffic, or
 mutate state.
 
+The same response exposes `codexSdk` as a static review-only catalog for
+official Codex SDK behavior. The UI shows only catalog counts, entry keys,
+groups, state/source chips, and redaction chips for programmatic control,
+CI/CD, custom-agent, internal-tool, and application-integration use cases,
+TypeScript server-side usage, package install concepts, start/continue/resume
+thread flows, Python JSON-RPC app-server control, runtime requirements, pinned
+CLI runtime dependency, prerelease selection, async usage, sandbox presets,
+turn-scoped sandbox overrides, and default sandbox behavior. It must not show
+package names/versions, runtime versions, thread IDs, prompt text, final
+responses, app-server payloads, JSON-RPC payloads, model values, sandbox modes,
+executable paths, config values, dependency versions, command text, repository
+URLs, paths, URLs, secrets, raw payloads, or app-server traffic, and it must
+not install packages, import SDKs, start app-server/JSON-RPC, start/resume/run
+threads, start async runtimes, change sandboxes, launch executables, access
+files/network, create model traffic, or mutate state.
+
 The same response exposes `codexManagedConfiguration` as a static review-only
 catalog for official Codex managed-configuration behavior. The UI shows only
 catalog counts, entry keys, groups, state/source chips, and redaction chips for

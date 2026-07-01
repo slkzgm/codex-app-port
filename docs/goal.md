@@ -412,6 +412,22 @@ Target parity with the Codex desktop workflow:
   CLI, start the proxy, run `codex exec`, apply patches, post reviews/comments,
   upload artifacts, change sudo/users, read repository checkouts, call GitHub
   APIs, access files/network, create model traffic, or mutate state.
+- `/api/settings-integrations` now also exposes a read-only Codex SDK catalog
+  aligned to the official SDK guide. It returns only static keys, groups,
+  states, sources, counts, and redaction flags for programmatic Codex control,
+  CI/CD, custom-agent, internal-tool, and application-integration use cases,
+  TypeScript server-side usage, package install concepts, start/continue/resume
+  thread flows, Python JSON-RPC control of local app-server, runtime
+  requirements, pinned CLI runtime dependency, prerelease selection, async
+  usage, sandbox presets, turn-scoped sandbox overrides, and default sandbox
+  behavior. It does not return package names/versions, runtime versions, thread
+  IDs, prompt text, final responses, app-server or JSON-RPC payloads, model
+  values, sandbox modes, executable paths, config values, dependency versions,
+  command text, repository URLs, paths, URLs, secrets, raw payloads, or
+  app-server traffic, and it does not install packages, import SDKs, start
+  app-server/JSON-RPC, start/resume/run threads, start async runtimes, change
+  sandboxes, launch executables, access files/network, create model traffic, or
+  mutate state.
 - `/api/settings-integrations` now also exposes a read-only Codex Managed
   configuration catalog aligned to the official managed-configuration guide. It
   returns only static keys, groups, states, sources, counts, and redaction flags

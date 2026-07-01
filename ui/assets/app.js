@@ -71,6 +71,8 @@ const elements = {
   codexAppshotsValuesText: document.querySelector("#codex-appshots-values-text"),
   codexGithubActionText: document.querySelector("#codex-github-action-text"),
   codexGithubActionValuesText: document.querySelector("#codex-github-action-values-text"),
+  codexSdkText: document.querySelector("#codex-sdk-text"),
+  codexSdkValuesText: document.querySelector("#codex-sdk-values-text"),
   codexGovernanceText: document.querySelector("#codex-governance-text"),
   codexGovernanceValuesText: document.querySelector("#codex-governance-values-text"),
   codexManagedConfigurationText: document.querySelector("#codex-managed-configuration-text"),
@@ -498,6 +500,7 @@ const elements = {
   codexReviewList: document.querySelector("#codex-review-list"),
   codexAppshotsList: document.querySelector("#codex-appshots-list"),
   codexGithubActionList: document.querySelector("#codex-github-action-list"),
+  codexSdkList: document.querySelector("#codex-sdk-list"),
   codexGovernanceList: document.querySelector("#codex-governance-list"),
   codexManagedConfigurationList: document.querySelector("#codex-managed-configuration-list"),
   codexEnvironmentVariablesList: document.querySelector("#codex-environment-variables-list"),
@@ -10572,6 +10575,7 @@ function renderSettingsIntegrations(payload) {
   const codexReview = payload.codexReview ?? {};
   const codexAppshots = payload.codexAppshots ?? {};
   const codexGithubAction = payload.codexGithubAction ?? {};
+  const codexSdk = payload.codexSdk ?? {};
   const codexGovernance = payload.codexGovernance ?? {};
   const codexManagedConfiguration = payload.codexManagedConfiguration ?? {};
   const codexEnvironmentVariables = payload.codexEnvironmentVariables ?? {};
@@ -11375,6 +11379,48 @@ function renderSettingsIntegrations(payload) {
     codexGithubAction.secretsReturned ||
     codexGithubAction.rawPayloadsReturned ||
     codexGithubAction.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexSdkText.textContent = codexSdk.returned
+    ? `${codexSdk.catalogOnlyEntryCount ?? 0} catalog / ${codexSdk.entryCount ?? 0} tracked`
+    : "Blocked";
+  elements.codexSdkValuesText.textContent =
+    codexSdk.packageNamesReturned ||
+    codexSdk.packageVersionsReturned ||
+    codexSdk.runtimeVersionsReturned ||
+    codexSdk.threadReferencesReturned ||
+    codexSdk.promptTextsReturned ||
+    codexSdk.finalResponsesReturned ||
+    codexSdk.appServerPayloadsReturned ||
+    codexSdk.jsonRpcPayloadsReturned ||
+    codexSdk.modelValuesReturned ||
+    codexSdk.sandboxModesReturned ||
+    codexSdk.executablePathsReturned ||
+    codexSdk.configValuesReturned ||
+    codexSdk.dependencyVersionsReturned ||
+    codexSdk.commandTextsReturned ||
+    codexSdk.repositoryUrlsReturned ||
+    codexSdk.npmInstallsStarted ||
+    codexSdk.pipInstallsStarted ||
+    codexSdk.sdkImportsStarted ||
+    codexSdk.appServersStarted ||
+    codexSdk.jsonRpcStarted ||
+    codexSdk.threadsStarted ||
+    codexSdk.threadsResumed ||
+    codexSdk.threadRunsStarted ||
+    codexSdk.asyncRuntimesStarted ||
+    codexSdk.sandboxesChanged ||
+    codexSdk.executablesLaunched ||
+    codexSdk.filesystemReads ||
+    codexSdk.filesystemWrites ||
+    codexSdk.networkAccess ||
+    codexSdk.modelTraffic ||
+    codexSdk.mutationEnabled ||
+    codexSdk.pathsReturned ||
+    codexSdk.urlsReturned ||
+    codexSdk.secretsReturned ||
+    codexSdk.rawPayloadsReturned ||
+    codexSdk.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexGovernanceText.textContent = codexGovernance.returned
@@ -12551,6 +12597,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexReviewCatalog(codexReview);
   renderCodexAppshotsCatalog(codexAppshots);
   renderCodexGithubActionCatalog(codexGithubAction);
+  renderCodexSdkCatalog(codexSdk);
   renderCodexGovernanceCatalog(codexGovernance);
   renderCodexManagedConfigurationCatalog(codexManagedConfiguration);
   renderCodexEnvironmentVariablesCatalog(codexEnvironmentVariables);
@@ -15622,7 +15669,7 @@ function renderCodexAppshotsCatalog(summary) {
         ? "attachment content returned"
         : "attachment content hidden",
       entry.sessionPathReturned ? "session paths returned" : "session paths hidden",
-      entry.threadIdReturned ? "thread IDs returned" : "thread IDs hidden",
+      entry.threadReferenceReturned ? "thread references returned" : "thread references hidden",
       entry.permissionStateReturned
         ? "permission states returned"
         : "permission states hidden",
@@ -15767,6 +15814,87 @@ function renderCodexGithubActionCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexGithubActionList.append(row);
+  }
+}
+
+function renderCodexSdkCatalog(summary) {
+  elements.codexSdkList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexSdkList.append(emptyState("No Codex SDK catalog returned."));
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "sdk";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.packageNameReturned ? "package names returned" : "package names hidden",
+      entry.packageVersionReturned ? "package versions returned" : "package versions hidden",
+      entry.runtimeVersionReturned ? "runtime versions returned" : "runtime versions hidden",
+      entry.threadIdReturned ? "thread IDs returned" : "thread IDs hidden",
+      entry.promptTextReturned ? "prompt text returned" : "prompt text hidden",
+      entry.finalResponseReturned ? "final responses returned" : "final responses hidden",
+      entry.appServerPayloadReturned ? "app-server payloads returned" : "app-server payloads hidden",
+      entry.jsonRpcPayloadReturned ? "JSON-RPC payloads returned" : "JSON-RPC payloads hidden",
+      entry.modelValueReturned ? "model values returned" : "model values hidden",
+      entry.sandboxModeReturned ? "sandbox modes returned" : "sandbox modes hidden",
+      entry.executablePathReturned ? "executable paths returned" : "executable paths hidden",
+      entry.configValueReturned ? "config values returned" : "config values hidden",
+      entry.dependencyVersionReturned
+        ? "dependency versions returned"
+        : "dependency versions hidden",
+      entry.commandTextReturned ? "command text returned" : "command text hidden",
+      entry.repositoryUrlReturned ? "repository URLs returned" : "repository URLs hidden",
+      entry.npmInstallStarted ? "npm install started" : "npm installs blocked",
+      entry.pipInstallStarted ? "pip install started" : "pip installs blocked",
+      entry.sdkImported ? "SDK imported" : "SDK imports blocked",
+      entry.appServerStarted ? "app-server started" : "app-server starts blocked",
+      entry.jsonRpcStarted ? "JSON-RPC started" : "JSON-RPC blocked",
+      entry.threadStarted ? "thread started" : "thread starts blocked",
+      entry.threadResumed ? "thread resumed" : "thread resumes blocked",
+      entry.threadRunStarted ? "thread run started" : "thread runs blocked",
+      entry.asyncRuntimeStarted ? "async runtime started" : "async runtime blocked",
+      entry.sandboxChanged ? "sandbox changed" : "sandbox changes blocked",
+      entry.executableLaunched ? "executable launched" : "executable launches blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.modelTraffic ? "model traffic" : "model traffic blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexSdkList.append(row);
   }
 }
 

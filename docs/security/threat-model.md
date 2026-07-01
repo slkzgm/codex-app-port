@@ -655,6 +655,16 @@
   `codex exec`, apply patches, post reviews/comments, upload artifacts, change
   sudo/users, read repository checkouts, call GitHub APIs, access filesystem or
   network, create model traffic, or mutate GitHub Action state. Its
+  Codex SDK catalog may expose only static official-documentation keys plus
+  local boundary keys, groups, states, sources, counts, and redaction flags; it
+  must not return package names/versions, runtime versions, thread IDs, prompt
+  text, final responses, app-server payloads, JSON-RPC payloads, model values,
+  sandbox modes, executable paths, config values, dependency versions, command
+  text, repository URLs, paths, URLs, secrets, raw payloads, app-server
+  payloads, or app-server traffic, and must not install packages, import SDKs,
+  start app-server/JSON-RPC, start/resume/run threads, start async runtimes,
+  change sandboxes, launch executables, access filesystem or network, create
+  model traffic, or mutate SDK state. Its
   Codex Environment variables catalog may expose only static
   official-documentation keys plus local boundary keys, groups, states,
   sources, counts, and redaction flags; it must not read `process.env`, return

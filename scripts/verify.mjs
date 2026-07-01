@@ -36400,6 +36400,197 @@ function assertCodexGithubActionCatalog(payload) {
   }
 }
 
+function expectedCodexSdkEntries() {
+  return [
+    ["sdkOverview", "overview", "catalog-only", "official-codex-sdk-docs"],
+    ["programmaticControl", "overview", "catalog-only", "official-codex-sdk-docs"],
+    ["ciCdPipelineUseCase", "use-cases", "catalog-only", "official-codex-sdk-docs"],
+    ["customAgentUseCase", "use-cases", "catalog-only", "official-codex-sdk-docs"],
+    ["internalToolsUseCase", "use-cases", "catalog-only", "official-codex-sdk-docs"],
+    ["applicationIntegrationUseCase", "use-cases", "catalog-only", "official-codex-sdk-docs"],
+    ["typescriptLibrary", "typescript", "catalog-only", "official-codex-sdk-docs"],
+    ["typescriptServerSideRuntime", "typescript", "catalog-only", "official-codex-sdk-docs"],
+    ["typescriptPackageInstall", "typescript", "catalog-only", "official-codex-sdk-docs"],
+    ["typescriptStartThreadRun", "typescript", "catalog-only", "official-codex-sdk-docs"],
+    ["typescriptContinueThread", "typescript", "catalog-only", "official-codex-sdk-docs"],
+    ["typescriptResumeThread", "typescript", "catalog-only", "official-codex-sdk-docs"],
+    ["pythonJsonRpcControl", "python", "catalog-only", "official-codex-sdk-docs"],
+    ["pythonRuntimeRequirement", "python", "catalog-only", "official-codex-sdk-docs"],
+    ["pythonPinnedCliRuntime", "python", "catalog-only", "official-codex-sdk-docs"],
+    ["pythonPackageInstall", "python", "catalog-only", "official-codex-sdk-docs"],
+    ["pythonCustomExecutable", "python", "catalog-only", "official-codex-sdk-docs"],
+    ["pythonPrereleaseSelection", "python", "catalog-only", "official-codex-sdk-docs"],
+    ["pythonThreadStartRun", "python", "catalog-only", "official-codex-sdk-docs"],
+    ["pythonAsyncCodexUsage", "python", "catalog-only", "official-codex-sdk-docs"],
+    ["sandboxPresets", "sandbox", "catalog-only", "official-codex-sdk-docs"],
+    ["turnScopedSandboxOverride", "sandbox", "catalog-only", "official-codex-sdk-docs"],
+    ["sandboxReadOnlyPreset", "sandbox", "catalog-only", "official-codex-sdk-docs"],
+    ["sandboxWorkspaceWritePreset", "sandbox", "catalog-only", "official-codex-sdk-docs"],
+    ["sandboxFullAccessPreset", "sandbox", "catalog-only", "official-codex-sdk-docs"],
+    ["configuredDefaultSandbox", "sandbox", "catalog-only", "official-codex-sdk-docs"],
+    ["packageInstallBoundary", "installation", "blocked", "local-sdk-boundary"],
+    ["sdkImportBoundary", "runtime", "blocked", "local-sdk-boundary"],
+    ["appServerJsonRpcBoundary", "app-server", "blocked", "local-sdk-boundary"],
+    ["threadStartBoundary", "threads", "blocked", "local-sdk-boundary"],
+    ["threadResumeBoundary", "threads", "blocked", "local-sdk-boundary"],
+    ["promptContentBoundary", "prompts", "blocked", "local-sdk-boundary"],
+    ["finalResponseBoundary", "responses", "blocked", "local-sdk-boundary"],
+    ["localRuntimeBoundary", "runtime", "blocked", "local-sdk-boundary"],
+    ["codexExecutableBoundary", "runtime", "blocked", "local-sdk-boundary"],
+    ["sandboxMutationBoundary", "sandbox", "blocked", "local-sdk-boundary"],
+    ["dependencyBoundary", "installation", "blocked", "local-sdk-boundary"],
+    ["filesystemBoundary", "filesystem", "blocked", "local-sdk-boundary"],
+    ["networkBoundary", "network", "blocked", "local-sdk-boundary"],
+    ["modelTrafficBoundary", "model", "blocked", "local-sdk-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexSdkCatalog(payload) {
+  const catalog = payload.codexSdk;
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-sdk-docs");
+  assert.equal(catalog.entryCount, 40);
+  assert.equal(catalog.officialEntryCount, 26);
+  assert.equal(catalog.localBoundaryEntryCount, 14);
+  assert.equal(catalog.catalogOnlyEntryCount, 26);
+  assert.equal(catalog.blockedEntryCount, 14);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({ key, group, state, source })),
+    expectedCodexSdkEntries(),
+  );
+
+  const entryRedactionFlags = [
+    "packageNameReturned",
+    "packageVersionReturned",
+    "runtimeVersionReturned",
+    "threadReferenceReturned",
+    "promptTextReturned",
+    "finalResponseReturned",
+    "appServerPayloadReturned",
+    "jsonRpcPayloadReturned",
+    "modelValueReturned",
+    "sandboxModeReturned",
+    "executablePathReturned",
+    "configValueReturned",
+    "dependencyVersionReturned",
+    "commandTextReturned",
+    "repositoryUrlReturned",
+    "npmInstallStarted",
+    "pipInstallStarted",
+    "sdkImported",
+    "appServerStarted",
+    "jsonRpcStarted",
+    "threadStarted",
+    "threadResumed",
+    "threadRunStarted",
+    "asyncRuntimeStarted",
+    "sandboxChanged",
+    "executableLaunched",
+    "filesystemRead",
+    "filesystemWrite",
+    "networkAccess",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.sdkCatalogReturned, true);
+  for (const flag of [
+    "packageNamesReturned",
+    "packageVersionsReturned",
+    "runtimeVersionsReturned",
+    "threadReferencesReturned",
+    "promptTextsReturned",
+    "finalResponsesReturned",
+    "appServerPayloadsReturned",
+    "jsonRpcPayloadsReturned",
+    "modelValuesReturned",
+    "sandboxModesReturned",
+    "executablePathsReturned",
+    "configValuesReturned",
+    "dependencyVersionsReturned",
+    "commandTextsReturned",
+    "repositoryUrlsReturned",
+    "npmInstallsStarted",
+    "pipInstallsStarted",
+    "sdkImportsStarted",
+    "appServersStarted",
+    "jsonRpcStarted",
+    "threadsStarted",
+    "threadsResumed",
+    "threadRunsStarted",
+    "asyncRuntimesStarted",
+    "sandboxesChanged",
+    "executablesLaunched",
+    "filesystemReads",
+    "filesystemWrites",
+    "networkAccess",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexSdkReturned", true],
+    ["codexSdkValuesReturned", false],
+    ["codexSdkPackageNamesReturned", false],
+    ["codexSdkPackageVersionsReturned", false],
+    ["codexSdkRuntimeVersionsReturned", false],
+    ["codexSdkThreadReferencesReturned", false],
+    ["codexSdkPromptTextsReturned", false],
+    ["codexSdkFinalResponsesReturned", false],
+    ["codexSdkAppServerPayloadsReturned", false],
+    ["codexSdkJsonRpcPayloadsReturned", false],
+    ["codexSdkModelValuesReturned", false],
+    ["codexSdkSandboxModesReturned", false],
+    ["codexSdkExecutablePathsReturned", false],
+    ["codexSdkConfigValuesReturned", false],
+    ["codexSdkDependencyVersionsReturned", false],
+    ["codexSdkCommandTextsReturned", false],
+    ["codexSdkRepositoryUrlsReturned", false],
+    ["codexSdkNpmInstallEnabled", false],
+    ["codexSdkPipInstallEnabled", false],
+    ["codexSdkImportEnabled", false],
+    ["codexSdkAppServerStartEnabled", false],
+    ["codexSdkJsonRpcEnabled", false],
+    ["codexSdkThreadStartEnabled", false],
+    ["codexSdkThreadResumeEnabled", false],
+    ["codexSdkThreadRunEnabled", false],
+    ["codexSdkAsyncRuntimeEnabled", false],
+    ["codexSdkSandboxChangeEnabled", false],
+    ["codexSdkExecutableLaunchEnabled", false],
+    ["codexSdkFilesystemAccess", false],
+    ["codexSdkNetworkAccess", false],
+    ["codexSdkModelTraffic", false],
+    ["codexSdkMutationsEnabled", false],
+    ["codexSdkPathsReturned", false],
+    ["codexSdkUrlsReturned", false],
+    ["codexSdkSecretsReturned", false],
+    ["codexSdkRawPayloadsReturned", false],
+    ["codexSdkAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexGovernanceEntries() {
   return [
     ["governanceVisibilityAuditability", "overview", "catalog-only", "official-codex-governance-docs"],
@@ -40729,6 +40920,7 @@ function assertCodexAppSettingsParity(
   assertCodexReviewCatalog(payload);
   assertCodexAppshotsCatalog(payload);
   assertCodexGithubActionCatalog(payload);
+  assertCodexSdkCatalog(payload);
   assertCodexGovernanceCatalog(payload);
   assertCodexManagedConfigurationCatalog(payload);
   assertCodexEnvironmentVariablesCatalog(payload);
