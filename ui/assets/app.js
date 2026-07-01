@@ -11249,6 +11249,13 @@ function renderSettingsIntegrations(payload) {
     codexSecurity.validationOutputsReturned ||
     codexSecurity.modelNamesReturned ||
     codexSecurity.reasoningValuesReturned ||
+    codexSecurity.cyberCapabilityValuesReturned ||
+    codexSecurity.classifierSignalsReturned ||
+    codexSecurity.rerouteStatusesReturned ||
+    codexSecurity.trustedAccessStatesReturned ||
+    codexSecurity.trustedAccessIdentitiesReturned ||
+    codexSecurity.cyberProgramUrlsReturned ||
+    codexSecurity.policyUrlsReturned ||
     codexSecurity.pluginsInstalled ||
     codexSecurity.scansStarted ||
     codexSecurity.deepScansStarted ||
@@ -16279,6 +16286,21 @@ function renderCodexSecurityCatalog(summary) {
         : "validation output hidden",
       entry.modelNameReturned ? "model names returned" : "model names hidden",
       entry.reasoningValueReturned ? "reasoning values returned" : "reasoning values hidden",
+      entry.cyberCapabilityValueReturned
+        ? "cyber capability values returned"
+        : "cyber capability values hidden",
+      entry.classifierSignalReturned
+        ? "classifier signals returned"
+        : "classifier signals hidden",
+      entry.rerouteStatusReturned ? "reroute status returned" : "reroute status hidden",
+      entry.trustedAccessStateReturned
+        ? "trusted access state returned"
+        : "trusted access state hidden",
+      entry.trustedAccessIdentityReturned
+        ? "trusted access identity returned"
+        : "trusted access identity hidden",
+      entry.cyberProgramUrlReturned ? "cyber program URLs returned" : "cyber program URLs hidden",
+      entry.policyUrlReturned ? "policy URLs returned" : "policy URLs hidden",
       entry.pluginInstalled ? "plugin installed" : "plugin install blocked",
       entry.scanStarted ? "scan started" : "scan start blocked",
       entry.deepScanStarted ? "deep scan started" : "deep scan blocked",

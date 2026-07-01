@@ -213,15 +213,19 @@ Target parity with the Codex desktop workflow:
   workflows, CLI install guidance, cloud research preview, connected GitHub
   repository scanning, commit-by-commit context, validation evidence, suggested
   fixes, access plans, environment prerequisites, initial backfill, findings
-  review, and threat-model editing. It does not return plugin install state,
-  scan prompts, setup workspaces, repository/branch/commit identity, scan
-  areas, threat model guidance, findings, evidence, code excerpts, file paths,
-  report paths, artifact paths/content, export artifacts, issue or PR payloads,
-  destinations, GitHub org/repo names, environment names, cloud scan states,
-  validation outputs, model/reasoning values, paths, URLs, secrets, raw
-  payloads, or app-server traffic, and it does not install plugins, start
-  local/deep/cloud scans, export findings, track issues, create remediation,
-  write threat models/config, create model traffic, access files/network, or
+  review, threat-model editing, and Cyber Safety high-capability,
+  classifier-mitigation, rerouting notice, Trusted Access, and false-positive
+  feedback concepts. It does not return plugin install state, scan prompts,
+  setup workspaces, repository/branch/commit identity, scan areas, threat model
+  guidance, findings, evidence, code excerpts, file paths, report paths,
+  artifact paths/content, export artifacts, issue or PR payloads, destinations,
+  GitHub org/repo names, environment names, cloud scan states, validation
+  outputs, model/reasoning/cyber capability values, classifier signals,
+  reroute status, Trusted Access state or identity, cyber program or policy
+  URLs, paths, URLs, secrets, raw payloads, or app-server traffic, and it does
+  not install plugins, start local/deep/cloud scans, export findings, track
+  issues, create remediation, write threat models/config, create model traffic,
+  access files/network, or
   mutate Codex Security state.
 - `/api/settings-integrations` now also exposes a read-only Codex Open Source
   catalog aligned to the current official Open Source docs. It returns only

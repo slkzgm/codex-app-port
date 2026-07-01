@@ -678,8 +678,10 @@
   guidance, findings, finding evidence, code excerpts, file paths, report
   paths, structured artifact paths/content, export artifacts, issue or PR
   payloads, destinations, GitHub org/repo names, environment names, cloud scan
-  state, validation output, model/reasoning values, paths, URLs, secrets, raw
-  payloads, app-server payloads, or app-server traffic, and must not install
+  state, validation output, model/reasoning/cyber capability values,
+  classifier signals, reroute status, Trusted Access state or identity, cyber
+  program or policy URLs, paths, URLs, secrets, raw payloads, app-server
+  payloads, or app-server traffic, and must not install
   plugins, start local/deep/cloud scans, export findings, track issues, start
   remediation, write threat models or configuration, create model traffic,
   access filesystem or network, or mutate Codex Security state. Its

@@ -978,11 +978,14 @@ groups, state/source chips, and negative redaction chips for local plugin
 scans, scan workspaces, reports, structured artifacts, export/track/fix
 workflows, cloud GitHub repository scans, validation evidence, suggested fixes,
 access, environments, initial backfill, findings review, and threat-model
-editing. It must not install plugins, start local/deep/cloud scans, return
-findings, evidence, code excerpts, repository identity, report/artifact paths
-or content, issue/PR payloads, GitHub/cloud/environment identifiers,
-model/reasoning values, paths, URLs, secrets, raw payloads, create model
-traffic, access files/network, or mutate Codex Security state.
+editing, plus Cyber Safety high-capability, classifier-mitigation, rerouting
+notice, Trusted Access, and false-positive feedback concepts. It must not
+install plugins, start local/deep/cloud scans, return findings, evidence, code
+excerpts, repository identity, report/artifact paths or content, issue/PR
+payloads, GitHub/cloud/environment identifiers, model/reasoning/cyber
+capability values, classifier signals, reroute status, Trusted Access state or
+identity, cyber program or policy URLs, paths, URLs, secrets, raw payloads,
+create model traffic, access files/network, or mutate Codex Security state.
 
 The same response exposes `codexOpenSource` as a static review-only catalog for
 official Codex Open Source guidance. The UI shows only catalog counts, entry

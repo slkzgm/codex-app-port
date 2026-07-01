@@ -35734,6 +35734,21 @@ function expectedCodexSecurityEntries() {
     ["cloudInitialBackfill", "security-cloud", "catalog-only", "official-codex-security-docs"],
     ["cloudFindingsReview", "security-cloud", "catalog-only", "official-codex-security-docs"],
     ["cloudThreatModelEditing", "security-cloud", "catalog-only", "official-codex-security-docs"],
+    ["cyberSafetyHighCapability", "cyber-safety", "catalog-only", "official-codex-cyber-safety-docs"],
+    [
+      "cyberSafetyClassifierMitigations",
+      "cyber-safety",
+      "catalog-only",
+      "official-codex-cyber-safety-docs",
+    ],
+    ["cyberSafetyReroutingNotice", "cyber-safety", "catalog-only", "official-codex-cyber-safety-docs"],
+    ["trustedAccessForCyber", "trusted-access", "catalog-only", "official-codex-cyber-safety-docs"],
+    [
+      "cyberSafetyFalsePositiveFeedback",
+      "feedback",
+      "catalog-only",
+      "official-codex-cyber-safety-docs",
+    ],
     ["pluginInstallBoundary", "plugin-setup", "blocked", "local-security-boundary"],
     ["localScanStartBoundary", "local-scan", "blocked", "local-security-boundary"],
     ["scanWorkspaceBoundary", "scan-results", "blocked", "local-security-boundary"],
@@ -35757,10 +35772,10 @@ function assertCodexSecurityCatalog(payload) {
   assert.equal(catalog?.returned, true);
   assert.equal(catalog.state, "partial");
   assert.equal(catalog.officialSource, "official-codex-security-docs");
-  assert.equal(catalog.entryCount, 45);
-  assert.equal(catalog.officialEntryCount, 30);
+  assert.equal(catalog.entryCount, 50);
+  assert.equal(catalog.officialEntryCount, 35);
   assert.equal(catalog.localBoundaryEntryCount, 15);
-  assert.equal(catalog.catalogOnlyEntryCount, 30);
+  assert.equal(catalog.catalogOnlyEntryCount, 35);
   assert.equal(catalog.blockedEntryCount, 15);
   assert.equal(catalog.enabledEntryCount, 0);
   assert.deepEqual(
@@ -35796,6 +35811,13 @@ function assertCodexSecurityCatalog(payload) {
     "validationOutputReturned",
     "modelNameReturned",
     "reasoningValueReturned",
+    "cyberCapabilityValueReturned",
+    "classifierSignalReturned",
+    "rerouteStatusReturned",
+    "trustedAccessStateReturned",
+    "trustedAccessIdentityReturned",
+    "cyberProgramUrlReturned",
+    "policyUrlReturned",
     "pluginInstalled",
     "scanStarted",
     "deepScanStarted",
@@ -35852,6 +35874,13 @@ function assertCodexSecurityCatalog(payload) {
     "validationOutputsReturned",
     "modelNamesReturned",
     "reasoningValuesReturned",
+    "cyberCapabilityValuesReturned",
+    "classifierSignalsReturned",
+    "rerouteStatusesReturned",
+    "trustedAccessStatesReturned",
+    "trustedAccessIdentitiesReturned",
+    "cyberProgramUrlsReturned",
+    "policyUrlsReturned",
     "pluginsInstalled",
     "scansStarted",
     "deepScansStarted",
@@ -35905,6 +35934,13 @@ function assertCodexSecurityCatalog(payload) {
     ["codexSecurityValidationOutputsReturned", false],
     ["codexSecurityModelNamesReturned", false],
     ["codexSecurityReasoningValuesReturned", false],
+    ["codexSecurityCyberCapabilityValuesReturned", false],
+    ["codexSecurityClassifierSignalsReturned", false],
+    ["codexSecurityRerouteStatusesReturned", false],
+    ["codexSecurityTrustedAccessStatesReturned", false],
+    ["codexSecurityTrustedAccessIdentitiesReturned", false],
+    ["codexSecurityCyberProgramUrlsReturned", false],
+    ["codexSecurityPolicyUrlsReturned", false],
     ["codexSecurityPluginInstallEnabled", false],
     ["codexSecurityScanStartEnabled", false],
     ["codexSecurityDeepScanStartEnabled", false],

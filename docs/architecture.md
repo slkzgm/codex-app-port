@@ -798,12 +798,15 @@ Current M1 status:
   exposing only static official Codex Security documentation keys plus local
   boundary keys/groups/states/sources/counts/redaction flags for local plugin
   scans, scan workspaces, findings artifacts, export/track/fix workflows, and
-  cloud GitHub repository scans, with plugin installation, scan starts,
-  findings, evidence, code excerpts, repository/branch/commit identity, report
-  or artifact paths/content, issue/PR payloads, GitHub/cloud/environment
-  identifiers, model/reasoning values, filesystem access, network access,
-  model traffic, mutations, paths, URLs, secrets, raw payloads, and app-server
-  traffic blocked
+  cloud GitHub repository scans, plus Cyber Safety high-capability,
+  classifier-mitigation, rerouting notice, Trusted Access, and false-positive
+  feedback concepts, with plugin installation, scan starts, findings, evidence,
+  code excerpts, repository/branch/commit identity, report or artifact
+  paths/content, issue/PR payloads, GitHub/cloud/environment identifiers,
+  model/reasoning/cyber capability values, classifier signals, reroute status,
+  Trusted Access state or identity, cyber program or policy URLs, filesystem
+  access, network access, model traffic, mutations, paths, URLs, secrets, raw
+  payloads, and app-server traffic blocked
 - done: read-only Codex Open Source catalog in `/api/settings-integrations`,
   exposing only static official open-source component/status/community keys
   plus local boundary keys/groups/states/sources/counts/redaction flags, with
