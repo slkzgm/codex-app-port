@@ -6853,6 +6853,10 @@ function safePluginAuthPolicy(value) {
   return PLUGIN_AUTH_POLICIES.has(clean) ? clean : "unknown";
 }
 
+function hasPluginArrayMetadata(value) {
+  return Array.isArray(value) && value.length > 0;
+}
+
 function safeMcpAuthStatus(value) {
   const clean = firstSafeString(value);
   return MCP_AUTH_STATUSES.has(clean) ? clean : "unknown";
@@ -7000,6 +7004,11 @@ function summarizePluginsInventory(
   let pluginCount = 0;
   let installedCount = 0;
   let enabledCount = 0;
+  let pluginWithDisplayNameCount = 0;
+  let pluginWithDescriptionCount = 0;
+  let pluginWithDefaultPromptCount = 0;
+  let pluginWithCapabilityCount = 0;
+  let pluginWithScreenshotCount = 0;
   let nameRedactedCount = 0;
   const items = [];
 
@@ -7027,6 +7036,34 @@ function summarizePluginsInventory(
       installPolicyCounts[installPolicy] = (installPolicyCounts[installPolicy] ?? 0) + 1;
       const authPolicy = safePluginAuthPolicy(plugin?.authPolicy);
       authPolicyCounts[authPolicy] = (authPolicyCounts[authPolicy] ?? 0) + 1;
+      const pluginInterface = plugin?.interface && typeof plugin.interface === "object"
+        ? plugin.interface
+        : {};
+      const hasDisplayName = Boolean(firstSafeString(pluginInterface.displayName));
+      const hasDescription = Boolean(
+        firstSafeString(pluginInterface.shortDescription) ||
+          firstSafeString(pluginInterface.longDescription),
+      );
+      const hasDefaultPrompt = hasPluginArrayMetadata(pluginInterface.defaultPrompt);
+      const hasCapability = hasPluginArrayMetadata(pluginInterface.capabilities);
+      const hasScreenshot =
+        hasPluginArrayMetadata(pluginInterface.screenshotUrls) ||
+        hasPluginArrayMetadata(pluginInterface.screenshots);
+      if (hasDisplayName) {
+        pluginWithDisplayNameCount += 1;
+      }
+      if (hasDescription) {
+        pluginWithDescriptionCount += 1;
+      }
+      if (hasDefaultPrompt) {
+        pluginWithDefaultPromptCount += 1;
+      }
+      if (hasCapability) {
+        pluginWithCapabilityCount += 1;
+      }
+      if (hasScreenshot) {
+        pluginWithScreenshotCount += 1;
+      }
       if (includeNames && items.length < DEFAULT_INTEGRATION_ITEM_LIMIT) {
         const safeName = safeIntegrationDisplayName(plugin?.name);
         if (!safeName && typeof plugin?.name === "string") {
@@ -7039,6 +7076,11 @@ function summarizePluginsInventory(
           sourceType,
           installPolicy,
           authPolicy,
+          hasDisplayName,
+          hasDescription,
+          hasDefaultPrompt,
+          hasCapability,
+          hasScreenshot,
         });
       }
     }
@@ -7053,6 +7095,11 @@ function summarizePluginsInventory(
     pluginCount,
     installedCount,
     enabledCount,
+    pluginWithDisplayNameCount,
+    pluginWithDescriptionCount,
+    pluginWithDefaultPromptCount,
+    pluginWithCapabilityCount,
+    pluginWithScreenshotCount,
     loadErrorCount: marketplaceErrors.length,
     featuredCount: featuredPluginIds.length,
     sourceTypeCounts,
@@ -7065,6 +7112,11 @@ function summarizePluginsInventory(
     marketplaceNamesReturned: false,
     marketplaceDisplayNamesReturned: false,
     marketplaceKindsReturned: false,
+    pluginDisplayNamesReturned: false,
+    descriptionsReturned: false,
+    defaultPromptsReturned: false,
+    capabilityNamesReturned: false,
+    screenshotsReturned: false,
     remotePluginCatalogRequested: Boolean(remotePluginCatalogRequested),
     requestedMarketplaceKindCount,
     idsReturned: false,

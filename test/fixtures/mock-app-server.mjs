@@ -1019,6 +1019,15 @@ function handle(message) {
             enabled: true,
             installPolicy: "AVAILABLE",
             authPolicy: "ON_USE",
+            interface: {
+              displayName: "private plugin display",
+              shortDescription: "private plugin short description",
+              longDescription: "private plugin long description",
+              defaultPrompt: ["private plugin prompt"],
+              capabilities: ["private plugin capability"],
+              screenshotUrls: ["https://example.test/private-plugin-screenshot.png"],
+              screenshots: ["/tmp/mock-workspace/.codex/plugins/private/screenshot.png"],
+            },
             source: {
               type: "local",
               path: "/tmp/mock-workspace/.codex/plugins/private",
@@ -1043,6 +1052,14 @@ function handle(message) {
             enabled: false,
             installPolicy: "NOT_AVAILABLE",
             authPolicy: "ON_INSTALL",
+            interface: {
+              displayName: "private remote plugin display",
+              shortDescription: "private remote plugin short description",
+              defaultPrompt: ["private remote plugin prompt"],
+              capabilities: ["private remote plugin capability"],
+              screenshotUrls: ["https://example.test/private-remote-plugin-screenshot.png"],
+              screenshots: [],
+            },
             source: {
               type: "remote",
             },
@@ -1083,9 +1100,12 @@ function handle(message) {
                 installPolicy: "AVAILABLE",
                 authPolicy: "ON_USE",
                 interface: {
+                  displayName: "private installed plugin display",
+                  shortDescription: "private installed plugin short description",
+                  longDescription: "private installed plugin long description",
                   defaultPrompt: ["private installed prompt"],
                   screenshotUrls: ["https://example.test/private-installed-screenshot.png"],
-                  screenshots: [{ url: "https://example.test/private-installed-screenshot.png" }],
+                  screenshots: ["/tmp/mock-workspace/.codex/plugins/private-installed/screenshot.png"],
                   capabilities: ["private-capability"],
                 },
                 source: {

@@ -18921,6 +18921,11 @@ async function checkSettingsIntegrationsInventoryApi() {
               pluginCount: 3,
               installedCount: 2,
               enabledCount: 1,
+              pluginWithDisplayNameCount: 2,
+              pluginWithDescriptionCount: 2,
+              pluginWithDefaultPromptCount: 1,
+              pluginWithCapabilityCount: 2,
+              pluginWithScreenshotCount: 1,
               loadErrorCount: 1,
               featuredCount: 1,
               sourceTypeCounts: {
@@ -18938,10 +18943,19 @@ async function checkSettingsIntegrationsInventoryApi() {
               marketplaceNamesReturned: true,
               marketplaceDisplayNamesReturned: true,
               marketplaceKindsReturned: true,
+              pluginDisplayNamesReturned: true,
+              descriptionsReturned: true,
+              defaultPromptsReturned: true,
+              capabilityNamesReturned: true,
+              screenshotsReturned: true,
               remotePluginCatalogRequested: false,
               requestedMarketplaceKindCount: 2,
               privateMarketplaceName: "verify-private-marketplace",
               privateMarketplaceDisplayName: "verify private marketplace display",
+              privatePluginDisplayName: "verify private plugin display",
+              privatePluginDescription: "verify private plugin description",
+              privatePluginPrompt: "verify private plugin prompt",
+              privatePluginCapability: "verify private plugin capability",
               privateUrl: "https://verify.example.test/plugin",
             },
             experimentalFeatures: {
@@ -19357,6 +19371,11 @@ async function checkSettingsIntegrationsNamesApi() {
               pluginCount: 2,
               installedCount: 1,
               enabledCount: 1,
+              pluginWithDisplayNameCount: 1,
+              pluginWithDescriptionCount: 1,
+              pluginWithDefaultPromptCount: 1,
+              pluginWithCapabilityCount: 1,
+              pluginWithScreenshotCount: 1,
               loadErrorCount: 0,
               featuredCount: 0,
               sourceTypeCounts: { local: 2 },
@@ -19370,6 +19389,11 @@ async function checkSettingsIntegrationsNamesApi() {
                   sourceType: "local",
                   installPolicy: "AVAILABLE",
                   authPolicy: "ON_USE",
+                  hasDisplayName: true,
+                  hasDescription: true,
+                  hasDefaultPrompt: true,
+                  hasCapability: true,
+                  hasScreenshot: true,
                   id: "verify-private-plugin-id",
                   url: "https://verify.example.test/plugin",
                 },
@@ -19392,6 +19416,11 @@ async function checkSettingsIntegrationsNamesApi() {
               pluginCount: 2,
               installedCount: 2,
               enabledCount: 1,
+              pluginWithDisplayNameCount: 1,
+              pluginWithDescriptionCount: 1,
+              pluginWithDefaultPromptCount: 1,
+              pluginWithCapabilityCount: 1,
+              pluginWithScreenshotCount: 1,
               loadErrorCount: 0,
               featuredCount: 0,
               sourceTypeCounts: { local: 2 },
@@ -19405,6 +19434,11 @@ async function checkSettingsIntegrationsNamesApi() {
                   sourceType: "local",
                   installPolicy: "AVAILABLE",
                   authPolicy: "ON_USE",
+                  hasDisplayName: true,
+                  hasDescription: true,
+                  hasDefaultPrompt: true,
+                  hasCapability: true,
+                  hasScreenshot: true,
                   id: "verify-private-installed-plugin-id",
                   path: "/tmp/codex-app-port-verify/.codex/plugins/private-installed",
                 },
@@ -47960,6 +47994,10 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
     "verify-private-tool",
     "verify-private-marketplace",
     "verify private marketplace display",
+    "verify private plugin display",
+    "verify private plugin description",
+    "verify private plugin prompt",
+    "verify private plugin capability",
     "verify private external config",
     "verify-private-external",
     "verify-private-experimental-feature",
@@ -48162,12 +48200,22 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
     payload.inventory?.plugins?.localMarketplaceCount !== 1 ||
     payload.inventory?.plugins?.remoteMarketplaceCount !== 0 ||
     payload.inventory?.plugins?.marketplaceDisplayNameCount !== 1 ||
+    payload.inventory?.plugins?.pluginWithDisplayNameCount !== 2 ||
+    payload.inventory?.plugins?.pluginWithDescriptionCount !== 2 ||
+    payload.inventory?.plugins?.pluginWithDefaultPromptCount !== 1 ||
+    payload.inventory?.plugins?.pluginWithCapabilityCount !== 2 ||
+    payload.inventory?.plugins?.pluginWithScreenshotCount !== 1 ||
     payload.inventory?.plugins?.authPolicyCounts?.ON_USE !== 2 ||
     payload.inventory?.plugins?.authPolicyCounts?.ON_INSTALL !== 1 ||
     Object.hasOwn(payload.inventory?.plugins?.authPolicyCounts ?? {}, "verify-private-auth-policy") ||
     payload.inventory?.plugins?.marketplaceNamesReturned !== false ||
     payload.inventory?.plugins?.marketplaceDisplayNamesReturned !== false ||
     payload.inventory?.plugins?.marketplaceKindsReturned !== false ||
+    payload.inventory?.plugins?.pluginDisplayNamesReturned !== false ||
+    payload.inventory?.plugins?.descriptionsReturned !== false ||
+    payload.inventory?.plugins?.defaultPromptsReturned !== false ||
+    payload.inventory?.plugins?.capabilityNamesReturned !== false ||
+    payload.inventory?.plugins?.screenshotsReturned !== false ||
     payload.inventory?.plugins?.remotePluginCatalogRequested !== false ||
     payload.inventory?.plugins?.requestedMarketplaceKindCount !== 2 ||
     payload.inventory?.experimentalFeatures?.featureCount !== 2 ||
@@ -48409,8 +48457,18 @@ function assertSanitizedSettingsIntegrationsNames(payload) {
     payload.inventory?.plugins?.idsReturned !== false ||
     payload.inventory?.plugins?.pathsReturned !== false ||
     payload.inventory?.plugins?.urlsReturned !== false ||
+    payload.inventory?.plugins?.pluginDisplayNamesReturned !== false ||
+    payload.inventory?.plugins?.descriptionsReturned !== false ||
+    payload.inventory?.plugins?.defaultPromptsReturned !== false ||
+    payload.inventory?.plugins?.capabilityNamesReturned !== false ||
+    payload.inventory?.plugins?.screenshotsReturned !== false ||
     payload.inventory?.plugins?.items?.[0]?.name !== "verify-safe-plugin" ||
     payload.inventory?.plugins?.items?.[0]?.authPolicy !== "ON_USE" ||
+    payload.inventory?.plugins?.items?.[0]?.hasDisplayName !== true ||
+    payload.inventory?.plugins?.items?.[0]?.hasDescription !== true ||
+    payload.inventory?.plugins?.items?.[0]?.hasDefaultPrompt !== true ||
+    payload.inventory?.plugins?.items?.[0]?.hasCapability !== true ||
+    payload.inventory?.plugins?.items?.[0]?.hasScreenshot !== true ||
     payload.inventory?.plugins?.items?.[1]?.name !== null ||
     payload.inventory?.plugins?.items?.[1]?.authPolicy !== "ON_INSTALL" ||
     payload.inventory?.installedPlugins?.namesReturned !== true ||
@@ -48426,6 +48484,11 @@ function assertSanitizedSettingsIntegrationsNames(payload) {
     payload.inventory?.installedPlugins?.rawPayloadReturned !== false ||
     payload.inventory?.installedPlugins?.items?.[0]?.name !== "verify-safe-installed-plugin" ||
     payload.inventory?.installedPlugins?.items?.[0]?.authPolicy !== "ON_USE" ||
+    payload.inventory?.installedPlugins?.items?.[0]?.hasDisplayName !== true ||
+    payload.inventory?.installedPlugins?.items?.[0]?.hasDescription !== true ||
+    payload.inventory?.installedPlugins?.items?.[0]?.hasDefaultPrompt !== true ||
+    payload.inventory?.installedPlugins?.items?.[0]?.hasCapability !== true ||
+    payload.inventory?.installedPlugins?.items?.[0]?.hasScreenshot !== true ||
     payload.inventory?.installedPlugins?.items?.[1]?.name !== null ||
     payload.inventory?.installedPlugins?.items?.[1]?.authPolicy !== "ON_INSTALL" ||
     payload.inventory?.experimentalFeatures?.namesReturned !== true ||

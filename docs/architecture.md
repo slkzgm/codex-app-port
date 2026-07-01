@@ -1508,7 +1508,8 @@ Current M1 status:
   descriptions/cwds/paths/names/marketplaces/plugin names/session titles/raw
   migration items, rate-limit plan types, limit ids/names, balances, used
   percentages, reset times, MCP names/schemas, skill paths/descriptions,
-  marketplace names/display names/sources, plugin ids/paths/URLs, experimental feature names/display text/descriptions/
+  marketplace names/display names/sources, plugin ids/display names/descriptions/
+  paths/URLs/prompts/capabilities/screenshots, experimental feature names/display text/descriptions/
   announcements/cursors, hook commands/paths/keys/matchers/plugin IDs, or
   config requirement values/domains. `plugin/list` stays limited to local and
   workspace-directory marketplace kinds unless

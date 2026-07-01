@@ -1800,14 +1800,17 @@ the same endpoint may call `configRequirements/read`, `model/list`,
 `mcpServerStatus/list`, `skills/list`, `plugin/list`, `plugin/installed`,
 `experimentalFeature/list`, `hooks/list`, `externalAgentConfig/detect`, and
 `externalAgentConfig/import/readHistories`. Plugin inventory includes only
-marketplace local/remote counts plus source/install/auth-policy buckets. By
+marketplace local/remote counts, source/install/auth-policy buckets, and plugin
+interface metadata presence counts for display names, descriptions, default
+prompts, capabilities, and screenshots. By
 default `plugin/list` is limited to local and workspace-directory marketplace
 kinds; remote curated/shared/created catalog kinds require
 `CODEX_APP_PORT_ALLOW_REMOTE_PLUGIN_CATALOG_INVENTORY=1` and still expose only
 counts. The response is counts-only: no account email, tokens, model ids/descriptions/upgrade copy/
 availability messages, app ids/URLs/logos/descriptions/labels/screenshots,
 external config descriptions/cwds/paths/names/marketplaces/plugin names/
-session titles/raw migration items, import ids/messages/paths/stages, remote
+session titles/raw migration items, import ids/messages/paths/stages, plugin
+display names/descriptions/prompts/capabilities/screenshots, remote
 control status strings/server names/installation ids/environment ids,
 rate-limit plan types, limit ids/names, balances, used percentages, reset
 times, MCP server names, MCP tool schemas, skill names/descriptions/paths,

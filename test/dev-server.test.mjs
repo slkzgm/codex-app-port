@@ -22359,6 +22359,11 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
               pluginCount: 3,
               installedCount: 2,
               enabledCount: 1,
+              pluginWithDisplayNameCount: 2,
+              pluginWithDescriptionCount: 2,
+              pluginWithDefaultPromptCount: 1,
+              pluginWithCapabilityCount: 2,
+              pluginWithScreenshotCount: 1,
               loadErrorCount: 1,
               featuredCount: 1,
               sourceTypeCounts: {
@@ -22376,10 +22381,19 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
               marketplaceNamesReturned: true,
               marketplaceDisplayNamesReturned: true,
               marketplaceKindsReturned: true,
+              pluginDisplayNamesReturned: true,
+              descriptionsReturned: true,
+              defaultPromptsReturned: true,
+              capabilityNamesReturned: true,
+              screenshotsReturned: true,
               remotePluginCatalogRequested: false,
               requestedMarketplaceKindCount: 2,
               privateMarketplaceName: "private-marketplace",
               privateMarketplaceDisplayName: "private marketplace display",
+              privatePluginDisplayName: "private plugin display",
+              privatePluginDescription: "private plugin description",
+              privatePluginPrompt: "private plugin prompt",
+              privatePluginCapability: "private plugin capability",
               url: "https://example.test/private/plugin",
             },
             installedPlugins: {
@@ -22391,6 +22405,11 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
               pluginCount: 2,
               installedCount: 2,
               enabledCount: 1,
+              pluginWithDisplayNameCount: 1,
+              pluginWithDescriptionCount: 1,
+              pluginWithDefaultPromptCount: 1,
+              pluginWithCapabilityCount: 1,
+              pluginWithScreenshotCount: 1,
               loadErrorCount: 1,
               featuredCount: 0,
               sourceTypeCounts: {
@@ -22895,10 +22914,20 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
     assert.equal(payload.inventory.plugins.localMarketplaceCount, 1);
     assert.equal(payload.inventory.plugins.remoteMarketplaceCount, 0);
     assert.equal(payload.inventory.plugins.marketplaceDisplayNameCount, 1);
+    assert.equal(payload.inventory.plugins.pluginWithDisplayNameCount, 2);
+    assert.equal(payload.inventory.plugins.pluginWithDescriptionCount, 2);
+    assert.equal(payload.inventory.plugins.pluginWithDefaultPromptCount, 1);
+    assert.equal(payload.inventory.plugins.pluginWithCapabilityCount, 2);
+    assert.equal(payload.inventory.plugins.pluginWithScreenshotCount, 1);
     assert.deepEqual(payload.inventory.plugins.authPolicyCounts, { ON_USE: 2, ON_INSTALL: 1 });
     assert.equal(payload.inventory.plugins.marketplaceNamesReturned, false);
     assert.equal(payload.inventory.plugins.marketplaceDisplayNamesReturned, false);
     assert.equal(payload.inventory.plugins.marketplaceKindsReturned, false);
+    assert.equal(payload.inventory.plugins.pluginDisplayNamesReturned, false);
+    assert.equal(payload.inventory.plugins.descriptionsReturned, false);
+    assert.equal(payload.inventory.plugins.defaultPromptsReturned, false);
+    assert.equal(payload.inventory.plugins.capabilityNamesReturned, false);
+    assert.equal(payload.inventory.plugins.screenshotsReturned, false);
     assert.equal(payload.inventory.plugins.remotePluginCatalogRequested, false);
     assert.equal(payload.inventory.plugins.requestedMarketplaceKindCount, 2);
     assert.equal(payload.inventory.installedPlugins.pluginCount, 2);
@@ -22908,6 +22937,11 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
     });
     assert.equal(payload.inventory.installedPlugins.installedCount, 2);
     assert.equal(payload.inventory.installedPlugins.enabledCount, 1);
+    assert.equal(payload.inventory.installedPlugins.pluginWithDisplayNameCount, 1);
+    assert.equal(payload.inventory.installedPlugins.pluginWithDescriptionCount, 1);
+    assert.equal(payload.inventory.installedPlugins.pluginWithDefaultPromptCount, 1);
+    assert.equal(payload.inventory.installedPlugins.pluginWithCapabilityCount, 1);
+    assert.equal(payload.inventory.installedPlugins.pluginWithScreenshotCount, 1);
     assert.equal(payload.inventory.installedPlugins.loadErrorCount, 1);
     assert.equal(payload.inventory.installedPlugins.namesReturned, false);
     assert.equal(payload.inventory.installedPlugins.idsReturned, false);
@@ -23107,6 +23141,10 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
       "private-experimental-feature",
       "private feature description",
       "private feature announcement",
+      "private plugin display",
+      "private plugin description",
+      "private plugin prompt",
+      "private plugin capability",
       ".claude",
       "cat /tmp",
       "codexHome",
@@ -23142,6 +23180,11 @@ test("dev server passes remote plugin catalog inventory only behind explicit opt
               remoteMarketplaceCount: 1,
               marketplaceDisplayNameCount: 2,
               pluginCount: 2,
+              pluginWithDisplayNameCount: 2,
+              pluginWithDescriptionCount: 2,
+              pluginWithDefaultPromptCount: 1,
+              pluginWithCapabilityCount: 1,
+              pluginWithScreenshotCount: 1,
               sourceTypeCounts: { local: 1, remote: 1 },
               installPolicyCounts: { AVAILABLE: 1, NOT_AVAILABLE: 1 },
               authPolicyCounts: { ON_USE: 1, ON_INSTALL: 1 },
@@ -23150,6 +23193,11 @@ test("dev server passes remote plugin catalog inventory only behind explicit opt
               marketplaceNamesReturned: true,
               marketplaceDisplayNamesReturned: true,
               marketplaceKindsReturned: true,
+              pluginDisplayNamesReturned: true,
+              descriptionsReturned: true,
+              defaultPromptsReturned: true,
+              capabilityNamesReturned: true,
+              screenshotsReturned: true,
               privateMarketplaceKind: "shared-with-me",
               privateMarketplaceName: "private-remote-marketplace",
             },
@@ -23173,9 +23221,19 @@ test("dev server passes remote plugin catalog inventory only behind explicit opt
     assert.equal(payload.inventory.plugins.requestedMarketplaceKindCount, 5);
     assert.equal(payload.inventory.plugins.marketplaceCount, 2);
     assert.equal(payload.inventory.plugins.remoteMarketplaceCount, 1);
+    assert.equal(payload.inventory.plugins.pluginWithDisplayNameCount, 2);
+    assert.equal(payload.inventory.plugins.pluginWithDescriptionCount, 2);
+    assert.equal(payload.inventory.plugins.pluginWithDefaultPromptCount, 1);
+    assert.equal(payload.inventory.plugins.pluginWithCapabilityCount, 1);
+    assert.equal(payload.inventory.plugins.pluginWithScreenshotCount, 1);
     assert.equal(payload.inventory.plugins.marketplaceNamesReturned, false);
     assert.equal(payload.inventory.plugins.marketplaceDisplayNamesReturned, false);
     assert.equal(payload.inventory.plugins.marketplaceKindsReturned, false);
+    assert.equal(payload.inventory.plugins.pluginDisplayNamesReturned, false);
+    assert.equal(payload.inventory.plugins.descriptionsReturned, false);
+    assert.equal(payload.inventory.plugins.defaultPromptsReturned, false);
+    assert.equal(payload.inventory.plugins.capabilityNamesReturned, false);
+    assert.equal(payload.inventory.plugins.screenshotsReturned, false);
     for (const marker of [
       "shared-with-me",
       "private-remote-marketplace",
@@ -23457,6 +23515,11 @@ test("dev server returns integration display names only behind explicit opt-in",
               pluginCount: 2,
               installedCount: 1,
               enabledCount: 1,
+              pluginWithDisplayNameCount: 1,
+              pluginWithDescriptionCount: 1,
+              pluginWithDefaultPromptCount: 1,
+              pluginWithCapabilityCount: 1,
+              pluginWithScreenshotCount: 1,
               loadErrorCount: 0,
               featuredCount: 0,
               sourceTypeCounts: { local: 2 },
@@ -23470,6 +23533,11 @@ test("dev server returns integration display names only behind explicit opt-in",
                   sourceType: "local",
                   installPolicy: "AVAILABLE",
                   authPolicy: "ON_USE",
+                  hasDisplayName: true,
+                  hasDescription: true,
+                  hasDefaultPrompt: true,
+                  hasCapability: true,
+                  hasScreenshot: true,
                   id: "private-plugin-id",
                   url: "https://example.test/plugin",
                 },
@@ -23496,6 +23564,11 @@ test("dev server returns integration display names only behind explicit opt-in",
               pluginCount: 2,
               installedCount: 2,
               enabledCount: 1,
+              pluginWithDisplayNameCount: 1,
+              pluginWithDescriptionCount: 1,
+              pluginWithDefaultPromptCount: 1,
+              pluginWithCapabilityCount: 1,
+              pluginWithScreenshotCount: 1,
               loadErrorCount: 0,
               featuredCount: 0,
               sourceTypeCounts: { local: 2 },
@@ -23509,6 +23582,11 @@ test("dev server returns integration display names only behind explicit opt-in",
                   sourceType: "local",
                   installPolicy: "AVAILABLE",
                   authPolicy: "ON_USE",
+                  hasDisplayName: true,
+                  hasDescription: true,
+                  hasDefaultPrompt: true,
+                  hasCapability: true,
+                  hasScreenshot: true,
                   id: "private-installed-plugin-id",
                   path: "/tmp/default-workspace/.codex/plugins/private-installed",
                 },
@@ -23701,8 +23779,18 @@ test("dev server returns integration display names only behind explicit opt-in",
     assert.equal(payload.inventory.plugins.idsReturned, false);
     assert.equal(payload.inventory.plugins.pathsReturned, false);
     assert.equal(payload.inventory.plugins.urlsReturned, false);
+    assert.equal(payload.inventory.plugins.pluginDisplayNamesReturned, false);
+    assert.equal(payload.inventory.plugins.descriptionsReturned, false);
+    assert.equal(payload.inventory.plugins.defaultPromptsReturned, false);
+    assert.equal(payload.inventory.plugins.capabilityNamesReturned, false);
+    assert.equal(payload.inventory.plugins.screenshotsReturned, false);
     assert.equal(payload.inventory.plugins.items[0].name, "safe-plugin");
     assert.equal(payload.inventory.plugins.items[0].authPolicy, "ON_USE");
+    assert.equal(payload.inventory.plugins.items[0].hasDisplayName, true);
+    assert.equal(payload.inventory.plugins.items[0].hasDescription, true);
+    assert.equal(payload.inventory.plugins.items[0].hasDefaultPrompt, true);
+    assert.equal(payload.inventory.plugins.items[0].hasCapability, true);
+    assert.equal(payload.inventory.plugins.items[0].hasScreenshot, true);
     assert.equal(payload.inventory.plugins.items[1].name, null);
     assert.equal(payload.inventory.plugins.items[1].authPolicy, "ON_INSTALL");
     assert.equal(payload.inventory.installedPlugins.namesReturned, true);
@@ -23718,6 +23806,11 @@ test("dev server returns integration display names only behind explicit opt-in",
     assert.equal(payload.inventory.installedPlugins.rawPayloadReturned, false);
     assert.equal(payload.inventory.installedPlugins.items[0].name, "safe-installed-plugin");
     assert.equal(payload.inventory.installedPlugins.items[0].authPolicy, "ON_USE");
+    assert.equal(payload.inventory.installedPlugins.items[0].hasDisplayName, true);
+    assert.equal(payload.inventory.installedPlugins.items[0].hasDescription, true);
+    assert.equal(payload.inventory.installedPlugins.items[0].hasDefaultPrompt, true);
+    assert.equal(payload.inventory.installedPlugins.items[0].hasCapability, true);
+    assert.equal(payload.inventory.installedPlugins.items[0].hasScreenshot, true);
     assert.equal(payload.inventory.installedPlugins.items[1].name, null);
     assert.equal(payload.inventory.installedPlugins.items[1].authPolicy, "ON_INSTALL");
     assert.equal(payload.inventory.experimentalFeatures.namesReturned, true);

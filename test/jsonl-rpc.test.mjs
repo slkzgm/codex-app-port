@@ -268,6 +268,11 @@ test("runIntegrationsInventoryProbe returns counts without integration secrets",
     assert.equal(inventory.plugins.remoteMarketplaceCount, 0);
     assert.equal(inventory.plugins.marketplaceDisplayNameCount, 1);
     assert.equal(inventory.plugins.pluginCount, 1);
+    assert.equal(inventory.plugins.pluginWithDisplayNameCount, 1);
+    assert.equal(inventory.plugins.pluginWithDescriptionCount, 1);
+    assert.equal(inventory.plugins.pluginWithDefaultPromptCount, 1);
+    assert.equal(inventory.plugins.pluginWithCapabilityCount, 1);
+    assert.equal(inventory.plugins.pluginWithScreenshotCount, 1);
     assert.deepEqual(inventory.plugins.sourceTypeCounts, { local: 1 });
     assert.deepEqual(inventory.plugins.installPolicyCounts, { AVAILABLE: 1 });
     assert.deepEqual(inventory.plugins.authPolicyCounts, { ON_USE: 1 });
@@ -276,9 +281,19 @@ test("runIntegrationsInventoryProbe returns counts without integration secrets",
     assert.equal(inventory.plugins.marketplaceNamesReturned, false);
     assert.equal(inventory.plugins.marketplaceDisplayNamesReturned, false);
     assert.equal(inventory.plugins.marketplaceKindsReturned, false);
+    assert.equal(inventory.plugins.pluginDisplayNamesReturned, false);
+    assert.equal(inventory.plugins.descriptionsReturned, false);
+    assert.equal(inventory.plugins.defaultPromptsReturned, false);
+    assert.equal(inventory.plugins.capabilityNamesReturned, false);
+    assert.equal(inventory.plugins.screenshotsReturned, false);
     assert.equal(inventory.installedPlugins.pluginCount, 1);
     assert.equal(inventory.installedPlugins.localMarketplaceCount, 1);
     assert.equal(inventory.installedPlugins.remoteMarketplaceCount, 0);
+    assert.equal(inventory.installedPlugins.pluginWithDisplayNameCount, 1);
+    assert.equal(inventory.installedPlugins.pluginWithDescriptionCount, 1);
+    assert.equal(inventory.installedPlugins.pluginWithDefaultPromptCount, 1);
+    assert.equal(inventory.installedPlugins.pluginWithCapabilityCount, 1);
+    assert.equal(inventory.installedPlugins.pluginWithScreenshotCount, 1);
     assert.deepEqual(inventory.installedPlugins.authPolicyCounts, { ON_USE: 1 });
     assert.equal(inventory.installedPlugins.installedCount, 1);
     assert.equal(inventory.installedPlugins.enabledCount, 1);
@@ -465,6 +480,11 @@ test("runIntegrationsInventoryProbe can opt into remote plugin catalog counts", 
     assert.equal(inventory.plugins.remoteMarketplaceCount, 1);
     assert.equal(inventory.plugins.marketplaceDisplayNameCount, 2);
     assert.equal(inventory.plugins.pluginCount, 2);
+    assert.equal(inventory.plugins.pluginWithDisplayNameCount, 2);
+    assert.equal(inventory.plugins.pluginWithDescriptionCount, 2);
+    assert.equal(inventory.plugins.pluginWithDefaultPromptCount, 2);
+    assert.equal(inventory.plugins.pluginWithCapabilityCount, 2);
+    assert.equal(inventory.plugins.pluginWithScreenshotCount, 2);
     assert.deepEqual(inventory.plugins.sourceTypeCounts, { local: 1, remote: 1 });
     assert.deepEqual(inventory.plugins.installPolicyCounts, { AVAILABLE: 1, NOT_AVAILABLE: 1 });
     assert.deepEqual(inventory.plugins.authPolicyCounts, { ON_USE: 1, ON_INSTALL: 1 });
@@ -473,12 +493,21 @@ test("runIntegrationsInventoryProbe can opt into remote plugin catalog counts", 
     assert.equal(inventory.plugins.marketplaceNamesReturned, false);
     assert.equal(inventory.plugins.marketplaceDisplayNamesReturned, false);
     assert.equal(inventory.plugins.marketplaceKindsReturned, false);
+    assert.equal(inventory.plugins.pluginDisplayNamesReturned, false);
+    assert.equal(inventory.plugins.descriptionsReturned, false);
+    assert.equal(inventory.plugins.defaultPromptsReturned, false);
+    assert.equal(inventory.plugins.capabilityNamesReturned, false);
+    assert.equal(inventory.plugins.screenshotsReturned, false);
 
     const serialized = JSON.stringify(summary);
     for (const marker of [
       "private-remote-marketplace",
       "private remote marketplace",
       "private-remote-plugin-id",
+      "private remote plugin display",
+      "private remote plugin short description",
+      "private remote plugin prompt",
+      "private remote plugin capability",
       "https://example.test/private-remote-plugin",
       "vertical",
       "shared-with-me",
@@ -720,11 +749,21 @@ test("runIntegrationsInventoryProbe can return opt-in display names without path
     assert.equal(inventory.plugins.requestedMarketplaceKindCount, 2);
     assert.equal(inventory.plugins.items[0].authPolicy, "ON_USE");
     assert.equal(inventory.plugins.items[0].name, "private-plugin");
+    assert.equal(inventory.plugins.items[0].hasDisplayName, true);
+    assert.equal(inventory.plugins.items[0].hasDescription, true);
+    assert.equal(inventory.plugins.items[0].hasDefaultPrompt, true);
+    assert.equal(inventory.plugins.items[0].hasCapability, true);
+    assert.equal(inventory.plugins.items[0].hasScreenshot, true);
     assert.equal(inventory.installedPlugins.namesReturned, true);
     assert.equal(inventory.installedPlugins.idsReturned, false);
     assert.equal(inventory.installedPlugins.pathsReturned, false);
     assert.equal(inventory.installedPlugins.urlsReturned, false);
     assert.equal(inventory.installedPlugins.items[0].name, "safe-installed-plugin");
+    assert.equal(inventory.installedPlugins.items[0].hasDisplayName, true);
+    assert.equal(inventory.installedPlugins.items[0].hasDescription, true);
+    assert.equal(inventory.installedPlugins.items[0].hasDefaultPrompt, true);
+    assert.equal(inventory.installedPlugins.items[0].hasCapability, true);
+    assert.equal(inventory.installedPlugins.items[0].hasScreenshot, true);
     assert.equal(inventory.installedPlugins.installSuggestionNamesReturned, false);
     assert.equal(inventory.installedPlugins.defaultPromptsReturned, false);
     assert.equal(inventory.externalAgentConfig.namesReturned, false);
@@ -774,9 +813,17 @@ test("runIntegrationsInventoryProbe can return opt-in display names without path
       "private upgrade copy",
       "private-upgrade-model",
       "private-plugin-id",
+      "private plugin display",
+      "private plugin short description",
+      "private plugin long description",
+      "private plugin prompt",
+      "private plugin capability",
       "private-installed-marketplace",
       "private-installed-plugin-id",
       "private-installed-plugin",
+      "private installed plugin display",
+      "private installed plugin short description",
+      "private installed plugin long description",
       "private installed prompt",
       "private installed marketplace error",
       "private-capability",

@@ -1069,15 +1069,18 @@ Target parity with the Codex desktop workflow:
   names and boolean presence flags.
 - `externalAgentConfig/import/readHistories`, `plugin/list`, and
   `plugin/installed` also have opt-in inventory paths. Import histories remain
-  counts-only; plugin inventories return only marketplace local/remote counts
-  plus source/install/auth-policy buckets by default, and may return bounded
-  safe plugin display names only when `CODEX_APP_PORT_ALLOW_INTEGRATION_NAMES=1`
+  counts-only; plugin inventories return only marketplace local/remote counts,
+  source/install/auth-policy buckets, and plugin interface metadata presence
+  counts for display names, descriptions, default prompts, capabilities, and
+  screenshots by default, and may return bounded safe plugin names plus boolean
+  metadata presence flags only when `CODEX_APP_PORT_ALLOW_INTEGRATION_NAMES=1`
   is also set. `plugin/list` queries only local and workspace-directory
   marketplaces by default; remote curated/shared/created catalog categories are
   queried only when `CODEX_APP_PORT_ALLOW_REMOTE_PLUGIN_CATALOG_INVENTORY=1` is
   also set, and still return counts only. They still omit import ids, paths, messages, timestamps,
-  marketplace names/display names/sources, plugin ids, plugin paths, URLs,
-  prompts, capabilities, and raw payloads.
+  marketplace names/display names/sources, plugin ids, plugin display names,
+  plugin descriptions, plugin paths, URLs, prompts, capabilities, screenshots,
+  and raw payloads.
 - `remoteControl/status/read` has an opt-in, counts-only inventory path; it
   reports status buckets and identity-field presence only, not status strings,
   server names, installation ids, environment ids, or raw payloads.
