@@ -35958,6 +35958,222 @@ function assertCodexPricingCatalog(payload) {
   }
 }
 
+function expectedCodexConfigurationEntries() {
+  return [
+    ["configurationReference", "reference", "catalog-only", "official-codex-config-docs"],
+    ["configBasicsEntryPoint", "basics", "catalog-only", "official-codex-config-docs"],
+    ["userConfigFile", "locations", "catalog-only", "official-codex-config-docs"],
+    ["projectConfigFile", "locations", "catalog-only", "official-codex-config-docs"],
+    ["configPrecedence", "precedence", "catalog-only", "official-codex-config-docs"],
+    ["trustedProjectConfig", "trust", "catalog-only", "official-codex-config-docs"],
+    ["cliConfigOverrides", "overrides", "catalog-only", "official-codex-config-docs"],
+    ["profileConfigFiles", "profiles", "catalog-only", "official-codex-config-docs"],
+    ["legacyProfileMigration", "profiles", "catalog-only", "official-codex-config-docs"],
+    ["localStateRoot", "locations", "catalog-only", "official-codex-config-docs"],
+    ["stateFiles", "locations", "catalog-only", "official-codex-config-docs"],
+    ["openaiBaseUrl", "providers", "catalog-only", "official-codex-config-docs"],
+    ["projectConfigIgnoredKeys", "trust", "catalog-only", "official-codex-config-docs"],
+    ["relativeProjectPaths", "trust", "catalog-only", "official-codex-config-docs"],
+    ["hooksConfigLocations", "hooks", "catalog-only", "official-codex-config-docs"],
+    ["inlineHooks", "hooks", "catalog-only", "official-codex-config-docs"],
+    ["agentsConfig", "subagents", "catalog-only", "official-codex-config-docs"],
+    ["projectRootMarkers", "project-detection", "catalog-only", "official-codex-config-docs"],
+    ["customModelProviders", "providers", "catalog-only", "official-codex-config-docs"],
+    ["providerAuthCommand", "providers", "catalog-only", "official-codex-config-docs"],
+    ["builtinBedrockProvider", "providers", "catalog-only", "official-codex-config-docs"],
+    ["ossProvider", "providers", "catalog-only", "official-codex-config-docs"],
+    ["azureProvider", "providers", "catalog-only", "official-codex-config-docs"],
+    ["dataResidencyProvider", "providers", "catalog-only", "official-codex-config-docs"],
+    ["modelReasoningVerbosityLimits", "models", "catalog-only", "official-codex-config-docs"],
+    ["approvalSandboxConfig", "safety", "catalog-only", "official-codex-config-docs"],
+    ["granularApprovalPolicy", "safety", "catalog-only", "official-codex-config-docs"],
+    ["autoReviewConfig", "safety", "catalog-only", "official-codex-config-docs"],
+    ["namedPermissionProfiles", "permissions", "catalog-only", "official-codex-config-docs"],
+    ["shellEnvironmentPolicy", "environment", "catalog-only", "official-codex-config-docs"],
+    ["mcpServerConfigReference", "mcp", "catalog-only", "official-codex-config-docs"],
+    ["telemetryConfig", "telemetry", "catalog-only", "official-codex-config-docs"],
+    ["telemetryEventTypes", "telemetry", "catalog-only", "official-codex-config-docs"],
+    ["defaultModelConfig", "models", "catalog-only", "official-codex-models-docs"],
+    ["temporaryModelSelection", "models", "catalog-only", "official-codex-models-docs"],
+    ["cloudModelBoundary", "models", "catalog-only", "official-codex-models-docs"],
+    ["featureFlags", "features", "catalog-only", "official-codex-config-docs"],
+    ["webSearchMode", "features", "catalog-only", "official-codex-config-docs"],
+    ["tuiKeymap", "tui", "catalog-only", "official-codex-config-docs"],
+    ["logDirectory", "logging", "catalog-only", "official-codex-config-docs"],
+    ["userConfigPathBoundary", "locations", "blocked", "local-configuration-boundary"],
+    ["projectConfigPathBoundary", "locations", "blocked", "local-configuration-boundary"],
+    ["profileNameBoundary", "profiles", "blocked", "local-configuration-boundary"],
+    ["configTomlBoundary", "locations", "blocked", "local-configuration-boundary"],
+    ["authJsonBoundary", "locations", "blocked", "local-configuration-boundary"],
+    ["historyBoundary", "locations", "blocked", "local-configuration-boundary"],
+    ["logPathBoundary", "logging", "blocked", "local-configuration-boundary"],
+    ["modelNameBoundary", "models", "blocked", "local-configuration-boundary"],
+    ["providerNameBoundary", "providers", "blocked", "local-configuration-boundary"],
+    ["baseUrlBoundary", "providers", "blocked", "local-configuration-boundary"],
+    ["environmentNameBoundary", "environment", "blocked", "local-configuration-boundary"],
+    ["environmentValueBoundary", "environment", "blocked", "local-configuration-boundary"],
+    ["headerBoundary", "providers", "blocked", "local-configuration-boundary"],
+    ["authCommandBoundary", "providers", "blocked", "local-configuration-boundary"],
+    ["hookCommandBoundary", "hooks", "blocked", "local-configuration-boundary"],
+    ["approvalPolicyBoundary", "safety", "blocked", "local-configuration-boundary"],
+    ["sandboxModeBoundary", "safety", "blocked", "local-configuration-boundary"],
+    ["permissionProfileBoundary", "permissions", "blocked", "local-configuration-boundary"],
+    ["featureFlagBoundary", "features", "blocked", "local-configuration-boundary"],
+    ["telemetryPayloadBoundary", "telemetry", "blocked", "local-configuration-boundary"],
+    ["mcpServerBoundary", "mcp", "blocked", "local-configuration-boundary"],
+    ["cloudTaskModelBoundary", "models", "blocked", "local-configuration-boundary"],
+    ["configReadBoundary", "runtime", "blocked", "local-configuration-boundary"],
+    ["configWriteBoundary", "runtime", "blocked", "local-configuration-boundary"],
+    ["filesystemNetworkBoundary", "runtime", "blocked", "local-configuration-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexConfigurationCatalog(payload) {
+  const catalog = payload.codexConfiguration;
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-config-docs");
+  assert.equal(catalog.entryCount, 65);
+  assert.equal(catalog.officialEntryCount, 40);
+  assert.equal(catalog.localBoundaryEntryCount, 25);
+  assert.equal(catalog.catalogOnlyEntryCount, 40);
+  assert.equal(catalog.blockedEntryCount, 25);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({ key, group, state, source })),
+    expectedCodexConfigurationEntries(),
+  );
+
+  const entryRedactionFlags = [
+    "configPathReturned",
+    "configTomlReturned",
+    "configValueReturned",
+    "profileNameReturned",
+    "modelNameReturned",
+    "providerNameReturned",
+    "baseUrlReturned",
+    "envVarNameReturned",
+    "envValueReturned",
+    "headerNameReturned",
+    "headerValueReturned",
+    "authCommandReturned",
+    "hookCommandReturned",
+    "approvalPolicyReturned",
+    "sandboxModeReturned",
+    "permissionProfileReturned",
+    "featureFlagReturned",
+    "telemetryPayloadReturned",
+    "mcpServerReturned",
+    "stateFileReturned",
+    "logPathReturned",
+    "cloudTaskReturned",
+    "commandTextReturned",
+    "filesystemRead",
+    "filesystemWrite",
+    "networkAccess",
+    "modelTraffic",
+    "telemetryStarted",
+    "configRead",
+    "configWritten",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.configurationCatalogReturned, true);
+  for (const flag of [
+    "configPathsReturned",
+    "configTomlReturned",
+    "configValuesReturned",
+    "profileNamesReturned",
+    "modelNamesReturned",
+    "providerNamesReturned",
+    "baseUrlsReturned",
+    "envVarNamesReturned",
+    "envValuesReturned",
+    "headerNamesReturned",
+    "headerValuesReturned",
+    "authCommandsReturned",
+    "hookCommandsReturned",
+    "approvalPoliciesReturned",
+    "sandboxModesReturned",
+    "permissionProfilesReturned",
+    "featureFlagsReturned",
+    "telemetryPayloadsReturned",
+    "mcpServersReturned",
+    "stateFilesReturned",
+    "logPathsReturned",
+    "cloudTasksReturned",
+    "commandTextsReturned",
+    "filesystemReads",
+    "filesystemWrites",
+    "networkAccess",
+    "modelTraffic",
+    "telemetryStarted",
+    "configReads",
+    "configWrites",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexConfigurationReturned", true],
+    ["codexConfigurationValuesReturned", false],
+    ["codexConfigurationConfigPathsReturned", false],
+    ["codexConfigurationConfigTomlReturned", false],
+    ["codexConfigurationConfigValuesReturned", false],
+    ["codexConfigurationProfileNamesReturned", false],
+    ["codexConfigurationModelNamesReturned", false],
+    ["codexConfigurationProviderNamesReturned", false],
+    ["codexConfigurationBaseUrlsReturned", false],
+    ["codexConfigurationEnvVarNamesReturned", false],
+    ["codexConfigurationEnvValuesReturned", false],
+    ["codexConfigurationHeaderNamesReturned", false],
+    ["codexConfigurationHeaderValuesReturned", false],
+    ["codexConfigurationAuthCommandsReturned", false],
+    ["codexConfigurationHookCommandsReturned", false],
+    ["codexConfigurationApprovalPoliciesReturned", false],
+    ["codexConfigurationSandboxModesReturned", false],
+    ["codexConfigurationPermissionProfilesReturned", false],
+    ["codexConfigurationFeatureFlagsReturned", false],
+    ["codexConfigurationTelemetryPayloadsReturned", false],
+    ["codexConfigurationMcpServersReturned", false],
+    ["codexConfigurationStateFilesReturned", false],
+    ["codexConfigurationLogPathsReturned", false],
+    ["codexConfigurationCloudTasksReturned", false],
+    ["codexConfigurationCommandTextsReturned", false],
+    ["codexConfigurationFilesystemAccess", false],
+    ["codexConfigurationNetworkAccess", false],
+    ["codexConfigurationModelTraffic", false],
+    ["codexConfigurationTelemetryStarted", false],
+    ["codexConfigurationConfigReadEnabled", false],
+    ["codexConfigurationConfigWriteEnabled", false],
+    ["codexConfigurationMutationsEnabled", false],
+    ["codexConfigurationPathsReturned", false],
+    ["codexConfigurationUrlsReturned", false],
+    ["codexConfigurationSecretsReturned", false],
+    ["codexConfigurationRawPayloadsReturned", false],
+    ["codexConfigurationAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexWorkflowGuidanceEntries() {
   return [
     ["contextPromptStructure", "best-practices", "catalog-only", "official-codex-best-practices-docs"],
@@ -44158,6 +44374,7 @@ function assertCodexAppSettingsParity(
   assertCodexWindowsPlatformCatalog(payload);
   assertCodexBedrockCatalog(payload);
   assertCodexPricingCatalog(payload);
+  assertCodexConfigurationCatalog(payload);
   assertCodexWorkflowGuidanceCatalog(payload);
   assertCodexOverviewQuickstartCatalog(payload);
   assertCodexTroubleshootingCatalog(payload);

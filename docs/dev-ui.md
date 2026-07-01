@@ -997,6 +997,19 @@ network access, paths, URLs, secrets, raw payloads, and app-server traffic. It
 must not read billing or usage state, open checkout/billing URLs, access
 files/network, or mutate subscription, billing, or provider state.
 
+The same response exposes `codexConfiguration` as a static review-only catalog
+for official Config basics, Advanced Configuration, and Model selection
+guidance. The UI shows only catalog counts, entry keys, groups, state/source
+chips, and negative redaction chips for config paths, `config.toml`, config
+values, profile names, model names, provider names, base URLs, environment
+variable names or values, header names or values, auth/hook commands, approval
+policies, sandbox modes, permission profiles, feature flags, telemetry
+payloads, MCP server names, state files, log paths, cloud task data, command
+text, config reads/writes, telemetry starts, filesystem/network access, model
+traffic, paths, URLs, secrets, raw payloads, and app-server traffic. It must
+not read or write config, inspect state files, start telemetry, access
+files/network, create model traffic, or mutate configuration state.
+
 The same response exposes `codexWorkflowGuidance` as a static review-only
 catalog for official Best Practices, Workflows, Prompting, and Speed guidance.
 The UI shows only catalog counts, entry keys, groups, state/source chips, and

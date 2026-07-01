@@ -507,7 +507,18 @@
   rate limits, credit balances, enterprise contracts, paths, URLs, secrets, raw
   payloads, app-server payloads, or app-server traffic, and must not read
   billing or usage state, open checkout/billing URLs, access files/network, or
-  mutate subscription, billing, or provider state. Its Codex Workflow Guidance
+  mutate subscription, billing, or provider state. Its Codex Configuration
+  catalog may expose only static official-documentation keys plus local
+  boundary keys, groups, states, sources, counts, and redaction flags; it must
+  not return config paths, `config.toml`, config values, profile names, model
+  names, provider names, base URLs, environment variable names or values,
+  header names or values, auth or hook commands, approval policies, sandbox
+  modes, permission profiles, feature flags, telemetry payloads, MCP server
+  names, state files, log paths, cloud task data, command text, paths, URLs,
+  secrets, raw payloads, app-server payloads, or app-server traffic, and must
+  not read or write config, inspect state files, start telemetry, access
+  filesystem or network, create model traffic, or mutate configuration state.
+  Its Codex Workflow Guidance
   catalog may expose only static official-documentation keys plus local
   boundary keys, groups, states, sources, counts, and redaction flags; it must
   not return prompt text, file paths, repository content, command text/output,

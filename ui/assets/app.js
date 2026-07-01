@@ -63,6 +63,8 @@ const elements = {
   codexBedrockValuesText: document.querySelector("#codex-bedrock-values-text"),
   codexPricingText: document.querySelector("#codex-pricing-text"),
   codexPricingValuesText: document.querySelector("#codex-pricing-values-text"),
+  codexConfigurationText: document.querySelector("#codex-configuration-text"),
+  codexConfigurationValuesText: document.querySelector("#codex-configuration-values-text"),
   codexWorkflowGuidanceText: document.querySelector("#codex-workflow-guidance-text"),
   codexWorkflowGuidanceValuesText: document.querySelector(
     "#codex-workflow-guidance-values-text",
@@ -542,6 +544,7 @@ const elements = {
   codexWindowsPlatformList: document.querySelector("#codex-windows-platform-list"),
   codexBedrockList: document.querySelector("#codex-bedrock-list"),
   codexPricingList: document.querySelector("#codex-pricing-list"),
+  codexConfigurationList: document.querySelector("#codex-configuration-list"),
   codexWorkflowGuidanceList: document.querySelector("#codex-workflow-guidance-list"),
   codexOverviewQuickstartList: document.querySelector("#codex-overview-quickstart-list"),
   codexTroubleshootingList: document.querySelector("#codex-troubleshooting-list"),
@@ -10632,6 +10635,7 @@ function renderSettingsIntegrations(payload) {
   const codexWindowsPlatform = payload.codexWindowsPlatform ?? {};
   const codexBedrock = payload.codexBedrock ?? {};
   const codexPricing = payload.codexPricing ?? {};
+  const codexConfiguration = payload.codexConfiguration ?? {};
   const codexWorkflowGuidance = payload.codexWorkflowGuidance ?? {};
   const codexOverviewQuickstart = payload.codexOverviewQuickstart ?? {};
   const codexTroubleshooting = payload.codexTroubleshooting ?? {};
@@ -11331,6 +11335,50 @@ function renderSettingsIntegrations(payload) {
     codexPricing.secretsReturned ||
     codexPricing.rawPayloadsReturned ||
     codexPricing.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexConfigurationText.textContent = codexConfiguration.returned
+    ? `${codexConfiguration.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexConfiguration.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexConfigurationValuesText.textContent =
+    codexConfiguration.configPathsReturned ||
+    codexConfiguration.configTomlReturned ||
+    codexConfiguration.configValuesReturned ||
+    codexConfiguration.profileNamesReturned ||
+    codexConfiguration.modelNamesReturned ||
+    codexConfiguration.providerNamesReturned ||
+    codexConfiguration.baseUrlsReturned ||
+    codexConfiguration.envVarNamesReturned ||
+    codexConfiguration.envValuesReturned ||
+    codexConfiguration.headerNamesReturned ||
+    codexConfiguration.headerValuesReturned ||
+    codexConfiguration.authCommandsReturned ||
+    codexConfiguration.hookCommandsReturned ||
+    codexConfiguration.approvalPoliciesReturned ||
+    codexConfiguration.sandboxModesReturned ||
+    codexConfiguration.permissionProfilesReturned ||
+    codexConfiguration.featureFlagsReturned ||
+    codexConfiguration.telemetryPayloadsReturned ||
+    codexConfiguration.mcpServersReturned ||
+    codexConfiguration.stateFilesReturned ||
+    codexConfiguration.logPathsReturned ||
+    codexConfiguration.cloudTasksReturned ||
+    codexConfiguration.commandTextsReturned ||
+    codexConfiguration.filesystemReads ||
+    codexConfiguration.filesystemWrites ||
+    codexConfiguration.networkAccess ||
+    codexConfiguration.modelTraffic ||
+    codexConfiguration.telemetryStarted ||
+    codexConfiguration.configReads ||
+    codexConfiguration.configWrites ||
+    codexConfiguration.mutationEnabled ||
+    codexConfiguration.pathsReturned ||
+    codexConfiguration.urlsReturned ||
+    codexConfiguration.secretsReturned ||
+    codexConfiguration.rawPayloadsReturned ||
+    codexConfiguration.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexWorkflowGuidanceText.textContent = codexWorkflowGuidance.returned
@@ -13383,6 +13431,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexWindowsPlatformCatalog(codexWindowsPlatform);
   renderCodexBedrockCatalog(codexBedrock);
   renderCodexPricingCatalog(codexPricing);
+  renderCodexConfigurationCatalog(codexConfiguration);
   renderCodexWorkflowGuidanceCatalog(codexWorkflowGuidance);
   renderCodexOverviewQuickstartCatalog(codexOverviewQuickstart);
   renderCodexTroubleshootingCatalog(codexTroubleshooting);
@@ -16373,6 +16422,91 @@ function renderCodexPricingCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexPricingList.append(row);
+  }
+}
+
+function renderCodexConfigurationCatalog(summary) {
+  elements.codexConfigurationList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexConfigurationList.append(emptyState("No Codex configuration catalog returned."));
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "configuration";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.configPathReturned ? "config paths returned" : "config paths hidden",
+      entry.configTomlReturned ? "config TOML returned" : "config TOML hidden",
+      entry.configValueReturned ? "config values returned" : "config values hidden",
+      entry.profileNameReturned ? "profile names returned" : "profile names hidden",
+      entry.modelNameReturned ? "model names returned" : "model names hidden",
+      entry.providerNameReturned ? "provider names returned" : "provider names hidden",
+      entry.baseUrlReturned ? "base URLs returned" : "base URLs hidden",
+      entry.envVarNameReturned ? "env var names returned" : "env var names hidden",
+      entry.envValueReturned ? "env values returned" : "env values hidden",
+      entry.headerNameReturned ? "header names returned" : "header names hidden",
+      entry.headerValueReturned ? "header values returned" : "header values hidden",
+      entry.authCommandReturned ? "auth commands returned" : "auth commands hidden",
+      entry.hookCommandReturned ? "hook commands returned" : "hook commands hidden",
+      entry.approvalPolicyReturned
+        ? "approval policies returned"
+        : "approval policies hidden",
+      entry.sandboxModeReturned ? "sandbox modes returned" : "sandbox modes hidden",
+      entry.permissionProfileReturned
+        ? "permission profiles returned"
+        : "permission profiles hidden",
+      entry.featureFlagReturned ? "feature flags returned" : "feature flags hidden",
+      entry.telemetryPayloadReturned
+        ? "telemetry payloads returned"
+        : "telemetry payloads hidden",
+      entry.mcpServerReturned ? "MCP servers returned" : "MCP servers hidden",
+      entry.stateFileReturned ? "state files returned" : "state files hidden",
+      entry.logPathReturned ? "log paths returned" : "log paths hidden",
+      entry.cloudTaskReturned ? "cloud tasks returned" : "cloud tasks hidden",
+      entry.commandTextReturned ? "command text returned" : "command text hidden",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.modelTraffic ? "model traffic" : "model traffic blocked",
+      entry.telemetryStarted ? "telemetry started" : "telemetry blocked",
+      entry.configRead ? "config read" : "config reads blocked",
+      entry.configWritten ? "config written" : "config writes blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexConfigurationList.append(row);
   }
 }
 
