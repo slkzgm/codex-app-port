@@ -36047,6 +36047,233 @@ function buildCodexGovernanceCatalog() {
   };
 }
 
+const CODEX_ENVIRONMENT_VARIABLES_CATALOG = Object.freeze([
+  {
+    key: "configTomlDurableSettings",
+    group: "overview",
+    state: "catalog-only",
+    source: "official-codex-environment-variables-docs",
+  },
+  {
+    key: "shellScopedOverrides",
+    group: "overview",
+    state: "catalog-only",
+    source: "official-codex-environment-variables-docs",
+  },
+  {
+    key: "stablePublicVariablesOnly",
+    group: "scope",
+    state: "catalog-only",
+    source: "official-codex-environment-variables-docs",
+  },
+  {
+    key: "stateRootDirectory",
+    group: "core-locations",
+    state: "catalog-only",
+    source: "official-codex-environment-variables-docs",
+  },
+  {
+    key: "sqliteStateDirectory",
+    group: "core-locations",
+    state: "catalog-only",
+    source: "official-codex-environment-variables-docs",
+  },
+  {
+    key: "nonInteractiveInstaller",
+    group: "installer",
+    state: "catalog-only",
+    source: "official-codex-environment-variables-docs",
+  },
+  {
+    key: "installDirectoryOverride",
+    group: "installer",
+    state: "catalog-only",
+    source: "official-codex-environment-variables-docs",
+  },
+  {
+    key: "standalonePackageCache",
+    group: "installer",
+    state: "catalog-only",
+    source: "official-codex-environment-variables-docs",
+  },
+  {
+    key: "apiKeySingleExecRun",
+    group: "authentication",
+    state: "catalog-only",
+    source: "official-codex-environment-variables-docs",
+  },
+  {
+    key: "accessTokenTrustedAutomation",
+    group: "authentication",
+    state: "catalog-only",
+    source: "official-codex-environment-variables-docs",
+  },
+  {
+    key: "caCertificateOverride",
+    group: "network",
+    state: "catalog-only",
+    source: "official-codex-environment-variables-docs",
+  },
+  {
+    key: "sslCertFileFallback",
+    group: "network",
+    state: "catalog-only",
+    source: "official-codex-environment-variables-docs",
+  },
+  {
+    key: "providerEnvKeyReference",
+    group: "providers",
+    state: "catalog-only",
+    source: "official-codex-environment-variables-docs",
+  },
+  {
+    key: "rustLogDiagnostics",
+    group: "diagnostics",
+    state: "catalog-only",
+    source: "official-codex-environment-variables-docs",
+  },
+  {
+    key: "plaintextTuiLogOptIn",
+    group: "diagnostics",
+    state: "catalog-only",
+    source: "official-codex-environment-variables-docs",
+  },
+  {
+    key: "environmentReadBoundary",
+    group: "runtime-boundary",
+    state: "blocked",
+    source: "local-environment-variables-boundary",
+  },
+  {
+    key: "environmentValueBoundary",
+    group: "runtime-boundary",
+    state: "blocked",
+    source: "local-environment-variables-boundary",
+  },
+  {
+    key: "apiKeyValueBoundary",
+    group: "authentication",
+    state: "blocked",
+    source: "local-environment-variables-boundary",
+  },
+  {
+    key: "accessTokenValueBoundary",
+    group: "authentication",
+    state: "blocked",
+    source: "local-environment-variables-boundary",
+  },
+  {
+    key: "certificatePathBoundary",
+    group: "network",
+    state: "blocked",
+    source: "local-environment-variables-boundary",
+  },
+  {
+    key: "stateDirectoryPathBoundary",
+    group: "core-locations",
+    state: "blocked",
+    source: "local-environment-variables-boundary",
+  },
+  {
+    key: "installerExecutionBoundary",
+    group: "installer",
+    state: "blocked",
+    source: "local-environment-variables-boundary",
+  },
+  {
+    key: "codexExecEnvironmentBoundary",
+    group: "authentication",
+    state: "blocked",
+    source: "local-environment-variables-boundary",
+  },
+  {
+    key: "persistentLoginEnvironmentBoundary",
+    group: "authentication",
+    state: "blocked",
+    source: "local-environment-variables-boundary",
+  },
+  {
+    key: "diagnosticLogPathBoundary",
+    group: "diagnostics",
+    state: "blocked",
+    source: "local-environment-variables-boundary",
+  },
+]);
+
+function buildCodexEnvironmentVariablesCatalog() {
+  const entries = CODEX_ENVIRONMENT_VARIABLES_CATALOG.map((entry) => ({
+    ...entry,
+    variableNameReturned: false,
+    variableValueReturned: false,
+    defaultValueReturned: false,
+    environmentRead: false,
+    apiKeyReturned: false,
+    accessTokenReturned: false,
+    certificatePathReturned: false,
+    statePathReturned: false,
+    installPathReturned: false,
+    providerSecretNameReturned: false,
+    logFilterReturned: false,
+    logPathReturned: false,
+    commandTextReturned: false,
+    installerStarted: false,
+    codexExecStarted: false,
+    codexLoginStarted: false,
+    diagnosticsStarted: false,
+    filesystemRead: false,
+    filesystemWrite: false,
+    networkAccess: false,
+    mutationEnabled: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+    rawPayloadsReturned: false,
+    appServerTraffic: false,
+  }));
+  const catalogOnlyEntryCount = entries.filter((entry) => entry.state === "catalog-only").length;
+  const blockedEntryCount = entries.filter((entry) => entry.state === "blocked").length;
+
+  return {
+    returned: true,
+    state: blockedEntryCount > 0 ? "partial" : "complete",
+    officialSource: "official-codex-environment-variables-docs",
+    entryCount: entries.length,
+    officialEntryCount: entries.filter((entry) => entry.source.startsWith("official-")).length,
+    localBoundaryEntryCount: entries.filter((entry) => entry.source.startsWith("local-")).length,
+    catalogOnlyEntryCount,
+    blockedEntryCount,
+    enabledEntryCount: 0,
+    entries,
+    environmentVariablesCatalogReturned: true,
+    variableNamesReturned: false,
+    variableValuesReturned: false,
+    defaultValuesReturned: false,
+    environmentReads: false,
+    apiKeysReturned: false,
+    accessTokensReturned: false,
+    certificatePathsReturned: false,
+    statePathsReturned: false,
+    installPathsReturned: false,
+    providerSecretNamesReturned: false,
+    logFiltersReturned: false,
+    logPathsReturned: false,
+    commandTextsReturned: false,
+    installersStarted: false,
+    codexExecsStarted: false,
+    codexLoginsStarted: false,
+    diagnosticsStarted: false,
+    filesystemReads: false,
+    filesystemWrites: false,
+    networkAccess: false,
+    mutationEnabled: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+    rawPayloadsReturned: false,
+    appServerTraffic: false,
+  };
+}
+
 function buildSkillsPluginsCatalog(integrationScope = {}) {
   const stateFor = (setting) => {
     switch (setting.key) {
@@ -41886,6 +42113,33 @@ export function sanitizeSettingsIntegrationsPayload(
       codexGovernanceSecretsReturned: false,
       codexGovernanceRawPayloadsReturned: false,
       codexGovernanceAppServerTraffic: false,
+      codexEnvironmentVariablesReturned: true,
+      codexEnvironmentVariablesValuesReturned: false,
+      codexEnvironmentVariablesNamesReturned: false,
+      codexEnvironmentVariablesVariableValuesReturned: false,
+      codexEnvironmentVariablesDefaultValuesReturned: false,
+      codexEnvironmentVariablesEnvironmentReadEnabled: false,
+      codexEnvironmentVariablesApiKeysReturned: false,
+      codexEnvironmentVariablesAccessTokensReturned: false,
+      codexEnvironmentVariablesCertificatePathsReturned: false,
+      codexEnvironmentVariablesStatePathsReturned: false,
+      codexEnvironmentVariablesInstallPathsReturned: false,
+      codexEnvironmentVariablesProviderSecretNamesReturned: false,
+      codexEnvironmentVariablesLogFiltersReturned: false,
+      codexEnvironmentVariablesLogPathsReturned: false,
+      codexEnvironmentVariablesCommandTextsReturned: false,
+      codexEnvironmentVariablesInstallerEnabled: false,
+      codexEnvironmentVariablesCodexExecEnabled: false,
+      codexEnvironmentVariablesCodexLoginEnabled: false,
+      codexEnvironmentVariablesDiagnosticsEnabled: false,
+      codexEnvironmentVariablesFilesystemAccess: false,
+      codexEnvironmentVariablesNetworkAccess: false,
+      codexEnvironmentVariablesMutationsEnabled: false,
+      codexEnvironmentVariablesPathsReturned: false,
+      codexEnvironmentVariablesUrlsReturned: false,
+      codexEnvironmentVariablesSecretsReturned: false,
+      codexEnvironmentVariablesRawPayloadsReturned: false,
+      codexEnvironmentVariablesAppServerTraffic: false,
       codexAppBrowserSettingsReturned: true,
       codexAppBrowserValuesReturned: false,
       codexAppBrowserWebsiteListsReturned: false,
@@ -41993,6 +42247,7 @@ export function sanitizeSettingsIntegrationsPayload(
   result.codexAccessTokens = buildCodexAccessTokensCatalog();
   result.codexAdminSetup = buildCodexAdminSetupCatalog();
   result.codexGovernance = buildCodexGovernanceCatalog();
+  result.codexEnvironmentVariables = buildCodexEnvironmentVariablesCatalog();
   result.skillsPluginsCatalog = buildSkillsPluginsCatalog(result.integrationScope);
   result.codexPluginBuild = buildCodexPluginBuildCatalog();
   result.codexHooks = buildCodexHooksCatalog();
@@ -50147,6 +50402,33 @@ export function buildSettingsIntegrations({
       codexGovernanceSecretsReturned: false,
       codexGovernanceRawPayloadsReturned: false,
       codexGovernanceAppServerTraffic: false,
+      codexEnvironmentVariablesReturned: true,
+      codexEnvironmentVariablesValuesReturned: false,
+      codexEnvironmentVariablesNamesReturned: false,
+      codexEnvironmentVariablesVariableValuesReturned: false,
+      codexEnvironmentVariablesDefaultValuesReturned: false,
+      codexEnvironmentVariablesEnvironmentReadEnabled: false,
+      codexEnvironmentVariablesApiKeysReturned: false,
+      codexEnvironmentVariablesAccessTokensReturned: false,
+      codexEnvironmentVariablesCertificatePathsReturned: false,
+      codexEnvironmentVariablesStatePathsReturned: false,
+      codexEnvironmentVariablesInstallPathsReturned: false,
+      codexEnvironmentVariablesProviderSecretNamesReturned: false,
+      codexEnvironmentVariablesLogFiltersReturned: false,
+      codexEnvironmentVariablesLogPathsReturned: false,
+      codexEnvironmentVariablesCommandTextsReturned: false,
+      codexEnvironmentVariablesInstallerEnabled: false,
+      codexEnvironmentVariablesCodexExecEnabled: false,
+      codexEnvironmentVariablesCodexLoginEnabled: false,
+      codexEnvironmentVariablesDiagnosticsEnabled: false,
+      codexEnvironmentVariablesFilesystemAccess: false,
+      codexEnvironmentVariablesNetworkAccess: false,
+      codexEnvironmentVariablesMutationsEnabled: false,
+      codexEnvironmentVariablesPathsReturned: false,
+      codexEnvironmentVariablesUrlsReturned: false,
+      codexEnvironmentVariablesSecretsReturned: false,
+      codexEnvironmentVariablesRawPayloadsReturned: false,
+      codexEnvironmentVariablesAppServerTraffic: false,
       codexAppBrowserSettingsReturned: true,
       codexAppBrowserValuesReturned: false,
       codexAppBrowserWebsiteListsReturned: false,
@@ -50253,6 +50535,7 @@ export function buildSettingsIntegrations({
   result.codexAccessTokens = buildCodexAccessTokensCatalog();
   result.codexAdminSetup = buildCodexAdminSetupCatalog();
   result.codexGovernance = buildCodexGovernanceCatalog();
+  result.codexEnvironmentVariables = buildCodexEnvironmentVariablesCatalog();
   result.skillsPluginsCatalog = buildSkillsPluginsCatalog(result.integrationScope);
   result.codexPluginBuild = buildCodexPluginBuildCatalog();
   result.codexHooks = buildCodexHooksCatalog();

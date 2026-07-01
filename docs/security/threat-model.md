@@ -488,6 +488,15 @@
   not open dashboards, call Analytics or Compliance APIs, start exports, read
   API keys, write warehouses or SIEM pipelines, access files or network, or
   mutate governance state. Its
+  Codex Environment variables catalog may expose only static
+  official-documentation keys plus local boundary keys, groups, states,
+  sources, counts, and redaction flags; it must not read `process.env`, return
+  variable names, variable values, default values, API keys, access tokens,
+  certificate paths, state paths, install paths, provider secret names, log
+  filters, log paths, command text, paths, URLs, secrets, raw payloads,
+  app-server payloads, or app-server traffic, and must not start installers,
+  run `codex exec`, run `codex login`, start diagnostics, access files or
+  network, or mutate environment, config, or auth state. Its
   Codex Sites catalog may expose only static official-documentation keys plus
   local boundary keys, groups, states, sources, counts, and redaction flags; it
   must not return Sites projects, project ids, `.openai/hosting.json`, storage

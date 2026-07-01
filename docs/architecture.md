@@ -592,6 +592,18 @@ Current M1 status:
   Analytics/Compliance API requests, exports, API-key reads, warehouse/SIEM
   writes, filesystem access, network access, mutations, paths, URLs, secrets,
   raw payloads, and app-server traffic blocked
+- done: read-only Codex Environment variables catalog in
+  `/api/settings-integrations`, exposing only static official Environment
+  variables documentation keys plus local boundary keys/groups/states/sources/
+  counts/redaction flags for durable `config.toml` guidance, shell-scoped
+  overrides, stable public variable scope, Codex state roots, standalone
+  installer controls, API-key and access-token automation use, CA bundle
+  overrides, provider `env_key` indirection, `RUST_LOG`, and opt-in plaintext
+  diagnostics, with environment reads, variable names/values/defaults, API
+  keys, access tokens, certificate/state/install/log paths, provider secret
+  names, log filters, command text, installer/login/exec/diagnostic starts,
+  filesystem access, network access, mutations, paths, URLs, secrets, raw
+  payloads, and app-server traffic blocked
 - done: read-only Codex Sites catalog in `/api/settings-integrations`,
   exposing only static official Sites plugin documentation keys plus local
   boundary keys/groups/states/sources/counts/redaction flags for hosted

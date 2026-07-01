@@ -818,6 +818,19 @@ compliance URLs, warehouse/SIEM targets, paths, URLs, secrets, raw payloads, or
 app-server traffic, and it does not open dashboards, call Analytics or
 Compliance APIs, start exports, read API keys, write warehouses/SIEM pipelines,
 access files/network, or mutate governance state.
+The same response exposes `codexEnvironmentVariables` as a static review-only
+catalog for official Codex environment-variable behavior. The UI shows only
+catalog counts, entry keys, groups, state/source chips, and redaction chips for
+durable `config.toml` guidance, shell-scoped overrides, stable public variable
+scope, Codex state roots, standalone installer controls, API-key and
+access-token automation use, CA bundle overrides, provider `env_key`
+indirection, `RUST_LOG`, and opt-in plaintext diagnostics. It does not read
+`process.env` or show variable names, variable values, default values, API keys,
+access tokens, certificate paths, state paths, install paths, provider secret
+names, log filters, log paths, command text, paths, URLs, secrets, raw payloads,
+or app-server traffic, and it does not start installers, run `codex exec`, run
+`codex login`, start diagnostics, access files/network, or mutate environment,
+config, or auth state.
 The same Settings & Integrations response also exposes `skillsPluginsCatalog`
 as a static review-only Skills & Plugins catalog. The UI shows only catalog
 counts, setting keys, groups, state/source chips, and redaction chips for

@@ -35,6 +35,10 @@ const elements = {
   codexAdminSetupValuesText: document.querySelector("#codex-admin-setup-values-text"),
   codexGovernanceText: document.querySelector("#codex-governance-text"),
   codexGovernanceValuesText: document.querySelector("#codex-governance-values-text"),
+  codexEnvironmentVariablesText: document.querySelector("#codex-environment-variables-text"),
+  codexEnvironmentVariablesValuesText: document.querySelector(
+    "#codex-environment-variables-values-text",
+  ),
   skillsPluginsCatalogText: document.querySelector("#skills-plugins-catalog-text"),
   skillsPluginsCatalogValuesText: document.querySelector("#skills-plugins-catalog-values-text"),
   codexPluginBuildText: document.querySelector("#codex-plugin-build-text"),
@@ -438,6 +442,7 @@ const elements = {
   codexAccessTokensList: document.querySelector("#codex-access-tokens-list"),
   codexAdminSetupList: document.querySelector("#codex-admin-setup-list"),
   codexGovernanceList: document.querySelector("#codex-governance-list"),
+  codexEnvironmentVariablesList: document.querySelector("#codex-environment-variables-list"),
   skillsPluginsCatalogList: document.querySelector("#skills-plugins-catalog-list"),
   codexPluginBuildList: document.querySelector("#codex-plugin-build-list"),
   codexHooksList: document.querySelector("#codex-hooks-list"),
@@ -10495,6 +10500,7 @@ function renderSettingsIntegrations(payload) {
   const codexAccessTokens = payload.codexAccessTokens ?? {};
   const codexAdminSetup = payload.codexAdminSetup ?? {};
   const codexGovernance = payload.codexGovernance ?? {};
+  const codexEnvironmentVariables = payload.codexEnvironmentVariables ?? {};
   const skillsPluginsCatalog = payload.skillsPluginsCatalog ?? {};
   const codexPluginBuild = payload.codexPluginBuild ?? {};
   const codexHooks = payload.codexHooks ?? {};
@@ -10663,6 +10669,40 @@ function renderSettingsIntegrations(payload) {
     codexGovernance.secretsReturned ||
     codexGovernance.rawPayloadsReturned ||
     codexGovernance.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexEnvironmentVariablesText.textContent = codexEnvironmentVariables.returned
+    ? `${codexEnvironmentVariables.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexEnvironmentVariables.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexEnvironmentVariablesValuesText.textContent =
+    codexEnvironmentVariables.variableNamesReturned ||
+    codexEnvironmentVariables.variableValuesReturned ||
+    codexEnvironmentVariables.defaultValuesReturned ||
+    codexEnvironmentVariables.environmentReads ||
+    codexEnvironmentVariables.apiKeysReturned ||
+    codexEnvironmentVariables.accessTokensReturned ||
+    codexEnvironmentVariables.certificatePathsReturned ||
+    codexEnvironmentVariables.statePathsReturned ||
+    codexEnvironmentVariables.installPathsReturned ||
+    codexEnvironmentVariables.providerSecretNamesReturned ||
+    codexEnvironmentVariables.logFiltersReturned ||
+    codexEnvironmentVariables.logPathsReturned ||
+    codexEnvironmentVariables.commandTextsReturned ||
+    codexEnvironmentVariables.installersStarted ||
+    codexEnvironmentVariables.codexExecsStarted ||
+    codexEnvironmentVariables.codexLoginsStarted ||
+    codexEnvironmentVariables.diagnosticsStarted ||
+    codexEnvironmentVariables.filesystemReads ||
+    codexEnvironmentVariables.filesystemWrites ||
+    codexEnvironmentVariables.networkAccess ||
+    codexEnvironmentVariables.mutationEnabled ||
+    codexEnvironmentVariables.pathsReturned ||
+    codexEnvironmentVariables.urlsReturned ||
+    codexEnvironmentVariables.secretsReturned ||
+    codexEnvironmentVariables.rawPayloadsReturned ||
+    codexEnvironmentVariables.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.skillsPluginsCatalogText.textContent = skillsPluginsCatalog.returned
@@ -11699,6 +11739,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexAccessTokensCatalog(codexAccessTokens);
   renderCodexAdminSetupCatalog(codexAdminSetup);
   renderCodexGovernanceCatalog(codexGovernance);
+  renderCodexEnvironmentVariablesCatalog(codexEnvironmentVariables);
   renderSkillsPluginsCatalog(skillsPluginsCatalog);
   renderCodexPluginBuildCatalog(codexPluginBuild);
   renderCodexHooksCatalog(codexHooks);
@@ -13526,6 +13567,79 @@ function renderCodexGovernanceCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexGovernanceList.append(row);
+  }
+}
+
+function renderCodexEnvironmentVariablesCatalog(summary) {
+  elements.codexEnvironmentVariablesList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexEnvironmentVariablesList.append(
+      emptyState("No Codex environment variables catalog returned."),
+    );
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "environment";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.variableNameReturned ? "variable names returned" : "variable names hidden",
+      entry.variableValueReturned ? "variable values returned" : "variable values hidden",
+      entry.defaultValueReturned ? "default values returned" : "default values hidden",
+      entry.environmentRead ? "environment read" : "environment reads blocked",
+      entry.apiKeyReturned ? "API keys returned" : "API keys hidden",
+      entry.accessTokenReturned ? "access tokens returned" : "access tokens hidden",
+      entry.certificatePathReturned ? "certificate paths returned" : "certificate paths hidden",
+      entry.statePathReturned ? "state paths returned" : "state paths hidden",
+      entry.installPathReturned ? "install paths returned" : "install paths hidden",
+      entry.providerSecretNameReturned
+        ? "provider secret names returned"
+        : "provider secret names hidden",
+      entry.logFilterReturned ? "log filters returned" : "log filters hidden",
+      entry.logPathReturned ? "log paths returned" : "log paths hidden",
+      entry.commandTextReturned ? "command text returned" : "command text hidden",
+      entry.installerStarted ? "installer started" : "installer blocked",
+      entry.codexExecStarted ? "codex exec started" : "codex exec blocked",
+      entry.codexLoginStarted ? "codex login started" : "codex login blocked",
+      entry.diagnosticsStarted ? "diagnostics started" : "diagnostics blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexEnvironmentVariablesList.append(row);
   }
 }
 

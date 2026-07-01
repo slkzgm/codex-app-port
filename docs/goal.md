@@ -177,6 +177,19 @@ Target parity with the Codex desktop workflow:
   open dashboards, call Analytics or Compliance APIs, start exports, read API
   keys, write warehouses/SIEM pipelines, access files/network, or mutate
   governance state.
+- `/api/settings-integrations` now also exposes a read-only Codex Environment
+  variables catalog aligned to the official environment variables guide. It
+  returns only static keys, groups, states, sources, counts, and redaction flags
+  for durable `config.toml` guidance, shell-scoped overrides, stable public
+  variable scope, Codex state roots, standalone installer controls, API-key and
+  access-token automation use, CA bundle overrides, provider `env_key`
+  indirection, `RUST_LOG`, and opt-in plaintext diagnostics. It does not read
+  `process.env`, return variable names, variable values, default values, API
+  keys, access tokens, certificate paths, state paths, install paths, provider
+  secret names, log filters, log paths, command text, paths, URLs, secrets, raw
+  payloads, or app-server traffic, and it does not start installers, run
+  `codex exec`, run `codex login`, start diagnostics, access files/network, or
+  mutate environment/config/auth state.
 - `/api/settings-integrations` now also exposes a read-only Skills & Plugins
   catalog aligned to the official Skills and Plugins documentation. It returns
   only static keys, groups, states, sources, counts, and redaction flags for

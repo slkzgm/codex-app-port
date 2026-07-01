@@ -33766,6 +33766,157 @@ function assertCodexGovernanceCatalog(payload) {
   }
 }
 
+function expectedCodexEnvironmentVariablesEntries() {
+  return [
+    ["configTomlDurableSettings", "overview", "catalog-only", "official-codex-environment-variables-docs"],
+    ["shellScopedOverrides", "overview", "catalog-only", "official-codex-environment-variables-docs"],
+    ["stablePublicVariablesOnly", "scope", "catalog-only", "official-codex-environment-variables-docs"],
+    ["stateRootDirectory", "core-locations", "catalog-only", "official-codex-environment-variables-docs"],
+    ["sqliteStateDirectory", "core-locations", "catalog-only", "official-codex-environment-variables-docs"],
+    ["nonInteractiveInstaller", "installer", "catalog-only", "official-codex-environment-variables-docs"],
+    ["installDirectoryOverride", "installer", "catalog-only", "official-codex-environment-variables-docs"],
+    ["standalonePackageCache", "installer", "catalog-only", "official-codex-environment-variables-docs"],
+    ["apiKeySingleExecRun", "authentication", "catalog-only", "official-codex-environment-variables-docs"],
+    ["accessTokenTrustedAutomation", "authentication", "catalog-only", "official-codex-environment-variables-docs"],
+    ["caCertificateOverride", "network", "catalog-only", "official-codex-environment-variables-docs"],
+    ["sslCertFileFallback", "network", "catalog-only", "official-codex-environment-variables-docs"],
+    ["providerEnvKeyReference", "providers", "catalog-only", "official-codex-environment-variables-docs"],
+    ["rustLogDiagnostics", "diagnostics", "catalog-only", "official-codex-environment-variables-docs"],
+    ["plaintextTuiLogOptIn", "diagnostics", "catalog-only", "official-codex-environment-variables-docs"],
+    ["environmentReadBoundary", "runtime-boundary", "blocked", "local-environment-variables-boundary"],
+    ["environmentValueBoundary", "runtime-boundary", "blocked", "local-environment-variables-boundary"],
+    ["apiKeyValueBoundary", "authentication", "blocked", "local-environment-variables-boundary"],
+    ["accessTokenValueBoundary", "authentication", "blocked", "local-environment-variables-boundary"],
+    ["certificatePathBoundary", "network", "blocked", "local-environment-variables-boundary"],
+    ["stateDirectoryPathBoundary", "core-locations", "blocked", "local-environment-variables-boundary"],
+    ["installerExecutionBoundary", "installer", "blocked", "local-environment-variables-boundary"],
+    ["codexExecEnvironmentBoundary", "authentication", "blocked", "local-environment-variables-boundary"],
+    ["persistentLoginEnvironmentBoundary", "authentication", "blocked", "local-environment-variables-boundary"],
+    ["diagnosticLogPathBoundary", "diagnostics", "blocked", "local-environment-variables-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexEnvironmentVariablesCatalog(payload) {
+  const catalog = payload.codexEnvironmentVariables;
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-environment-variables-docs");
+  assert.equal(catalog.entryCount, 25);
+  assert.equal(catalog.officialEntryCount, 15);
+  assert.equal(catalog.localBoundaryEntryCount, 10);
+  assert.equal(catalog.catalogOnlyEntryCount, 15);
+  assert.equal(catalog.blockedEntryCount, 10);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({
+      key,
+      group,
+      state,
+      source,
+    })),
+    expectedCodexEnvironmentVariablesEntries(),
+  );
+
+  const entryRedactionFlags = [
+    "variableNameReturned",
+    "variableValueReturned",
+    "defaultValueReturned",
+    "environmentRead",
+    "apiKeyReturned",
+    "accessTokenReturned",
+    "certificatePathReturned",
+    "statePathReturned",
+    "installPathReturned",
+    "providerSecretNameReturned",
+    "logFilterReturned",
+    "logPathReturned",
+    "commandTextReturned",
+    "installerStarted",
+    "codexExecStarted",
+    "codexLoginStarted",
+    "diagnosticsStarted",
+    "filesystemRead",
+    "filesystemWrite",
+    "networkAccess",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.environmentVariablesCatalogReturned, true);
+  for (const flag of [
+    "variableNamesReturned",
+    "variableValuesReturned",
+    "defaultValuesReturned",
+    "environmentReads",
+    "apiKeysReturned",
+    "accessTokensReturned",
+    "certificatePathsReturned",
+    "statePathsReturned",
+    "installPathsReturned",
+    "providerSecretNamesReturned",
+    "logFiltersReturned",
+    "logPathsReturned",
+    "commandTextsReturned",
+    "installersStarted",
+    "codexExecsStarted",
+    "codexLoginsStarted",
+    "diagnosticsStarted",
+    "filesystemReads",
+    "filesystemWrites",
+    "networkAccess",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexEnvironmentVariablesReturned", true],
+    ["codexEnvironmentVariablesValuesReturned", false],
+    ["codexEnvironmentVariablesNamesReturned", false],
+    ["codexEnvironmentVariablesVariableValuesReturned", false],
+    ["codexEnvironmentVariablesDefaultValuesReturned", false],
+    ["codexEnvironmentVariablesEnvironmentReadEnabled", false],
+    ["codexEnvironmentVariablesApiKeysReturned", false],
+    ["codexEnvironmentVariablesAccessTokensReturned", false],
+    ["codexEnvironmentVariablesCertificatePathsReturned", false],
+    ["codexEnvironmentVariablesStatePathsReturned", false],
+    ["codexEnvironmentVariablesInstallPathsReturned", false],
+    ["codexEnvironmentVariablesProviderSecretNamesReturned", false],
+    ["codexEnvironmentVariablesLogFiltersReturned", false],
+    ["codexEnvironmentVariablesLogPathsReturned", false],
+    ["codexEnvironmentVariablesCommandTextsReturned", false],
+    ["codexEnvironmentVariablesInstallerEnabled", false],
+    ["codexEnvironmentVariablesCodexExecEnabled", false],
+    ["codexEnvironmentVariablesCodexLoginEnabled", false],
+    ["codexEnvironmentVariablesDiagnosticsEnabled", false],
+    ["codexEnvironmentVariablesFilesystemAccess", false],
+    ["codexEnvironmentVariablesNetworkAccess", false],
+    ["codexEnvironmentVariablesMutationsEnabled", false],
+    ["codexEnvironmentVariablesPathsReturned", false],
+    ["codexEnvironmentVariablesUrlsReturned", false],
+    ["codexEnvironmentVariablesSecretsReturned", false],
+    ["codexEnvironmentVariablesRawPayloadsReturned", false],
+    ["codexEnvironmentVariablesAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedSkillsPluginsCatalogEntries(scope = {}) {
   const entries = [
     {
@@ -37526,6 +37677,7 @@ function assertCodexAppSettingsParity(
   assertCodexAccessTokensCatalog(payload);
   assertCodexAdminSetupCatalog(payload);
   assertCodexGovernanceCatalog(payload);
+  assertCodexEnvironmentVariablesCatalog(payload);
   assertSkillsPluginsCatalog(payload);
   assertCodexPluginBuildCatalog(payload);
   assertCodexHooksCatalog(payload);
