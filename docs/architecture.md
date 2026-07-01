@@ -834,6 +834,23 @@ Current M1 status:
   posting, triage writes, Slack app installs, Slack posting, cloud task starts,
   MCP configuration/login, filesystem access, network access, model traffic,
   mutations, paths, URLs, secrets, raw payloads, and app-server traffic blocked
+- done: read-only Codex MCP catalog in `/api/settings-integrations`, exposing
+  only static official Model Context Protocol documentation keys plus local
+  boundary keys/groups/states/sources/counts/redaction flags for MCP purpose,
+  CLI/IDE support, STDIO and streamable HTTP transports, bearer-token and OAuth
+  authentication, server instructions, config storage/scoping, CLI/config/TUI
+  management paths, STDIO command/args/env/cwd/remote-environment options, HTTP
+  URL/header/env-header options, runtime timeouts, enablement/required flags,
+  tool allow/deny lists, approval modes, OAuth callback/scopes behavior,
+  plugin-provided servers, plugin policy overrides, and example-server concepts,
+  with server listings/names/URLs, command text, arguments, env var names/
+  values, bearer-token env vars, header names/values, OAuth URLs/tokens,
+  callback ports/URLs, scope values, config.toml content/paths, tool names/
+  allowlists, approval modes, server instructions, plugin ids/names, example
+  server names, external URLs, local/remote environment reads, config reads/
+  writes, server starts/reloads, OAuth login, tool calls, resource reads, prompt
+  loads, filesystem access, network access, model traffic, mutations, paths,
+  URLs, secrets, raw payloads, and app-server traffic blocked
 - done: read-only Codex Custom Prompts catalog in `/api/settings-integrations`,
   exposing only static official Custom Prompts documentation keys plus local
   boundary keys/groups/states/sources/counts/redaction flags for the deprecated

@@ -628,6 +628,17 @@
   or Slack apps, link accounts, assign issues, post comments or messages, write
   triage rules, start cloud tasks, configure or log into MCP, access
   filesystem/network, create model traffic, or mutate integration state. Its
+  Codex MCP catalog may expose only static official-documentation keys plus
+  local boundary keys, groups, states, sources, counts, and redaction flags; it
+  must not return server listings/names/URLs, command text, arguments, env var
+  names/values, bearer-token env vars, header names/values, OAuth URLs/tokens,
+  callback ports/URLs, scope values, config.toml content/paths, tool names/
+  allowlists, approval modes, server instructions, plugin ids/names, example
+  server names, external URLs, paths, secrets, raw payloads, app-server
+  payloads, or app-server traffic, and must not read local/remote environments,
+  read/write config, start/reload MCP servers, start OAuth login, call tools,
+  read resources, load prompts, access filesystem/network, create model traffic,
+  or mutate MCP state. Its
   Codex Security catalog may expose only static official-documentation keys
   plus local boundary keys, groups, states, sources, counts, and redaction
   flags; it must not return plugin install state, scan prompts, setup
@@ -771,6 +782,17 @@
   or Slack apps, link accounts, assign issues, post comments or messages, write
   triage rules, start cloud tasks, configure or log into MCP, access
   filesystem/network, create model traffic, or mutate integration state. Its
+  Codex MCP catalog may expose only static official-documentation keys plus
+  local boundary keys, groups, states, sources, counts, and redaction flags; it
+  must not return server listings/names/URLs, command text, arguments, env var
+  names/values, bearer-token env vars, header names/values, OAuth URLs/tokens,
+  callback ports/URLs, scope values, config.toml content/paths, tool names/
+  allowlists, approval modes, server instructions, plugin ids/names, example
+  server names, external URLs, paths, secrets, raw payloads, app-server
+  payloads, or app-server traffic, and must not read local/remote environments,
+  read/write config, start/reload MCP servers, start OAuth login, call tools,
+  read resources, load prompts, access filesystem/network, create model traffic,
+  or mutate MCP state. Its
   Codex CLI command reference catalog
   may expose only static official-documentation keys plus local boundary keys,
   groups, states, sources, counts, and redaction flags; it must not return exact

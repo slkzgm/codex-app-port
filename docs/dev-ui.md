@@ -892,6 +892,24 @@ apps, link accounts, assign issues, post comments or messages, write triage
 rules, start cloud tasks, configure or log into MCP, access files/network,
 create model traffic, or mutate integration state.
 
+The same response exposes `codexMcp` as a static review-only catalog for the
+official Codex Model Context Protocol guide. The UI shows only catalog counts,
+entry keys, groups, state/source chips, and negative redaction chips for MCP
+purpose, CLI/IDE support, STDIO and streamable HTTP transports, bearer-token
+and OAuth authentication, server instructions, config scoping, CLI/config/TUI
+management paths, STDIO and HTTP options, runtime timeouts, enablement and
+required flags, tool allow/deny lists, approval modes, OAuth callback/scopes
+behavior, plugin-provided servers, plugin policy overrides, and example-server
+concepts. It must not show server listings, server names or URLs, command text,
+arguments, env var names or values, bearer-token env vars, header names or
+values, OAuth URLs or tokens, callback ports or URLs, scopes, config.toml,
+config paths, tool names, tool allowlists, approval modes, server instructions,
+plugin ids or names, example server names, external URLs, paths, secrets, raw
+payloads, or app-server traffic, and it must not read local or remote
+environments, read/write config, start/reload MCP servers, start OAuth login,
+call tools, read resources, load prompts, access files/network, create model
+traffic, or mutate MCP state.
+
 The same response exposes `codexCustomPrompts` as a static review-only catalog
 for the official Custom Prompts guidance. The UI shows only catalog counts,
 entry keys, groups, state/source chips, and negative redaction chips for the

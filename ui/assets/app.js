@@ -47,6 +47,8 @@ const elements = {
   codexThirdPartyIntegrationsValuesText: document.querySelector(
     "#codex-third-party-integrations-values-text",
   ),
+  codexMcpText: document.querySelector("#codex-mcp-text"),
+  codexMcpValuesText: document.querySelector("#codex-mcp-values-text"),
   codexCustomPromptsText: document.querySelector("#codex-custom-prompts-text"),
   codexCustomPromptsValuesText: document.querySelector("#codex-custom-prompts-values-text"),
   codexCustomizationText: document.querySelector("#codex-customization-text"),
@@ -532,6 +534,7 @@ const elements = {
   codexThirdPartyIntegrationsList: document.querySelector(
     "#codex-third-party-integrations-list",
   ),
+  codexMcpList: document.querySelector("#codex-mcp-list"),
   codexCustomPromptsList: document.querySelector("#codex-custom-prompts-list"),
   codexCustomizationList: document.querySelector("#codex-customization-list"),
   codexSecurityList: document.querySelector("#codex-security-list"),
@@ -10621,6 +10624,7 @@ function renderSettingsIntegrations(payload) {
   const codexMemories = payload.codexMemories ?? {};
   const codexAgentsGuidance = payload.codexAgentsGuidance ?? {};
   const codexThirdPartyIntegrations = payload.codexThirdPartyIntegrations ?? {};
+  const codexMcp = payload.codexMcp ?? {};
   const codexCustomPrompts = payload.codexCustomPrompts ?? {};
   const codexCustomization = payload.codexCustomization ?? {};
   const codexSecurity = payload.codexSecurity ?? {};
@@ -10982,6 +10986,59 @@ function renderSettingsIntegrations(payload) {
     codexThirdPartyIntegrations.secretsReturned ||
     codexThirdPartyIntegrations.rawPayloadsReturned ||
     codexThirdPartyIntegrations.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexMcpText.textContent = codexMcp.returned
+    ? `${codexMcp.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexMcp.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexMcpValuesText.textContent =
+    codexMcp.serverListingsReturned ||
+    codexMcp.serverNamesReturned ||
+    codexMcp.serverUrlsReturned ||
+    codexMcp.commandTextsReturned ||
+    codexMcp.argumentTextsReturned ||
+    codexMcp.envVarNamesReturned ||
+    codexMcp.envValuesReturned ||
+    codexMcp.bearerTokenEnvVarsReturned ||
+    codexMcp.headerNamesReturned ||
+    codexMcp.headerValuesReturned ||
+    codexMcp.oauthUrlsReturned ||
+    codexMcp.oauthTokensReturned ||
+    codexMcp.callbackPortsReturned ||
+    codexMcp.callbackUrlsReturned ||
+    codexMcp.scopeValuesReturned ||
+    codexMcp.configTomlReturned ||
+    codexMcp.configPathsReturned ||
+    codexMcp.toolNamesReturned ||
+    codexMcp.toolAllowlistsReturned ||
+    codexMcp.approvalModesReturned ||
+    codexMcp.serverInstructionsReturned ||
+    codexMcp.pluginIdsReturned ||
+    codexMcp.pluginNamesReturned ||
+    codexMcp.exampleServerNamesReturned ||
+    codexMcp.externalUrlsReturned ||
+    codexMcp.localEnvironmentRead ||
+    codexMcp.remoteEnvironmentRead ||
+    codexMcp.configReads ||
+    codexMcp.configWrites ||
+    codexMcp.serversStarted ||
+    codexMcp.serversReloaded ||
+    codexMcp.oauthLoginsStarted ||
+    codexMcp.toolsCalled ||
+    codexMcp.resourcesRead ||
+    codexMcp.promptsLoaded ||
+    codexMcp.filesystemReads ||
+    codexMcp.filesystemWrites ||
+    codexMcp.networkAccess ||
+    codexMcp.modelTraffic ||
+    codexMcp.mutationEnabled ||
+    codexMcp.pathsReturned ||
+    codexMcp.urlsReturned ||
+    codexMcp.secretsReturned ||
+    codexMcp.rawPayloadsReturned ||
+    codexMcp.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexCustomPromptsText.textContent = codexCustomPrompts.returned
@@ -13318,6 +13375,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexMemoriesCatalog(codexMemories);
   renderCodexAgentsGuidanceCatalog(codexAgentsGuidance);
   renderCodexThirdPartyIntegrationsCatalog(codexThirdPartyIntegrations);
+  renderCodexMcpCatalog(codexMcp);
   renderCodexCustomPromptsCatalog(codexCustomPrompts);
   renderCodexCustomizationCatalog(codexCustomization);
   renderCodexSecurityCatalog(codexSecurity);
@@ -15649,6 +15707,94 @@ function renderCodexThirdPartyIntegrationsCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexThirdPartyIntegrationsList.append(row);
+  }
+}
+
+function renderCodexMcpCatalog(summary) {
+  elements.codexMcpList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexMcpList.append(emptyState("No Codex MCP catalog returned."));
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "mcp";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.serverListingReturned ? "server listings returned" : "server listings hidden",
+      entry.serverNameReturned ? "server names returned" : "server names hidden",
+      entry.serverUrlReturned ? "server URLs returned" : "server URLs hidden",
+      entry.commandTextReturned ? "command text returned" : "command text hidden",
+      entry.argumentTextReturned ? "arguments returned" : "arguments hidden",
+      entry.envVarNameReturned ? "env var names returned" : "env var names hidden",
+      entry.envValueReturned ? "env values returned" : "env values hidden",
+      entry.bearerTokenEnvVarReturned ? "bearer token env vars returned" : "bearer token env vars hidden",
+      entry.headerNameReturned ? "header names returned" : "header names hidden",
+      entry.headerValueReturned ? "header values returned" : "header values hidden",
+      entry.oauthUrlReturned ? "OAuth URLs returned" : "OAuth URLs hidden",
+      entry.oauthTokenReturned ? "OAuth tokens returned" : "OAuth tokens hidden",
+      entry.callbackPortReturned ? "callback ports returned" : "callback ports hidden",
+      entry.callbackUrlReturned ? "callback URLs returned" : "callback URLs hidden",
+      entry.scopeValueReturned ? "scope values returned" : "scope values hidden",
+      entry.configTomlReturned ? "config.toml returned" : "config.toml hidden",
+      entry.configPathReturned ? "config paths returned" : "config paths hidden",
+      entry.toolNameReturned ? "tool names returned" : "tool names hidden",
+      entry.toolAllowlistReturned ? "tool allowlists returned" : "tool allowlists hidden",
+      entry.approvalModeReturned ? "approval modes returned" : "approval modes hidden",
+      entry.serverInstructionReturned ? "server instructions returned" : "server instructions hidden",
+      entry.pluginIdReturned ? "plugin ids returned" : "plugin ids hidden",
+      entry.pluginNameReturned ? "plugin names returned" : "plugin names hidden",
+      entry.exampleServerNameReturned ? "example server names returned" : "example server names hidden",
+      entry.externalUrlReturned ? "external URLs returned" : "external URLs hidden",
+      entry.localEnvironmentRead ? "local env read" : "local env reads blocked",
+      entry.remoteEnvironmentRead ? "remote env read" : "remote env reads blocked",
+      entry.configRead ? "config read" : "config reads blocked",
+      entry.configWritten ? "config written" : "config writes blocked",
+      entry.serverStarted ? "servers started" : "server starts blocked",
+      entry.serverReloaded ? "servers reloaded" : "server reloads blocked",
+      entry.oauthLoginStarted ? "OAuth login started" : "OAuth login blocked",
+      entry.toolCalled ? "tools called" : "tool calls blocked",
+      entry.resourceRead ? "resources read" : "resource reads blocked",
+      entry.promptLoaded ? "prompts loaded" : "prompt loads blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.modelTraffic ? "model traffic" : "model traffic blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexMcpList.append(row);
   }
 }
 

@@ -34480,6 +34480,240 @@ function assertCodexThirdPartyIntegrationsCatalog(payload) {
   }
 }
 
+function expectedCodexMcpEntries() {
+  return [
+    ["mcpPurpose", "overview", "catalog-only", "official-codex-mcp-docs"],
+    ["cliIdeSupport", "surface-support", "catalog-only", "official-codex-mcp-docs"],
+    ["stdioServerTransport", "transports", "catalog-only", "official-codex-mcp-docs"],
+    ["stdioEnvironmentVariables", "transports", "catalog-only", "official-codex-mcp-docs"],
+    ["streamableHttpTransport", "transports", "catalog-only", "official-codex-mcp-docs"],
+    ["bearerTokenAuthentication", "authentication", "catalog-only", "official-codex-mcp-docs"],
+    ["oauthAuthentication", "authentication", "catalog-only", "official-codex-mcp-docs"],
+    ["serverInstructions", "instructions", "catalog-only", "official-codex-mcp-docs"],
+    ["instructionAuthoringGuidance", "instructions", "catalog-only", "official-codex-mcp-docs"],
+    ["globalConfigStorage", "configuration", "catalog-only", "official-codex-mcp-docs"],
+    ["projectScopedConfig", "configuration", "catalog-only", "official-codex-mcp-docs"],
+    ["cliIdeSharedConfig", "configuration", "catalog-only", "official-codex-mcp-docs"],
+    ["cliManagementPath", "management", "catalog-only", "official-codex-mcp-docs"],
+    ["configTomlManagementPath", "management", "catalog-only", "official-codex-mcp-docs"],
+    ["tuiServerView", "management", "catalog-only", "official-codex-mcp-docs"],
+    ["stdioCommandOption", "stdio-options", "catalog-only", "official-codex-mcp-docs"],
+    ["stdioArgsOption", "stdio-options", "catalog-only", "official-codex-mcp-docs"],
+    ["stdioEnvOption", "stdio-options", "catalog-only", "official-codex-mcp-docs"],
+    ["stdioEnvVarsForwarding", "stdio-options", "catalog-only", "official-codex-mcp-docs"],
+    ["stdioCwdOption", "stdio-options", "catalog-only", "official-codex-mcp-docs"],
+    ["remoteStdioEnvironment", "stdio-options", "catalog-only", "official-codex-mcp-docs"],
+    ["httpUrlOption", "http-options", "catalog-only", "official-codex-mcp-docs"],
+    ["httpBearerEnvOption", "http-options", "catalog-only", "official-codex-mcp-docs"],
+    ["httpHeadersOption", "http-options", "catalog-only", "official-codex-mcp-docs"],
+    ["httpEnvHeadersOption", "http-options", "catalog-only", "official-codex-mcp-docs"],
+    ["startupTimeoutOption", "runtime-options", "catalog-only", "official-codex-mcp-docs"],
+    ["toolTimeoutOption", "runtime-options", "catalog-only", "official-codex-mcp-docs"],
+    ["enabledOption", "runtime-options", "catalog-only", "official-codex-mcp-docs"],
+    ["requiredOption", "runtime-options", "catalog-only", "official-codex-mcp-docs"],
+    ["enabledToolsOption", "tool-policy", "catalog-only", "official-codex-mcp-docs"],
+    ["disabledToolsOption", "tool-policy", "catalog-only", "official-codex-mcp-docs"],
+    ["defaultToolApprovalMode", "tool-policy", "catalog-only", "official-codex-mcp-docs"],
+    ["perToolApprovalMode", "tool-policy", "catalog-only", "official-codex-mcp-docs"],
+    ["oauthCallbackPortOption", "oauth", "catalog-only", "official-codex-mcp-docs"],
+    ["oauthCallbackUrlOption", "oauth", "catalog-only", "official-codex-mcp-docs"],
+    ["oauthScopesSupported", "oauth", "catalog-only", "official-codex-mcp-docs"],
+    ["pluginProvidedServers", "plugins", "catalog-only", "official-codex-mcp-docs"],
+    ["pluginMcpPolicyOverrides", "plugins", "catalog-only", "official-codex-mcp-docs"],
+    ["usefulServerExamples", "examples", "catalog-only", "official-codex-mcp-docs"],
+    ["serverListingBoundary", "servers", "blocked", "local-mcp-boundary"],
+    ["serverNameBoundary", "servers", "blocked", "local-mcp-boundary"],
+    ["serverUrlBoundary", "servers", "blocked", "local-mcp-boundary"],
+    ["commandArgumentBoundary", "stdio-options", "blocked", "local-mcp-boundary"],
+    ["environmentBoundary", "configuration", "blocked", "local-mcp-boundary"],
+    ["headerBoundary", "http-options", "blocked", "local-mcp-boundary"],
+    ["oauthBoundary", "oauth", "blocked", "local-mcp-boundary"],
+    ["configBoundary", "configuration", "blocked", "local-mcp-boundary"],
+    ["toolNameBoundary", "tool-policy", "blocked", "local-mcp-boundary"],
+    ["toolPolicyBoundary", "tool-policy", "blocked", "local-mcp-boundary"],
+    ["instructionBoundary", "instructions", "blocked", "local-mcp-boundary"],
+    ["pluginMcpBoundary", "plugins", "blocked", "local-mcp-boundary"],
+    ["serverLifecycleBoundary", "runtime", "blocked", "local-mcp-boundary"],
+    ["toolCallBoundary", "runtime", "blocked", "local-mcp-boundary"],
+    ["resourceReadBoundary", "runtime", "blocked", "local-mcp-boundary"],
+    ["promptLoadBoundary", "runtime", "blocked", "local-mcp-boundary"],
+    ["filesystemNetworkBoundary", "runtime", "blocked", "local-mcp-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexMcpCatalog(payload) {
+  const catalog = payload.codexMcp;
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-mcp-docs");
+  assert.equal(catalog.entryCount, 56);
+  assert.equal(catalog.officialEntryCount, 39);
+  assert.equal(catalog.localBoundaryEntryCount, 17);
+  assert.equal(catalog.catalogOnlyEntryCount, 39);
+  assert.equal(catalog.blockedEntryCount, 17);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({ key, group, state, source })),
+    expectedCodexMcpEntries(),
+  );
+
+  const entryRedactionFlags = [
+    "serverListingReturned",
+    "serverNameReturned",
+    "serverUrlReturned",
+    "commandTextReturned",
+    "argumentTextReturned",
+    "envVarNameReturned",
+    "envValueReturned",
+    "bearerTokenEnvVarReturned",
+    "headerNameReturned",
+    "headerValueReturned",
+    "oauthUrlReturned",
+    "oauthTokenReturned",
+    "callbackPortReturned",
+    "callbackUrlReturned",
+    "scopeValueReturned",
+    "configTomlReturned",
+    "configPathReturned",
+    "toolNameReturned",
+    "toolAllowlistReturned",
+    "approvalModeReturned",
+    "serverInstructionReturned",
+    "pluginIdReturned",
+    "pluginNameReturned",
+    "exampleServerNameReturned",
+    "externalUrlReturned",
+    "localEnvironmentRead",
+    "remoteEnvironmentRead",
+    "configRead",
+    "configWritten",
+    "serverStarted",
+    "serverReloaded",
+    "oauthLoginStarted",
+    "toolCalled",
+    "resourceRead",
+    "promptLoaded",
+    "filesystemRead",
+    "filesystemWrite",
+    "networkAccess",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.mcpCatalogReturned, true);
+  for (const flag of [
+    "serverListingsReturned",
+    "serverNamesReturned",
+    "serverUrlsReturned",
+    "commandTextsReturned",
+    "argumentTextsReturned",
+    "envVarNamesReturned",
+    "envValuesReturned",
+    "bearerTokenEnvVarsReturned",
+    "headerNamesReturned",
+    "headerValuesReturned",
+    "oauthUrlsReturned",
+    "oauthTokensReturned",
+    "callbackPortsReturned",
+    "callbackUrlsReturned",
+    "scopeValuesReturned",
+    "configTomlReturned",
+    "configPathsReturned",
+    "toolNamesReturned",
+    "toolAllowlistsReturned",
+    "approvalModesReturned",
+    "serverInstructionsReturned",
+    "pluginIdsReturned",
+    "pluginNamesReturned",
+    "exampleServerNamesReturned",
+    "externalUrlsReturned",
+    "localEnvironmentRead",
+    "remoteEnvironmentRead",
+    "configReads",
+    "configWrites",
+    "serversStarted",
+    "serversReloaded",
+    "oauthLoginsStarted",
+    "toolsCalled",
+    "resourcesRead",
+    "promptsLoaded",
+    "filesystemReads",
+    "filesystemWrites",
+    "networkAccess",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexMcpReturned", true],
+    ["codexMcpValuesReturned", false],
+    ["codexMcpServerListingsReturned", false],
+    ["codexMcpServerNamesReturned", false],
+    ["codexMcpServerUrlsReturned", false],
+    ["codexMcpCommandTextsReturned", false],
+    ["codexMcpArgumentTextsReturned", false],
+    ["codexMcpEnvVarNamesReturned", false],
+    ["codexMcpEnvValuesReturned", false],
+    ["codexMcpBearerTokenEnvVarsReturned", false],
+    ["codexMcpHeaderNamesReturned", false],
+    ["codexMcpHeaderValuesReturned", false],
+    ["codexMcpOauthUrlsReturned", false],
+    ["codexMcpOauthTokensReturned", false],
+    ["codexMcpCallbackPortsReturned", false],
+    ["codexMcpCallbackUrlsReturned", false],
+    ["codexMcpScopeValuesReturned", false],
+    ["codexMcpConfigTomlReturned", false],
+    ["codexMcpConfigPathsReturned", false],
+    ["codexMcpToolNamesReturned", false],
+    ["codexMcpToolAllowlistsReturned", false],
+    ["codexMcpApprovalModesReturned", false],
+    ["codexMcpServerInstructionsReturned", false],
+    ["codexMcpPluginIdsReturned", false],
+    ["codexMcpPluginNamesReturned", false],
+    ["codexMcpExampleServerNamesReturned", false],
+    ["codexMcpExternalUrlsReturned", false],
+    ["codexMcpLocalEnvironmentReadEnabled", false],
+    ["codexMcpRemoteEnvironmentReadEnabled", false],
+    ["codexMcpConfigReadEnabled", false],
+    ["codexMcpConfigWriteEnabled", false],
+    ["codexMcpServerStartEnabled", false],
+    ["codexMcpServerReloadEnabled", false],
+    ["codexMcpOauthLoginEnabled", false],
+    ["codexMcpToolCallEnabled", false],
+    ["codexMcpResourceReadEnabled", false],
+    ["codexMcpPromptLoadEnabled", false],
+    ["codexMcpFilesystemAccess", false],
+    ["codexMcpNetworkAccess", false],
+    ["codexMcpModelTraffic", false],
+    ["codexMcpMutationsEnabled", false],
+    ["codexMcpPathsReturned", false],
+    ["codexMcpUrlsReturned", false],
+    ["codexMcpSecretsReturned", false],
+    ["codexMcpRawPayloadsReturned", false],
+    ["codexMcpAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexCustomPromptsEntries() {
   return [
     ["deprecatedCustomPrompts", "lifecycle", "catalog-only", "official-codex-custom-prompts-docs"],
@@ -43916,6 +44150,7 @@ function assertCodexAppSettingsParity(
   assertCodexMemoriesCatalog(payload);
   assertCodexAgentsGuidanceCatalog(payload);
   assertCodexThirdPartyIntegrationsCatalog(payload);
+  assertCodexMcpCatalog(payload);
   assertCodexCustomPromptsCatalog(payload);
   assertCodexCustomizationCatalog(payload);
   assertCodexSecurityCatalog(payload);
