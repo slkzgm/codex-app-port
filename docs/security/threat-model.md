@@ -42,6 +42,11 @@
   dedicated `account/read` bridge may report only coarse signed-in state and
   account type; email addresses, tokens, account identifiers, auth URLs, cwd,
   paths, and raw app-server payloads must stay server-side.
+- Browser-facing account quota reads must be opt-in, narrow, and sanitized. The
+  dedicated `account/rateLimits/read` bridge may report only
+  bucket/window/credit/reached counts; plan types, limit ids, limit names,
+  balances, used percentages, reset times, window durations, account
+  identifiers, cwd, paths, and raw app-server payloads must stay server-side.
 - Browser-facing JSON `POST` routes must have a centralized audited body
   contract before side effects. Unsupported fields must be rejected before
   probes, app-server calls, filesystem access, token consumption, or audit-log

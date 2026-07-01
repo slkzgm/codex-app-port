@@ -237,6 +237,11 @@ const elements = {
   accountReadStatus: document.querySelector("#account-read-status"),
   accountReadStateText: document.querySelector("#account-read-state-text"),
   accountReadTypeText: document.querySelector("#account-read-type-text"),
+  accountRateLimitsButton: document.querySelector("#account-rate-limits-button"),
+  accountRateLimitsStatus: document.querySelector("#account-rate-limits-status"),
+  accountRateLimitsBucketsText: document.querySelector("#account-rate-limits-buckets-text"),
+  accountRateLimitsStateText: document.querySelector("#account-rate-limits-state-text"),
+  accountRateLimitsDetailsText: document.querySelector("#account-rate-limits-details-text"),
   accountLoginPreflightButton: document.querySelector("#account-login-preflight-button"),
   accountLoginButton: document.querySelector("#account-login-button"),
   accountLoginStatus: document.querySelector("#account-login-status"),
@@ -1172,6 +1177,10 @@ elements.workspaceSelect.addEventListener("change", () => {
   elements.accountReadStatus.textContent = "Account read disabled by default.";
   elements.accountReadStateText.textContent = "Blocked";
   elements.accountReadTypeText.textContent = "Hidden";
+  elements.accountRateLimitsStatus.textContent = "Limit read disabled by default.";
+  elements.accountRateLimitsBucketsText.textContent = "0";
+  elements.accountRateLimitsStateText.textContent = "Blocked";
+  elements.accountRateLimitsDetailsText.textContent = "Hidden";
   lastApprovalPayload = null;
   lastApprovalQueue = [];
   approvalQueueFilter = "all";
@@ -2138,6 +2147,10 @@ elements.accountReadButton.addEventListener("click", () => {
   runAccountRead();
 });
 
+elements.accountRateLimitsButton.addEventListener("click", () => {
+  runAccountRateLimits();
+});
+
 elements.accountLoginPreflightButton.addEventListener("click", () => {
   runAccountLoginPreflight();
 });
@@ -2601,6 +2614,16 @@ function accountReadEndpoint() {
   const params = new URLSearchParams();
   params.set("workspace", selectedWorkspaceId);
   return `/api/account-read?${params.toString()}`;
+}
+
+function accountRateLimitsEndpoint() {
+  if (!selectedWorkspaceId) {
+    return "/api/account-rate-limits";
+  }
+
+  const params = new URLSearchParams();
+  params.set("workspace", selectedWorkspaceId);
+  return `/api/account-rate-limits?${params.toString()}`;
 }
 
 function accountLoginPreflightEndpoint() {
@@ -4634,6 +4657,28 @@ async function runAccountRead() {
     renderError(error);
   } finally {
     setAccountReadLoading(false);
+  }
+}
+
+async function runAccountRateLimits() {
+  setAccountRateLimitsLoading(true);
+  hideError();
+
+  try {
+    const response = await fetch(accountRateLimitsEndpoint(), {
+      headers: apiHeaders(),
+      cache: "no-store",
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderAccountRateLimits(payload);
+  } catch (error) {
+    elements.accountRateLimitsStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    setAccountRateLimitsLoading(false);
   }
 }
 
@@ -13569,6 +13614,12 @@ function renderSettingsIntegrations(payload) {
   elements.accountReadStateText.textContent = auth.stateVisible ? "Available" : "Blocked";
   elements.accountReadTypeText.textContent = "Hidden";
   elements.rateLimitsStateText.textContent = rateLimitsStateText(inventory.rateLimits, auth);
+  elements.accountRateLimitsStatus.textContent = auth.accountRateLimitsEnabled
+    ? "Limit read enabled"
+    : "Limit read disabled";
+  elements.accountRateLimitsBucketsText.textContent = String(inventory.rateLimits?.bucketCount ?? 0);
+  elements.accountRateLimitsStateText.textContent = auth.rateLimitsAvailable ? "Available" : "Blocked";
+  elements.accountRateLimitsDetailsText.textContent = "Hidden";
   elements.accountUsageStateText.textContent = auth.usageAvailable
     ? `${inventory.accountUsage?.summaryMetricCount ?? 0} metrics`
     : "Blocked";
@@ -15128,6 +15179,22 @@ function renderAccountRead(payload) {
       : auth.requiresOpenaiAuth
         ? "Needs auth"
         : "No account";
+}
+
+function renderAccountRateLimits(payload) {
+  const auth = payload.auth ?? {};
+  const result = payload.result ?? {};
+  const blocked = auth.accountRateLimitsEnabled !== true || payload.appServer?.touched !== true;
+  const bucketCount = result.bucketCount ?? payload.probes?.accountRateLimits?.bucketCount ?? 0;
+  const status = result.status ?? (blocked ? "blocked" : "available");
+  elements.accountRateLimitsStatus.textContent = blocked ? "Read blocked" : status;
+  elements.accountRateLimitsBucketsText.textContent = String(bucketCount);
+  elements.accountRateLimitsStateText.textContent = result.rateLimitReached ? "Limited" : status;
+  elements.accountRateLimitsDetailsText.textContent =
+    result.rateLimitDetailsReturned || auth.rawPayloadReturned ? "Returned" : "Hidden";
+  elements.rateLimitsStateText.textContent = result.rateLimitReached
+    ? `${bucketCount} buckets limited`
+    : `${bucketCount} buckets`;
 }
 
 function renderAccountLoginPreflight(payload) {
@@ -23019,6 +23086,14 @@ function setAccountReadLoading(isLoading) {
   elements.accountReadButton.textContent = isLoading ? "Checking" : "Account Check";
   if (isLoading) {
     elements.accountReadStatus.textContent = "Checking";
+  }
+}
+
+function setAccountRateLimitsLoading(isLoading) {
+  elements.accountRateLimitsButton.disabled = isLoading;
+  elements.accountRateLimitsButton.textContent = isLoading ? "Checking" : "Limit Check";
+  if (isLoading) {
+    elements.accountRateLimitsStatus.textContent = "Checking";
   }
 }
 

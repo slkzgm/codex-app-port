@@ -1061,7 +1061,11 @@
             <button id="account-read-button" class="secondary-button" type="button">
               Account Check
             </button>
+            <button id="account-rate-limits-button" class="secondary-button" type="button">
+              Limit Check
+            </button>
             <span id="account-read-status" class="empty-state">Account read disabled by default.</span>
+            <span id="account-rate-limits-status" class="empty-state">Limit read disabled by default.</span>
           </div>
           <dl class="agent-grid">
             <div>
@@ -1071,6 +1075,18 @@
             <div>
               <dt>Account Type</dt>
               <dd id="account-read-type-text">Hidden</dd>
+            </div>
+            <div>
+              <dt>Limit Buckets</dt>
+              <dd id="account-rate-limits-buckets-text">0</dd>
+            </div>
+            <div>
+              <dt>Limit State</dt>
+              <dd id="account-rate-limits-state-text">Blocked</dd>
+            </div>
+            <div>
+              <dt>Limit Details</dt>
+              <dd id="account-rate-limits-details-text">Hidden</dd>
             </div>
           </dl>
           <div class="turn-actions">

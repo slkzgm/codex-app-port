@@ -80,6 +80,12 @@ The server binds to `127.0.0.1` by default and serves:
   behind `CODEX_APP_PORT_ALLOW_ACCOUNT_READ=1`; when enabled it returns only
   signed-in/signed-out state plus account type and redaction flags, never email
   addresses, tokens, account identifiers, auth URLs, raw payloads, cwd, or paths
+- `/api/account-rate-limits`: disabled-by-default read-only
+  `account/rateLimits/read` bridge behind
+  `CODEX_APP_PORT_ALLOW_ACCOUNT_RATE_LIMITS=1`; when enabled it returns only
+  bucket/window/credit/reached counts and redaction flags, never plan types,
+  limit ids, limit names, balances, used percentages, reset times, window
+  durations, account identifiers, raw payloads, cwd, or paths
 - `/api/account-login-preflight` and `/api/account-login-start`: local auth
   login confirmation plus opt-in app-server `account/login/start` device-code
   flow behind `CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN=1` and a matching one-time
@@ -1805,6 +1811,14 @@ app-server payloads, and `/api/settings-integrations` marks it as a read gate
 rather than a mutation. The Account Check control calls only this route and
 renders the sanitized state/type fields; it does not write local history or show
 account identity values.
+
+`/api/account-rate-limits` is a separate dedicated account quota-state read
+route. It is disabled unless `CODEX_APP_PORT_ALLOW_ACCOUNT_RATE_LIMITS=1` is
+set; when enabled, it calls only `account/rateLimits/read` and returns
+bucket/window/credit/reached counts. It never returns plan types, limit ids,
+limit names, balances, used percentages, reset times, window durations, account
+identifiers, cwd, paths, or raw app-server payloads. The Limit Check control
+renders only the sanitized count/state/detail-redaction fields.
 
 Device-code account login, login cancel, account credits nudge, account reset
 credit consumption, and account logout are the only dedicated account

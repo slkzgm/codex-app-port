@@ -360,8 +360,15 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /account-read-status/);
     assert.match(html, /account-read-state-text/);
     assert.match(html, /account-read-type-text/);
+    assert.match(html, /account-rate-limits-button/);
+    assert.match(html, /account-rate-limits-status/);
+    assert.match(html, /account-rate-limits-buckets-text/);
+    assert.match(html, /account-rate-limits-state-text/);
+    assert.match(html, /account-rate-limits-details-text/);
     assert.match(appScript, /runAccountRead/);
     assert.match(appScript, /renderAccountRead/);
+    assert.match(appScript, /runAccountRateLimits/);
+    assert.match(appScript, /renderAccountRateLimits/);
     assert.match(html, /account-login-preflight-button/);
     assert.match(html, /account-login-button/);
     assert.match(html, /thread-delete-preflight-button/);
@@ -14499,6 +14506,150 @@ test("dev server exposes account read only behind explicit opt-in and redacts id
       "\"tokenReturned\":true",
       "\"emailReturned\":true",
       "\"accountIdentifiersReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    await closeServer(enabledServer.server);
+  }
+});
+
+test("dev server exposes account rate limits only behind explicit opt-in and redacts quota details", async () => {
+  const blockedCalls = [];
+  const blockedServer = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    accountRateLimitsFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+
+  try {
+    const settingsResponse = await fetch(`${blockedServer.url}/api/settings-integrations`, {
+      headers: apiHeaders(blockedServer.server),
+    });
+    assert.equal(settingsResponse.status, 200);
+    const settingsPayload = await settingsResponse.json();
+    assert.equal(settingsPayload.surfaces.auth.rateLimitsAvailable, false);
+    assert.equal(settingsPayload.surfaces.auth.accountRateLimitsEnabled, false);
+    assert.equal(settingsPayload.integrationScope.accountRateLimitsEnabled, false);
+
+    const blockedResponse = await fetch(`${blockedServer.url}/api/account-rate-limits`, {
+      headers: apiHeaders(blockedServer.server),
+    });
+    assert.equal(blockedResponse.status, 200);
+    const blockedPayload = await blockedResponse.json();
+    const blockedSerialized = JSON.stringify(blockedPayload);
+    assert.equal(blockedPayload.ok, true);
+    assert.equal(blockedPayload.appServer.touched, false);
+    assert.equal(blockedPayload.auth.accountRateLimitsEnabled, false);
+    assert.equal(blockedPayload.policy.appServerTraffic, false);
+    assert.equal(blockedPayload.result.status, "blocked");
+    assert.equal(blockedCalls.length, 0);
+    assert.equal(blockedSerialized.includes("/tmp/default-workspace"), false);
+  } finally {
+    await closeServer(blockedServer.server);
+  }
+
+  const calls = [];
+  const enabledServer = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    accountRateLimitsEnabled: true,
+    accountRateLimitsFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-07-01T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/private-home",
+          userAgent: "mock/0.0.0",
+        },
+        probes: {
+          accountRateLimits: {
+            method: "account/rateLimits/read",
+            ok: true,
+            bucketCount: 2,
+            primaryWindowCount: 2,
+            secondaryWindowCount: 1,
+            creditsBucketCount: 1,
+            limitedCreditsBucketCount: 1,
+            hasCreditsBucketCount: 1,
+            reachedBucketCount: 1,
+            rateLimitReached: true,
+            planType: "enterprise-private",
+            limitId: "limit-private-id",
+            limitName: "private limit name",
+            balance: 12345,
+            usedPercent: 67,
+            resetAt: "2026-07-02T00:00:00.000Z",
+            rawPayloadReturned: true,
+          },
+        },
+        rawRateLimits: {
+          limitId: "limit-private-id",
+          resetAt: "2026-07-02T00:00:00.000Z",
+        },
+        notifications: {},
+      };
+    },
+  });
+
+  try {
+    const settingsResponse = await fetch(`${enabledServer.url}/api/settings-integrations`, {
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(settingsResponse.status, 200);
+    const settingsPayload = await settingsResponse.json();
+    assert.equal(settingsPayload.surfaces.auth.accountRateLimitsEnabled, true);
+    assert.equal(settingsPayload.integrationScope.accountRateLimitsEnabled, true);
+    assert.equal(
+      settingsPayload.integrationScope.enabledReadMethods.includes("account/rateLimits/read"),
+      true,
+    );
+
+    const methodResponse = await fetch(`${enabledServer.url}/api/account-rate-limits`, {
+      method: "POST",
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(methodResponse.status, 405);
+
+    const response = await fetch(`${enabledServer.url}/api/account-rate-limits`, {
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, true);
+    assert.equal(payload.appServer.modelTraffic, false);
+    assert.deepEqual(payload.appServer.auditedMethods, ["account/rateLimits/read"]);
+    assert.equal(payload.auth.accountRateLimitsEnabled, true);
+    assert.equal(payload.auth.rateLimitReached, true);
+    assert.equal(payload.result.status, "limited");
+    assert.equal(payload.result.bucketCount, 2);
+    assert.equal(payload.result.primaryWindowCount, 2);
+    assert.equal(payload.result.reachedBucketCount, 1);
+    assert.equal(payload.policy.readOnly, true);
+    assert.equal(payload.policy.authMutations, false);
+    assert.equal(payload.policy.rateLimitDetailsReturned, false);
+    assert.equal(payload.policy.rawPayloadReturned, false);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].cwd, "/tmp/default-workspace");
+    for (const marker of [
+      "/tmp/default-workspace",
+      "/tmp/private-home",
+      "codexHome",
+      "userAgent",
+      "enterprise-private",
+      "limit-private-id",
+      "private limit name",
+      "12345",
+      "2026-07-02T00:00:00.000Z",
       "\"rawPayloadReturned\":true",
     ]) {
       assert.equal(serialized.includes(marker), false, `leaked ${marker}`);

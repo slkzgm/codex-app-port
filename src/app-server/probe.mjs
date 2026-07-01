@@ -2619,7 +2619,7 @@ export async function runIntegrationsInventoryProbe({
         }),
       ),
       readInventorySection(() => client.request("account/read", { refreshToken: false })),
-      readInventorySection(() => client.request("account/rateLimits/read", null)),
+      readInventorySection(() => client.request(APP_SERVER_METHODS.accountRateLimitsRead, null)),
       readInventorySection(() => client.request(APP_SERVER_METHODS.accountUsageRead, null)),
       readInventorySection(() =>
         client.request(APP_SERVER_METHODS.accountWorkspaceMessagesRead, null),
@@ -2790,6 +2790,73 @@ export async function runAccountReadProbe({
       initialize: summarizeInitialize(initialize),
       probes: {
         accountRead: summarizeAccountInventory({ ok: true, result: accountRead }),
+      },
+      notifications: notificationCounts(notifications),
+    };
+  } finally {
+    await client.close();
+  }
+}
+
+export async function runAccountRateLimitsReadProbe({
+  codexBin = process.env.CODEX_BIN || "codex",
+  codexArgs = ["app-server", "--listen", "stdio://"],
+  cwd = process.cwd(),
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+  onNotification = null,
+} = {}) {
+  if (process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_RATE_LIMITS !== "1") {
+    throw new Error(
+      "account/rateLimits/read requires CODEX_APP_PORT_ALLOW_ACCOUNT_RATE_LIMITS=1 because it inspects local account quota state",
+    );
+  }
+
+  const notifications = [];
+  const client = new JsonlRpcClient({
+    command: codexBin,
+    args: codexArgs,
+    cwd,
+    timeoutMs,
+    onNotification(notification) {
+      notifications.push({
+        method: notification.method,
+      });
+      onNotification?.(notification);
+    },
+  });
+
+  await client.start();
+
+  try {
+    const initialize = normalizeInitializeResponse(
+      await client.request(APP_SERVER_METHODS.initialize, {
+        clientInfo: {
+          name: "codex_app_port",
+          title: "Codex App Port",
+          version: "0.1.0",
+        },
+        capabilities: {
+          experimentalApi: false,
+          requestAttestation: false,
+        },
+      }),
+    );
+
+    client.notify(APP_SERVER_METHODS.initialized);
+    const rateLimits = await client.request(
+      APP_SERVER_METHODS.accountRateLimitsRead,
+      null,
+      { timeoutMs },
+    );
+
+    return {
+      ok: true,
+      generatedAt: new Date().toISOString(),
+      transport: "stdio-jsonl",
+      protocol: "json-rpc-2.0-without-jsonrpc-field",
+      initialize: summarizeInitialize(initialize),
+      probes: {
+        accountRateLimits: summarizeAccountRateLimitsInventory({ ok: true, result: rateLimits }),
       },
       notifications: notificationCounts(notifications),
     };
@@ -5919,6 +5986,7 @@ function summarizeAccountRateLimitsInventory(section) {
   }
 
   return {
+    method: APP_SERVER_METHODS.accountRateLimitsRead,
     ok: section.ok,
     bucketCount: snapshots.length,
     primaryWindowCount,

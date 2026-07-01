@@ -15,6 +15,7 @@ import {
   runAccountLoginCancelProbe,
   runAccountLoginStartProbe,
   runAccountLogoutProbe,
+  runAccountRateLimitsReadProbe,
   runAccountReadProbe,
   runAccountRateLimitResetCreditConsumeProbe,
   runAppServerProbe,
@@ -13103,6 +13104,7 @@ export function createDevServer({
   threadRollbackFn = runThreadRollbackProbe,
   threadSafetyLockFn = runThreadSafetyLockProbe,
   accountReadFn = runAccountReadProbe,
+  accountRateLimitsFn = runAccountRateLimitsReadProbe,
   accountLoginCancelFn = runAccountLoginCancelProbe,
   accountLoginStartFn = runAccountLoginStartProbe,
   accountCreditsNudgeFn = runAccountCreditsNudgeProbe,
@@ -13168,6 +13170,7 @@ export function createDevServer({
   threadSafetyLockEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_SAFETY_LOCK === "1",
   threadCompactEnabled = process.env.CODEX_APP_PORT_ALLOW_THREAD_COMPACT === "1",
   accountReadEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_READ === "1",
+  accountRateLimitsEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_RATE_LIMITS === "1",
   accountLoginCancelEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN_CANCEL === "1",
   accountLoginEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN === "1",
   accountCreditsNudgeEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_CREDITS_NUDGE === "1",
@@ -13318,6 +13321,7 @@ export function createDevServer({
       threadRollbackFn,
       threadSafetyLockFn,
       accountReadFn,
+      accountRateLimitsFn,
       accountLoginCancelFn,
       accountLoginStartFn,
       accountCreditsNudgeFn,
@@ -13380,6 +13384,7 @@ export function createDevServer({
       threadSafetyLockEnabled,
       threadCompactEnabled,
       accountReadEnabled,
+      accountRateLimitsEnabled,
       accountLoginCancelEnabled,
       accountLoginEnabled,
       accountCreditsNudgeEnabled,
@@ -14747,6 +14752,48 @@ export async function handleRequest(request, response, options) {
       sendJson(response, error.statusCode ?? 502, {
         ok: false,
         error: cleanDisplayText(error.message, 200) ?? "Invalid account read request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/account-rate-limits") {
+    if (request.method !== "GET") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        url.searchParams.get("workspace"),
+      );
+      if (!options.accountRateLimitsEnabled) {
+        sendJson(response, 200, buildAccountRateLimitsBlockedPayload({ workspace }));
+        return;
+      }
+      const payload = await options.accountRateLimitsFn({
+        codexBin: options.codexBin,
+        cwd: workspace.cwd,
+        timeoutMs: options.timeoutMs,
+      });
+      sendJson(
+        response,
+        200,
+        sanitizeAccountRateLimitsPayload(payload, {
+          workspace,
+          enabled: true,
+        }),
+      );
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 502, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid account rate limits request",
       });
     }
     return;
@@ -19441,6 +19488,7 @@ export async function handleRequest(request, response, options) {
             integrationNamesEnabled: options.integrationNamesEnabled,
             remotePluginCatalogInventoryEnabled: options.remotePluginCatalogInventoryEnabled,
             accountReadEnabled: options.accountReadEnabled,
+            accountRateLimitsEnabled: options.accountRateLimitsEnabled,
             accountLoginCancelEnabled: options.accountLoginCancelEnabled,
             accountLoginEnabled: options.accountLoginEnabled,
             accountCreditsNudgeEnabled: options.accountCreditsNudgeEnabled,
@@ -19480,6 +19528,7 @@ export async function handleRequest(request, response, options) {
         buildSettingsIntegrations({
           workspace,
           accountReadEnabled: options.accountReadEnabled,
+          accountRateLimitsEnabled: options.accountRateLimitsEnabled,
           accountLoginCancelEnabled: options.accountLoginCancelEnabled,
           accountLoginEnabled: options.accountLoginEnabled,
           accountCreditsNudgeEnabled: options.accountCreditsNudgeEnabled,
@@ -51773,6 +51822,7 @@ export function sanitizeSettingsIntegrationsPayload(
     integrationNamesEnabled = false,
     remotePluginCatalogInventoryEnabled = false,
     accountReadEnabled = false,
+    accountRateLimitsEnabled = false,
     accountLoginCancelEnabled = false,
     accountLoginEnabled = false,
     accountCreditsNudgeEnabled = false,
@@ -51808,6 +51858,7 @@ export function sanitizeSettingsIntegrationsPayload(
     namesEnabled: integrationNamesEnabled,
   });
   const readEnabled = Boolean(accountReadEnabled);
+  const rateLimitsEnabled = Boolean(accountRateLimitsEnabled);
   const loginEnabled = Boolean(accountLoginEnabled);
   const loginCancelEnabled = Boolean(accountLoginCancelEnabled);
   const creditsNudgeEnabled = Boolean(accountCreditsNudgeEnabled);
@@ -51843,6 +51894,7 @@ export function sanitizeSettingsIntegrationsPayload(
   const integrationScope = buildIntegrationActionScope({
     enabledReadMethods: ["config/read", ...optInIntegrationReadMethods()],
     accountReadEnabled: readEnabled,
+    accountRateLimitsEnabled: rateLimitsEnabled,
     accountLoginCancelEnabled: loginCancelEnabled,
     accountLoginEnabled: loginEnabled,
     accountCreditsNudgeEnabled: creditsNudgeEnabled,
@@ -51949,6 +52001,7 @@ export function sanitizeSettingsIntegrationsPayload(
         accountReadAvailable: true,
         accountReadEnabled: readEnabled,
         rateLimitsAvailable: inventory.rateLimits.ok,
+        accountRateLimitsEnabled: rateLimitsEnabled,
         rateLimitReached: Boolean(inventory.rateLimits.rateLimitReached),
         usageAvailable: inventory.accountUsage.ok,
         workspaceMessagesAvailable: inventory.workspaceMessages.ok,
@@ -57627,6 +57680,155 @@ export function sanitizeAccountReadPayload(payload, { workspace = null, enabled 
   };
 }
 
+export function buildAccountRateLimitsBlockedPayload({ workspace } = {}) {
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["account/rateLimits/read"],
+    },
+    auth: {
+      rateLimitsAvailable: true,
+      accountRateLimitsEnabled: false,
+      appServerTraffic: false,
+      rateLimitReached: false,
+      planTypesReturned: false,
+      limitIdsReturned: false,
+      limitNamesReturned: false,
+      balancesReturned: false,
+      usedPercentsReturned: false,
+      resetTimesReturned: false,
+      windowDurationsReturned: false,
+      rawPayloadReturned: false,
+      reason: "account-rate-limits-requires-opt-in",
+    },
+    probes: {
+      accountRateLimits: sanitizeAccountRateLimitsProbe(null),
+    },
+    result: {
+      status: "blocked",
+      accountRateLimitsEnabled: false,
+      appServerTraffic: false,
+      bucketCount: 0,
+      rateLimitReached: false,
+      rateLimitDetailsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      settingsWrites: false,
+      authCallbacks: false,
+      authMutations: false,
+      toolInvocation: false,
+      installsEnabled: false,
+      secretsReturned: false,
+      tokensReturned: false,
+      accountIdentifiersReturned: false,
+      authUrlsReturned: false,
+      urlsReturned: false,
+      pathsReturned: false,
+      rateLimitDetailsReturned: false,
+      rawPayloadReturned: false,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: true,
+      implemented: true,
+    },
+    notifications: sanitizeNotificationCounts(null),
+  };
+}
+
+export function sanitizeAccountRateLimitsPayload(
+  payload,
+  { workspace = null, enabled = false } = {},
+) {
+  const accountRateLimits = sanitizeAccountRateLimitsProbe(payload?.probes?.accountRateLimits);
+  const blocked = !enabled;
+  const status = blocked
+    ? "blocked"
+    : accountRateLimits.rateLimitReached
+      ? "limited"
+      : "available";
+  return {
+    ok: Boolean(payload?.ok),
+    generatedAt: payload?.generatedAt ?? new Date().toISOString(),
+    transport: cleanDisplayText(payload?.transport, 80),
+    protocol: cleanDisplayText(payload?.protocol, 80),
+    initialize: sanitizeInitialize(payload?.initialize),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: Boolean(enabled),
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["account/rateLimits/read"],
+    },
+    auth: {
+      rateLimitsAvailable: true,
+      accountRateLimitsEnabled: Boolean(enabled),
+      appServerTraffic: Boolean(enabled),
+      rateLimitReached: Boolean(accountRateLimits.rateLimitReached),
+      planTypesReturned: false,
+      limitIdsReturned: false,
+      limitNamesReturned: false,
+      balancesReturned: false,
+      usedPercentsReturned: false,
+      resetTimesReturned: false,
+      windowDurationsReturned: false,
+      rawPayloadReturned: false,
+      reason: Boolean(enabled)
+        ? "account-rate-limits-counts-only"
+        : "account-rate-limits-requires-opt-in",
+    },
+    probes: {
+      accountRateLimits,
+    },
+    result: {
+      status,
+      accountRateLimitsEnabled: Boolean(enabled),
+      appServerTraffic: Boolean(enabled),
+      bucketCount: accountRateLimits.bucketCount,
+      primaryWindowCount: accountRateLimits.primaryWindowCount,
+      secondaryWindowCount: accountRateLimits.secondaryWindowCount,
+      creditsBucketCount: accountRateLimits.creditsBucketCount,
+      limitedCreditsBucketCount: accountRateLimits.limitedCreditsBucketCount,
+      hasCreditsBucketCount: accountRateLimits.hasCreditsBucketCount,
+      reachedBucketCount: accountRateLimits.reachedBucketCount,
+      rateLimitReached: Boolean(accountRateLimits.rateLimitReached),
+      rateLimitDetailsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: Boolean(enabled),
+      modelTraffic: false,
+      commandTraffic: false,
+      settingsWrites: false,
+      authCallbacks: false,
+      authMutations: false,
+      toolInvocation: false,
+      installsEnabled: false,
+      secretsReturned: false,
+      tokensReturned: false,
+      accountIdentifiersReturned: false,
+      authUrlsReturned: false,
+      urlsReturned: false,
+      pathsReturned: false,
+      rateLimitDetailsReturned: false,
+      rawPayloadReturned: false,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: true,
+      implemented: true,
+    },
+    notifications: sanitizeNotificationCounts(payload?.notifications),
+  };
+}
+
 export function buildAccountLoginCancelPreflight(
   body,
   { workspace, accountLoginCancelEnabled = false, accountLoginFlowRegistry = null } = {},
@@ -61856,6 +62058,7 @@ function liveSessionsPolicy({ appServerTraffic }) {
 export function buildSettingsIntegrations({
   workspace,
   accountReadEnabled = false,
+  accountRateLimitsEnabled = false,
   accountLoginCancelEnabled = false,
   accountLoginEnabled = false,
   accountCreditsNudgeEnabled = false,
@@ -61891,6 +62094,7 @@ export function buildSettingsIntegrations({
   const serverRequestBoundary = buildServerRequestBoundary();
   const serverNotificationBoundary = buildServerNotificationBoundary();
   const readEnabled = Boolean(accountReadEnabled);
+  const rateLimitsEnabled = Boolean(accountRateLimitsEnabled);
   const loginCancelEnabled = Boolean(accountLoginCancelEnabled);
   const loginEnabled = Boolean(accountLoginEnabled);
   const creditsNudgeEnabled = Boolean(accountCreditsNudgeEnabled);
@@ -61910,8 +62114,13 @@ export function buildSettingsIntegrations({
   const recentAccountLogoutHistory = sanitizeAccountLogoutHistory(accountLogoutHistory);
   const upstreamDrift = buildUpstreamDriftSummary();
   const integrationScope = buildIntegrationActionScope({
-    enabledReadMethods: readEnabled ? ["config/read", "account/read"] : ["config/read"],
+    enabledReadMethods: [
+      "config/read",
+      readEnabled ? "account/read" : null,
+      rateLimitsEnabled ? "account/rateLimits/read" : null,
+    ].filter(Boolean),
     accountReadEnabled: readEnabled,
+    accountRateLimitsEnabled: rateLimitsEnabled,
     accountLoginCancelEnabled: loginCancelEnabled,
     accountLoginEnabled: loginEnabled,
     accountCreditsNudgeEnabled: creditsNudgeEnabled,
@@ -61943,7 +62152,11 @@ export function buildSettingsIntegrations({
     appServer: {
       touched: false,
       modelTraffic: false,
-      auditedReadMethods: readEnabled ? ["config/read", "account/read"] : ["config/read"],
+      auditedReadMethods: [
+        "config/read",
+        readEnabled ? "account/read" : null,
+        rateLimitsEnabled ? "account/rateLimits/read" : null,
+      ].filter(Boolean),
       auditedMutationMethods: [],
       blockedMutationMethods: blockedIntegrationMutationMethods(),
       blockedMethodCount: methodAudit.filter((method) => method.status === "blocked").length,
@@ -61996,6 +62209,7 @@ export function buildSettingsIntegrations({
       auth: {
         state:
           readEnabled ||
+          rateLimitsEnabled ||
           loginEnabled ||
           loginCancelEnabled ||
           creditsNudgeEnabled ||
@@ -62006,7 +62220,8 @@ export function buildSettingsIntegrations({
         stateVisible: readEnabled,
         accountReadAvailable: true,
         accountReadEnabled: readEnabled,
-        rateLimitsAvailable: false,
+        rateLimitsAvailable: rateLimitsEnabled,
+        accountRateLimitsEnabled: rateLimitsEnabled,
         rateLimitReached: false,
         tokenAccess: false,
         callbackHandlersEnabled: false,
@@ -62030,6 +62245,8 @@ export function buildSettingsIntegrations({
           logoutEnabled,
         reason: readEnabled
           ? "account-read-opt-in-only"
+          : rateLimitsEnabled
+          ? "account-rate-limits-opt-in-only"
           : loginEnabled
           ? "account-login-device-code-opt-in-only"
           : loginCancelEnabled
@@ -64600,6 +64817,7 @@ function auditCategoryCounts(entries) {
 function buildIntegrationActionScope({
   enabledReadMethods = [],
   accountReadEnabled = false,
+  accountRateLimitsEnabled = false,
   accountLoginCancelEnabled = false,
   accountLoginEnabled = false,
   accountCreditsNudgeEnabled = false,
@@ -64684,6 +64902,7 @@ function buildIntegrationActionScope({
     blockedMutationMethodCount: blockedMutationMethods.length,
     blockedMutationMethods,
     accountReadEnabled: Boolean(accountReadEnabled),
+    accountRateLimitsEnabled: Boolean(accountRateLimitsEnabled),
     accountLoginEnabled: Boolean(accountLoginEnabled),
     authDeviceCodeLoginEnabled: Boolean(accountLoginEnabled),
     accountLoginCancelEnabled: Boolean(accountLoginCancelEnabled),
@@ -67833,6 +68052,33 @@ function sanitizeAccountReadProbe(accountRead) {
     tokensReturned: false,
     accountIdentifiersReturned: false,
     authUrlsReturned: false,
+    rawPayloadReturned: false,
+  };
+}
+
+function sanitizeAccountRateLimitsProbe(accountRateLimits) {
+  return {
+    method: "account/rateLimits/read",
+    ok: Boolean(accountRateLimits?.ok),
+    bucketCount: safeCount(accountRateLimits?.bucketCount),
+    primaryWindowCount: safeCount(accountRateLimits?.primaryWindowCount),
+    secondaryWindowCount: safeCount(accountRateLimits?.secondaryWindowCount),
+    creditsBucketCount: safeCount(accountRateLimits?.creditsBucketCount),
+    limitedCreditsBucketCount: safeCount(accountRateLimits?.limitedCreditsBucketCount),
+    hasCreditsBucketCount: safeCount(accountRateLimits?.hasCreditsBucketCount),
+    reachedBucketCount: safeCount(accountRateLimits?.reachedBucketCount),
+    rateLimitReached: Boolean(accountRateLimits?.rateLimitReached),
+    modelTraffic: false,
+    authMutation: false,
+    planTypesReturned: false,
+    limitIdsReturned: false,
+    limitNamesReturned: false,
+    balancesReturned: false,
+    usedPercentsReturned: false,
+    resetTimesReturned: false,
+    windowDurationsReturned: false,
+    tokensReturned: false,
+    accountIdentifiersReturned: false,
     rawPayloadReturned: false,
   };
 }

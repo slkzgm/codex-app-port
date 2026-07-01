@@ -81,6 +81,7 @@ async function main() {
   await checkFsWatchPreflightApi();
   await checkFuzzyFileSearchPreflightApi();
   await checkAccountReadApi();
+  await checkAccountRateLimitsApi();
   await checkAccountLoginApi();
   await checkAccountLoginCancelApi();
   await checkAccountCreditsNudgeApi();
@@ -17637,6 +17638,177 @@ async function checkAccountReadApi() {
     await closeServer(server);
   }
   pass("dev server account read exposes auth state behind opt-in without returning identity secrets");
+}
+
+async function checkAccountRateLimitsApi() {
+  const blockedCalls = [];
+  const blockedServer = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    accountRateLimitsFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+  const blockedPort = await listenWithFallback(blockedServer, { host: "127.0.0.1", port: 0 });
+  const blockedBaseUrl = `http://127.0.0.1:${blockedPort}`;
+
+  try {
+    const token = await readUiSessionToken(blockedBaseUrl);
+    const settingsResponse = await fetch(`${blockedBaseUrl}/api/settings-integrations`, {
+      headers: apiHeaders(token),
+    });
+    if (!settingsResponse.ok) {
+      throw new Error(`settings integrations for blocked account rate limits returned HTTP ${settingsResponse.status}`);
+    }
+    const settingsPayload = await settingsResponse.json();
+    if (
+      settingsPayload.surfaces?.auth?.rateLimitsAvailable !== false ||
+      settingsPayload.surfaces?.auth?.accountRateLimitsEnabled !== false ||
+      settingsPayload.integrationScope?.accountRateLimitsEnabled !== false
+    ) {
+      throw new Error("settings integrations did not expose the blocked account rate limits gate safely");
+    }
+
+    const response = await fetch(`${blockedBaseUrl}/api/account-rate-limits`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`blocked account rate limits returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (
+      payload.appServer?.touched !== false ||
+      payload.auth?.accountRateLimitsEnabled !== false ||
+      payload.result?.status !== "blocked" ||
+      payload.policy?.appServerTraffic !== false
+    ) {
+      throw new Error("blocked account rate limits did not fail closed without app-server traffic");
+    }
+    if (blockedCalls.length !== 0) {
+      throw new Error("blocked account rate limits unexpectedly touched app-server");
+    }
+    assertNoMarkers(JSON.stringify(payload), ["/tmp/codex-app-port-verify"]);
+  } finally {
+    await closeServer(blockedServer);
+  }
+
+  const calls = [];
+  const server = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    accountRateLimitsEnabled: true,
+    accountRateLimitsFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-07-01T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/verify-private-home",
+          userAgent: "verify-private-agent",
+        },
+        probes: {
+          accountRateLimits: {
+            method: "account/rateLimits/read",
+            ok: true,
+            bucketCount: 2,
+            primaryWindowCount: 2,
+            secondaryWindowCount: 1,
+            creditsBucketCount: 1,
+            limitedCreditsBucketCount: 1,
+            hasCreditsBucketCount: 1,
+            reachedBucketCount: 1,
+            rateLimitReached: true,
+            planType: "enterprise-private",
+            limitId: "limit-private-id",
+            limitName: "private limit name",
+            balance: 12345,
+            usedPercent: 67,
+            resetAt: "2026-07-02T00:00:00.000Z",
+            rawPayloadReturned: true,
+          },
+        },
+        rawRateLimits: {
+          limitId: "limit-private-id",
+          resetAt: "2026-07-02T00:00:00.000Z",
+        },
+        notifications: {},
+      };
+    },
+  });
+  const port = await listenWithFallback(server, { host: "127.0.0.1", port: 0 });
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  try {
+    const token = await readUiSessionToken(baseUrl);
+    const settingsResponse = await fetch(`${baseUrl}/api/settings-integrations`, {
+      headers: apiHeaders(token),
+    });
+    if (!settingsResponse.ok) {
+      throw new Error(`settings integrations for account rate limits returned HTTP ${settingsResponse.status}`);
+    }
+    const settingsPayload = await settingsResponse.json();
+    if (
+      settingsPayload.surfaces?.auth?.accountRateLimitsEnabled !== true ||
+      settingsPayload.integrationScope?.accountRateLimitsEnabled !== true ||
+      !settingsPayload.integrationScope?.enabledReadMethods?.includes("account/rateLimits/read")
+    ) {
+      throw new Error("settings integrations did not expose the account rate limits gate safely");
+    }
+
+    const wrongMethod = await fetch(`${baseUrl}/api/account-rate-limits`, {
+      method: "POST",
+      headers: apiHeaders(token),
+    });
+    if (wrongMethod.status !== 405) {
+      throw new Error(`account rate limits POST returned HTTP ${wrongMethod.status}`);
+    }
+
+    const response = await fetch(`${baseUrl}/api/account-rate-limits`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`account rate limits returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (
+      payload.appServer?.touched !== true ||
+      payload.appServer?.modelTraffic !== false ||
+      payload.auth?.accountRateLimitsEnabled !== true ||
+      payload.auth?.rateLimitReached !== true ||
+      payload.result?.status !== "limited" ||
+      payload.result?.bucketCount !== 2 ||
+      payload.result?.primaryWindowCount !== 2 ||
+      payload.result?.reachedBucketCount !== 1 ||
+      payload.policy?.readOnly !== true ||
+      payload.policy?.authMutations !== false ||
+      payload.policy?.rateLimitDetailsReturned !== false ||
+      payload.policy?.rawPayloadReturned !== false
+    ) {
+      throw new Error("account rate limits did not return the safe counts-only summary shape");
+    }
+    if (calls.length !== 1 || calls[0].cwd !== "/tmp/codex-app-port-verify") {
+      throw new Error("account rate limits did not call the app-server read path once");
+    }
+    assertNoMarkers(JSON.stringify(payload), [
+      "/tmp/codex-app-port-verify",
+      "/tmp/verify-private-home",
+      "verify-private-agent",
+      "codexHome",
+      "userAgent",
+      "enterprise-private",
+      "limit-private-id",
+      "private limit name",
+      "12345",
+      "2026-07-02T00:00:00.000Z",
+      "\"rawPayloadReturned\":true",
+    ]);
+  } finally {
+    await closeServer(server);
+  }
+  pass("dev server account rate limits exposes counts behind opt-in without returning quota details");
 }
 
 async function checkAccountLoginApi() {
@@ -56315,8 +56487,15 @@ async function readUiSessionToken(baseUrl) {
     !html.includes("account-read-status") ||
     !html.includes("account-read-state-text") ||
     !html.includes("account-read-type-text") ||
+    !html.includes("account-rate-limits-button") ||
+    !html.includes("account-rate-limits-status") ||
+    !html.includes("account-rate-limits-buckets-text") ||
+    !html.includes("account-rate-limits-state-text") ||
+    !html.includes("account-rate-limits-details-text") ||
     !appScript.includes("runAccountRead") ||
     !appScript.includes("renderAccountRead") ||
+    !appScript.includes("runAccountRateLimits") ||
+    !appScript.includes("renderAccountRateLimits") ||
     !html.includes("account-login-button") ||
     !html.includes("account-login-cancel-button") ||
     !html.includes("account-reset-credit-button") ||
