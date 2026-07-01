@@ -92,6 +92,12 @@ open network listeners. App-server responses are normalized through local
 runtime contracts before the prototype summarizes or exposes them.
 
 The dev UI server binds to loopback and exposes only sanitized read-only status.
+It also exposes `/api/desktop-readiness`, a token-protected local shell
+readiness summary used by the overview panel. That route is built only from
+server launch options and in-memory allowlist/audit configuration; it performs
+no app-server traffic, model traffic, command execution, filesystem reads or
+writes, package install, network fetch, or URL-handler registration, and it
+returns no workspace paths, audit-log paths, tokens, or raw payloads.
 It exposes workspace ids from a server-side allowlist and rejects arbitrary
 browser-provided paths. Thread detail reads are metadata-only: no transcript
 text, thread titles, previews, file paths, or raw item payloads are returned.
@@ -1098,6 +1104,10 @@ can open only audited loopback UI fragments such as threads, settings, skills,
 automations, or the new-thread panel; it still rejects the official `codex://`
 scheme and official deep-link parameters that can carry prompts, filesystem
 paths, origin URLs, marketplace/plugin identifiers, pet metadata, or auth data.
+The launcher passes its launch mode and bind-host category into the local
+server so `/api/desktop-readiness` can show whether the current shell is
+loopback-only, workspace-selectable, and backed by persistent sanitized audit
+logs without revealing hosts, paths, tokens, or app-server payloads.
 
 `npm run goal:audit` is the current completion audit. It maps the requested full
 Omarchy/Linux Codex App port to concrete repo evidence and reports remaining

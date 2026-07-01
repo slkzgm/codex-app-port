@@ -10,6 +10,11 @@ The server binds to `127.0.0.1` by default and serves:
 
 - `/`: dependency-free local UI
 - `/api/workspaces`: sanitized workspace allowlist, with ids and labels only
+- `/api/desktop-readiness`: local Omarchy shell readiness from server launch
+  options and in-memory workspace/audit configuration only; no app-server
+  traffic, model traffic, command execution, filesystem reads/writes, network
+  fetches, package installs, URL-handler registration, paths, tokens, or raw
+  payloads
 - `/api/status`: sanitized read-only `codex app-server` probe
 - `/api/thread-detail`: sanitized metadata timeline for one local thread
 - `/api/thread-transcript`: bounded sanitized transcript text for one thread

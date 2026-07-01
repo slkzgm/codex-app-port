@@ -43,6 +43,15 @@ managed decisions. Neither log stores prompts, command text, file contents,
 full ids, paths, preflight tokens, decision tokens, raw approval details, or raw
 app-server payloads.
 
+The launcher passes `desktop-launcher` and the bind-host category into the local
+server. The UI reads `/api/desktop-readiness` to show loopback listener state,
+workspace-selector readiness, project-workspace count, and audit-log readiness.
+That endpoint is token-protected and computed from server launch options plus
+in-memory allowlist/audit configuration only; it performs no app-server traffic,
+model traffic, shell command, filesystem read/write, package install, network
+fetch, or URL-handler registration, and it returns no paths, tokens, or raw
+payloads.
+
 ## Local User Install
 
 Preview the install plan:

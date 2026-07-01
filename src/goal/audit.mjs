@@ -54,8 +54,23 @@ const CHECKS = [
     id: "loopback-ui-shell",
     requirement: "Provide a loopback desktop UI shell for local Codex status and thread metadata.",
     status: "met",
-    evidence: ["scripts/dev-server.mjs", "ui/index.html", "ui/assets/app.js"],
-    verify: allFiles(["scripts/dev-server.mjs", "ui/index.html", "ui/assets/app.js"]),
+    evidence: [
+      "scripts/dev-server.mjs",
+      "src/dev-server/server.mjs buildDesktopReadiness",
+      "ui/index.html desktop-readiness panel",
+      "ui/assets/app.js renderDesktopReadiness",
+    ],
+    verify: allOf(
+      allFiles(["scripts/dev-server.mjs", "ui/index.html", "ui/assets/app.js"]),
+      fileIncludes("src/dev-server/server.mjs", [
+        "/api/desktop-readiness",
+        "buildDesktopReadiness",
+        "appServerTraffic: false",
+        "workspacePathsReturned: false",
+      ]),
+      fileIncludes("ui/index.html", ["desktop-readiness-state"]),
+      fileIncludes("ui/assets/app.js", ["renderDesktopReadiness"]),
+    ),
   },
   {
     id: "local-session-token",

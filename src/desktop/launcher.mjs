@@ -112,6 +112,8 @@ export function buildDesktopServerOptions(
   return {
     codexBin: options.codexBin,
     cwd,
+    launchMode: "desktop-launcher",
+    bindHost: options.host,
     timeoutMs: options.timeoutMs,
     threadLimit: options.threadLimit,
     workspaceInputs: options.workspaceInputs,

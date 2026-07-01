@@ -138,6 +138,11 @@ test("dev server serves static UI with security headers", async () => {
     const html = await response.text();
     assert.match(html, /Codex App Port/);
     assert.match(html, /name="codex-app-port-token" content="test-session-token"/);
+    assert.match(html, /desktop-readiness-state/);
+    assert.match(html, /desktop-launch-mode-text/);
+    assert.match(html, /desktop-listener-text/);
+    assert.match(html, /desktop-workspace-text/);
+    assert.match(html, /desktop-audit-text/);
     assert.match(html, /turn-session-approval-sessions/);
     assert.match(html, /turn-session-model-sessions/);
     assert.match(html, /turn-session-wide-approval/);
@@ -198,6 +203,9 @@ test("dev server serves static UI with security headers", async () => {
     const appResponse = await fetch(`${url}/assets/app.js`);
     assert.equal(appResponse.status, 200);
     const appScript = await appResponse.text();
+    assert.match(appScript, /refreshDesktopReadiness/);
+    assert.match(appScript, /renderDesktopReadiness/);
+    assert.match(appScript, /desktopReadinessEndpoint/);
     assert.match(appScript, /approval-row-actions/);
     assert.match(appScript, /approvalDecisionButton/);
     assert.match(appScript, /approvalExecutionReadinessText/);
@@ -8610,6 +8618,64 @@ test("dev server exposes sanitized read-only status API", async () => {
     assert.equal(payload.probes.archivedThreads.items[0].cwdBasename, "archived-repo");
     assert.equal(Object.hasOwn(payload.probes.archivedThreads.items[0], "name"), false);
     assert.equal(Object.hasOwn(payload.probes.archivedThreads.items[0], "preview"), false);
+  } finally {
+    await closeServer(server);
+  }
+});
+
+test("dev server exposes desktop readiness without app-server or path disclosure", async () => {
+  let probeCalled = false;
+  const { server, url } = await startTestServer({
+    launchMode: "desktop-launcher",
+    bindHost: "127.0.0.1",
+    workspaceInputs: ["/tmp/private-project"],
+    approvalAuditLog: createApprovalAuditLog({ path: "/tmp/private-approval.jsonl" }),
+    actionAuditLog: createActionAuditLog({ path: "/tmp/private-action.jsonl" }),
+    probeFn: async () => {
+      probeCalled = true;
+      return { ok: true };
+    },
+  });
+
+  try {
+    const unauthenticated = await fetch(`${url}/api/desktop-readiness`);
+    assert.equal(unauthenticated.status, 403);
+
+    const response = await fetch(`${url}/api/desktop-readiness?workspace=workspace-2`, {
+      headers: apiHeaders(server),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.desktop.state, "desktop-ready");
+    assert.equal(payload.desktop.launchMode, "desktop-launcher");
+    assert.equal(payload.desktop.bindHostKind, "loopback");
+    assert.equal(payload.desktop.loopbackListener, true);
+    assert.equal(payload.desktop.workspaceCount, 2);
+    assert.equal(payload.desktop.projectWorkspaceCount, 1);
+    assert.equal(payload.desktop.approvalAuditLogConfigured, true);
+    assert.equal(payload.desktop.actionAuditLogConfigured, true);
+    assert.equal(payload.desktop.persistentAuditReady, true);
+    assert.equal(payload.policy.appServerTraffic, false);
+    assert.equal(payload.policy.modelTraffic, false);
+    assert.equal(payload.policy.commandExecution, false);
+    assert.equal(payload.policy.filesystemReads, false);
+    assert.equal(payload.policy.filesystemWrites, false);
+    assert.equal(payload.policy.workspacePathsReturned, false);
+    assert.equal(payload.policy.auditLogPathsReturned, false);
+    assert.equal(payload.policy.tokensReturned, false);
+    assert.equal(payload.policy.rawPayloadsReturned, false);
+    assert.deepEqual(payload.workspace, {
+      id: "workspace-2",
+      label: "private-project",
+      isDefault: false,
+    });
+    assert.equal(serialized.includes("/tmp/private-project"), false);
+    assert.equal(serialized.includes("/tmp/private-approval.jsonl"), false);
+    assert.equal(serialized.includes("/tmp/private-action.jsonl"), false);
+    assert.equal(serialized.includes("test-session-token"), false);
+    assert.equal(probeCalled, false);
   } finally {
     await closeServer(server);
   }

@@ -13044,6 +13044,8 @@ export function parseDevServerArgs(argv, env = process.env) {
 export function createDevServer({
   codexBin = "codex",
   cwd = process.cwd(),
+  launchMode = "dev-server",
+  bindHost = DEFAULT_HOST,
   timeoutMs = DEFAULT_TIMEOUT_MS,
   threadLimit = 8,
   workspaceInputs = [],
@@ -13256,6 +13258,8 @@ export function createDevServer({
     handleRequest(request, response, {
       codexBin,
       cwd: defaultWorkspace.cwd,
+      launchMode,
+      bindHost,
       timeoutMs,
       threadLimit,
       workspaceAllowlist,
@@ -19211,6 +19215,27 @@ export async function handleRequest(request, response, options) {
 
   if (request.method !== "GET") {
     sendJson(response, 405, { ok: false, error: "Method not allowed" });
+    return;
+  }
+
+  if (url.pathname === "/api/desktop-readiness") {
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        url.searchParams.get("workspace"),
+      );
+      sendJson(response, 200, buildDesktopReadiness({ workspace, options }));
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 502, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid desktop readiness request",
+      });
+    }
     return;
   }
 
@@ -58827,6 +58852,67 @@ function summarizeTurnExecutionAuthority({
     rawApprovalDetailsReturned: false,
     rawPayloadsReturned: false,
     appServerPayloadReturned: false,
+  };
+}
+
+export function buildDesktopReadiness({ workspace, options = {} }) {
+  const launchMode = cleanDisplayText(options.launchMode, 80) ?? "dev-server";
+  const bindHostKind = isLoopbackHost(options.bindHost) ? "loopback" : "non-loopback";
+  const workspaceCount = safeCount(options.workspaceAllowlist?.length ?? 0);
+  const projectWorkspaceCount = safeCount(
+    (options.workspaceAllowlist ?? []).filter((item) => item?.id !== "default").length,
+  );
+  const approvalAuditLogConfigured = Boolean(options.approvalAuditLog);
+  const actionAuditLogConfigured = Boolean(options.actionAuditLog);
+  const persistentAuditReady = approvalAuditLogConfigured && actionAuditLogConfigured;
+  const executionGateEnabled = Boolean(options.turnStartEnabled);
+  const loadedSessionsEnabled = Boolean(options.loadedSessionsEnabled);
+  const sessionManagerEnabled = Boolean(options.sessionManagerEnabled);
+  const state =
+    bindHostKind === "loopback" && persistentAuditReady ? "desktop-ready" : "local-limited";
+
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: publicWorkspaces([workspace])[0],
+    desktop: {
+      state,
+      shell: "omarchy-linux-local",
+      launchMode,
+      bindHostKind,
+      loopbackListener: bindHostKind === "loopback",
+      userScopedInstallSupported: true,
+      packagedDesktopEntrySupported: true,
+      urlHandlerDefaultRegistered: false,
+      browserOpenUsesShell: false,
+      automaticUpdaterEnabled: false,
+      workspaceSelectorReady: workspaceCount > 0,
+      workspaceCount,
+      projectWorkspaceCount,
+      approvalAuditLogConfigured,
+      actionAuditLogConfigured,
+      persistentAuditReady,
+      executionGateEnabled,
+      loadedSessionsEnabled,
+      sessionManagerEnabled,
+    },
+    policy: {
+      localOnly: true,
+      appServerTraffic: false,
+      modelTraffic: false,
+      commandExecution: false,
+      filesystemReads: false,
+      filesystemWrites: false,
+      packageInstall: false,
+      networkFetch: false,
+      defaultUrlHandlerRegistration: false,
+      requiresExplicitExecutionGate: true,
+      workspacePathsReturned: false,
+      auditLogPathsReturned: false,
+      tokensReturned: false,
+      rawPayloadsReturned: false,
+      appServerPayloadReturned: false,
+    },
   };
 }
 

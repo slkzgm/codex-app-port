@@ -16,6 +16,8 @@ async function main() {
   const server = createDevServer({
     codexBin: options.codexBin,
     cwd: process.cwd(),
+    launchMode: "dev-server",
+    bindHost: options.host,
     timeoutMs: options.timeoutMs,
     threadLimit: options.threadLimit,
     workspaceInputs: options.workspaceInputs,

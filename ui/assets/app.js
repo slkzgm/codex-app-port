@@ -5,6 +5,11 @@ const elements = {
   platformText: document.querySelector("#platform-text"),
   transportText: document.querySelector("#transport-text"),
   updatedText: document.querySelector("#updated-text"),
+  desktopReadinessState: document.querySelector("#desktop-readiness-state"),
+  desktopLaunchModeText: document.querySelector("#desktop-launch-mode-text"),
+  desktopListenerText: document.querySelector("#desktop-listener-text"),
+  desktopWorkspaceText: document.querySelector("#desktop-workspace-text"),
+  desktopAuditText: document.querySelector("#desktop-audit-text"),
   modelText: document.querySelector("#model-text"),
   providerText: document.querySelector("#provider-text"),
   sandboxText: document.querySelector("#sandbox-text"),
@@ -2236,6 +2241,7 @@ async function refreshStatus({ manageLoading = true } = {}) {
     }
 
     renderStatus(payload);
+    await refreshDesktopReadiness();
     await refreshExecutionGate();
     await refreshApprovalDecisions();
     await refreshTurnSessions();
@@ -2260,6 +2266,16 @@ function statusEndpoint() {
   const params = new URLSearchParams();
   params.set("workspace", selectedWorkspaceId);
   return `/api/status?${params.toString()}`;
+}
+
+function desktopReadinessEndpoint() {
+  if (!selectedWorkspaceId) {
+    return "/api/desktop-readiness";
+  }
+
+  const params = new URLSearchParams();
+  params.set("workspace", selectedWorkspaceId);
+  return `/api/desktop-readiness?${params.toString()}`;
 }
 
 function threadStartPreflightEndpoint() {
@@ -2803,6 +2819,21 @@ function gitWorktreePreflightEndpoint() {
 
 function gitWorktreeActionEndpoint() {
   return "/api/git-worktree-action";
+}
+
+async function refreshDesktopReadiness() {
+  const response = await fetch(desktopReadinessEndpoint(), {
+    method: "GET",
+    headers: apiHeaders(),
+    cache: "no-store",
+  });
+
+  const payload = await response.json();
+  if (!response.ok || !payload.ok) {
+    throw new Error(payload.error || `HTTP ${response.status}`);
+  }
+
+  renderDesktopReadiness(payload);
 }
 
 async function refreshExecutionGate() {
@@ -6399,6 +6430,42 @@ function renderStatus(payload) {
   elements.threadCount.textContent = String(threads.count ?? 0);
   renderAgentCapability(payload.localCapabilities?.agentTurnProbeEnabled === true);
   renderThreads(threads.items ?? [], payload.probes?.archivedThreads?.items ?? []);
+}
+
+function renderDesktopReadiness(payload) {
+  const desktop = payload.desktop ?? {};
+  const policy = payload.policy ?? {};
+  const auditReady = desktop.persistentAuditReady === true;
+
+  elements.desktopReadinessState.textContent = formatValue(desktop.state ?? "unknown");
+  elements.desktopLaunchModeText.textContent = formatValue(desktop.launchMode ?? "unknown");
+  elements.desktopListenerText.textContent = desktop.loopbackListener
+    ? "Loopback"
+    : formatValue(desktop.bindHostKind ?? "Unknown");
+  elements.desktopWorkspaceText.textContent = joinParts([
+    `${desktop.workspaceCount ?? 0} allowed`,
+    `${desktop.projectWorkspaceCount ?? 0} project`,
+  ]);
+  elements.desktopAuditText.textContent = auditReady
+    ? "Persistent"
+    : joinParts([
+        desktop.approvalAuditLogConfigured ? "approval" : "no approval",
+        desktop.actionAuditLogConfigured ? "action" : "no action",
+      ]);
+
+  if (
+    policy.appServerTraffic ||
+    policy.modelTraffic ||
+    policy.commandExecution ||
+    policy.filesystemReads ||
+    policy.filesystemWrites ||
+    policy.workspacePathsReturned ||
+    policy.auditLogPathsReturned ||
+    policy.tokensReturned ||
+    policy.rawPayloadsReturned
+  ) {
+    elements.desktopReadinessState.textContent = "Unsafe";
+  }
 }
 
 async function loadThreadDetail(threadIdSuffix, { archived = false } = {}) {

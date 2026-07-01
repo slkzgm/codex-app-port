@@ -2101,6 +2101,11 @@ Current M1 status:
 M2: Omarchy desktop shell.
 
 - project selector beyond the first allowlisted prototype
+- done: local desktop-readiness overview panel backed by a token-protected
+  `/api/desktop-readiness` route that uses only launch options plus in-memory
+  workspace/audit configuration and performs no app-server traffic, model
+  traffic, command execution, filesystem reads/writes, network fetches,
+  package installs, URL-handler registration, or path/token/raw-payload return
 - thread list
 - done: first read-only Git worktree metadata panel
 - done: sanitized thread transcript
@@ -2151,6 +2156,9 @@ M4: Desktop integration.
   local icon, with no default URL handler registration
 - done: local desktop launcher wires persistent sanitized approval/action audit
   logs under `XDG_STATE_HOME` by default, with explicit override paths
+- done: desktop launcher passes launch mode and bind-host category into the UI
+  server so the readiness panel can show loopback/audit/workspace state without
+  leaking host strings, paths, tokens, or app-server payloads
 - done: config/state location policy for local integration: runtime files under
   `~/.local/share/codex-app-port`, desktop entries under
   `~/.local/share/applications`, and audit state under `XDG_STATE_HOME`

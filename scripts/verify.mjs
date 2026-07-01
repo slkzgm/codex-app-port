@@ -886,6 +886,16 @@ async function checkDevServerApi() {
       forbiddenPaths: [ROOT, ROOT.replace(/\/$/, "")],
     });
 
+    const readinessResponse = await fetch(`${baseUrl}/api/desktop-readiness`, {
+      headers: apiHeaders(token),
+    });
+    if (!readinessResponse.ok) {
+      throw new Error(`desktop readiness API returned HTTP ${readinessResponse.status}`);
+    }
+    assertSanitizedDesktopReadiness(await readinessResponse.json(), {
+      forbiddenPaths: [ROOT, ROOT.replace(/\/$/, "")],
+    });
+
     const response = await fetch(`${baseUrl}/api/status`, {
       headers: apiHeaders(token),
     });
@@ -900,7 +910,7 @@ async function checkDevServerApi() {
   } finally {
     await closeServer(server);
   }
-  pass("dev server API returns sanitized read-only status");
+  pass("dev server API returns sanitized read-only status and desktop readiness");
 }
 
 async function checkStrictBrowserPostBodies() {
@@ -56400,6 +56410,39 @@ function assertSanitizedWorkspaces(payload, { forbiddenPaths = [] } = {}) {
         throw new Error(`workspaces payload leaked ${forbidden}`);
       }
     }
+  }
+}
+
+function assertSanitizedDesktopReadiness(payload, { forbiddenPaths = [] } = {}) {
+  if (!payload.ok || !payload.desktop || !payload.policy) {
+    throw new Error("desktop readiness payload is not ok");
+  }
+  const serialized = JSON.stringify(payload);
+  for (const forbiddenPath of forbiddenPaths.filter(Boolean)) {
+    if (serialized.includes(forbiddenPath)) {
+      throw new Error(`desktop readiness payload leaked path ${forbiddenPath}`);
+    }
+  }
+  for (const forbidden of ["cwd", "codexHome", "userAgent"]) {
+    if (serialized.includes(forbidden)) {
+      throw new Error(`desktop readiness payload leaked ${forbidden}`);
+    }
+  }
+  if (
+    payload.policy.appServerTraffic ||
+    payload.policy.modelTraffic ||
+    payload.policy.commandExecution ||
+    payload.policy.filesystemReads ||
+    payload.policy.filesystemWrites ||
+    payload.policy.workspacePathsReturned ||
+    payload.policy.auditLogPathsReturned ||
+    payload.policy.tokensReturned ||
+    payload.policy.rawPayloadsReturned
+  ) {
+    throw new Error("desktop readiness payload reports unsafe behavior");
+  }
+  if (payload.desktop.bindHostKind !== "loopback" && payload.desktop.bindHostKind !== "non-loopback") {
+    throw new Error("desktop readiness payload returned an unexpected bind host kind");
   }
 }
 
