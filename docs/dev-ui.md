@@ -2168,6 +2168,14 @@ presence counts. Plugin names, ids, paths, URLs, descriptions, prompts,
 capabilities, screenshots, marketplace names, install suggestion names,
 mutations, and raw payloads are not returned.
 
+`/api/external-agent-import-histories` is a dedicated disabled-by-default GET
+route for `externalAgentConfig/import/readHistories`. It requires
+`CODEX_APP_PORT_ALLOW_EXTERNAL_AGENT_IMPORT_HISTORIES=1`, accepts only the local
+session token and workspace selector, and returns only history, success,
+failure, field-presence, and allowlisted item-type counts. Import ids,
+timestamps, cwd values, source/target paths, messages, failure stages, error
+types, import execution, filesystem access, and raw payloads are not returned.
+
 The remote-control-disable-preflight endpoint accepts no remote-control params
 and creates only a local one-time confirmation token. The matching
 `/api/remote-control-disable` route is fail-closed unless

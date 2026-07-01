@@ -25,6 +25,7 @@ import {
   runConfigValueWriteProbe,
   runEnvironmentAddProbe,
   runExperimentalFeatureEnablementSetProbe,
+  runExternalAgentConfigImportHistoriesReadProbe,
   runFsDirectoryProbe,
   runInstalledPluginsReadProbe,
   runIntegrationsInventoryProbe,
@@ -147,6 +148,18 @@ const THREAD_MEMORY_MODES = new Set(["enabled", "disabled"]);
 const SAFE_WORKSPACE_MESSAGE_TYPES = ["headline", "announcement", "unknown"];
 const SAFE_REMOTE_CONTROL_STATUSES = ["disabled", "connecting", "connected", "errored", "unknown"];
 const SAFE_MCP_AUTH_STATUSES = ["unsupported", "notLoggedIn", "bearerToken", "oAuth", "unknown"];
+const SAFE_EXTERNAL_AGENT_CONFIG_ITEM_TYPES = [
+  "AGENTS_MD",
+  "CONFIG",
+  "SKILLS",
+  "PLUGINS",
+  "MCP_SERVER_CONFIG",
+  "SUBAGENTS",
+  "HOOKS",
+  "COMMANDS",
+  "SESSIONS",
+  "unknown",
+];
 const SAFE_SKILL_SCOPES = ["user", "repo", "system", "admin", "unknown"];
 const SAFE_PLUGIN_SOURCE_TYPES = ["local", "git", "remote", "unknown"];
 const SAFE_PLUGIN_INSTALL_POLICIES = [
@@ -13115,6 +13128,7 @@ export function createDevServer({
   permissionProfilesFn = runPermissionProfilesReadProbe,
   remoteControlStatusFn = runRemoteControlStatusReadProbe,
   installedPluginsFn = runInstalledPluginsReadProbe,
+  externalAgentImportHistoriesFn = runExternalAgentConfigImportHistoriesReadProbe,
   accountLoginCancelFn = runAccountLoginCancelProbe,
   accountLoginStartFn = runAccountLoginStartProbe,
   accountCreditsNudgeFn = runAccountCreditsNudgeProbe,
@@ -13188,6 +13202,8 @@ export function createDevServer({
   remoteControlStatusEnabled =
     process.env.CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_STATUS === "1",
   installedPluginsEnabled = process.env.CODEX_APP_PORT_ALLOW_INSTALLED_PLUGINS === "1",
+  externalAgentImportHistoriesEnabled =
+    process.env.CODEX_APP_PORT_ALLOW_EXTERNAL_AGENT_IMPORT_HISTORIES === "1",
   accountLoginCancelEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN_CANCEL === "1",
   accountLoginEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN === "1",
   accountCreditsNudgeEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_CREDITS_NUDGE === "1",
@@ -13344,6 +13360,7 @@ export function createDevServer({
       permissionProfilesFn,
       remoteControlStatusFn,
       installedPluginsFn,
+      externalAgentImportHistoriesFn,
       accountLoginCancelFn,
       accountLoginStartFn,
       accountCreditsNudgeFn,
@@ -13412,6 +13429,7 @@ export function createDevServer({
       permissionProfilesEnabled,
       remoteControlStatusEnabled,
       installedPluginsEnabled,
+      externalAgentImportHistoriesEnabled,
       accountLoginCancelEnabled,
       accountLoginEnabled,
       accountCreditsNudgeEnabled,
@@ -15031,6 +15049,49 @@ export async function handleRequest(request, response, options) {
       sendJson(response, error.statusCode ?? 502, {
         ok: false,
         error: cleanDisplayText(error.message, 200) ?? "Invalid installed plugins request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/external-agent-import-histories") {
+    if (request.method !== "GET") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        url.searchParams.get("workspace"),
+      );
+      if (!options.externalAgentImportHistoriesEnabled) {
+        sendJson(response, 200, buildExternalAgentImportHistoriesBlockedPayload({ workspace }));
+        return;
+      }
+      const payload = await options.externalAgentImportHistoriesFn({
+        codexBin: options.codexBin,
+        cwd: workspace.cwd,
+        timeoutMs: options.timeoutMs,
+      });
+      sendJson(
+        response,
+        200,
+        sanitizeExternalAgentImportHistoriesPayload(payload, {
+          workspace,
+          enabled: true,
+        }),
+      );
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 502, {
+        ok: false,
+        error:
+          cleanDisplayText(error.message, 200) ?? "Invalid external agent import histories request",
       });
     }
     return;
@@ -19731,6 +19792,8 @@ export async function handleRequest(request, response, options) {
             permissionProfilesEnabled: options.permissionProfilesEnabled,
             remoteControlStatusEnabled: options.remoteControlStatusEnabled,
             installedPluginsEnabled: options.installedPluginsEnabled,
+            externalAgentImportHistoriesEnabled:
+              options.externalAgentImportHistoriesEnabled,
             accountLoginCancelEnabled: options.accountLoginCancelEnabled,
             accountLoginEnabled: options.accountLoginEnabled,
             accountCreditsNudgeEnabled: options.accountCreditsNudgeEnabled,
@@ -19776,6 +19839,7 @@ export async function handleRequest(request, response, options) {
           permissionProfilesEnabled: options.permissionProfilesEnabled,
           remoteControlStatusEnabled: options.remoteControlStatusEnabled,
           installedPluginsEnabled: options.installedPluginsEnabled,
+          externalAgentImportHistoriesEnabled: options.externalAgentImportHistoriesEnabled,
           accountLoginCancelEnabled: options.accountLoginCancelEnabled,
           accountLoginEnabled: options.accountLoginEnabled,
           accountCreditsNudgeEnabled: options.accountCreditsNudgeEnabled,
@@ -52075,6 +52139,7 @@ export function sanitizeSettingsIntegrationsPayload(
     permissionProfilesEnabled = false,
     remoteControlStatusEnabled = false,
     installedPluginsEnabled = false,
+    externalAgentImportHistoriesEnabled = false,
     accountLoginCancelEnabled = false,
     accountLoginEnabled = false,
     accountCreditsNudgeEnabled = false,
@@ -52116,6 +52181,7 @@ export function sanitizeSettingsIntegrationsPayload(
   const profilesEnabled = Boolean(permissionProfilesEnabled);
   const remoteStatusEnabled = Boolean(remoteControlStatusEnabled);
   const installedPluginReadEnabled = Boolean(installedPluginsEnabled);
+  const importHistoriesEnabled = Boolean(externalAgentImportHistoriesEnabled);
   const loginEnabled = Boolean(accountLoginEnabled);
   const loginCancelEnabled = Boolean(accountLoginCancelEnabled);
   const creditsNudgeEnabled = Boolean(accountCreditsNudgeEnabled);
@@ -52158,6 +52224,7 @@ export function sanitizeSettingsIntegrationsPayload(
     permissionProfilesEnabled: profilesEnabled,
     remoteControlStatusEnabled: remoteStatusEnabled,
     installedPluginsEnabled: installedPluginReadEnabled,
+    externalAgentImportHistoriesEnabled: importHistoriesEnabled,
     accountLoginCancelEnabled: loginCancelEnabled,
     accountLoginEnabled: loginEnabled,
     accountCreditsNudgeEnabled: creditsNudgeEnabled,
@@ -52351,7 +52418,9 @@ export function sanitizeSettingsIntegrationsPayload(
       externalAgentConfig: {
         state: "partial",
         detectionAvailable: inventory.externalAgentConfig.ok,
-        importHistoriesAvailable: inventory.externalAgentConfigImportHistories.ok,
+        importHistoriesAvailable:
+          inventory.externalAgentConfigImportHistories.ok || importHistoriesEnabled,
+        importHistoriesEnabled,
         importPreflightEnabled: true,
         importEnabled: false,
         mutationEnabled: false,
@@ -58879,6 +58948,197 @@ export function sanitizeInstalledPluginsPayload(
   };
 }
 
+export function buildExternalAgentImportHistoriesBlockedPayload({ workspace } = {}) {
+  const importHistories = sanitizeExternalAgentConfigImportHistoriesInventory(null);
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["externalAgentConfig/import/readHistories"],
+    },
+    settings: {
+      importHistoriesAvailable: true,
+      externalAgentImportHistoriesEnabled: false,
+      appServerTraffic: false,
+      importIdsReturned: false,
+      timestampsReturned: false,
+      cwdReturned: false,
+      sourcesReturned: false,
+      targetsReturned: false,
+      messagesReturned: false,
+      failureStagesReturned: false,
+      errorTypesReturned: false,
+      rawPayloadReturned: false,
+      reason: "external-agent-import-histories-requires-opt-in",
+    },
+    probes: {
+      externalAgentConfigImportHistories: importHistories,
+    },
+    result: {
+      status: "blocked",
+      externalAgentImportHistoriesEnabled: false,
+      appServerTraffic: false,
+      historyCount: 0,
+      successCount: 0,
+      failureCount: 0,
+      successItemTypeCounts: {},
+      failureItemTypeCounts: {},
+      completedTimestampCount: 0,
+      importIdCount: 0,
+      cwdCount: 0,
+      sourceCount: 0,
+      targetCount: 0,
+      messageCount: 0,
+      failureStageCount: 0,
+      errorTypeCount: 0,
+      importIdsReturned: false,
+      timestampsReturned: false,
+      cwdReturned: false,
+      sourcesReturned: false,
+      targetsReturned: false,
+      messagesReturned: false,
+      failureStagesReturned: false,
+      errorTypesReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      settingsWrites: false,
+      importExecution: false,
+      externalConfigImportMutation: false,
+      filesystemReads: false,
+      filesystemWrites: false,
+      secretsReturned: false,
+      tokensReturned: false,
+      namesReturned: false,
+      idsReturned: false,
+      urlsReturned: false,
+      pathsReturned: false,
+      importIdsReturned: false,
+      timestampsReturned: false,
+      cwdReturned: false,
+      sourcesReturned: false,
+      targetsReturned: false,
+      messagesReturned: false,
+      failureStagesReturned: false,
+      errorTypesReturned: false,
+      rawPayloadReturned: false,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: true,
+      implemented: true,
+    },
+    notifications: sanitizeNotificationCounts(null),
+  };
+}
+
+export function sanitizeExternalAgentImportHistoriesPayload(
+  payload,
+  { workspace = null, enabled = false } = {},
+) {
+  const importHistories = sanitizeExternalAgentConfigImportHistoriesInventory(
+    payload?.probes?.externalAgentConfigImportHistories,
+  );
+  const status = enabled ? "available" : "blocked";
+  return {
+    ok: Boolean(payload?.ok),
+    generatedAt: payload?.generatedAt ?? new Date().toISOString(),
+    transport: cleanDisplayText(payload?.transport, 80),
+    protocol: cleanDisplayText(payload?.protocol, 80),
+    initialize: sanitizeInitialize(payload?.initialize),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: Boolean(enabled),
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["externalAgentConfig/import/readHistories"],
+    },
+    settings: {
+      importHistoriesAvailable: true,
+      externalAgentImportHistoriesEnabled: Boolean(enabled),
+      appServerTraffic: Boolean(enabled),
+      importIdsReturned: false,
+      timestampsReturned: false,
+      cwdReturned: false,
+      sourcesReturned: false,
+      targetsReturned: false,
+      messagesReturned: false,
+      failureStagesReturned: false,
+      errorTypesReturned: false,
+      rawPayloadReturned: false,
+      reason: Boolean(enabled)
+        ? "external-agent-import-histories-counts-only"
+        : "external-agent-import-histories-requires-opt-in",
+    },
+    probes: {
+      externalAgentConfigImportHistories: importHistories,
+    },
+    result: {
+      status,
+      externalAgentImportHistoriesEnabled: Boolean(enabled),
+      appServerTraffic: Boolean(enabled),
+      historyCount: importHistories.historyCount,
+      successCount: importHistories.successCount,
+      failureCount: importHistories.failureCount,
+      successItemTypeCounts: importHistories.successItemTypeCounts,
+      failureItemTypeCounts: importHistories.failureItemTypeCounts,
+      completedTimestampCount: importHistories.completedTimestampCount,
+      importIdCount: importHistories.importIdCount,
+      cwdCount: importHistories.cwdCount,
+      sourceCount: importHistories.sourceCount,
+      targetCount: importHistories.targetCount,
+      messageCount: importHistories.messageCount,
+      failureStageCount: importHistories.failureStageCount,
+      errorTypeCount: importHistories.errorTypeCount,
+      importIdsReturned: false,
+      timestampsReturned: false,
+      cwdReturned: false,
+      sourcesReturned: false,
+      targetsReturned: false,
+      messagesReturned: false,
+      failureStagesReturned: false,
+      errorTypesReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: Boolean(enabled),
+      modelTraffic: false,
+      commandTraffic: false,
+      settingsWrites: false,
+      importExecution: false,
+      externalConfigImportMutation: false,
+      filesystemReads: false,
+      filesystemWrites: false,
+      secretsReturned: false,
+      tokensReturned: false,
+      namesReturned: false,
+      idsReturned: false,
+      urlsReturned: false,
+      pathsReturned: false,
+      importIdsReturned: false,
+      timestampsReturned: false,
+      cwdReturned: false,
+      sourcesReturned: false,
+      targetsReturned: false,
+      messagesReturned: false,
+      failureStagesReturned: false,
+      errorTypesReturned: false,
+      rawPayloadReturned: false,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: true,
+      implemented: true,
+    },
+    notifications: sanitizeNotificationCounts(payload?.notifications),
+  };
+}
+
 export function buildAccountLoginCancelPreflight(
   body,
   { workspace, accountLoginCancelEnabled = false, accountLoginFlowRegistry = null } = {},
@@ -63114,6 +63374,7 @@ export function buildSettingsIntegrations({
   permissionProfilesEnabled = false,
   remoteControlStatusEnabled = false,
   installedPluginsEnabled = false,
+  externalAgentImportHistoriesEnabled = false,
   accountLoginCancelEnabled = false,
   accountLoginEnabled = false,
   accountCreditsNudgeEnabled = false,
@@ -63155,6 +63416,7 @@ export function buildSettingsIntegrations({
   const profilesEnabled = Boolean(permissionProfilesEnabled);
   const remoteStatusEnabled = Boolean(remoteControlStatusEnabled);
   const installedPluginReadEnabled = Boolean(installedPluginsEnabled);
+  const importHistoriesEnabled = Boolean(externalAgentImportHistoriesEnabled);
   const loginCancelEnabled = Boolean(accountLoginCancelEnabled);
   const loginEnabled = Boolean(accountLoginEnabled);
   const creditsNudgeEnabled = Boolean(accountCreditsNudgeEnabled);
@@ -63179,6 +63441,7 @@ export function buildSettingsIntegrations({
       profilesEnabled ? "permissionProfile/list" : null,
       remoteStatusEnabled ? "remoteControl/status/read" : null,
       installedPluginReadEnabled ? "plugin/installed" : null,
+      importHistoriesEnabled ? "externalAgentConfig/import/readHistories" : null,
       readEnabled ? "account/read" : null,
       rateLimitsEnabled ? "account/rateLimits/read" : null,
       usageEnabled ? "account/usage/read" : null,
@@ -63191,6 +63454,7 @@ export function buildSettingsIntegrations({
     permissionProfilesEnabled: profilesEnabled,
     remoteControlStatusEnabled: remoteStatusEnabled,
     installedPluginsEnabled: installedPluginReadEnabled,
+    externalAgentImportHistoriesEnabled: importHistoriesEnabled,
     accountLoginCancelEnabled: loginCancelEnabled,
     accountLoginEnabled: loginEnabled,
     accountCreditsNudgeEnabled: creditsNudgeEnabled,
@@ -63227,6 +63491,7 @@ export function buildSettingsIntegrations({
         profilesEnabled ? "permissionProfile/list" : null,
         remoteStatusEnabled ? "remoteControl/status/read" : null,
         installedPluginReadEnabled ? "plugin/installed" : null,
+        importHistoriesEnabled ? "externalAgentConfig/import/readHistories" : null,
         readEnabled ? "account/read" : null,
         rateLimitsEnabled ? "account/rateLimits/read" : null,
         usageEnabled ? "account/usage/read" : null,
@@ -63382,6 +63647,8 @@ export function buildSettingsIntegrations({
       externalAgentConfig: {
         state: "partial",
         detectionAvailable: false,
+        importHistoriesAvailable: importHistoriesEnabled,
+        importHistoriesEnabled,
         importPreflightEnabled: true,
         importEnabled: false,
         mutationEnabled: false,
@@ -65915,6 +66182,7 @@ function buildIntegrationActionScope({
   permissionProfilesEnabled = false,
   remoteControlStatusEnabled = false,
   installedPluginsEnabled = false,
+  externalAgentImportHistoriesEnabled = false,
   accountLoginCancelEnabled = false,
   accountLoginEnabled = false,
   accountCreditsNudgeEnabled = false,
@@ -66005,6 +66273,7 @@ function buildIntegrationActionScope({
     permissionProfilesEnabled: Boolean(permissionProfilesEnabled),
     remoteControlStatusEnabled: Boolean(remoteControlStatusEnabled),
     installedPluginsEnabled: Boolean(installedPluginsEnabled),
+    externalAgentImportHistoriesEnabled: Boolean(externalAgentImportHistoriesEnabled),
     accountLoginEnabled: Boolean(accountLoginEnabled),
     authDeviceCodeLoginEnabled: Boolean(accountLoginEnabled),
     accountLoginCancelEnabled: Boolean(accountLoginCancelEnabled),
@@ -70334,8 +70603,14 @@ function sanitizeExternalAgentConfigImportHistoriesInventory(importHistories) {
     historyCount: safeCount(importHistories?.historyCount),
     successCount: safeCount(importHistories?.successCount),
     failureCount: safeCount(importHistories?.failureCount),
-    successItemTypeCounts: sanitizeCountMap(importHistories?.successItemTypeCounts),
-    failureItemTypeCounts: sanitizeCountMap(importHistories?.failureItemTypeCounts),
+    successItemTypeCounts: sanitizeAllowedCountMap(
+      importHistories?.successItemTypeCounts,
+      SAFE_EXTERNAL_AGENT_CONFIG_ITEM_TYPES,
+    ),
+    failureItemTypeCounts: sanitizeAllowedCountMap(
+      importHistories?.failureItemTypeCounts,
+      SAFE_EXTERNAL_AGENT_CONFIG_ITEM_TYPES,
+    ),
     completedTimestampCount: safeCount(importHistories?.completedTimestampCount),
     importIdCount: safeCount(importHistories?.importIdCount),
     cwdCount: safeCount(importHistories?.cwdCount),

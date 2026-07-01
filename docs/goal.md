@@ -1103,12 +1103,17 @@ Target parity with the Codex desktop workflow:
   dependency commands, dependency descriptions, dependency URLs, and raw
   payloads remain hidden; opt-in names mode may return only bounded safe skill
   names and boolean presence flags.
-- `externalAgentConfig/import/readHistories` and `plugin/list` also have opt-in
-  inventory paths. `plugin/installed` has both a dedicated opt-in
-  `/api/installed-plugins` route behind
+- `externalAgentConfig/import/readHistories` has both a dedicated opt-in
+  `/api/external-agent-import-histories` route behind
+  `CODEX_APP_PORT_ALLOW_EXTERNAL_AGENT_IMPORT_HISTORIES=1` and an opt-in
+  inventory path. It returns only history/success/failure counts, field-presence
+  counts, and allowlisted item-type buckets, not import ids, timestamps, cwd
+  values, source or target paths, messages, failure stages, error types, import
+  execution, filesystem access, or raw payloads.
+- `plugin/list` also has an opt-in inventory path. `plugin/installed` has both
+  a dedicated opt-in `/api/installed-plugins` route behind
   `CODEX_APP_PORT_ALLOW_INSTALLED_PLUGINS=1` and an opt-in inventory path.
-  Import histories remain counts-only; plugin inventories return only
-  marketplace local/remote counts,
+  Plugin inventories return only marketplace local/remote counts,
   source/install/auth-policy buckets, and plugin interface metadata presence
   counts for display names, descriptions, default prompts, capabilities, and
   screenshots by default, and may return bounded safe plugin names plus boolean
@@ -1118,9 +1123,8 @@ Target parity with the Codex desktop workflow:
   workspace-directory marketplaces by default; remote curated/shared/created
   catalog categories are queried only when
   `CODEX_APP_PORT_ALLOW_REMOTE_PLUGIN_CATALOG_INVENTORY=1` is also set, and
-  still return counts only. They still omit import ids, paths, messages,
-  timestamps, marketplace names/display names/sources, plugin ids, plugin
-  display names, plugin descriptions, plugin paths, URLs, prompts,
+  still return counts only. They still omit marketplace names/display names,
+  sources, plugin ids, plugin display names, plugin descriptions, plugin paths, URLs, prompts,
   capabilities, screenshots, install suggestion names, mutations, and raw
   payloads.
 - `remoteControl/status/read` has both a dedicated opt-in

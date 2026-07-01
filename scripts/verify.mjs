@@ -87,6 +87,7 @@ async function main() {
   await checkPermissionProfilesApi();
   await checkRemoteControlStatusApi();
   await checkInstalledPluginsApi();
+  await checkExternalAgentImportHistoriesApi();
   await checkAccountLoginApi();
   await checkAccountLoginCancelApi();
   await checkAccountCreditsNudgeApi();
@@ -18779,6 +18780,230 @@ async function checkInstalledPluginsApi() {
     await closeServer(server);
   }
   pass("dev server installed plugins exposes counts behind opt-in without returning plugin details");
+}
+
+async function checkExternalAgentImportHistoriesApi() {
+  const blockedCalls = [];
+  const blockedServer = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    externalAgentImportHistoriesFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+  const blockedPort = await listenWithFallback(blockedServer, { host: "127.0.0.1", port: 0 });
+  const blockedBaseUrl = `http://127.0.0.1:${blockedPort}`;
+
+  try {
+    const token = await readUiSessionToken(blockedBaseUrl);
+    const settingsResponse = await fetch(`${blockedBaseUrl}/api/settings-integrations`, {
+      headers: apiHeaders(token),
+    });
+    if (!settingsResponse.ok) {
+      throw new Error(`settings integrations for blocked import histories returned HTTP ${settingsResponse.status}`);
+    }
+    const settingsPayload = await settingsResponse.json();
+    if (
+      settingsPayload.surfaces?.externalAgentConfig?.importHistoriesAvailable !== false ||
+      settingsPayload.surfaces?.externalAgentConfig?.importHistoriesEnabled !== false ||
+      settingsPayload.integrationScope?.externalAgentImportHistoriesEnabled !== false
+    ) {
+      throw new Error("settings integrations did not expose the blocked import histories gate safely");
+    }
+
+    const response = await fetch(`${blockedBaseUrl}/api/external-agent-import-histories`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`blocked import histories returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (
+      payload.appServer?.touched !== false ||
+      payload.settings?.externalAgentImportHistoriesEnabled !== false ||
+      payload.result?.status !== "blocked" ||
+      payload.policy?.appServerTraffic !== false
+    ) {
+      throw new Error("blocked import histories did not fail closed without app-server traffic");
+    }
+    if (blockedCalls.length !== 0) {
+      throw new Error("blocked import histories unexpectedly touched app-server");
+    }
+    assertNoMarkers(JSON.stringify(payload), ["/tmp/codex-app-port-verify"]);
+  } finally {
+    await closeServer(blockedServer);
+  }
+
+  const calls = [];
+  const server = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    externalAgentImportHistoriesEnabled: true,
+    externalAgentImportHistoriesFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-07-01T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/verify-private-home",
+          userAgent: "verify-private-agent",
+        },
+        probes: {
+          externalAgentConfigImportHistories: {
+            ok: true,
+            historyCount: 1,
+            successCount: 1,
+            failureCount: 1,
+            successItemTypeCounts: {
+              MCP_SERVER_CONFIG: 1,
+              privateSuccessType: 1,
+            },
+            failureItemTypeCounts: {
+              SESSIONS: 1,
+              privateFailureType: 1,
+            },
+            completedTimestampCount: 1,
+            importIdCount: 1,
+            cwdCount: 2,
+            sourceCount: 2,
+            targetCount: 1,
+            messageCount: 1,
+            failureStageCount: 1,
+            errorTypeCount: 1,
+            importIdsReturned: true,
+            timestampsReturned: true,
+            cwdReturned: true,
+            sourcesReturned: true,
+            targetsReturned: true,
+            messagesReturned: true,
+            failureStagesReturned: true,
+            errorTypesReturned: true,
+            rawPayloadReturned: true,
+          },
+        },
+        rawImportHistories: {
+          importId: "verify-private-import-id",
+          cwd: "/tmp/codex-app-port-verify",
+          source: "/tmp/codex-app-port-verify/.claude/session.jsonl",
+          target: "/tmp/codex-app-port-verify/.codex/mcp.json",
+          message: "verify private import failure message",
+          failureStage: "verify-private-stage",
+          errorType: "verify-private-error-type",
+        },
+        notifications: {},
+      };
+    },
+  });
+  const port = await listenWithFallback(server, { host: "127.0.0.1", port: 0 });
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  try {
+    const token = await readUiSessionToken(baseUrl);
+    const settingsResponse = await fetch(`${baseUrl}/api/settings-integrations`, {
+      headers: apiHeaders(token),
+    });
+    if (!settingsResponse.ok) {
+      throw new Error(`settings integrations for import histories returned HTTP ${settingsResponse.status}`);
+    }
+    const settingsPayload = await settingsResponse.json();
+    if (
+      settingsPayload.surfaces?.externalAgentConfig?.importHistoriesAvailable !== true ||
+      settingsPayload.surfaces?.externalAgentConfig?.importHistoriesEnabled !== true ||
+      settingsPayload.integrationScope?.externalAgentImportHistoriesEnabled !== true ||
+      !settingsPayload.integrationScope?.enabledReadMethods?.includes(
+        "externalAgentConfig/import/readHistories",
+      )
+    ) {
+      throw new Error("settings integrations did not expose the import histories gate safely");
+    }
+
+    const wrongMethod = await fetch(`${baseUrl}/api/external-agent-import-histories`, {
+      method: "POST",
+      headers: apiHeaders(token),
+    });
+    if (wrongMethod.status !== 405) {
+      throw new Error(`import histories POST returned HTTP ${wrongMethod.status}`);
+    }
+
+    const response = await fetch(`${baseUrl}/api/external-agent-import-histories`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`import histories returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (
+      payload.appServer?.touched !== true ||
+      payload.appServer?.modelTraffic !== false ||
+      payload.settings?.externalAgentImportHistoriesEnabled !== true ||
+      payload.result?.status !== "available" ||
+      payload.result?.historyCount !== 1 ||
+      payload.result?.successCount !== 1 ||
+      payload.result?.failureCount !== 1 ||
+      payload.result?.successItemTypeCounts?.MCP_SERVER_CONFIG !== 1 ||
+      payload.result?.successItemTypeCounts?.privateSuccessType != null ||
+      payload.result?.failureItemTypeCounts?.SESSIONS !== 1 ||
+      payload.result?.failureItemTypeCounts?.privateFailureType != null ||
+      payload.result?.completedTimestampCount !== 1 ||
+      payload.result?.importIdCount !== 1 ||
+      payload.result?.cwdCount !== 2 ||
+      payload.result?.sourceCount !== 2 ||
+      payload.result?.targetCount !== 1 ||
+      payload.result?.messageCount !== 1 ||
+      payload.result?.failureStageCount !== 1 ||
+      payload.result?.errorTypeCount !== 1 ||
+      payload.result?.importIdsReturned !== false ||
+      payload.result?.timestampsReturned !== false ||
+      payload.result?.cwdReturned !== false ||
+      payload.result?.sourcesReturned !== false ||
+      payload.result?.targetsReturned !== false ||
+      payload.result?.messagesReturned !== false ||
+      payload.result?.failureStagesReturned !== false ||
+      payload.result?.errorTypesReturned !== false ||
+      payload.result?.rawPayloadReturned !== false ||
+      payload.policy?.readOnly !== true ||
+      payload.policy?.importExecution !== false ||
+      payload.policy?.externalConfigImportMutation !== false ||
+      payload.policy?.filesystemReads !== false ||
+      payload.policy?.filesystemWrites !== false ||
+      payload.policy?.rawPayloadReturned !== false
+    ) {
+      throw new Error("import histories did not return the safe counts-only summary shape");
+    }
+    if (calls.length !== 1 || calls[0].cwd !== "/tmp/codex-app-port-verify") {
+      throw new Error("import histories did not call the app-server read path once");
+    }
+    assertNoMarkers(JSON.stringify(payload), [
+      "/tmp/codex-app-port-verify",
+      "/tmp/verify-private-home",
+      "verify-private-agent",
+      "codexHome",
+      "userAgent",
+      "verify-private-import-id",
+      "privateSuccessType",
+      "privateFailureType",
+      "verify private import failure message",
+      "verify-private-stage",
+      "verify-private-error-type",
+      ".claude/session.jsonl",
+      ".codex/mcp.json",
+      "\"importIdsReturned\":true",
+      "\"timestampsReturned\":true",
+      "\"cwdReturned\":true",
+      "\"sourcesReturned\":true",
+      "\"targetsReturned\":true",
+      "\"messagesReturned\":true",
+      "\"failureStagesReturned\":true",
+      "\"errorTypesReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]);
+  } finally {
+    await closeServer(server);
+  }
+  pass("dev server external agent import histories exposes counts behind opt-in without returning import details");
 }
 
 async function checkAccountLoginApi() {
@@ -57487,6 +57712,11 @@ async function readUiSessionToken(baseUrl) {
     !html.includes("installed-plugins-count-text") ||
     !html.includes("installed-plugins-enabled-text") ||
     !html.includes("installed-plugins-details-text") ||
+    !html.includes("external-agent-import-histories-button") ||
+    !html.includes("external-agent-import-histories-status") ||
+    !html.includes("external-agent-import-histories-count-text") ||
+    !html.includes("external-agent-import-histories-results-text") ||
+    !html.includes("external-agent-import-histories-details-text") ||
     !appScript.includes("runAccountRead") ||
     !appScript.includes("renderAccountRead") ||
     !appScript.includes("runAccountRateLimits") ||
@@ -57501,6 +57731,8 @@ async function readUiSessionToken(baseUrl) {
     !appScript.includes("renderRemoteControlStatus") ||
     !appScript.includes("runInstalledPlugins") ||
     !appScript.includes("renderInstalledPlugins") ||
+    !appScript.includes("runExternalAgentImportHistories") ||
+    !appScript.includes("renderExternalAgentImportHistories") ||
     !html.includes("account-login-button") ||
     !html.includes("account-login-cancel-button") ||
     !html.includes("account-reset-credit-button") ||

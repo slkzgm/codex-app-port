@@ -271,6 +271,21 @@ const elements = {
   installedPluginsCountText: document.querySelector("#installed-plugins-count-text"),
   installedPluginsEnabledText: document.querySelector("#installed-plugins-enabled-text"),
   installedPluginsDetailsText: document.querySelector("#installed-plugins-details-text"),
+  externalAgentImportHistoriesButton: document.querySelector(
+    "#external-agent-import-histories-button",
+  ),
+  externalAgentImportHistoriesStatus: document.querySelector(
+    "#external-agent-import-histories-status",
+  ),
+  externalAgentImportHistoriesCountText: document.querySelector(
+    "#external-agent-import-histories-count-text",
+  ),
+  externalAgentImportHistoriesResultsText: document.querySelector(
+    "#external-agent-import-histories-results-text",
+  ),
+  externalAgentImportHistoriesDetailsText: document.querySelector(
+    "#external-agent-import-histories-details-text",
+  ),
   accountLoginPreflightButton: document.querySelector("#account-login-preflight-button"),
   accountLoginButton: document.querySelector("#account-login-button"),
   accountLoginStatus: document.querySelector("#account-login-status"),
@@ -1230,6 +1245,11 @@ elements.workspaceSelect.addEventListener("change", () => {
   elements.installedPluginsCountText.textContent = "0";
   elements.installedPluginsEnabledText.textContent = "0";
   elements.installedPluginsDetailsText.textContent = "Hidden";
+  elements.externalAgentImportHistoriesStatus.textContent =
+    "Import history read disabled by default.";
+  elements.externalAgentImportHistoriesCountText.textContent = "0";
+  elements.externalAgentImportHistoriesResultsText.textContent = "0 / 0";
+  elements.externalAgentImportHistoriesDetailsText.textContent = "Hidden";
   lastApprovalPayload = null;
   lastApprovalQueue = [];
   approvalQueueFilter = "all";
@@ -2220,6 +2240,10 @@ elements.installedPluginsButton.addEventListener("click", () => {
   runInstalledPlugins();
 });
 
+elements.externalAgentImportHistoriesButton.addEventListener("click", () => {
+  runExternalAgentImportHistories();
+});
+
 elements.accountLoginPreflightButton.addEventListener("click", () => {
   runAccountLoginPreflight();
 });
@@ -2743,6 +2767,16 @@ function installedPluginsEndpoint() {
   const params = new URLSearchParams();
   params.set("workspace", selectedWorkspaceId);
   return `/api/installed-plugins?${params.toString()}`;
+}
+
+function externalAgentImportHistoriesEndpoint() {
+  if (!selectedWorkspaceId) {
+    return "/api/external-agent-import-histories";
+  }
+
+  const params = new URLSearchParams();
+  params.set("workspace", selectedWorkspaceId);
+  return `/api/external-agent-import-histories?${params.toString()}`;
 }
 
 function accountLoginPreflightEndpoint() {
@@ -4908,6 +4942,28 @@ async function runInstalledPlugins() {
     renderError(error);
   } finally {
     setInstalledPluginsLoading(false);
+  }
+}
+
+async function runExternalAgentImportHistories() {
+  setExternalAgentImportHistoriesLoading(true);
+  hideError();
+
+  try {
+    const response = await fetch(externalAgentImportHistoriesEndpoint(), {
+      headers: apiHeaders(),
+      cache: "no-store",
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderExternalAgentImportHistories(payload);
+  } catch (error) {
+    elements.externalAgentImportHistoriesStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    setExternalAgentImportHistoriesLoading(false);
   }
 }
 
@@ -13983,6 +14039,8 @@ function renderSettingsIntegrations(payload) {
   elements.externalConfigImportHistoryText.textContent =
     externalAgentConfig.importHistoriesAvailable
       ? `${inventory.externalAgentConfigImportHistories?.historyCount ?? 0} imports`
+      : externalAgentConfig.importHistoriesEnabled
+        ? "Read gate"
       : "Blocked";
   elements.skillsStateText.textContent = skills.listingAvailable
     ? `${inventory.skills?.skillCount ?? 0} skills`
@@ -15605,6 +15663,40 @@ function renderInstalledPlugins(payload) {
   elements.installedPluginsStateText.textContent = blocked
     ? "Blocked"
     : `${installedCount} installed`;
+}
+
+function renderExternalAgentImportHistories(payload) {
+  const settings = payload.settings ?? {};
+  const result = payload.result ?? {};
+  const blocked =
+    settings.externalAgentImportHistoriesEnabled !== true ||
+    payload.appServer?.touched !== true;
+  const historyCount =
+    result.historyCount ?? payload.probes?.externalAgentConfigImportHistories?.historyCount ?? 0;
+  const successCount =
+    result.successCount ?? payload.probes?.externalAgentConfigImportHistories?.successCount ?? 0;
+  const failureCount =
+    result.failureCount ?? payload.probes?.externalAgentConfigImportHistories?.failureCount ?? 0;
+  const status = result.status ?? (blocked ? "blocked" : "available");
+  elements.externalAgentImportHistoriesStatus.textContent = blocked ? "Read blocked" : status;
+  elements.externalAgentImportHistoriesCountText.textContent = String(historyCount);
+  elements.externalAgentImportHistoriesResultsText.textContent = `${successCount} / ${failureCount}`;
+  elements.externalAgentImportHistoriesDetailsText.textContent =
+    result.importIdsReturned ||
+    result.timestampsReturned ||
+    result.cwdReturned ||
+    result.sourcesReturned ||
+    result.targetsReturned ||
+    result.messagesReturned ||
+    result.failureStagesReturned ||
+    result.errorTypesReturned ||
+    result.rawPayloadReturned ||
+    settings.rawPayloadReturned
+      ? "Returned"
+      : "Hidden";
+  elements.externalConfigImportHistoryText.textContent = blocked
+    ? "Blocked"
+    : `${historyCount} imports`;
 }
 
 function renderAccountLoginPreflight(payload) {
@@ -23544,6 +23636,16 @@ function setInstalledPluginsLoading(isLoading) {
   elements.installedPluginsButton.textContent = isLoading ? "Checking" : "Plugins Check";
   if (isLoading) {
     elements.installedPluginsStatus.textContent = "Checking";
+  }
+}
+
+function setExternalAgentImportHistoriesLoading(isLoading) {
+  elements.externalAgentImportHistoriesButton.disabled = isLoading;
+  elements.externalAgentImportHistoriesButton.textContent = isLoading
+    ? "Checking"
+    : "Import History Check";
+  if (isLoading) {
+    elements.externalAgentImportHistoriesStatus.textContent = "Checking";
   }
 }
 

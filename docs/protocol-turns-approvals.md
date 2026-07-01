@@ -160,14 +160,14 @@ model traffic, changes no elicitation counters, approves no guarded action, and
 returns only count/presence metadata with no full ids, thread content, guardian
 event details, paths, secrets, or raw payloads.
 
-Current local status: `externalAgentConfig/import/readHistories` is exposed only
-through the explicit integration-inventory opt-in. `permissionProfile/list`,
-`remoteControl/status/read`, `plugin/installed`, `account/usage/read`, and
-`account/workspaceMessages/read` also have dedicated disabled-by-default GET
-routes behind
+Current local status: `permissionProfile/list`, `remoteControl/status/read`,
+`plugin/installed`, `externalAgentConfig/import/readHistories`,
+`account/usage/read`, and `account/workspaceMessages/read` have dedicated
+disabled-by-default GET routes behind
 `CODEX_APP_PORT_ALLOW_PERMISSION_PROFILES=1`,
 `CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_STATUS=1`,
 `CODEX_APP_PORT_ALLOW_INSTALLED_PLUGINS=1`,
+`CODEX_APP_PORT_ALLOW_EXTERNAL_AGENT_IMPORT_HISTORIES=1`,
 `CODEX_APP_PORT_ALLOW_ACCOUNT_USAGE=1`, and
 `CODEX_APP_PORT_ALLOW_ACCOUNT_WORKSPACE_MESSAGES=1`. These surfaces return
 counts plus bounded categorical totals only. They do not return permission
@@ -176,7 +176,8 @@ message ids, message bodies, message timestamps, import ids, import paths,
 import messages, import failure stages, plugin ids, plugin names, plugin paths,
 plugin URLs, plugin prompts, plugin descriptions, plugin capabilities, plugin
 screenshots, install suggestion names, remote-control status strings, server
-names, installation ids, environment ids, cursors, or raw payloads. `thread/search` has a separate
+names, installation ids, environment ids, cursors, import execution,
+filesystem access, or raw payloads. `thread/search` has a separate
 disabled-by-default
 `POST /api/thread-search` path behind `CODEX_APP_PORT_ALLOW_THREAD_SEARCH=1`;
 it accepts the search term only in the request body and returns only

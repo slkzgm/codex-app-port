@@ -3218,6 +3218,77 @@ export async function runInstalledPluginsReadProbe({
   }
 }
 
+export async function runExternalAgentConfigImportHistoriesReadProbe({
+  codexBin = process.env.CODEX_BIN || "codex",
+  codexArgs = ["app-server", "--listen", "stdio://"],
+  cwd = process.cwd(),
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+  onNotification = null,
+} = {}) {
+  if (process.env.CODEX_APP_PORT_ALLOW_EXTERNAL_AGENT_IMPORT_HISTORIES !== "1") {
+    throw new Error(
+      "externalAgentConfig/import/readHistories requires CODEX_APP_PORT_ALLOW_EXTERNAL_AGENT_IMPORT_HISTORIES=1 because it inspects local import history metadata",
+    );
+  }
+
+  const notifications = [];
+  const client = new JsonlRpcClient({
+    command: codexBin,
+    args: codexArgs,
+    cwd,
+    timeoutMs,
+    onNotification(notification) {
+      notifications.push({
+        method: notification.method,
+      });
+      onNotification?.(notification);
+    },
+  });
+
+  await client.start();
+
+  try {
+    const initialize = normalizeInitializeResponse(
+      await client.request(APP_SERVER_METHODS.initialize, {
+        clientInfo: {
+          name: "codex_app_port",
+          title: "Codex App Port",
+          version: "0.1.0",
+        },
+        capabilities: {
+          experimentalApi: false,
+          requestAttestation: false,
+        },
+      }),
+    );
+
+    client.notify(APP_SERVER_METHODS.initialized);
+    const importHistories = await client.request(
+      APP_SERVER_METHODS.externalAgentConfigImportReadHistories,
+      null,
+      { timeoutMs },
+    );
+
+    return {
+      ok: true,
+      generatedAt: new Date().toISOString(),
+      transport: "stdio-jsonl",
+      protocol: "json-rpc-2.0-without-jsonrpc-field",
+      initialize: summarizeInitialize(initialize),
+      probes: {
+        externalAgentConfigImportHistories:
+          summarizeExternalAgentConfigImportHistoriesInventory({
+            ok: true,
+            result: importHistories,
+          }),
+      },
+      notifications: notificationCounts(notifications),
+    };
+  } finally {
+    await client.close();
+  }
+}
+
 export async function runMcpServerReloadProbe({
   codexBin = process.env.CODEX_BIN || "codex",
   codexArgs = ["app-server", "--listen", "stdio://"],

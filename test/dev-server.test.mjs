@@ -390,6 +390,11 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /installed-plugins-count-text/);
     assert.match(html, /installed-plugins-enabled-text/);
     assert.match(html, /installed-plugins-details-text/);
+    assert.match(html, /external-agent-import-histories-button/);
+    assert.match(html, /external-agent-import-histories-status/);
+    assert.match(html, /external-agent-import-histories-count-text/);
+    assert.match(html, /external-agent-import-histories-results-text/);
+    assert.match(html, /external-agent-import-histories-details-text/);
     assert.match(appScript, /runAccountRead/);
     assert.match(appScript, /renderAccountRead/);
     assert.match(appScript, /runAccountRateLimits/);
@@ -404,6 +409,8 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(appScript, /renderRemoteControlStatus/);
     assert.match(appScript, /runInstalledPlugins/);
     assert.match(appScript, /renderInstalledPlugins/);
+    assert.match(appScript, /runExternalAgentImportHistories/);
+    assert.match(appScript, /renderExternalAgentImportHistories/);
     assert.match(html, /account-login-preflight-button/);
     assert.match(html, /account-login-button/);
     assert.match(html, /thread-delete-preflight-button/);
@@ -15523,6 +15530,209 @@ test("dev server exposes installed plugins only behind explicit opt-in and redac
       "\"idsReturned\":true",
       "\"pathsReturned\":true",
       "\"urlsReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    await closeServer(enabledServer.server);
+  }
+});
+
+test("dev server exposes external agent import histories only behind explicit opt-in and redacts import details", async () => {
+  const blockedCalls = [];
+  const blockedServer = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    externalAgentImportHistoriesFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+
+  try {
+    const settingsResponse = await fetch(`${blockedServer.url}/api/settings-integrations`, {
+      headers: apiHeaders(blockedServer.server),
+    });
+    assert.equal(settingsResponse.status, 200);
+    const settingsPayload = await settingsResponse.json();
+    assert.equal(settingsPayload.surfaces.externalAgentConfig.importHistoriesAvailable, false);
+    assert.equal(settingsPayload.surfaces.externalAgentConfig.importHistoriesEnabled, false);
+    assert.equal(settingsPayload.integrationScope.externalAgentImportHistoriesEnabled, false);
+
+    const response = await fetch(`${blockedServer.url}/api/external-agent-import-histories`, {
+      headers: apiHeaders(blockedServer.server),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, false);
+    assert.deepEqual(payload.appServer.auditedMethods, [
+      "externalAgentConfig/import/readHistories",
+    ]);
+    assert.equal(payload.settings.externalAgentImportHistoriesEnabled, false);
+    assert.equal(payload.policy.appServerTraffic, false);
+    assert.equal(payload.result.status, "blocked");
+    assert.equal(blockedCalls.length, 0);
+    assert.equal(serialized.includes("/tmp/default-workspace"), false);
+  } finally {
+    await closeServer(blockedServer.server);
+  }
+
+  const calls = [];
+  const enabledServer = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    externalAgentImportHistoriesEnabled: true,
+    externalAgentImportHistoriesFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-07-01T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/private-home",
+          userAgent: "mock/0.0.0",
+        },
+        probes: {
+          externalAgentConfigImportHistories: {
+            ok: true,
+            historyCount: 1,
+            successCount: 1,
+            failureCount: 1,
+            successItemTypeCounts: {
+              MCP_SERVER_CONFIG: 1,
+              privateSuccessType: 1,
+            },
+            failureItemTypeCounts: {
+              SESSIONS: 1,
+              privateFailureType: 1,
+            },
+            completedTimestampCount: 1,
+            importIdCount: 1,
+            cwdCount: 2,
+            sourceCount: 2,
+            targetCount: 1,
+            messageCount: 1,
+            failureStageCount: 1,
+            errorTypeCount: 1,
+            importIdsReturned: true,
+            timestampsReturned: true,
+            cwdReturned: true,
+            sourcesReturned: true,
+            targetsReturned: true,
+            messagesReturned: true,
+            failureStagesReturned: true,
+            errorTypesReturned: true,
+            rawPayloadReturned: true,
+          },
+        },
+        rawImportHistories: {
+          importId: "private-import-id",
+          cwd: "/tmp/default-workspace",
+          source: "/tmp/default-workspace/.claude/session.jsonl",
+          target: "/tmp/default-workspace/.codex/mcp.json",
+          message: "private import failure message",
+          failureStage: "private-stage",
+          errorType: "private-error-type",
+        },
+        notifications: {},
+      };
+    },
+  });
+
+  try {
+    const settingsResponse = await fetch(`${enabledServer.url}/api/settings-integrations`, {
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(settingsResponse.status, 200);
+    const settingsPayload = await settingsResponse.json();
+    assert.equal(settingsPayload.surfaces.externalAgentConfig.importHistoriesAvailable, true);
+    assert.equal(settingsPayload.surfaces.externalAgentConfig.importHistoriesEnabled, true);
+    assert.equal(settingsPayload.integrationScope.externalAgentImportHistoriesEnabled, true);
+    assert.equal(
+      settingsPayload.integrationScope.enabledReadMethods.includes(
+        "externalAgentConfig/import/readHistories",
+      ),
+      true,
+    );
+
+    const methodResponse = await fetch(
+      `${enabledServer.url}/api/external-agent-import-histories`,
+      {
+        method: "POST",
+        headers: apiHeaders(enabledServer.server),
+      },
+    );
+    assert.equal(methodResponse.status, 405);
+
+    const response = await fetch(`${enabledServer.url}/api/external-agent-import-histories`, {
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, true);
+    assert.equal(payload.appServer.modelTraffic, false);
+    assert.deepEqual(payload.appServer.auditedMethods, [
+      "externalAgentConfig/import/readHistories",
+    ]);
+    assert.equal(payload.settings.externalAgentImportHistoriesEnabled, true);
+    assert.equal(payload.result.status, "available");
+    assert.equal(payload.result.historyCount, 1);
+    assert.equal(payload.result.successCount, 1);
+    assert.equal(payload.result.failureCount, 1);
+    assert.deepEqual(payload.result.successItemTypeCounts, { MCP_SERVER_CONFIG: 1 });
+    assert.deepEqual(payload.result.failureItemTypeCounts, { SESSIONS: 1 });
+    assert.equal(payload.result.completedTimestampCount, 1);
+    assert.equal(payload.result.importIdCount, 1);
+    assert.equal(payload.result.cwdCount, 2);
+    assert.equal(payload.result.sourceCount, 2);
+    assert.equal(payload.result.targetCount, 1);
+    assert.equal(payload.result.messageCount, 1);
+    assert.equal(payload.result.failureStageCount, 1);
+    assert.equal(payload.result.errorTypeCount, 1);
+    assert.equal(payload.result.importIdsReturned, false);
+    assert.equal(payload.result.timestampsReturned, false);
+    assert.equal(payload.result.cwdReturned, false);
+    assert.equal(payload.result.sourcesReturned, false);
+    assert.equal(payload.result.targetsReturned, false);
+    assert.equal(payload.result.messagesReturned, false);
+    assert.equal(payload.result.failureStagesReturned, false);
+    assert.equal(payload.result.errorTypesReturned, false);
+    assert.equal(payload.result.rawPayloadReturned, false);
+    assert.equal(payload.policy.readOnly, true);
+    assert.equal(payload.policy.importExecution, false);
+    assert.equal(payload.policy.externalConfigImportMutation, false);
+    assert.equal(payload.policy.filesystemReads, false);
+    assert.equal(payload.policy.filesystemWrites, false);
+    assert.equal(payload.policy.rawPayloadReturned, false);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].cwd, "/tmp/default-workspace");
+    for (const marker of [
+      "/tmp/default-workspace",
+      "/tmp/private-home",
+      "codexHome",
+      "userAgent",
+      "private-import-id",
+      "privateSuccessType",
+      "privateFailureType",
+      "private import failure message",
+      "private-stage",
+      "private-error-type",
+      ".claude/session.jsonl",
+      ".codex/mcp.json",
+      "\"importIdsReturned\":true",
+      "\"timestampsReturned\":true",
+      "\"cwdReturned\":true",
+      "\"sourcesReturned\":true",
+      "\"targetsReturned\":true",
+      "\"messagesReturned\":true",
+      "\"failureStagesReturned\":true",
+      "\"errorTypesReturned\":true",
       "\"rawPayloadReturned\":true",
     ]) {
       assert.equal(serialized.includes(marker), false, `leaked ${marker}`);

@@ -1740,6 +1740,13 @@ Current M1 status:
   counts and plugin metadata presence counts without plugin names, ids, paths,
   URLs, descriptions, prompts, capabilities, screenshots, marketplace names,
   install suggestion names, mutations, or raw payloads
+- done: opt-in `/api/external-agent-import-histories` behind
+  `CODEX_APP_PORT_ALLOW_EXTERNAL_AGENT_IMPORT_HISTORIES=1`, GET-only and
+  local-token protected, calling only
+  `externalAgentConfig/import/readHistories` and returning history/success/
+  failure counts plus allowlisted item-type buckets without import ids,
+  timestamps, cwd values, source/target paths, messages, failure stages, error
+  types, import execution, filesystem access, or raw payloads
 - done: local-only `/api/remote-control-enable-preflight` for audited
   `remoteControl/enable` intent, with route-specific nested response schemas,
   argument/key counts, optional `ephemeral` presence, unknown-param and
