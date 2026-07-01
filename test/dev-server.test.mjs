@@ -20489,8 +20489,8 @@ test("dev server exposes settings and integration boundary without app-server tr
     );
     assertSettingsServerBoundaries(payload);
     assertCodexAppSettingsParity(payload, {
-      availableSectionCount: 15,
-      partialSectionCount: 15,
+      availableSectionCount: 16,
+      partialSectionCount: 16,
       preflightOnlySectionCount: 0,
       blockedSectionCount: 0,
       profileState: "partial",
@@ -22761,8 +22761,8 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
     );
     assertSettingsServerBoundaries(payload);
     assertCodexAppSettingsParity(payload, {
-      availableSectionCount: 15,
-      partialSectionCount: 15,
+      availableSectionCount: 16,
+      partialSectionCount: 16,
       preflightOnlySectionCount: 0,
       blockedSectionCount: 0,
       profileState: "partial",
@@ -46529,8 +46529,8 @@ function assertCodexAppSettingsParity(
   assert.equal(summary?.returned, true);
   assert.equal(summary.state, summaryState);
   assert.equal(summary.officialSource, "openai-codex-app-settings-docs");
-  assert.equal(summary.officialSectionCount, 15);
-  assert.equal(summary.trackedSectionCount, 15);
+  assert.equal(summary.officialSectionCount, 16);
+  assert.equal(summary.trackedSectionCount, 16);
   assert.equal(summary.availableSectionCount, availableSectionCount);
   assert.equal(summary.partialSectionCount, partialSectionCount);
   assert.equal(summary.preflightOnlySectionCount, preflightOnlySectionCount);
@@ -46549,6 +46549,7 @@ function assertCodexAppSettingsParity(
       "integrationsMcp",
       "browser",
       "computerUse",
+      "connections",
       "personalization",
       "contextAwareSuggestions",
       "memories",
@@ -46586,6 +46587,10 @@ function assertCodexAppSettingsParity(
   );
   assert.equal(
     summary.sections.find((section) => section.key === "computerUse")?.state,
+    "partial",
+  );
+  assert.equal(
+    summary.sections.find((section) => section.key === "connections")?.state,
     "partial",
   );
   assert.equal(
@@ -47279,6 +47284,102 @@ function assertCodexAppSettingsParity(
     ),
     true,
   );
+  assert.equal(summary.connections?.returned, true);
+  assert.equal(summary.connections.state, "partial");
+  assert.equal(summary.connections.settingCount, 9);
+  assert.equal(summary.connections.officialSettingCount, 9);
+  assert.equal(summary.connections.catalogOnlySettingCount, 4);
+  assert.equal(summary.connections.blockedSettingCount, 5);
+  assert.equal(summary.connections.enabledSettingCount, 0);
+  assert.equal(summary.connections.connectionsControlsReturned, true);
+  assert.equal(summary.connections.settingsConnectionsCatalogReturned, true);
+  assert.equal(summary.connections.hostNamesReturned, false);
+  assert.equal(summary.connections.hostIdsReturned, false);
+  assert.equal(summary.connections.deviceNamesReturned, false);
+  assert.equal(summary.connections.deviceIdsReturned, false);
+  assert.equal(summary.connections.qrCodesReturned, false);
+  assert.equal(summary.connections.pairingCodesReturned, false);
+  assert.equal(summary.connections.relayEndpointsReturned, false);
+  assert.equal(summary.connections.remoteStatusesReturned, false);
+  assert.equal(summary.connections.sshConfigsReturned, false);
+  assert.equal(summary.connections.sshHostAliasesReturned, false);
+  assert.equal(summary.connections.remoteProjectPathsReturned, false);
+  assert.equal(summary.connections.credentialsReturned, false);
+  assert.equal(summary.connections.pluginNamesReturned, false);
+  assert.equal(summary.connections.mcpServerNamesReturned, false);
+  assert.equal(summary.connections.skillNamesReturned, false);
+  assert.equal(summary.connections.browserStatesReturned, false);
+  assert.equal(summary.connections.computerUseStatesReturned, false);
+  assert.equal(summary.connections.hostEnablementEnabled, false);
+  assert.equal(summary.connections.pairingEnabled, false);
+  assert.equal(summary.connections.deviceRevokeEnabled, false);
+  assert.equal(summary.connections.keepAwakeWriteEnabled, false);
+  assert.equal(summary.connections.sshConnectionsEnabled, false);
+  assert.equal(summary.connections.remoteAppServersEnabled, false);
+  assert.equal(summary.connections.remoteCommandsEnabled, false);
+  assert.equal(summary.connections.remoteFileAccessEnabled, false);
+  assert.equal(summary.connections.relayTraffic, false);
+  assert.equal(summary.connections.settingValuesReturned, false);
+  assert.equal(summary.connections.localSettingValuesReturned, false);
+  assert.equal(summary.connections.mutationEnabled, false);
+  assert.equal(summary.connections.pathsReturned, false);
+  assert.equal(summary.connections.urlsReturned, false);
+  assert.equal(summary.connections.secretsReturned, false);
+  assert.equal(summary.connections.rawPayloadsReturned, false);
+  assert.equal(summary.connections.appServerTraffic, false);
+  assert.deepEqual(
+    summary.connections.settings.map((setting) => setting.key),
+    [
+      "mobileRemoteAccessSetup",
+      "connectedDevicesManagement",
+      "controlOtherDevices",
+      "keepComputerAwake",
+      "connectionsComputerUseOption",
+      "connectionsChromeExtensionOption",
+      "sshHostRemoteProjects",
+      "secureRelayBoundary",
+      "connectedHostEnvironmentInheritance",
+    ],
+  );
+  assert.equal(
+    summary.connections.settings.every(
+      (setting) =>
+        setting.settingValueReturned === false &&
+        setting.hostNameReturned === false &&
+        setting.hostIdReturned === false &&
+        setting.deviceNameReturned === false &&
+        setting.deviceIdReturned === false &&
+        setting.qrCodeReturned === false &&
+        setting.pairingCodeReturned === false &&
+        setting.relayEndpointReturned === false &&
+        setting.remoteStatusReturned === false &&
+        setting.sshConfigReturned === false &&
+        setting.sshHostAliasReturned === false &&
+        setting.remoteProjectPathReturned === false &&
+        setting.credentialReturned === false &&
+        setting.pluginNameReturned === false &&
+        setting.mcpServerNameReturned === false &&
+        setting.skillNameReturned === false &&
+        setting.browserStateReturned === false &&
+        setting.computerUseStateReturned === false &&
+        setting.hostEnablementStarted === false &&
+        setting.pairingStarted === false &&
+        setting.deviceRevokeEnabled === false &&
+        setting.keepAwakeWriteEnabled === false &&
+        setting.sshConnectionStarted === false &&
+        setting.remoteAppServerStarted === false &&
+        setting.remoteCommandStarted === false &&
+        setting.remoteFileAccessStarted === false &&
+        setting.relayTrafficStarted === false &&
+        setting.mutationEnabled === false &&
+        setting.pathsReturned === false &&
+        setting.urlsReturned === false &&
+        setting.secretsReturned === false &&
+        setting.rawPayloadsReturned === false &&
+        setting.appServerTraffic === false,
+    ),
+    true,
+  );
   assert.equal(summary.contextAwareSuggestions?.returned, true);
   assert.equal(summary.contextAwareSuggestions.state, "partial");
   assert.equal(summary.contextAwareSuggestions.settingCount, 5);
@@ -47669,6 +47770,35 @@ function assertCodexAppSettingsParity(
   assert.equal(payload.policy?.codexAppComputerUseDesktopControlStarted, false);
   assert.equal(payload.policy?.codexAppComputerUseLockedUseStateReturned, false);
   assert.equal(payload.policy?.codexAppComputerUseMutationsEnabled, false);
+  assert.equal(payload.policy?.codexAppConnectionsSettingsReturned, true);
+  assert.equal(payload.policy?.codexAppConnectionsValuesReturned, false);
+  assert.equal(payload.policy?.codexAppConnectionsHostNamesReturned, false);
+  assert.equal(payload.policy?.codexAppConnectionsHostIdsReturned, false);
+  assert.equal(payload.policy?.codexAppConnectionsDeviceNamesReturned, false);
+  assert.equal(payload.policy?.codexAppConnectionsDeviceIdsReturned, false);
+  assert.equal(payload.policy?.codexAppConnectionsQrCodesReturned, false);
+  assert.equal(payload.policy?.codexAppConnectionsPairingCodesReturned, false);
+  assert.equal(payload.policy?.codexAppConnectionsRelayEndpointsReturned, false);
+  assert.equal(payload.policy?.codexAppConnectionsRemoteStatusesReturned, false);
+  assert.equal(payload.policy?.codexAppConnectionsSshConfigsReturned, false);
+  assert.equal(payload.policy?.codexAppConnectionsSshHostAliasesReturned, false);
+  assert.equal(payload.policy?.codexAppConnectionsRemoteProjectPathsReturned, false);
+  assert.equal(payload.policy?.codexAppConnectionsCredentialsReturned, false);
+  assert.equal(payload.policy?.codexAppConnectionsPluginNamesReturned, false);
+  assert.equal(payload.policy?.codexAppConnectionsMcpServerNamesReturned, false);
+  assert.equal(payload.policy?.codexAppConnectionsSkillNamesReturned, false);
+  assert.equal(payload.policy?.codexAppConnectionsBrowserStatesReturned, false);
+  assert.equal(payload.policy?.codexAppConnectionsComputerUseStatesReturned, false);
+  assert.equal(payload.policy?.codexAppConnectionsHostEnablementEnabled, false);
+  assert.equal(payload.policy?.codexAppConnectionsPairingEnabled, false);
+  assert.equal(payload.policy?.codexAppConnectionsDeviceRevokeEnabled, false);
+  assert.equal(payload.policy?.codexAppConnectionsKeepAwakeWriteEnabled, false);
+  assert.equal(payload.policy?.codexAppConnectionsSshConnectionsEnabled, false);
+  assert.equal(payload.policy?.codexAppConnectionsRemoteAppServersEnabled, false);
+  assert.equal(payload.policy?.codexAppConnectionsRemoteCommandsEnabled, false);
+  assert.equal(payload.policy?.codexAppConnectionsRemoteFileAccessEnabled, false);
+  assert.equal(payload.policy?.codexAppConnectionsRelayTraffic, false);
+  assert.equal(payload.policy?.codexAppConnectionsMutationsEnabled, false);
   assert.equal(payload.policy?.codexAppNotificationSettingsReturned, true);
   assert.equal(payload.policy?.codexAppNotificationSettingValuesReturned, false);
   assert.equal(payload.policy?.codexAppNotificationPermissionStateReturned, false);

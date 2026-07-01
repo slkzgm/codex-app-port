@@ -32691,8 +32691,8 @@ function assertSanitizedSettingsIntegrations(payload) {
   }
   assertSettingsServerBoundaries(payload);
   assertCodexAppSettingsParity(payload, {
-    availableSectionCount: 15,
-    partialSectionCount: 15,
+    availableSectionCount: 16,
+    partialSectionCount: 16,
     preflightOnlySectionCount: 0,
     blockedSectionCount: 0,
     profileState: "partial",
@@ -44697,8 +44697,8 @@ function assertCodexAppSettingsParity(
     summary?.returned !== true ||
     summary.state !== summaryState ||
     summary.officialSource !== "openai-codex-app-settings-docs" ||
-    summary.officialSectionCount !== 15 ||
-    summary.trackedSectionCount !== 15 ||
+    summary.officialSectionCount !== 16 ||
+    summary.trackedSectionCount !== 16 ||
     summary.availableSectionCount !== availableSectionCount ||
     summary.partialSectionCount !== partialSectionCount ||
     summary.preflightOnlySectionCount !== preflightOnlySectionCount ||
@@ -44718,6 +44718,7 @@ function assertCodexAppSettingsParity(
     "integrationsMcp",
     "browser",
     "computerUse",
+    "connections",
     "personalization",
     "contextAwareSuggestions",
     "memories",
@@ -44745,6 +44746,7 @@ function assertCodexAppSettingsParity(
     summary.sections?.find((section) => section.key === "personalization")?.state !==
       "partial" ||
     summary.sections?.find((section) => section.key === "computerUse")?.state !== "partial" ||
+    summary.sections?.find((section) => section.key === "connections")?.state !== "partial" ||
     summary.sections?.find((section) => section.key === "contextAwareSuggestions")?.state !==
       "partial" ||
     summary.sections?.find((section) => section.key === "memories")?.state !== "partial" ||
@@ -45383,6 +45385,97 @@ function assertCodexAppSettingsParity(
         setting.rawPayloadsReturned === false &&
         setting.appServerTraffic === false,
     ) ||
+    summary.connections?.returned !== true ||
+    summary.connections.state !== "partial" ||
+    summary.connections.settingCount !== 9 ||
+    summary.connections.officialSettingCount !== 9 ||
+    summary.connections.catalogOnlySettingCount !== 4 ||
+    summary.connections.blockedSettingCount !== 5 ||
+    summary.connections.enabledSettingCount !== 0 ||
+    summary.connections.connectionsControlsReturned !== true ||
+    summary.connections.settingsConnectionsCatalogReturned !== true ||
+    summary.connections.hostNamesReturned !== false ||
+    summary.connections.hostIdsReturned !== false ||
+    summary.connections.deviceNamesReturned !== false ||
+    summary.connections.deviceIdsReturned !== false ||
+    summary.connections.qrCodesReturned !== false ||
+    summary.connections.pairingCodesReturned !== false ||
+    summary.connections.relayEndpointsReturned !== false ||
+    summary.connections.remoteStatusesReturned !== false ||
+    summary.connections.sshConfigsReturned !== false ||
+    summary.connections.sshHostAliasesReturned !== false ||
+    summary.connections.remoteProjectPathsReturned !== false ||
+    summary.connections.credentialsReturned !== false ||
+    summary.connections.pluginNamesReturned !== false ||
+    summary.connections.mcpServerNamesReturned !== false ||
+    summary.connections.skillNamesReturned !== false ||
+    summary.connections.browserStatesReturned !== false ||
+    summary.connections.computerUseStatesReturned !== false ||
+    summary.connections.hostEnablementEnabled !== false ||
+    summary.connections.pairingEnabled !== false ||
+    summary.connections.deviceRevokeEnabled !== false ||
+    summary.connections.keepAwakeWriteEnabled !== false ||
+    summary.connections.sshConnectionsEnabled !== false ||
+    summary.connections.remoteAppServersEnabled !== false ||
+    summary.connections.remoteCommandsEnabled !== false ||
+    summary.connections.remoteFileAccessEnabled !== false ||
+    summary.connections.relayTraffic !== false ||
+    summary.connections.settingValuesReturned !== false ||
+    summary.connections.localSettingValuesReturned !== false ||
+    summary.connections.mutationEnabled !== false ||
+    summary.connections.pathsReturned !== false ||
+    summary.connections.urlsReturned !== false ||
+    summary.connections.secretsReturned !== false ||
+    summary.connections.rawPayloadsReturned !== false ||
+    summary.connections.appServerTraffic !== false ||
+    JSON.stringify((summary.connections.settings ?? []).map((setting) => setting.key)) !==
+      JSON.stringify([
+        "mobileRemoteAccessSetup",
+        "connectedDevicesManagement",
+        "controlOtherDevices",
+        "keepComputerAwake",
+        "connectionsComputerUseOption",
+        "connectionsChromeExtensionOption",
+        "sshHostRemoteProjects",
+        "secureRelayBoundary",
+        "connectedHostEnvironmentInheritance",
+      ]) ||
+    !summary.connections.settings?.every(
+      (setting) =>
+        setting.settingValueReturned === false &&
+        setting.hostNameReturned === false &&
+        setting.hostIdReturned === false &&
+        setting.deviceNameReturned === false &&
+        setting.deviceIdReturned === false &&
+        setting.qrCodeReturned === false &&
+        setting.pairingCodeReturned === false &&
+        setting.relayEndpointReturned === false &&
+        setting.remoteStatusReturned === false &&
+        setting.sshConfigReturned === false &&
+        setting.sshHostAliasReturned === false &&
+        setting.remoteProjectPathReturned === false &&
+        setting.credentialReturned === false &&
+        setting.pluginNameReturned === false &&
+        setting.mcpServerNameReturned === false &&
+        setting.skillNameReturned === false &&
+        setting.browserStateReturned === false &&
+        setting.computerUseStateReturned === false &&
+        setting.hostEnablementStarted === false &&
+        setting.pairingStarted === false &&
+        setting.deviceRevokeEnabled === false &&
+        setting.keepAwakeWriteEnabled === false &&
+        setting.sshConnectionStarted === false &&
+        setting.remoteAppServerStarted === false &&
+        setting.remoteCommandStarted === false &&
+        setting.remoteFileAccessStarted === false &&
+        setting.relayTrafficStarted === false &&
+        setting.mutationEnabled === false &&
+        setting.pathsReturned === false &&
+        setting.urlsReturned === false &&
+        setting.secretsReturned === false &&
+        setting.rawPayloadsReturned === false &&
+        setting.appServerTraffic === false,
+    ) ||
     summary.contextAwareSuggestions?.returned !== true ||
     summary.contextAwareSuggestions.state !== "partial" ||
     summary.contextAwareSuggestions.settingCount !== 5 ||
@@ -45745,6 +45838,35 @@ function assertCodexAppSettingsParity(
     payload.policy?.codexAppComputerUseDesktopControlStarted !== false ||
     payload.policy?.codexAppComputerUseLockedUseStateReturned !== false ||
     payload.policy?.codexAppComputerUseMutationsEnabled !== false ||
+    payload.policy?.codexAppConnectionsSettingsReturned !== true ||
+    payload.policy?.codexAppConnectionsValuesReturned !== false ||
+    payload.policy?.codexAppConnectionsHostNamesReturned !== false ||
+    payload.policy?.codexAppConnectionsHostIdsReturned !== false ||
+    payload.policy?.codexAppConnectionsDeviceNamesReturned !== false ||
+    payload.policy?.codexAppConnectionsDeviceIdsReturned !== false ||
+    payload.policy?.codexAppConnectionsQrCodesReturned !== false ||
+    payload.policy?.codexAppConnectionsPairingCodesReturned !== false ||
+    payload.policy?.codexAppConnectionsRelayEndpointsReturned !== false ||
+    payload.policy?.codexAppConnectionsRemoteStatusesReturned !== false ||
+    payload.policy?.codexAppConnectionsSshConfigsReturned !== false ||
+    payload.policy?.codexAppConnectionsSshHostAliasesReturned !== false ||
+    payload.policy?.codexAppConnectionsRemoteProjectPathsReturned !== false ||
+    payload.policy?.codexAppConnectionsCredentialsReturned !== false ||
+    payload.policy?.codexAppConnectionsPluginNamesReturned !== false ||
+    payload.policy?.codexAppConnectionsMcpServerNamesReturned !== false ||
+    payload.policy?.codexAppConnectionsSkillNamesReturned !== false ||
+    payload.policy?.codexAppConnectionsBrowserStatesReturned !== false ||
+    payload.policy?.codexAppConnectionsComputerUseStatesReturned !== false ||
+    payload.policy?.codexAppConnectionsHostEnablementEnabled !== false ||
+    payload.policy?.codexAppConnectionsPairingEnabled !== false ||
+    payload.policy?.codexAppConnectionsDeviceRevokeEnabled !== false ||
+    payload.policy?.codexAppConnectionsKeepAwakeWriteEnabled !== false ||
+    payload.policy?.codexAppConnectionsSshConnectionsEnabled !== false ||
+    payload.policy?.codexAppConnectionsRemoteAppServersEnabled !== false ||
+    payload.policy?.codexAppConnectionsRemoteCommandsEnabled !== false ||
+    payload.policy?.codexAppConnectionsRemoteFileAccessEnabled !== false ||
+    payload.policy?.codexAppConnectionsRelayTraffic !== false ||
+    payload.policy?.codexAppConnectionsMutationsEnabled !== false ||
     payload.policy?.codexAppNotificationSettingsReturned !== true ||
     payload.policy?.codexAppNotificationSettingValuesReturned !== false ||
     payload.policy?.codexAppNotificationPermissionStateReturned !== false ||
@@ -47422,8 +47544,8 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
   }
   assertSettingsServerBoundaries(payload);
   assertCodexAppSettingsParity(payload, {
-    availableSectionCount: 15,
-    partialSectionCount: 15,
+    availableSectionCount: 16,
+    partialSectionCount: 16,
     preflightOnlySectionCount: 0,
     blockedSectionCount: 0,
     profileState: "partial",

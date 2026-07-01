@@ -985,6 +985,15 @@ Target parity with the Codex desktop workflow:
   screenshots, clipboard state, locked-use state, admin policy, desktop
   control, permission prompts, paths, URLs, secrets, raw payloads, mutations,
   and app-server traffic remain blocked.
+- The same summary now includes a read-only Connections settings catalog for
+  the official mobile remote access, connected-device management,
+  control-other-devices, keep-awake, Computer Use, Chrome extension, SSH remote
+  project, secure relay, and connected-host inheritance surfaces. It returns
+  only keys, groups, states, sources, and counts; host or device identifiers,
+  QR or pairing codes, relay endpoints, remote status values, SSH config or
+  aliases, project paths, credentials, plugin/MCP/skill names, browser or
+  Computer Use state, setting values, paths, URLs, secrets, raw payloads,
+  mutations, remote traffic, and app-server traffic remain blocked.
 - The same summary now includes a read-only Notifications settings catalog for
   the official turn-completion and permission-prompt controls plus the local
   server-notification boundary. It returns only keys, groups, states, sources,

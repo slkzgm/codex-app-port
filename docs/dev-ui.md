@@ -1594,6 +1594,15 @@ allowed or denied app lists, app identifiers, window titles, screen content,
 screenshots, clipboard state, locked-use state, admin policy, desktop control,
 permission prompts, paths, URLs, raw payloads, and app-server traffic remain
 blocked.
+Within that same summary, `connections` exposes a static review-only catalog
+for mobile remote access, connected-device management, controlling other
+devices, keep-awake, Computer Use, Chrome extension, SSH remote project, secure
+relay, and connected-host inheritance settings. The UI shows only setting keys,
+groups, state/source chips, catalog counts, and redaction chips; host or device
+identifiers, QR or pairing codes, relay endpoints, remote status values, SSH
+config or aliases, project paths, credentials, plugin/MCP/skill names, browser
+or Computer Use state, setting values, paths, URLs, raw payloads, mutations,
+remote traffic, and app-server traffic remain blocked.
 Within that same summary, `notifications` exposes a static review-only catalog
 for official turn-completion notification and permission-prompt settings plus
 the local server-notification boundary. The UI shows only setting keys, groups,
