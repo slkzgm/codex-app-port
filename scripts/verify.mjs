@@ -34319,6 +34319,222 @@ function assertCodexRemoteConnectionsCatalog(payload) {
   }
 }
 
+function expectedCodexSubagentsEntries() {
+  return [
+    ["parallelSpecializedAgents", "concepts", "catalog-only", "official-codex-subagents-docs"],
+    ["contextPollutionConcept", "concepts", "catalog-only", "official-codex-subagents-docs"],
+    ["contextRotConcept", "concepts", "catalog-only", "official-codex-subagents-docs"],
+    ["mainAgentFocus", "concepts", "catalog-only", "official-codex-subagents-docs"],
+    ["subagentSummaries", "concepts", "catalog-only", "official-codex-subagents-docs"],
+    ["readHeavyStartingPoint", "workflow-guidance", "catalog-only", "official-codex-subagents-docs"],
+    [
+      "writeHeavyCoordinationRisk",
+      "workflow-guidance",
+      "catalog-only",
+      "official-codex-subagents-docs",
+    ],
+    ["coreTermsSubagentWorkflow", "concepts", "catalog-only", "official-codex-subagents-docs"],
+    ["explicitTriggerRequirement", "triggering", "catalog-only", "official-codex-subagents-docs"],
+    ["promptDivisionWaitSummary", "triggering", "catalog-only", "official-codex-subagents-docs"],
+    ["modelReasoningGuidance", "model-selection", "catalog-only", "official-codex-subagents-docs"],
+    ["reasoningEffortGuidance", "model-selection", "catalog-only", "official-codex-subagents-docs"],
+    ["defaultEnabled", "availability", "catalog-only", "official-codex-subagents-docs"],
+    ["appCliVisibility", "availability", "catalog-only", "official-codex-subagents-docs"],
+    ["tokenUsageCaution", "cost", "catalog-only", "official-codex-subagents-docs"],
+    ["orchestrationWorkflow", "workflow", "catalog-only", "official-codex-subagents-docs"],
+    ["consolidatedResponse", "workflow", "catalog-only", "official-codex-subagents-docs"],
+    ["agentSlashCommandManagement", "management", "catalog-only", "official-codex-subagents-docs"],
+    ["directSteeringStopClose", "management", "catalog-only", "official-codex-subagents-docs"],
+    ["sandboxPolicyInheritance", "security", "catalog-only", "official-codex-subagents-docs"],
+    ["inactiveThreadApprovals", "approvals", "catalog-only", "official-codex-subagents-docs"],
+    ["nonInteractiveApprovalFailure", "approvals", "catalog-only", "official-codex-subagents-docs"],
+    ["runtimeOverrideInheritance", "security", "catalog-only", "official-codex-subagents-docs"],
+    ["customAgentSandboxOverride", "security", "catalog-only", "official-codex-subagents-docs"],
+    ["builtInDefaultAgent", "built-in-agents", "catalog-only", "official-codex-subagents-docs"],
+    ["builtInWorkerAgent", "built-in-agents", "catalog-only", "official-codex-subagents-docs"],
+    ["builtInExplorerAgent", "built-in-agents", "catalog-only", "official-codex-subagents-docs"],
+    ["personalProjectAgentLocations", "custom-agents", "catalog-only", "official-codex-subagents-docs"],
+    ["customAgentConfigLayers", "custom-agents", "catalog-only", "official-codex-subagents-docs"],
+    ["requiredCustomAgentFields", "custom-agents", "catalog-only", "official-codex-subagents-docs"],
+    ["optionalInheritedFields", "custom-agents", "catalog-only", "official-codex-subagents-docs"],
+    ["globalAgentsSettings", "configuration", "catalog-only", "official-codex-subagents-docs"],
+    ["maxThreadsSetting", "configuration", "catalog-only", "official-codex-subagents-docs"],
+    ["maxDepthSetting", "configuration", "catalog-only", "official-codex-subagents-docs"],
+    ["jobRuntimeSetting", "configuration", "catalog-only", "official-codex-subagents-docs"],
+    ["customAgentSchema", "schema", "catalog-only", "official-codex-subagents-docs"],
+    ["nameSourceOfTruth", "schema", "catalog-only", "official-codex-subagents-docs"],
+    ["displayNicknames", "presentation", "catalog-only", "official-codex-subagents-docs"],
+    ["nicknameConstraints", "presentation", "catalog-only", "official-codex-subagents-docs"],
+    ["narrowOpinionatedAgents", "authoring-guidance", "catalog-only", "official-codex-subagents-docs"],
+    ["agentFileReadBoundary", "custom-agents", "blocked", "local-subagents-boundary"],
+    ["agentFileWriteBoundary", "custom-agents", "blocked", "local-subagents-boundary"],
+    ["developerInstructionsBoundary", "custom-agents", "blocked", "local-subagents-boundary"],
+    ["modelConfigReadBoundary", "model-selection", "blocked", "local-subagents-boundary"],
+    ["mcpConfigReadBoundary", "custom-agents", "blocked", "local-subagents-boundary"],
+    ["skillsConfigReadBoundary", "custom-agents", "blocked", "local-subagents-boundary"],
+    ["subagentSpawnBoundary", "runtime", "blocked", "local-subagents-boundary"],
+    ["subagentThreadListBoundary", "management", "blocked", "local-subagents-boundary"],
+    ["subagentThreadSwitchBoundary", "management", "blocked", "local-subagents-boundary"],
+    ["subagentSteerStopCloseBoundary", "management", "blocked", "local-subagents-boundary"],
+    ["subagentOutputBoundary", "runtime", "blocked", "local-subagents-boundary"],
+    ["approvalForwardingBoundary", "approvals", "blocked", "local-subagents-boundary"],
+    ["agentsConfigWriteBoundary", "configuration", "blocked", "local-subagents-boundary"],
+    ["recursiveDelegationBoundary", "configuration", "blocked", "local-subagents-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexSubagentsCatalog(payload) {
+  const catalog = payload.codexSubagents;
+  const expectedEntries = expectedCodexSubagentsEntries();
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-subagents-docs");
+  assert.equal(catalog.entryCount, 54);
+  assert.equal(catalog.officialEntryCount, 40);
+  assert.equal(catalog.localBoundaryEntryCount, 14);
+  assert.equal(catalog.catalogOnlyEntryCount, 40);
+  assert.equal(catalog.blockedEntryCount, 14);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({
+      key,
+      group,
+      state,
+      source,
+    })),
+    expectedEntries,
+  );
+
+  const entryRedactionFlags = [
+    "agentNameReturned",
+    "agentNicknameReturned",
+    "agentFileReturned",
+    "agentPathReturned",
+    "developerInstructionsReturned",
+    "modelValueReturned",
+    "reasoningEffortReturned",
+    "sandboxValueReturned",
+    "mcpConfigReturned",
+    "skillConfigReturned",
+    "threadIdReturned",
+    "threadContentReturned",
+    "subagentOutputReturned",
+    "approvalDetailReturned",
+    "promptTextReturned",
+    "configValueReturned",
+    "commandOutputReturned",
+    "subagentSpawned",
+    "agentThreadSwitched",
+    "subagentSteered",
+    "subagentStopped",
+    "subagentClosed",
+    "configWritten",
+    "agentFileWritten",
+    "modelTraffic",
+    "toolWorkStarted",
+    "approvalForwarded",
+    "recursiveDelegationEnabled",
+    "filesystemRead",
+    "filesystemWrite",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.subagentsCatalogReturned, true);
+  for (const flag of [
+    "agentNamesReturned",
+    "agentNicknamesReturned",
+    "agentFilesReturned",
+    "agentPathsReturned",
+    "developerInstructionsReturned",
+    "modelValuesReturned",
+    "reasoningEffortsReturned",
+    "sandboxValuesReturned",
+    "mcpConfigsReturned",
+    "skillConfigsReturned",
+    "threadIdsReturned",
+    "threadContentReturned",
+    "subagentOutputsReturned",
+    "approvalDetailsReturned",
+    "promptTextsReturned",
+    "configValuesReturned",
+    "commandOutputsReturned",
+    "subagentsSpawned",
+    "agentThreadsSwitched",
+    "subagentsSteered",
+    "subagentsStopped",
+    "subagentsClosed",
+    "configsWritten",
+    "agentFilesWritten",
+    "modelTraffic",
+    "toolWorkStarted",
+    "approvalsForwarded",
+    "recursiveDelegationEnabled",
+    "filesystemReads",
+    "filesystemWrites",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexSubagentsReturned", true],
+    ["codexSubagentsValuesReturned", false],
+    ["codexSubagentsAgentNamesReturned", false],
+    ["codexSubagentsAgentNicknamesReturned", false],
+    ["codexSubagentsAgentFilesReturned", false],
+    ["codexSubagentsAgentPathsReturned", false],
+    ["codexSubagentsDeveloperInstructionsReturned", false],
+    ["codexSubagentsModelValuesReturned", false],
+    ["codexSubagentsReasoningEffortsReturned", false],
+    ["codexSubagentsSandboxValuesReturned", false],
+    ["codexSubagentsMcpConfigsReturned", false],
+    ["codexSubagentsSkillConfigsReturned", false],
+    ["codexSubagentsThreadIdsReturned", false],
+    ["codexSubagentsThreadContentReturned", false],
+    ["codexSubagentsOutputsReturned", false],
+    ["codexSubagentsApprovalDetailsReturned", false],
+    ["codexSubagentsPromptTextsReturned", false],
+    ["codexSubagentsConfigValuesReturned", false],
+    ["codexSubagentsCommandOutputsReturned", false],
+    ["codexSubagentsSpawnEnabled", false],
+    ["codexSubagentsThreadSwitchEnabled", false],
+    ["codexSubagentsSteeringEnabled", false],
+    ["codexSubagentsStopEnabled", false],
+    ["codexSubagentsCloseEnabled", false],
+    ["codexSubagentsConfigWriteEnabled", false],
+    ["codexSubagentsAgentFileWriteEnabled", false],
+    ["codexSubagentsModelTraffic", false],
+    ["codexSubagentsToolWorkEnabled", false],
+    ["codexSubagentsApprovalForwardingEnabled", false],
+    ["codexSubagentsRecursiveDelegationEnabled", false],
+    ["codexSubagentsFilesystemAccess", false],
+    ["codexSubagentsMutationsEnabled", false],
+    ["codexSubagentsPathsReturned", false],
+    ["codexSubagentsUrlsReturned", false],
+    ["codexSubagentsSecretsReturned", false],
+    ["codexSubagentsRawPayloadsReturned", false],
+    ["codexSubagentsAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexSitesEntries() {
   return [
     ["sitesPluginUseCase", "overview", "catalog-only", "official-codex-sites-docs"],
@@ -36334,6 +36550,7 @@ function assertCodexAppSettingsParity(
   assertCodexHooksCatalog(payload);
   assertCodexRecordReplayCatalog(payload);
   assertCodexRemoteConnectionsCatalog(payload);
+  assertCodexSubagentsCatalog(payload);
   assertCodexSitesCatalog(payload);
   assertCodexPermissionsCatalog(payload);
   assertCodexRulesCatalog(payload);

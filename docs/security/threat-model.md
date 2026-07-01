@@ -511,6 +511,17 @@
   write keep-awake settings, open SSH connections, start remote app servers,
   execute remote commands, read or write remote files, send relay traffic,
   access files or network, or mutate Remote Connections state. Its
+  Codex Subagents catalog may expose only static official-documentation keys
+  plus local boundary keys, groups, states, sources, counts, and redaction
+  flags; it must not return agent names, nicknames, agent files, paths,
+  developer instructions, model values, reasoning effort values, sandbox
+  values, MCP configs, skill configs, thread ids, thread content, subagent
+  outputs, approval details, prompt text, config values, command output,
+  secrets, raw payloads, app-server payloads, or app-server traffic, and must
+  not spawn subagents, switch agent threads, steer, stop, or close subagents,
+  write config or agent files, start model traffic or tool work, forward
+  approvals, enable recursive delegation, access files, or mutate subagent
+  state. Its
   Codex Rules catalog may expose only static official-documentation keys plus
   local boundary keys, groups, states, sources, counts, and redaction flags; it
   must not return rule files, rule paths, rule content, prefix patterns,

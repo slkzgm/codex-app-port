@@ -41,6 +41,8 @@ const elements = {
   codexRemoteConnectionsValuesText: document.querySelector(
     "#codex-remote-connections-values-text",
   ),
+  codexSubagentsText: document.querySelector("#codex-subagents-text"),
+  codexSubagentsValuesText: document.querySelector("#codex-subagents-values-text"),
   codexSitesText: document.querySelector("#codex-sites-text"),
   codexSitesValuesText: document.querySelector("#codex-sites-values-text"),
   codexPermissionsText: document.querySelector("#codex-permissions-text"),
@@ -428,6 +430,7 @@ const elements = {
   codexHooksList: document.querySelector("#codex-hooks-list"),
   codexRecordReplayList: document.querySelector("#codex-record-replay-list"),
   codexRemoteConnectionsList: document.querySelector("#codex-remote-connections-list"),
+  codexSubagentsList: document.querySelector("#codex-subagents-list"),
   codexSitesList: document.querySelector("#codex-sites-list"),
   codexPermissionsList: document.querySelector("#codex-permissions-list"),
   codexRulesList: document.querySelector("#codex-rules-list"),
@@ -10480,6 +10483,7 @@ function renderSettingsIntegrations(payload) {
   const codexHooks = payload.codexHooks ?? {};
   const codexRecordReplay = payload.codexRecordReplay ?? {};
   const codexRemoteConnections = payload.codexRemoteConnections ?? {};
+  const codexSubagents = payload.codexSubagents ?? {};
   const codexSites = payload.codexSites ?? {};
   const codexPermissions = payload.codexPermissions ?? {};
   const codexRules = payload.codexRules ?? {};
@@ -10718,6 +10722,50 @@ function renderSettingsIntegrations(payload) {
     codexRemoteConnections.secretsReturned ||
     codexRemoteConnections.rawPayloadsReturned ||
     codexRemoteConnections.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexSubagentsText.textContent = codexSubagents.returned
+    ? `${codexSubagents.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexSubagents.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexSubagentsValuesText.textContent =
+    codexSubagents.agentNamesReturned ||
+    codexSubagents.agentNicknamesReturned ||
+    codexSubagents.agentFilesReturned ||
+    codexSubagents.agentPathsReturned ||
+    codexSubagents.developerInstructionsReturned ||
+    codexSubagents.modelValuesReturned ||
+    codexSubagents.reasoningEffortsReturned ||
+    codexSubagents.sandboxValuesReturned ||
+    codexSubagents.mcpConfigsReturned ||
+    codexSubagents.skillConfigsReturned ||
+    codexSubagents.threadIdsReturned ||
+    codexSubagents.threadContentReturned ||
+    codexSubagents.subagentOutputsReturned ||
+    codexSubagents.approvalDetailsReturned ||
+    codexSubagents.promptTextsReturned ||
+    codexSubagents.configValuesReturned ||
+    codexSubagents.commandOutputsReturned ||
+    codexSubagents.subagentsSpawned ||
+    codexSubagents.agentThreadsSwitched ||
+    codexSubagents.subagentsSteered ||
+    codexSubagents.subagentsStopped ||
+    codexSubagents.subagentsClosed ||
+    codexSubagents.configsWritten ||
+    codexSubagents.agentFilesWritten ||
+    codexSubagents.modelTraffic ||
+    codexSubagents.toolWorkStarted ||
+    codexSubagents.approvalsForwarded ||
+    codexSubagents.recursiveDelegationEnabled ||
+    codexSubagents.filesystemReads ||
+    codexSubagents.filesystemWrites ||
+    codexSubagents.mutationEnabled ||
+    codexSubagents.pathsReturned ||
+    codexSubagents.urlsReturned ||
+    codexSubagents.secretsReturned ||
+    codexSubagents.rawPayloadsReturned ||
+    codexSubagents.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexSitesText.textContent = codexSites.returned
@@ -11451,6 +11499,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexHooksCatalog(codexHooks);
   renderCodexRecordReplayCatalog(codexRecordReplay);
   renderCodexRemoteConnectionsCatalog(codexRemoteConnections);
+  renderCodexSubagentsCatalog(codexSubagents);
   renderCodexSitesCatalog(codexSites);
   renderCodexPermissionsCatalog(codexPermissions);
   renderCodexRulesCatalog(codexRules);
@@ -13429,6 +13478,89 @@ function renderCodexRemoteConnectionsCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexRemoteConnectionsList.append(row);
+  }
+}
+
+function renderCodexSubagentsCatalog(summary) {
+  elements.codexSubagentsList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexSubagentsList.append(emptyState("No Codex Subagents catalog returned."));
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "subagents";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.agentNameReturned ? "agent names returned" : "agent names hidden",
+      entry.agentNicknameReturned ? "nicknames returned" : "nicknames hidden",
+      entry.agentFileReturned ? "agent files returned" : "agent files hidden",
+      entry.agentPathReturned ? "agent paths returned" : "agent paths hidden",
+      entry.developerInstructionsReturned
+        ? "developer instructions returned"
+        : "developer instructions hidden",
+      entry.modelValueReturned ? "model values returned" : "model values hidden",
+      entry.reasoningEffortReturned ? "reasoning effort returned" : "reasoning effort hidden",
+      entry.sandboxValueReturned ? "sandbox values returned" : "sandbox values hidden",
+      entry.mcpConfigReturned ? "MCP configs returned" : "MCP configs hidden",
+      entry.skillConfigReturned ? "skill configs returned" : "skill configs hidden",
+      entry.threadIdReturned ? "thread ids returned" : "thread ids hidden",
+      entry.threadContentReturned ? "thread content returned" : "thread content hidden",
+      entry.subagentOutputReturned ? "subagent output returned" : "subagent output hidden",
+      entry.approvalDetailReturned ? "approval details returned" : "approval details hidden",
+      entry.promptTextReturned ? "prompt text returned" : "prompt text hidden",
+      entry.configValueReturned ? "config values returned" : "config values hidden",
+      entry.commandOutputReturned ? "command output returned" : "command output hidden",
+      entry.subagentSpawned ? "subagents spawned" : "subagent spawn blocked",
+      entry.agentThreadSwitched ? "agent thread switched" : "thread switch blocked",
+      entry.subagentSteered ? "subagents steered" : "subagent steering blocked",
+      entry.subagentStopped ? "subagents stopped" : "subagent stop blocked",
+      entry.subagentClosed ? "subagents closed" : "subagent close blocked",
+      entry.configWritten ? "config written" : "config writes blocked",
+      entry.agentFileWritten ? "agent file written" : "agent file writes blocked",
+      entry.modelTraffic ? "model traffic" : "model traffic blocked",
+      entry.toolWorkStarted ? "tool work started" : "tool work blocked",
+      entry.approvalForwarded ? "approvals forwarded" : "approval forwarding blocked",
+      entry.recursiveDelegationEnabled
+        ? "recursive delegation enabled"
+        : "recursive delegation blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexSubagentsList.append(row);
   }
 }
 

@@ -636,6 +636,27 @@ Current M1 status:
   remote app-server starts, remote command execution, remote file reads/writes,
   relay traffic, filesystem access, network access, mutations, paths, URLs,
   secrets, raw payloads, and app-server traffic blocked
+- done: read-only Codex Subagents catalog in `/api/settings-integrations`,
+  exposing only static official Subagents documentation keys plus local
+  boundary keys/groups/states/sources/counts/redaction flags for parallel
+  specialized agents, context pollution/rot, main-agent focus, summarized
+  subagent results, read-heavy and write-heavy workflow guidance, core terms,
+  explicit triggering, prompt division/wait/summary guidance, model and
+  reasoning guidance, default availability, app/CLI visibility, token usage
+  caution, orchestration, consolidated responses, /agent management, direct
+  steering/stop/close guidance, sandbox and runtime-override inheritance,
+  inactive-thread approvals, non-interactive approval failure, built-in agents,
+  custom-agent locations/config layers/required and optional fields, global
+  [agents] settings, max_threads/max_depth/job runtime settings, custom-agent
+  schema, name source of truth, display nicknames, nickname constraints,
+  narrow-agent guidance, and local subagent boundaries, with agent names,
+  nicknames, agent files/paths, developer instructions, model/reasoning/sandbox
+  values, MCP configs, skill configs, thread ids/content, subagent outputs,
+  approval details, prompt text, config values, command output, subagent
+  spawning, agent-thread switching, steering, stop/close, config writes, agent
+  file writes, model traffic, tool work, approval forwarding, recursive
+  delegation, filesystem access, mutations, paths, URLs, secrets, raw payloads,
+  and app-server traffic blocked
 - done: read-only Codex Rules catalog in `/api/settings-integrations`,
   exposing only static official Rules documentation keys plus local boundary
   keys/groups/states/sources/counts/redaction flags for `.rules` file

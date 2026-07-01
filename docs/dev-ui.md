@@ -848,6 +848,28 @@ hosts, start pairing, revoke devices, write keep-awake settings, open SSH
 connections, start remote app servers, execute remote commands, read or write
 remote files, send relay traffic, access files or network, or mutate Remote
 Connections state.
+The same response exposes `codexSubagents` as a static review-only catalog for
+official Codex Subagents. The UI shows only catalog counts, entry keys, groups,
+state/source chips, and redaction chips for parallel specialized agents,
+context pollution/rot, main-agent focus, summarized subagent results,
+read-heavy and write-heavy workflow guidance, core terms, explicit triggering,
+prompt division/wait/summary guidance, model and reasoning guidance, default
+availability, app/CLI visibility, token usage caution, orchestration,
+consolidated responses, `/agent` management, direct steering/stop/close
+guidance, sandbox and runtime-override inheritance, inactive-thread approvals,
+non-interactive approval failure, built-in agents, custom-agent locations,
+config layers, required and optional fields, global `[agents]` settings,
+`max_threads`, `max_depth`, job runtime settings, custom-agent schema, name
+source of truth, display nicknames, nickname constraints, narrow-agent
+guidance, and local subagent boundaries. It does not show agent names,
+nicknames, agent files, paths, developer instructions, model values, reasoning
+effort values, sandbox values, MCP configs, skill configs, thread ids, thread
+content, subagent outputs, approval details, prompt text, config values,
+command output, paths, URLs, secrets, raw payloads, or app-server traffic, and
+it does not spawn subagents, switch agent threads, steer/stop/close subagents,
+write config or agent files, start model traffic or tool work, forward
+approvals, enable recursive delegation, read/write files, or mutate subagent
+state.
 The same response exposes `codexSites` as a static review-only catalog for the
 official Sites plugin. The UI shows only catalog counts, entry keys, groups,
 state/source chips, and redaction chips for hosted website, web app, and game
