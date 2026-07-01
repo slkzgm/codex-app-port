@@ -45,6 +45,8 @@ const elements = {
   codexWindowsPlatformValuesText: document.querySelector("#codex-windows-platform-values-text"),
   codexBedrockText: document.querySelector("#codex-bedrock-text"),
   codexBedrockValuesText: document.querySelector("#codex-bedrock-values-text"),
+  codexPricingText: document.querySelector("#codex-pricing-text"),
+  codexPricingValuesText: document.querySelector("#codex-pricing-values-text"),
   codexGovernanceText: document.querySelector("#codex-governance-text"),
   codexGovernanceValuesText: document.querySelector("#codex-governance-values-text"),
   codexManagedConfigurationText: document.querySelector("#codex-managed-configuration-text"),
@@ -463,6 +465,7 @@ const elements = {
   codexOpenSourceList: document.querySelector("#codex-open-source-list"),
   codexWindowsPlatformList: document.querySelector("#codex-windows-platform-list"),
   codexBedrockList: document.querySelector("#codex-bedrock-list"),
+  codexPricingList: document.querySelector("#codex-pricing-list"),
   codexGovernanceList: document.querySelector("#codex-governance-list"),
   codexManagedConfigurationList: document.querySelector("#codex-managed-configuration-list"),
   codexEnvironmentVariablesList: document.querySelector("#codex-environment-variables-list"),
@@ -10528,6 +10531,7 @@ function renderSettingsIntegrations(payload) {
   const codexOpenSource = payload.codexOpenSource ?? {};
   const codexWindowsPlatform = payload.codexWindowsPlatform ?? {};
   const codexBedrock = payload.codexBedrock ?? {};
+  const codexPricing = payload.codexPricing ?? {};
   const codexGovernance = payload.codexGovernance ?? {};
   const codexManagedConfiguration = payload.codexManagedConfiguration ?? {};
   const codexEnvironmentVariables = payload.codexEnvironmentVariables ?? {};
@@ -10914,6 +10918,47 @@ function renderSettingsIntegrations(payload) {
     codexBedrock.secretsReturned ||
     codexBedrock.rawPayloadsReturned ||
     codexBedrock.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexPricingText.textContent = codexPricing.returned
+    ? `${codexPricing.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexPricing.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexPricingValuesText.textContent =
+    codexPricing.planNamesReturned ||
+    codexPricing.pricesReturned ||
+    codexPricing.billingCadencesReturned ||
+    codexPricing.checkoutUrlsReturned ||
+    codexPricing.planFeaturesReturned ||
+    codexPricing.modelNamesReturned ||
+    codexPricing.modelAvailabilityReturned ||
+    codexPricing.usageLimitsReturned ||
+    codexPricing.creditValuesReturned ||
+    codexPricing.apiPricingReturned ||
+    codexPricing.workspaceRequirementsReturned ||
+    codexPricing.securityControlsReturned ||
+    codexPricing.complianceControlsReturned ||
+    codexPricing.dataControlsReturned ||
+    codexPricing.maturityLabelsReturned ||
+    codexPricing.supportExpectationsReturned ||
+    codexPricing.userPlansReturned ||
+    codexPricing.subscriptionStatesReturned ||
+    codexPricing.billingAccountsReturned ||
+    codexPricing.paymentMethodsReturned ||
+    codexPricing.usageMetersReturned ||
+    codexPricing.rateLimitsReturned ||
+    codexPricing.creditBalancesReturned ||
+    codexPricing.enterpriseContractsReturned ||
+    codexPricing.filesystemReads ||
+    codexPricing.filesystemWrites ||
+    codexPricing.networkAccess ||
+    codexPricing.mutationEnabled ||
+    codexPricing.pathsReturned ||
+    codexPricing.urlsReturned ||
+    codexPricing.secretsReturned ||
+    codexPricing.rawPayloadsReturned ||
+    codexPricing.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexGovernanceText.textContent = codexGovernance.returned
@@ -12081,6 +12126,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexOpenSourceCatalog(codexOpenSource);
   renderCodexWindowsPlatformCatalog(codexWindowsPlatform);
   renderCodexBedrockCatalog(codexBedrock);
+  renderCodexPricingCatalog(codexPricing);
   renderCodexGovernanceCatalog(codexGovernance);
   renderCodexManagedConfigurationCatalog(codexManagedConfiguration);
   renderCodexEnvironmentVariablesCatalog(codexEnvironmentVariables);
@@ -14488,6 +14534,93 @@ function renderCodexBedrockCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexBedrockList.append(row);
+  }
+}
+
+function renderCodexPricingCatalog(summary) {
+  elements.codexPricingList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexPricingList.append(emptyState("No Codex pricing catalog returned."));
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "pricing";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.planNameReturned ? "plan names returned" : "plan names hidden",
+      entry.priceReturned ? "prices returned" : "prices hidden",
+      entry.billingCadenceReturned ? "billing cadences returned" : "billing cadences hidden",
+      entry.checkoutUrlReturned ? "checkout URLs returned" : "checkout URLs hidden",
+      entry.planFeatureReturned ? "plan features returned" : "plan features hidden",
+      entry.modelNameReturned ? "model names returned" : "model names hidden",
+      entry.modelAvailabilityReturned
+        ? "model availability returned"
+        : "model availability hidden",
+      entry.usageLimitReturned ? "usage limits returned" : "usage limits hidden",
+      entry.creditValueReturned ? "credit values returned" : "credit values hidden",
+      entry.apiPricingReturned ? "API pricing returned" : "API pricing hidden",
+      entry.workspaceRequirementReturned
+        ? "workspace requirements returned"
+        : "workspace requirements hidden",
+      entry.securityControlReturned ? "security controls returned" : "security controls hidden",
+      entry.complianceControlReturned
+        ? "compliance controls returned"
+        : "compliance controls hidden",
+      entry.dataControlReturned ? "data controls returned" : "data controls hidden",
+      entry.maturityLabelReturned ? "maturity labels returned" : "maturity labels hidden",
+      entry.supportExpectationReturned
+        ? "support expectations returned"
+        : "support expectations hidden",
+      entry.userPlanReturned ? "user plan returned" : "user plans hidden",
+      entry.subscriptionStateReturned
+        ? "subscription state returned"
+        : "subscription state hidden",
+      entry.billingAccountReturned ? "billing account returned" : "billing accounts hidden",
+      entry.paymentMethodReturned ? "payment method returned" : "payment methods hidden",
+      entry.usageMeterReturned ? "usage meter returned" : "usage meters hidden",
+      entry.rateLimitReturned ? "rate limits returned" : "rate limits hidden",
+      entry.creditBalanceReturned ? "credit balances returned" : "credit balances hidden",
+      entry.enterpriseContractReturned
+        ? "enterprise contracts returned"
+        : "enterprise contracts hidden",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexPricingList.append(row);
   }
 }
 

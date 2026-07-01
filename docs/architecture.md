@@ -609,6 +609,19 @@ Current M1 status:
   environment/config reads, status or Bedrock requests, credential processes,
   model traffic, filesystem access, network access, mutations, paths, URLs,
   secrets, raw payloads, and app-server traffic blocked
+- done: read-only Codex Pricing and Feature Maturity catalog in
+  `/api/settings-integrations`, exposing only static official pricing/maturity
+  documentation keys plus local boundary keys/groups/states/sources/counts/
+  redaction flags for plan surfaces, cloud integrations, credits, higher-limit
+  tiers, API-key usage, API token billing, business workspace controls,
+  enterprise security/compliance/data controls, and maturity-label guidance,
+  with plan names, prices, billing cadences, checkout URLs, plan features,
+  model names, model availability, usage limits, credit values, API pricing,
+  workspace requirements, security/compliance/data-control values, maturity
+  labels, support expectations, user plan, subscription state, billing
+  accounts, payment methods, usage meters, rate limits, credit balances,
+  enterprise contracts, filesystem access, network access, mutations, paths,
+  URLs, secrets, raw payloads, and app-server traffic blocked
 - done: read-only Codex Auto-review catalog in `/api/settings-integrations`,
   exposing only static official Auto-review documentation keys plus local
   boundary keys/groups/states/sources/counts/redaction flags for reviewer-swap

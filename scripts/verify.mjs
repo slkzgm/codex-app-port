@@ -34674,6 +34674,184 @@ function assertCodexBedrockCatalog(payload) {
   }
 }
 
+function expectedCodexPricingEntries() {
+  return [
+    ["freePlanOverview", "plans", "catalog-only", "official-codex-pricing-docs"],
+    ["goPlanOverview", "plans", "catalog-only", "official-codex-pricing-docs"],
+    ["plusPlanSurfaces", "plans", "catalog-only", "official-codex-pricing-docs"],
+    ["plusCloudIntegrations", "cloud-features", "catalog-only", "official-codex-pricing-docs"],
+    ["plusModelAccess", "models", "catalog-only", "official-codex-pricing-docs"],
+    ["plusCreditsExtension", "credits", "catalog-only", "official-codex-pricing-docs"],
+    ["proPlanOverview", "plans", "catalog-only", "official-codex-pricing-docs"],
+    ["proHigherLimits", "limits", "catalog-only", "official-codex-pricing-docs"],
+    ["proPreviewModel", "models", "catalog-only", "official-codex-pricing-docs"],
+    ["apiKeyAutomation", "api-key", "catalog-only", "official-codex-pricing-docs"],
+    ["apiKeyNoCloudFeatures", "api-key", "catalog-only", "official-codex-pricing-docs"],
+    ["apiKeyModelAvailability", "api-key", "catalog-only", "official-codex-pricing-docs"],
+    ["apiTokenBilling", "billing", "catalog-only", "official-codex-pricing-docs"],
+    ["businessPlanOverview", "plans", "catalog-only", "official-codex-pricing-docs"],
+    ["businessVirtualMachines", "cloud-features", "catalog-only", "official-codex-pricing-docs"],
+    ["businessCreditsExtension", "credits", "catalog-only", "official-codex-pricing-docs"],
+    ["businessWorkspaceControls", "admin-controls", "catalog-only", "official-codex-pricing-docs"],
+    ["businessDataDefault", "data-controls", "catalog-only", "official-codex-pricing-docs"],
+    ["enterpriseEduOverview", "plans", "catalog-only", "official-codex-pricing-docs"],
+    ["enterprisePriorityProcessing", "cloud-features", "catalog-only", "official-codex-pricing-docs"],
+    ["enterpriseSecurityControls", "admin-controls", "catalog-only", "official-codex-pricing-docs"],
+    ["enterpriseComplianceMonitoring", "compliance", "catalog-only", "official-codex-pricing-docs"],
+    ["enterpriseDataControls", "data-controls", "catalog-only", "official-codex-pricing-docs"],
+    ["featureMaturityLabels", "feature-maturity", "catalog-only", "official-codex-feature-maturity-docs"],
+    ["featureMaturityGuidance", "feature-maturity", "catalog-only", "official-codex-feature-maturity-docs"],
+    ["subscriptionPlanBoundary", "plans", "blocked", "local-pricing-boundary"],
+    ["planPriceBoundary", "billing", "blocked", "local-pricing-boundary"],
+    ["checkoutUrlBoundary", "billing", "blocked", "local-pricing-boundary"],
+    ["creditBalanceBoundary", "credits", "blocked", "local-pricing-boundary"],
+    ["rateLimitBoundary", "limits", "blocked", "local-pricing-boundary"],
+    ["usageMeterBoundary", "usage", "blocked", "local-pricing-boundary"],
+    ["apiPricingBoundary", "billing", "blocked", "local-pricing-boundary"],
+    ["workspacePlanBoundary", "plans", "blocked", "local-pricing-boundary"],
+    ["billingAccountBoundary", "billing", "blocked", "local-pricing-boundary"],
+    ["paymentMethodBoundary", "billing", "blocked", "local-pricing-boundary"],
+    ["modelAvailabilityBoundary", "models", "blocked", "local-pricing-boundary"],
+    ["maturityValueBoundary", "feature-maturity", "blocked", "local-pricing-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexPricingCatalog(payload) {
+  const catalog = payload.codexPricing;
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-pricing-docs");
+  assert.equal(catalog.entryCount, 37);
+  assert.equal(catalog.officialEntryCount, 25);
+  assert.equal(catalog.localBoundaryEntryCount, 12);
+  assert.equal(catalog.catalogOnlyEntryCount, 25);
+  assert.equal(catalog.blockedEntryCount, 12);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({ key, group, state, source })),
+    expectedCodexPricingEntries(),
+  );
+
+  const entryRedactionFlags = [
+    "planNameReturned",
+    "priceReturned",
+    "billingCadenceReturned",
+    "checkoutUrlReturned",
+    "planFeatureReturned",
+    "modelNameReturned",
+    "modelAvailabilityReturned",
+    "usageLimitReturned",
+    "creditValueReturned",
+    "apiPricingReturned",
+    "workspaceRequirementReturned",
+    "securityControlReturned",
+    "complianceControlReturned",
+    "dataControlReturned",
+    "maturityLabelReturned",
+    "supportExpectationReturned",
+    "userPlanReturned",
+    "subscriptionStateReturned",
+    "billingAccountReturned",
+    "paymentMethodReturned",
+    "usageMeterReturned",
+    "rateLimitReturned",
+    "creditBalanceReturned",
+    "enterpriseContractReturned",
+    "filesystemRead",
+    "networkAccess",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.pricingCatalogReturned, true);
+  for (const flag of [
+    "planNamesReturned",
+    "pricesReturned",
+    "billingCadencesReturned",
+    "checkoutUrlsReturned",
+    "planFeaturesReturned",
+    "modelNamesReturned",
+    "modelAvailabilityReturned",
+    "usageLimitsReturned",
+    "creditValuesReturned",
+    "apiPricingReturned",
+    "workspaceRequirementsReturned",
+    "securityControlsReturned",
+    "complianceControlsReturned",
+    "dataControlsReturned",
+    "maturityLabelsReturned",
+    "supportExpectationsReturned",
+    "userPlansReturned",
+    "subscriptionStatesReturned",
+    "billingAccountsReturned",
+    "paymentMethodsReturned",
+    "usageMetersReturned",
+    "rateLimitsReturned",
+    "creditBalancesReturned",
+    "enterpriseContractsReturned",
+    "filesystemReads",
+    "filesystemWrites",
+    "networkAccess",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexPricingReturned", true],
+    ["codexPricingValuesReturned", false],
+    ["codexPricingPlanNamesReturned", false],
+    ["codexPricingPricesReturned", false],
+    ["codexPricingBillingCadencesReturned", false],
+    ["codexPricingCheckoutUrlsReturned", false],
+    ["codexPricingPlanFeaturesReturned", false],
+    ["codexPricingModelNamesReturned", false],
+    ["codexPricingModelAvailabilityReturned", false],
+    ["codexPricingUsageLimitsReturned", false],
+    ["codexPricingCreditValuesReturned", false],
+    ["codexPricingApiPricingReturned", false],
+    ["codexPricingWorkspaceRequirementsReturned", false],
+    ["codexPricingSecurityControlsReturned", false],
+    ["codexPricingComplianceControlsReturned", false],
+    ["codexPricingDataControlsReturned", false],
+    ["codexPricingMaturityLabelsReturned", false],
+    ["codexPricingSupportExpectationsReturned", false],
+    ["codexPricingUserPlansReturned", false],
+    ["codexPricingSubscriptionStatesReturned", false],
+    ["codexPricingBillingAccountsReturned", false],
+    ["codexPricingPaymentMethodsReturned", false],
+    ["codexPricingUsageMetersReturned", false],
+    ["codexPricingRateLimitsReturned", false],
+    ["codexPricingCreditBalancesReturned", false],
+    ["codexPricingEnterpriseContractsReturned", false],
+    ["codexPricingFilesystemAccess", false],
+    ["codexPricingNetworkAccess", false],
+    ["codexPricingMutationsEnabled", false],
+    ["codexPricingPathsReturned", false],
+    ["codexPricingUrlsReturned", false],
+    ["codexPricingSecretsReturned", false],
+    ["codexPricingRawPayloadsReturned", false],
+    ["codexPricingAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexGovernanceEntries() {
   return [
     ["governanceVisibilityAuditability", "overview", "catalog-only", "official-codex-governance-docs"],
@@ -38994,6 +39172,7 @@ function assertCodexAppSettingsParity(
   assertCodexOpenSourceCatalog(payload);
   assertCodexWindowsPlatformCatalog(payload);
   assertCodexBedrockCatalog(payload);
+  assertCodexPricingCatalog(payload);
   assertCodexGovernanceCatalog(payload);
   assertCodexManagedConfigurationCatalog(payload);
   assertCodexEnvironmentVariablesCatalog(payload);

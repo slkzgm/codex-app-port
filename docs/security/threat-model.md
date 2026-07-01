@@ -497,6 +497,17 @@
   traffic, and must not read credentials, profiles, environment variables,
   config files, start status or Bedrock requests, run credential processes,
   create model traffic, access files/network, or mutate provider state. Its
+  Codex Pricing and Feature Maturity catalog may expose only static
+  official-documentation keys plus local boundary keys, groups, states, sources,
+  counts, and redaction flags; it must not return plan names, prices, billing
+  cadences, checkout URLs, plan features, model names, model availability,
+  usage limits, credit values, API pricing, workspace requirements, security/
+  compliance/data-control values, maturity labels, support expectations, user
+  plan, subscription state, billing accounts, payment methods, usage meters,
+  rate limits, credit balances, enterprise contracts, paths, URLs, secrets, raw
+  payloads, app-server payloads, or app-server traffic, and must not read
+  billing or usage state, open checkout/billing URLs, access files/network, or
+  mutate subscription, billing, or provider state. Its
   Codex Auto-review catalog may expose only static official-documentation keys
   plus local boundary keys, groups, states, sources, counts, and redaction
   flags; it must not return approval requests, reviewer rationales,

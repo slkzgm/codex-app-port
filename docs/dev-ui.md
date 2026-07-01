@@ -894,6 +894,18 @@ provider configuration, inspect environment variables, start credential
 processes, call Bedrock or status endpoints, create model traffic, or mutate
 provider state.
 
+The same response exposes `codexPricing` as a static review-only catalog for
+official Codex Pricing and Feature Maturity guidance. The UI shows only catalog
+counts, entry keys, groups, state/source chips, and negative redaction chips for
+plan names, prices, billing cadences, checkout URLs, plan features, model names,
+model availability, usage limits, credit values, API pricing, workspace
+requirements, security/compliance/data-control values, maturity labels, support
+expectations, user plan, subscription state, billing accounts, payment methods,
+usage meters, rate limits, credit balances, enterprise contracts, filesystem/
+network access, paths, URLs, secrets, raw payloads, and app-server traffic. It
+must not read billing or usage state, open checkout/billing URLs, access
+files/network, or mutate subscription, billing, or provider state.
+
 The same response exposes `codexManagedConfiguration` as a static review-only
 catalog for official Codex managed-configuration behavior. The UI shows only
 catalog counts, entry keys, groups, state/source chips, and redaction chips for

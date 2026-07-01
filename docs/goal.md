@@ -255,6 +255,20 @@ Target parity with the Codex desktop workflow:
   profiles, environment, config files, start status/Bedrock requests, run
   credential processes, create model traffic, access files/network, or mutate
   provider state.
+- `/api/settings-integrations` now also exposes a read-only Codex Pricing and
+  Feature Maturity catalog aligned to the current official pricing and maturity
+  docs. It returns only static keys, groups, states, sources, counts, and
+  redaction flags for documented plan surfaces, cloud integrations, credits,
+  higher-limit tiers, API-key usage, API token billing, business workspace
+  controls, enterprise security/compliance/data controls, and maturity-label
+  guidance. It does not return plan names, prices, billing cadences, checkout
+  URLs, plan features, model names, model availability, usage limits, credit
+  values, API pricing, workspace requirements, security/compliance/data-control
+  values, maturity labels, support expectations, user plan, subscription state,
+  billing accounts, payment methods, usage meters, rate limits, credit balances,
+  enterprise contracts, paths, URLs, secrets, raw payloads, or app-server
+  traffic, and it does not read billing or usage state, open checkout/billing
+  URLs, access files/network, or mutate subscription/billing/provider state.
 - `/api/settings-integrations` now also exposes a read-only Codex Governance
   catalog aligned to the official enterprise governance guide. It returns only
   static keys, groups, states, sources, counts, and redaction flags for
