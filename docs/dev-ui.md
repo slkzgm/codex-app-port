@@ -906,6 +906,20 @@ network access, paths, URLs, secrets, raw payloads, and app-server traffic. It
 must not read billing or usage state, open checkout/billing URLs, access
 files/network, or mutate subscription, billing, or provider state.
 
+The same response exposes `codexWorkflowGuidance` as a static review-only
+catalog for official Best Practices, Workflows, Prompting, and Speed guidance.
+The UI shows only catalog counts, entry keys, groups, state/source chips, and
+negative redaction chips for prompt text, file paths, repository content,
+command text/output, test output, diff content, review instructions, thread
+content/ids, goal text, plan text, config values, MCP server names,
+skill/automation names, model/reasoning values, credit rates, cloud task data,
+speech audio, screenshots, context-window values, prompt/file/diff reads,
+command/test execution, review/cloud-task starts, goal/config/Fast Mode/model
+mutations, filesystem/network access, model traffic, paths, URLs, secrets, raw
+payloads, and app-server traffic. It must not read task context, run commands
+or tests, start reviews or cloud tasks, mutate goals or configuration, change
+Fast Mode/model selection, access files/network, or create model traffic.
+
 The same response exposes `codexManagedConfiguration` as a static review-only
 catalog for official Codex managed-configuration behavior. The UI shows only
 catalog counts, entry keys, groups, state/source chips, and redaction chips for

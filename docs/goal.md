@@ -269,6 +269,23 @@ Target parity with the Codex desktop workflow:
   enterprise contracts, paths, URLs, secrets, raw payloads, or app-server
   traffic, and it does not read billing or usage state, open checkout/billing
   URLs, access files/network, or mutate subscription/billing/provider state.
+- `/api/settings-integrations` now also exposes a read-only Codex Workflow
+  Guidance catalog aligned to the current official Best Practices, Workflows,
+  Prompting, and Speed docs. It returns only static keys, groups, states,
+  sources, counts, and redaction flags for task context structure, reasoning
+  selection, app dictation, Plan mode, interview-style planning, PLANS.md,
+  reusable AGENTS.md guidance, config defaults, approval/sandbox defaults,
+  validation/review loops, example workflow categories, prompting loop, thread
+  model, local/cloud threads, projectless chats, context compaction, Goal mode,
+  steering/side chats, Fast Mode, and Codex-Spark. It does not return prompt
+  text, file paths, repository content, command text/output, test output, diff
+  content, review instructions, thread content/ids, goal text, plan text, config
+  values, MCP server names, skill/automation names, model/reasoning values,
+  credit rates, cloud task data, speech audio, screenshots, context-window
+  values, paths, URLs, secrets, raw payloads, or app-server traffic, and it does
+  not read prompts/files/diffs, execute commands/tests, start reviews/cloud
+  tasks, mutate goals/config/Fast Mode/model selection, access files/network, or
+  create model traffic.
 - `/api/settings-integrations` now also exposes a read-only Codex Governance
   catalog aligned to the official enterprise governance guide. It returns only
   static keys, groups, states, sources, counts, and redaction flags for

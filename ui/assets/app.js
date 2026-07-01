@@ -47,6 +47,10 @@ const elements = {
   codexBedrockValuesText: document.querySelector("#codex-bedrock-values-text"),
   codexPricingText: document.querySelector("#codex-pricing-text"),
   codexPricingValuesText: document.querySelector("#codex-pricing-values-text"),
+  codexWorkflowGuidanceText: document.querySelector("#codex-workflow-guidance-text"),
+  codexWorkflowGuidanceValuesText: document.querySelector(
+    "#codex-workflow-guidance-values-text",
+  ),
   codexGovernanceText: document.querySelector("#codex-governance-text"),
   codexGovernanceValuesText: document.querySelector("#codex-governance-values-text"),
   codexManagedConfigurationText: document.querySelector("#codex-managed-configuration-text"),
@@ -466,6 +470,7 @@ const elements = {
   codexWindowsPlatformList: document.querySelector("#codex-windows-platform-list"),
   codexBedrockList: document.querySelector("#codex-bedrock-list"),
   codexPricingList: document.querySelector("#codex-pricing-list"),
+  codexWorkflowGuidanceList: document.querySelector("#codex-workflow-guidance-list"),
   codexGovernanceList: document.querySelector("#codex-governance-list"),
   codexManagedConfigurationList: document.querySelector("#codex-managed-configuration-list"),
   codexEnvironmentVariablesList: document.querySelector("#codex-environment-variables-list"),
@@ -10532,6 +10537,7 @@ function renderSettingsIntegrations(payload) {
   const codexWindowsPlatform = payload.codexWindowsPlatform ?? {};
   const codexBedrock = payload.codexBedrock ?? {};
   const codexPricing = payload.codexPricing ?? {};
+  const codexWorkflowGuidance = payload.codexWorkflowGuidance ?? {};
   const codexGovernance = payload.codexGovernance ?? {};
   const codexManagedConfiguration = payload.codexManagedConfiguration ?? {};
   const codexEnvironmentVariables = payload.codexEnvironmentVariables ?? {};
@@ -10959,6 +10965,58 @@ function renderSettingsIntegrations(payload) {
     codexPricing.secretsReturned ||
     codexPricing.rawPayloadsReturned ||
     codexPricing.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexWorkflowGuidanceText.textContent = codexWorkflowGuidance.returned
+    ? `${codexWorkflowGuidance.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexWorkflowGuidance.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexWorkflowGuidanceValuesText.textContent =
+    codexWorkflowGuidance.promptTextsReturned ||
+    codexWorkflowGuidance.filePathsReturned ||
+    codexWorkflowGuidance.repoContentsReturned ||
+    codexWorkflowGuidance.commandTextsReturned ||
+    codexWorkflowGuidance.commandOutputsReturned ||
+    codexWorkflowGuidance.testOutputsReturned ||
+    codexWorkflowGuidance.diffContentsReturned ||
+    codexWorkflowGuidance.reviewInstructionsReturned ||
+    codexWorkflowGuidance.threadContentsReturned ||
+    codexWorkflowGuidance.threadIdsReturned ||
+    codexWorkflowGuidance.goalTextsReturned ||
+    codexWorkflowGuidance.planTextsReturned ||
+    codexWorkflowGuidance.configValuesReturned ||
+    codexWorkflowGuidance.mcpServersReturned ||
+    codexWorkflowGuidance.skillNamesReturned ||
+    codexWorkflowGuidance.automationNamesReturned ||
+    codexWorkflowGuidance.modelNamesReturned ||
+    codexWorkflowGuidance.reasoningValuesReturned ||
+    codexWorkflowGuidance.creditRatesReturned ||
+    codexWorkflowGuidance.cloudTasksReturned ||
+    codexWorkflowGuidance.speechAudioReturned ||
+    codexWorkflowGuidance.screenshotsReturned ||
+    codexWorkflowGuidance.contextWindowValuesReturned ||
+    codexWorkflowGuidance.promptReads ||
+    codexWorkflowGuidance.fileContextReads ||
+    codexWorkflowGuidance.commandsExecuted ||
+    codexWorkflowGuidance.testsRun ||
+    codexWorkflowGuidance.diffsRead ||
+    codexWorkflowGuidance.reviewsStarted ||
+    codexWorkflowGuidance.cloudTasksStarted ||
+    codexWorkflowGuidance.goalsMutated ||
+    codexWorkflowGuidance.configsWritten ||
+    codexWorkflowGuidance.fastModesChanged ||
+    codexWorkflowGuidance.modelsChanged ||
+    codexWorkflowGuidance.filesystemReads ||
+    codexWorkflowGuidance.filesystemWrites ||
+    codexWorkflowGuidance.networkAccess ||
+    codexWorkflowGuidance.modelTraffic ||
+    codexWorkflowGuidance.mutationEnabled ||
+    codexWorkflowGuidance.pathsReturned ||
+    codexWorkflowGuidance.urlsReturned ||
+    codexWorkflowGuidance.secretsReturned ||
+    codexWorkflowGuidance.rawPayloadsReturned ||
+    codexWorkflowGuidance.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexGovernanceText.textContent = codexGovernance.returned
@@ -12127,6 +12185,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexWindowsPlatformCatalog(codexWindowsPlatform);
   renderCodexBedrockCatalog(codexBedrock);
   renderCodexPricingCatalog(codexPricing);
+  renderCodexWorkflowGuidanceCatalog(codexWorkflowGuidance);
   renderCodexGovernanceCatalog(codexGovernance);
   renderCodexManagedConfigurationCatalog(codexManagedConfiguration);
   renderCodexEnvironmentVariablesCatalog(codexEnvironmentVariables);
@@ -14621,6 +14680,99 @@ function renderCodexPricingCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexPricingList.append(row);
+  }
+}
+
+function renderCodexWorkflowGuidanceCatalog(summary) {
+  elements.codexWorkflowGuidanceList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexWorkflowGuidanceList.append(
+      emptyState("No Codex workflow guidance catalog returned."),
+    );
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "workflow-guidance";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.promptTextReturned ? "prompt text returned" : "prompt text hidden",
+      entry.filePathReturned ? "file paths returned" : "file paths hidden",
+      entry.repoContentReturned ? "repo content returned" : "repo content hidden",
+      entry.commandTextReturned ? "command text returned" : "command text hidden",
+      entry.commandOutputReturned ? "command output returned" : "command output hidden",
+      entry.testOutputReturned ? "test output returned" : "test output hidden",
+      entry.diffContentReturned ? "diff content returned" : "diff content hidden",
+      entry.reviewInstructionReturned
+        ? "review instructions returned"
+        : "review instructions hidden",
+      entry.threadContentReturned ? "thread content returned" : "thread content hidden",
+      entry.threadIdReturned ? "thread ids returned" : "thread ids hidden",
+      entry.goalTextReturned ? "goal text returned" : "goal text hidden",
+      entry.planTextReturned ? "plan text returned" : "plan text hidden",
+      entry.configValueReturned ? "config values returned" : "config values hidden",
+      entry.mcpServerReturned ? "MCP servers returned" : "MCP servers hidden",
+      entry.skillNameReturned ? "skill names returned" : "skill names hidden",
+      entry.automationNameReturned ? "automation names returned" : "automation names hidden",
+      entry.modelNameReturned ? "model names returned" : "model names hidden",
+      entry.reasoningValueReturned ? "reasoning values returned" : "reasoning values hidden",
+      entry.creditRateReturned ? "credit rates returned" : "credit rates hidden",
+      entry.cloudTaskReturned ? "cloud tasks returned" : "cloud tasks hidden",
+      entry.speechAudioReturned ? "speech audio returned" : "speech audio hidden",
+      entry.screenshotReturned ? "screenshots returned" : "screenshots hidden",
+      entry.contextWindowValueReturned
+        ? "context window values returned"
+        : "context window values hidden",
+      entry.promptRead ? "prompts read" : "prompt reads blocked",
+      entry.fileContextRead ? "file context read" : "file context reads blocked",
+      entry.commandExecuted ? "command executed" : "command execution blocked",
+      entry.testsRun ? "tests run" : "test runs blocked",
+      entry.diffRead ? "diff read" : "diff reads blocked",
+      entry.reviewStarted ? "review started" : "review starts blocked",
+      entry.cloudTaskStarted ? "cloud task started" : "cloud task starts blocked",
+      entry.goalMutated ? "goal mutated" : "goal mutations blocked",
+      entry.configWritten ? "config written" : "config writes blocked",
+      entry.fastModeChanged ? "Fast Mode changed" : "Fast Mode changes blocked",
+      entry.modelChanged ? "model changed" : "model changes blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.modelTraffic ? "model traffic" : "model traffic blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexWorkflowGuidanceList.append(row);
   }
 }
 

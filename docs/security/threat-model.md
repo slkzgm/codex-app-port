@@ -507,7 +507,17 @@
   rate limits, credit balances, enterprise contracts, paths, URLs, secrets, raw
   payloads, app-server payloads, or app-server traffic, and must not read
   billing or usage state, open checkout/billing URLs, access files/network, or
-  mutate subscription, billing, or provider state. Its
+  mutate subscription, billing, or provider state. Its Codex Workflow Guidance
+  catalog may expose only static official-documentation keys plus local
+  boundary keys, groups, states, sources, counts, and redaction flags; it must
+  not return prompt text, file paths, repository content, command text/output,
+  test output, diff content, review instructions, thread content/ids, goal
+  text, plan text, config values, MCP server names, skill/automation names,
+  model/reasoning values, credit rates, cloud task data, speech audio,
+  screenshots, context-window values, paths, URLs, secrets, raw payloads,
+  app-server payloads, or app-server traffic, and must not read prompts/files/
+  diffs, execute commands/tests, start reviews/cloud tasks, mutate goals/config/
+  Fast Mode/model selection, access files/network, or create model traffic. Its
   Codex Auto-review catalog may expose only static official-documentation keys
   plus local boundary keys, groups, states, sources, counts, and redaction
   flags; it must not return approval requests, reviewer rationales,

@@ -622,6 +622,23 @@ Current M1 status:
   accounts, payment methods, usage meters, rate limits, credit balances,
   enterprise contracts, filesystem access, network access, mutations, paths,
   URLs, secrets, raw payloads, and app-server traffic blocked
+- done: read-only Codex Workflow Guidance catalog in
+  `/api/settings-integrations`, exposing only static official Best Practices,
+  Workflows, Prompting, and Speed documentation keys plus local boundary keys/
+  groups/states/sources/counts/redaction flags for task context structure,
+  reasoning selection, app dictation, Plan mode, interview-style planning,
+  PLANS.md, reusable AGENTS.md guidance, config defaults, approval/sandbox
+  defaults, validation/review loops, example workflow categories, prompting
+  loop, thread model, local/cloud threads, projectless chats, context
+  compaction, Goal mode, steering/side chats, Fast Mode, and Codex-Spark, with
+  prompt text, file paths, repository content, command text/output, test
+  output, diff content, review instructions, thread content/ids, goal text,
+  plan text, config values, MCP server names, skill/automation names,
+  model/reasoning values, credit rates, cloud task data, speech audio,
+  screenshots, context-window values, prompt/file/diff reads, command/test
+  execution, review/cloud-task starts, goal/config/Fast Mode/model mutations,
+  filesystem access, network access, model traffic, paths, URLs, secrets, raw
+  payloads, and app-server traffic blocked
 - done: read-only Codex Auto-review catalog in `/api/settings-integrations`,
   exposing only static official Auto-review documentation keys plus local
   boundary keys/groups/states/sources/counts/redaction flags for reviewer-swap

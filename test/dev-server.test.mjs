@@ -36685,6 +36685,224 @@ function assertCodexPricingCatalog(payload) {
   }
 }
 
+function expectedCodexWorkflowGuidanceEntries() {
+  return [
+    ["contextPromptStructure", "best-practices", "catalog-only", "official-codex-best-practices-docs"],
+    ["reasoningLevelSelection", "best-practices", "catalog-only", "official-codex-best-practices-docs"],
+    ["appSpeechDictation", "app-context", "catalog-only", "official-codex-best-practices-docs"],
+    ["planModeGuidance", "planning", "catalog-only", "official-codex-best-practices-docs"],
+    ["interviewPlanning", "planning", "catalog-only", "official-codex-best-practices-docs"],
+    ["plansMdTemplate", "planning", "catalog-only", "official-codex-best-practices-docs"],
+    ["agentsMdReusableGuidance", "durable-guidance", "catalog-only", "official-codex-best-practices-docs"],
+    ["agentsMdScopePrecedence", "durable-guidance", "catalog-only", "official-codex-best-practices-docs"],
+    ["configTomlDefaults", "configuration", "catalog-only", "official-codex-best-practices-docs"],
+    ["approvalSandboxDefaults", "safety", "catalog-only", "official-codex-best-practices-docs"],
+    ["validationLoop", "verification", "catalog-only", "official-codex-best-practices-docs"],
+    ["diffPanelReview", "review", "catalog-only", "official-codex-best-practices-docs"],
+    ["slashReviewModes", "review", "catalog-only", "official-codex-best-practices-docs"],
+    ["githubCloudReview", "cloud-review", "catalog-only", "official-codex-best-practices-docs"],
+    ["workflowExplainCodebase", "example-workflows", "catalog-only", "official-codex-workflows-docs"],
+    ["workflowFixBug", "example-workflows", "catalog-only", "official-codex-workflows-docs"],
+    ["workflowWriteTest", "example-workflows", "catalog-only", "official-codex-workflows-docs"],
+    ["workflowPrototypeFromScreenshot", "example-workflows", "catalog-only", "official-codex-workflows-docs"],
+    ["promptExecutionLoop", "prompting", "catalog-only", "official-codex-prompting-docs"],
+    ["promptVerificationGuidance", "prompting", "catalog-only", "official-codex-prompting-docs"],
+    ["taskDecomposition", "prompting", "catalog-only", "official-codex-prompting-docs"],
+    ["threadModel", "threads", "catalog-only", "official-codex-prompting-docs"],
+    ["localCloudThreads", "threads", "catalog-only", "official-codex-prompting-docs"],
+    ["appProjectlessChats", "threads", "catalog-only", "official-codex-prompting-docs"],
+    ["contextWindowCompaction", "context", "catalog-only", "official-codex-prompting-docs"],
+    ["goalMode", "goals", "catalog-only", "official-codex-prompting-docs"],
+    ["goalDefinitionCriteria", "goals", "catalog-only", "official-codex-prompting-docs"],
+    ["steeringAndSideChats", "goals", "catalog-only", "official-codex-prompting-docs"],
+    ["fastMode", "speed", "catalog-only", "official-codex-speed-docs"],
+    ["codexSpark", "speed", "catalog-only", "official-codex-speed-docs"],
+    ["promptContentBoundary", "prompting", "blocked", "local-workflow-guidance-boundary"],
+    ["fileContextBoundary", "context", "blocked", "local-workflow-guidance-boundary"],
+    ["repoPathBoundary", "context", "blocked", "local-workflow-guidance-boundary"],
+    ["commandExecutionBoundary", "verification", "blocked", "local-workflow-guidance-boundary"],
+    ["testOutputBoundary", "verification", "blocked", "local-workflow-guidance-boundary"],
+    ["diffBoundary", "review", "blocked", "local-workflow-guidance-boundary"],
+    ["threadStateBoundary", "threads", "blocked", "local-workflow-guidance-boundary"],
+    ["cloudTaskBoundary", "cloud-review", "blocked", "local-workflow-guidance-boundary"],
+    ["goalTextBoundary", "goals", "blocked", "local-workflow-guidance-boundary"],
+    ["configMutationBoundary", "configuration", "blocked", "local-workflow-guidance-boundary"],
+    ["mcpSkillAutomationBoundary", "durable-guidance", "blocked", "local-workflow-guidance-boundary"],
+    ["fastModeCreditBoundary", "speed", "blocked", "local-workflow-guidance-boundary"],
+    ["modelSelectionBoundary", "speed", "blocked", "local-workflow-guidance-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexWorkflowGuidanceCatalog(payload) {
+  const catalog = payload.codexWorkflowGuidance;
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-workflow-guidance-docs");
+  assert.equal(catalog.entryCount, 43);
+  assert.equal(catalog.officialEntryCount, 30);
+  assert.equal(catalog.localBoundaryEntryCount, 13);
+  assert.equal(catalog.catalogOnlyEntryCount, 30);
+  assert.equal(catalog.blockedEntryCount, 13);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({ key, group, state, source })),
+    expectedCodexWorkflowGuidanceEntries(),
+  );
+
+  const entryRedactionFlags = [
+    "promptTextReturned",
+    "filePathReturned",
+    "repoContentReturned",
+    "commandTextReturned",
+    "commandOutputReturned",
+    "testOutputReturned",
+    "diffContentReturned",
+    "reviewInstructionReturned",
+    "threadContentReturned",
+    "threadIdReturned",
+    "goalTextReturned",
+    "planTextReturned",
+    "configValueReturned",
+    "mcpServerReturned",
+    "skillNameReturned",
+    "automationNameReturned",
+    "modelNameReturned",
+    "reasoningValueReturned",
+    "creditRateReturned",
+    "cloudTaskReturned",
+    "speechAudioReturned",
+    "screenshotReturned",
+    "contextWindowValueReturned",
+    "promptRead",
+    "fileContextRead",
+    "commandExecuted",
+    "testsRun",
+    "diffRead",
+    "reviewStarted",
+    "cloudTaskStarted",
+    "goalMutated",
+    "configWritten",
+    "fastModeChanged",
+    "modelChanged",
+    "filesystemRead",
+    "filesystemWrite",
+    "networkAccess",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.workflowGuidanceCatalogReturned, true);
+  for (const flag of [
+    "promptTextsReturned",
+    "filePathsReturned",
+    "repoContentsReturned",
+    "commandTextsReturned",
+    "commandOutputsReturned",
+    "testOutputsReturned",
+    "diffContentsReturned",
+    "reviewInstructionsReturned",
+    "threadContentsReturned",
+    "threadIdsReturned",
+    "goalTextsReturned",
+    "planTextsReturned",
+    "configValuesReturned",
+    "mcpServersReturned",
+    "skillNamesReturned",
+    "automationNamesReturned",
+    "modelNamesReturned",
+    "reasoningValuesReturned",
+    "creditRatesReturned",
+    "cloudTasksReturned",
+    "speechAudioReturned",
+    "screenshotsReturned",
+    "contextWindowValuesReturned",
+    "promptReads",
+    "fileContextReads",
+    "commandsExecuted",
+    "testsRun",
+    "diffsRead",
+    "reviewsStarted",
+    "cloudTasksStarted",
+    "goalsMutated",
+    "configsWritten",
+    "fastModesChanged",
+    "modelsChanged",
+    "filesystemReads",
+    "filesystemWrites",
+    "networkAccess",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexWorkflowGuidanceReturned", true],
+    ["codexWorkflowGuidanceValuesReturned", false],
+    ["codexWorkflowGuidancePromptTextsReturned", false],
+    ["codexWorkflowGuidanceFilePathsReturned", false],
+    ["codexWorkflowGuidanceRepoContentsReturned", false],
+    ["codexWorkflowGuidanceCommandTextsReturned", false],
+    ["codexWorkflowGuidanceCommandOutputsReturned", false],
+    ["codexWorkflowGuidanceTestOutputsReturned", false],
+    ["codexWorkflowGuidanceDiffContentsReturned", false],
+    ["codexWorkflowGuidanceReviewInstructionsReturned", false],
+    ["codexWorkflowGuidanceThreadContentsReturned", false],
+    ["codexWorkflowGuidanceThreadIdsReturned", false],
+    ["codexWorkflowGuidanceGoalTextsReturned", false],
+    ["codexWorkflowGuidancePlanTextsReturned", false],
+    ["codexWorkflowGuidanceConfigValuesReturned", false],
+    ["codexWorkflowGuidanceMcpServersReturned", false],
+    ["codexWorkflowGuidanceSkillNamesReturned", false],
+    ["codexWorkflowGuidanceAutomationNamesReturned", false],
+    ["codexWorkflowGuidanceModelNamesReturned", false],
+    ["codexWorkflowGuidanceReasoningValuesReturned", false],
+    ["codexWorkflowGuidanceCreditRatesReturned", false],
+    ["codexWorkflowGuidanceCloudTasksReturned", false],
+    ["codexWorkflowGuidanceSpeechAudioReturned", false],
+    ["codexWorkflowGuidanceScreenshotsReturned", false],
+    ["codexWorkflowGuidanceContextWindowValuesReturned", false],
+    ["codexWorkflowGuidancePromptReadEnabled", false],
+    ["codexWorkflowGuidanceFileContextReadEnabled", false],
+    ["codexWorkflowGuidanceCommandExecutionEnabled", false],
+    ["codexWorkflowGuidanceTestRunEnabled", false],
+    ["codexWorkflowGuidanceDiffReadEnabled", false],
+    ["codexWorkflowGuidanceReviewStartEnabled", false],
+    ["codexWorkflowGuidanceCloudTaskStartEnabled", false],
+    ["codexWorkflowGuidanceGoalMutationEnabled", false],
+    ["codexWorkflowGuidanceConfigWriteEnabled", false],
+    ["codexWorkflowGuidanceFastModeChangeEnabled", false],
+    ["codexWorkflowGuidanceModelChangeEnabled", false],
+    ["codexWorkflowGuidanceFilesystemAccess", false],
+    ["codexWorkflowGuidanceNetworkAccess", false],
+    ["codexWorkflowGuidanceModelTraffic", false],
+    ["codexWorkflowGuidanceMutationsEnabled", false],
+    ["codexWorkflowGuidancePathsReturned", false],
+    ["codexWorkflowGuidanceUrlsReturned", false],
+    ["codexWorkflowGuidanceSecretsReturned", false],
+    ["codexWorkflowGuidanceRawPayloadsReturned", false],
+    ["codexWorkflowGuidanceAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexGovernanceEntries() {
   return [
     ["governanceVisibilityAuditability", "overview", "catalog-only", "official-codex-governance-docs"],
@@ -41035,6 +41253,7 @@ function assertCodexAppSettingsParity(
   assertCodexWindowsPlatformCatalog(payload);
   assertCodexBedrockCatalog(payload);
   assertCodexPricingCatalog(payload);
+  assertCodexWorkflowGuidanceCatalog(payload);
   assertCodexGovernanceCatalog(payload);
   assertCodexManagedConfigurationCatalog(payload);
   assertCodexEnvironmentVariablesCatalog(payload);
