@@ -35070,6 +35070,181 @@ function assertCodexWorkflowGuidanceCatalog(payload) {
   }
 }
 
+function expectedCodexOverviewQuickstartEntries() {
+  return [
+    ["codingAgentOverview", "overview", "catalog-only", "official-codex-overview-docs"],
+    ["writeCodeCapability", "capabilities", "catalog-only", "official-codex-overview-docs"],
+    ["understandCodebasesCapability", "capabilities", "catalog-only", "official-codex-overview-docs"],
+    ["reviewCodeCapability", "capabilities", "catalog-only", "official-codex-overview-docs"],
+    ["debugFixCapability", "capabilities", "catalog-only", "official-codex-overview-docs"],
+    ["automateDevelopmentTasks", "capabilities", "catalog-only", "official-codex-overview-docs"],
+    ["chatgptPlanAccess", "access", "catalog-only", "official-codex-overview-docs"],
+    ["quickstartEveryChatgptPlan", "quickstart", "catalog-only", "official-codex-quickstart-docs"],
+    ["quickstartApiCreditSignIn", "quickstart", "catalog-only", "official-codex-quickstart-docs"],
+    ["webSurfaceBoundary", "surface", "blocked", "local-overview-quickstart-boundary"],
+    ["cliSurfaceBoundary", "surface", "blocked", "local-overview-quickstart-boundary"],
+    ["ideSurfaceBoundary", "surface", "blocked", "local-overview-quickstart-boundary"],
+    ["appSurfaceBoundary", "surface", "blocked", "local-overview-quickstart-boundary"],
+    ["cloudTaskBoundary", "surface", "blocked", "local-overview-quickstart-boundary"],
+    ["authStateBoundary", "access", "blocked", "local-overview-quickstart-boundary"],
+    ["apiKeyBoundary", "access", "blocked", "local-overview-quickstart-boundary"],
+    ["projectContextBoundary", "context", "blocked", "local-overview-quickstart-boundary"],
+    ["codeGenerationBoundary", "capabilities", "blocked", "local-overview-quickstart-boundary"],
+    ["reviewExecutionBoundary", "capabilities", "blocked", "local-overview-quickstart-boundary"],
+    ["debugExecutionBoundary", "capabilities", "blocked", "local-overview-quickstart-boundary"],
+    ["automationExecutionBoundary", "capabilities", "blocked", "local-overview-quickstart-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexOverviewQuickstartCatalog(payload) {
+  const catalog = payload.codexOverviewQuickstart;
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-overview-docs");
+  assert.equal(catalog.entryCount, 21);
+  assert.equal(catalog.officialEntryCount, 9);
+  assert.equal(catalog.localBoundaryEntryCount, 12);
+  assert.equal(catalog.catalogOnlyEntryCount, 9);
+  assert.equal(catalog.blockedEntryCount, 12);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({ key, group, state, source })),
+    expectedCodexOverviewQuickstartEntries(),
+  );
+
+  const entryRedactionFlags = [
+    "surfaceNameReturned",
+    "planNameReturned",
+    "accountStateReturned",
+    "apiKeyReturned",
+    "authUrlReturned",
+    "installCommandReturned",
+    "projectPathReturned",
+    "repositoryContentReturned",
+    "promptTextReturned",
+    "generatedCodeReturned",
+    "reviewFindingReturned",
+    "debugTraceReturned",
+    "automationNameReturned",
+    "cloudTaskReturned",
+    "userIdentityReturned",
+    "workspaceIdentityReturned",
+    "authRead",
+    "apiKeyRead",
+    "projectRead",
+    "codeGenerated",
+    "reviewStarted",
+    "debugStarted",
+    "automationStarted",
+    "cloudTaskStarted",
+    "appOpened",
+    "cliInvoked",
+    "ideInvoked",
+    "filesystemRead",
+    "filesystemWrite",
+    "networkAccess",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.overviewQuickstartCatalogReturned, true);
+  for (const flag of [
+    "surfaceNamesReturned",
+    "planNamesReturned",
+    "accountStatesReturned",
+    "apiKeysReturned",
+    "authUrlsReturned",
+    "installCommandsReturned",
+    "projectPathsReturned",
+    "repositoryContentsReturned",
+    "promptTextsReturned",
+    "generatedCodeReturned",
+    "reviewFindingsReturned",
+    "debugTracesReturned",
+    "automationNamesReturned",
+    "cloudTasksReturned",
+    "userIdentitiesReturned",
+    "workspaceIdentitiesReturned",
+    "authReads",
+    "apiKeyReads",
+    "projectReads",
+    "codeGenerated",
+    "reviewsStarted",
+    "debugsStarted",
+    "automationsStarted",
+    "cloudTasksStarted",
+    "appsOpened",
+    "cliInvocationsStarted",
+    "ideInvocationsStarted",
+    "filesystemReads",
+    "filesystemWrites",
+    "networkAccess",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexOverviewQuickstartReturned", true],
+    ["codexOverviewQuickstartValuesReturned", false],
+    ["codexOverviewQuickstartSurfaceNamesReturned", false],
+    ["codexOverviewQuickstartPlanNamesReturned", false],
+    ["codexOverviewQuickstartAccountStatesReturned", false],
+    ["codexOverviewQuickstartApiKeysReturned", false],
+    ["codexOverviewQuickstartAuthUrlsReturned", false],
+    ["codexOverviewQuickstartInstallCommandsReturned", false],
+    ["codexOverviewQuickstartProjectPathsReturned", false],
+    ["codexOverviewQuickstartRepositoryContentsReturned", false],
+    ["codexOverviewQuickstartPromptTextsReturned", false],
+    ["codexOverviewQuickstartGeneratedCodeReturned", false],
+    ["codexOverviewQuickstartReviewFindingsReturned", false],
+    ["codexOverviewQuickstartDebugTracesReturned", false],
+    ["codexOverviewQuickstartAutomationNamesReturned", false],
+    ["codexOverviewQuickstartCloudTasksReturned", false],
+    ["codexOverviewQuickstartUserIdentitiesReturned", false],
+    ["codexOverviewQuickstartWorkspaceIdentitiesReturned", false],
+    ["codexOverviewQuickstartAuthReadEnabled", false],
+    ["codexOverviewQuickstartApiKeyReadEnabled", false],
+    ["codexOverviewQuickstartProjectReadEnabled", false],
+    ["codexOverviewQuickstartCodeGenerationEnabled", false],
+    ["codexOverviewQuickstartReviewStartEnabled", false],
+    ["codexOverviewQuickstartDebugStartEnabled", false],
+    ["codexOverviewQuickstartAutomationStartEnabled", false],
+    ["codexOverviewQuickstartCloudTaskStartEnabled", false],
+    ["codexOverviewQuickstartAppOpenEnabled", false],
+    ["codexOverviewQuickstartCliInvocationEnabled", false],
+    ["codexOverviewQuickstartIdeInvocationEnabled", false],
+    ["codexOverviewQuickstartFilesystemAccess", false],
+    ["codexOverviewQuickstartNetworkAccess", false],
+    ["codexOverviewQuickstartModelTraffic", false],
+    ["codexOverviewQuickstartMutationsEnabled", false],
+    ["codexOverviewQuickstartPathsReturned", false],
+    ["codexOverviewQuickstartUrlsReturned", false],
+    ["codexOverviewQuickstartSecretsReturned", false],
+    ["codexOverviewQuickstartRawPayloadsReturned", false],
+    ["codexOverviewQuickstartAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexGovernanceEntries() {
   return [
     ["governanceVisibilityAuditability", "overview", "catalog-only", "official-codex-governance-docs"],
@@ -39392,6 +39567,7 @@ function assertCodexAppSettingsParity(
   assertCodexBedrockCatalog(payload);
   assertCodexPricingCatalog(payload);
   assertCodexWorkflowGuidanceCatalog(payload);
+  assertCodexOverviewQuickstartCatalog(payload);
   assertCodexGovernanceCatalog(payload);
   assertCodexManagedConfigurationCatalog(payload);
   assertCodexEnvironmentVariablesCatalog(payload);

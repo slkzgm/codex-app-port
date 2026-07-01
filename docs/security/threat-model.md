@@ -518,6 +518,16 @@
   app-server payloads, or app-server traffic, and must not read prompts/files/
   diffs, execute commands/tests, start reviews/cloud tasks, mutate goals/config/
   Fast Mode/model selection, access files/network, or create model traffic. Its
+  Codex Overview and Quickstart catalog may expose only static
+  official-documentation keys plus local boundary keys, groups, states, sources,
+  counts, and redaction flags; it must not return surface names, plan names,
+  account state, API keys, auth URLs, install commands, project paths,
+  repository content, prompt text, generated code, review findings, debug
+  traces, automation names, cloud task data, user/workspace identities, paths,
+  URLs, secrets, raw payloads, app-server payloads, or app-server traffic, and
+  must not read auth/API keys/projects, generate code, start reviews/debugging/
+  automations/cloud tasks, open app/CLI/IDE surfaces, access files/network,
+  create model traffic, or mutate state. Its
   Codex Auto-review catalog may expose only static official-documentation keys
   plus local boundary keys, groups, states, sources, counts, and redaction
   flags; it must not return approval requests, reviewer rationales,

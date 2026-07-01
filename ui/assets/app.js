@@ -51,6 +51,10 @@ const elements = {
   codexWorkflowGuidanceValuesText: document.querySelector(
     "#codex-workflow-guidance-values-text",
   ),
+  codexOverviewQuickstartText: document.querySelector("#codex-overview-quickstart-text"),
+  codexOverviewQuickstartValuesText: document.querySelector(
+    "#codex-overview-quickstart-values-text",
+  ),
   codexGovernanceText: document.querySelector("#codex-governance-text"),
   codexGovernanceValuesText: document.querySelector("#codex-governance-values-text"),
   codexManagedConfigurationText: document.querySelector("#codex-managed-configuration-text"),
@@ -471,6 +475,7 @@ const elements = {
   codexBedrockList: document.querySelector("#codex-bedrock-list"),
   codexPricingList: document.querySelector("#codex-pricing-list"),
   codexWorkflowGuidanceList: document.querySelector("#codex-workflow-guidance-list"),
+  codexOverviewQuickstartList: document.querySelector("#codex-overview-quickstart-list"),
   codexGovernanceList: document.querySelector("#codex-governance-list"),
   codexManagedConfigurationList: document.querySelector("#codex-managed-configuration-list"),
   codexEnvironmentVariablesList: document.querySelector("#codex-environment-variables-list"),
@@ -10538,6 +10543,7 @@ function renderSettingsIntegrations(payload) {
   const codexBedrock = payload.codexBedrock ?? {};
   const codexPricing = payload.codexPricing ?? {};
   const codexWorkflowGuidance = payload.codexWorkflowGuidance ?? {};
+  const codexOverviewQuickstart = payload.codexOverviewQuickstart ?? {};
   const codexGovernance = payload.codexGovernance ?? {};
   const codexManagedConfiguration = payload.codexManagedConfiguration ?? {};
   const codexEnvironmentVariables = payload.codexEnvironmentVariables ?? {};
@@ -11017,6 +11023,51 @@ function renderSettingsIntegrations(payload) {
     codexWorkflowGuidance.secretsReturned ||
     codexWorkflowGuidance.rawPayloadsReturned ||
     codexWorkflowGuidance.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexOverviewQuickstartText.textContent = codexOverviewQuickstart.returned
+    ? `${codexOverviewQuickstart.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexOverviewQuickstart.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexOverviewQuickstartValuesText.textContent =
+    codexOverviewQuickstart.surfaceNamesReturned ||
+    codexOverviewQuickstart.planNamesReturned ||
+    codexOverviewQuickstart.accountStatesReturned ||
+    codexOverviewQuickstart.apiKeysReturned ||
+    codexOverviewQuickstart.authUrlsReturned ||
+    codexOverviewQuickstart.installCommandsReturned ||
+    codexOverviewQuickstart.projectPathsReturned ||
+    codexOverviewQuickstart.repositoryContentsReturned ||
+    codexOverviewQuickstart.promptTextsReturned ||
+    codexOverviewQuickstart.generatedCodeReturned ||
+    codexOverviewQuickstart.reviewFindingsReturned ||
+    codexOverviewQuickstart.debugTracesReturned ||
+    codexOverviewQuickstart.automationNamesReturned ||
+    codexOverviewQuickstart.cloudTasksReturned ||
+    codexOverviewQuickstart.userIdentitiesReturned ||
+    codexOverviewQuickstart.workspaceIdentitiesReturned ||
+    codexOverviewQuickstart.authReads ||
+    codexOverviewQuickstart.apiKeyReads ||
+    codexOverviewQuickstart.projectReads ||
+    codexOverviewQuickstart.codeGenerated ||
+    codexOverviewQuickstart.reviewsStarted ||
+    codexOverviewQuickstart.debugsStarted ||
+    codexOverviewQuickstart.automationsStarted ||
+    codexOverviewQuickstart.cloudTasksStarted ||
+    codexOverviewQuickstart.appsOpened ||
+    codexOverviewQuickstart.cliInvocationsStarted ||
+    codexOverviewQuickstart.ideInvocationsStarted ||
+    codexOverviewQuickstart.filesystemReads ||
+    codexOverviewQuickstart.filesystemWrites ||
+    codexOverviewQuickstart.networkAccess ||
+    codexOverviewQuickstart.modelTraffic ||
+    codexOverviewQuickstart.mutationEnabled ||
+    codexOverviewQuickstart.pathsReturned ||
+    codexOverviewQuickstart.urlsReturned ||
+    codexOverviewQuickstart.secretsReturned ||
+    codexOverviewQuickstart.rawPayloadsReturned ||
+    codexOverviewQuickstart.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexGovernanceText.textContent = codexGovernance.returned
@@ -12186,6 +12237,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexBedrockCatalog(codexBedrock);
   renderCodexPricingCatalog(codexPricing);
   renderCodexWorkflowGuidanceCatalog(codexWorkflowGuidance);
+  renderCodexOverviewQuickstartCatalog(codexOverviewQuickstart);
   renderCodexGovernanceCatalog(codexGovernance);
   renderCodexManagedConfigurationCatalog(codexManagedConfiguration);
   renderCodexEnvironmentVariablesCatalog(codexEnvironmentVariables);
@@ -14773,6 +14825,92 @@ function renderCodexWorkflowGuidanceCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexWorkflowGuidanceList.append(row);
+  }
+}
+
+function renderCodexOverviewQuickstartCatalog(summary) {
+  elements.codexOverviewQuickstartList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexOverviewQuickstartList.append(
+      emptyState("No Codex overview quickstart catalog returned."),
+    );
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "overview";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.surfaceNameReturned ? "surface names returned" : "surface names hidden",
+      entry.planNameReturned ? "plan names returned" : "plan names hidden",
+      entry.accountStateReturned ? "account state returned" : "account state hidden",
+      entry.apiKeyReturned ? "API keys returned" : "API keys hidden",
+      entry.authUrlReturned ? "auth URLs returned" : "auth URLs hidden",
+      entry.installCommandReturned ? "install commands returned" : "install commands hidden",
+      entry.projectPathReturned ? "project paths returned" : "project paths hidden",
+      entry.repositoryContentReturned
+        ? "repository content returned"
+        : "repository content hidden",
+      entry.promptTextReturned ? "prompt text returned" : "prompt text hidden",
+      entry.generatedCodeReturned ? "generated code returned" : "generated code hidden",
+      entry.reviewFindingReturned ? "review findings returned" : "review findings hidden",
+      entry.debugTraceReturned ? "debug traces returned" : "debug traces hidden",
+      entry.automationNameReturned ? "automation names returned" : "automation names hidden",
+      entry.cloudTaskReturned ? "cloud tasks returned" : "cloud tasks hidden",
+      entry.userIdentityReturned ? "user identities returned" : "user identities hidden",
+      entry.workspaceIdentityReturned
+        ? "workspace identities returned"
+        : "workspace identities hidden",
+      entry.authRead ? "auth read" : "auth reads blocked",
+      entry.apiKeyRead ? "API key read" : "API key reads blocked",
+      entry.projectRead ? "project read" : "project reads blocked",
+      entry.codeGenerated ? "code generated" : "code generation blocked",
+      entry.reviewStarted ? "review started" : "review starts blocked",
+      entry.debugStarted ? "debug started" : "debug starts blocked",
+      entry.automationStarted ? "automation started" : "automation starts blocked",
+      entry.cloudTaskStarted ? "cloud task started" : "cloud task starts blocked",
+      entry.appOpened ? "app opened" : "app opens blocked",
+      entry.cliInvoked ? "CLI invoked" : "CLI invocation blocked",
+      entry.ideInvoked ? "IDE invoked" : "IDE invocation blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.modelTraffic ? "model traffic" : "model traffic blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexOverviewQuickstartList.append(row);
   }
 }
 

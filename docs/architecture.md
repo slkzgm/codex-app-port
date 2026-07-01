@@ -639,6 +639,18 @@ Current M1 status:
   execution, review/cloud-task starts, goal/config/Fast Mode/model mutations,
   filesystem access, network access, model traffic, paths, URLs, secrets, raw
   payloads, and app-server traffic blocked
+- done: read-only Codex Overview and Quickstart catalog in
+  `/api/settings-integrations`, exposing only static official Overview/
+  Quickstart documentation keys plus local boundary keys/groups/states/sources/
+  counts/redaction flags for the coding-agent framing, write/understand/review/
+  debug/automate capability categories, ChatGPT plan access, and API-credit
+  sign-in entry point, with surface names, plan names, account state, API keys,
+  auth URLs, install commands, project paths, repository content, prompt text,
+  generated code, review findings, debug traces, automation names, cloud task
+  data, user/workspace identities, auth/API-key/project reads, code generation,
+  review/debug/automation/cloud-task starts, app/CLI/IDE opens, filesystem
+  access, network access, model traffic, mutations, paths, URLs, secrets, raw
+  payloads, and app-server traffic blocked
 - done: read-only Codex Auto-review catalog in `/api/settings-integrations`,
   exposing only static official Auto-review documentation keys plus local
   boundary keys/groups/states/sources/counts/redaction flags for reviewer-swap

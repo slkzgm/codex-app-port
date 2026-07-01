@@ -920,6 +920,19 @@ payloads, and app-server traffic. It must not read task context, run commands
 or tests, start reviews or cloud tasks, mutate goals or configuration, change
 Fast Mode/model selection, access files/network, or create model traffic.
 
+The same response exposes `codexOverviewQuickstart` as a static review-only
+catalog for official Codex Overview and Quickstart guidance. The UI shows only
+catalog counts, entry keys, groups, state/source chips, and negative redaction
+chips for surface names, plan names, account state, API keys, auth URLs,
+install commands, project paths, repository content, prompt text, generated
+code, review findings, debug traces, automation names, cloud task data,
+user/workspace identities, auth/API-key/project reads, code generation,
+review/debug/automation/cloud-task starts, app/CLI/IDE opens, filesystem/
+network access, model traffic, paths, URLs, secrets, raw payloads, and
+app-server traffic. It must not read auth state or project context, generate
+code, start reviews/debugging/automations/cloud tasks, open app/CLI/IDE
+surfaces, access files/network, create model traffic, or mutate state.
+
 The same response exposes `codexManagedConfiguration` as a static review-only
 catalog for official Codex managed-configuration behavior. The UI shows only
 catalog counts, entry keys, groups, state/source chips, and redaction chips for

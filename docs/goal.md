@@ -286,6 +286,18 @@ Target parity with the Codex desktop workflow:
   not read prompts/files/diffs, execute commands/tests, start reviews/cloud
   tasks, mutate goals/config/Fast Mode/model selection, access files/network, or
   create model traffic.
+- `/api/settings-integrations` now also exposes a read-only Codex Overview and
+  Quickstart catalog aligned to the current official overview and quickstart
+  docs. It returns only static keys, groups, states, sources, counts, and
+  redaction flags for the coding-agent framing, write/understand/review/debug/
+  automate capability categories, ChatGPT plan access, and API-credit sign-in
+  entry point. It does not return surface names, plan names, account state, API
+  keys, auth URLs, install commands, project paths, repository content, prompt
+  text, generated code, review findings, debug traces, automation names, cloud
+  task data, user/workspace identities, paths, URLs, secrets, raw payloads, or
+  app-server traffic, and it does not read auth/API keys/projects, generate
+  code, start reviews/debugging/automations/cloud tasks, open app/CLI/IDE
+  surfaces, access files/network, create model traffic, or mutate state.
 - `/api/settings-integrations` now also exposes a read-only Codex Governance
   catalog aligned to the official enterprise governance guide. It returns only
   static keys, groups, states, sources, counts, and redaction flags for
