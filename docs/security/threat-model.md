@@ -589,6 +589,15 @@
   settings, generate or inject memories, read screen captures or memory files,
   create model traffic, access filesystem or network, or mutate Chronicle
   state. Its
+  Codex Custom Prompts catalog may expose only static official-documentation
+  keys plus local boundary keys, groups, states, sources, counts, and redaction
+  flags; it must not return prompt names, descriptions, argument hints, prompt
+  content, prompt paths, prompt arguments, expanded prompts, slash commands,
+  local-home paths, command text, paths, URLs, secrets, raw payloads,
+  app-server payloads, or app-server traffic, and must not read prompt
+  directories, read/write/delete prompt files, expand prompts, execute slash
+  commands, access filesystem, create model traffic, or mutate Custom Prompts
+  state. Its
   Codex Security catalog may expose only static official-documentation keys
   plus local boundary keys, groups, states, sources, counts, and redaction
   flags; it must not return plugin install state, scan prompts, setup
@@ -694,7 +703,15 @@
   context, secret values, paths, URLs, secrets, raw payloads, app-server
   payloads, or app-server traffic, and must not read/write config, read memory
   files, generate or inject memories, access filesystem or network, create model
-  traffic, or mutate Memories state. Its Codex CLI command reference catalog
+  traffic, or mutate Memories state. Its Codex Custom Prompts catalog may
+  expose only static official-documentation keys plus local boundary keys,
+  groups, states, sources, counts, and redaction flags; it must not return
+  prompt names, descriptions, argument hints, prompt content, prompt paths,
+  prompt arguments, expanded prompts, slash commands, local-home paths, command
+  text, paths, URLs, secrets, raw payloads, app-server payloads, or app-server
+  traffic, and must not read prompt directories, read/write/delete prompt
+  files, expand prompts, execute slash commands, access filesystem, create model
+  traffic, or mutate Custom Prompts state. Its Codex CLI command reference catalog
   may expose only static official-documentation keys plus local boundary keys,
   groups, states, sources, counts, and redaction flags; it must not return exact
   command names, flag names, option values, prompt text, config keys or values,

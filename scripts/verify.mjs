@@ -34091,6 +34091,151 @@ function assertCodexMemoriesCatalog(payload) {
   }
 }
 
+function expectedCodexCustomPromptsEntries() {
+  return [
+    ["deprecatedCustomPrompts", "lifecycle", "catalog-only", "official-codex-custom-prompts-docs"],
+    ["skillsMigrationGuidance", "migration", "catalog-only", "official-codex-custom-prompts-docs"],
+    ["reusableMarkdownPrompt", "prompt-files", "catalog-only", "official-codex-custom-prompts-docs"],
+    ["cliIdeSlashInvocation", "invocation", "catalog-only", "official-codex-custom-prompts-docs"],
+    ["localCodexHomeStorage", "storage", "catalog-only", "official-codex-custom-prompts-docs"],
+    ["repositorySharingBoundary", "sharing", "catalog-only", "official-codex-custom-prompts-docs"],
+    ["promptDirectorySetup", "setup", "catalog-only", "official-codex-custom-prompts-docs"],
+    ["markdownPromptFile", "prompt-files", "catalog-only", "official-codex-custom-prompts-docs"],
+    ["frontMatterDescription", "metadata", "catalog-only", "official-codex-custom-prompts-docs"],
+    ["frontMatterArgumentHint", "metadata", "catalog-only", "official-codex-custom-prompts-docs"],
+    ["positionalPlaceholders", "arguments", "catalog-only", "official-codex-custom-prompts-docs"],
+    ["namedPlaceholders", "arguments", "catalog-only", "official-codex-custom-prompts-docs"],
+    ["literalDollarEscaping", "arguments", "catalog-only", "official-codex-custom-prompts-docs"],
+    ["restartReloadRequirement", "loading", "catalog-only", "official-codex-custom-prompts-docs"],
+    ["markdownOnlyTopLevelScan", "loading", "catalog-only", "official-codex-custom-prompts-docs"],
+    ["expandedInstructionSend", "execution", "catalog-only", "official-codex-custom-prompts-docs"],
+    ["manageByEditingFiles", "management", "catalog-only", "official-codex-custom-prompts-docs"],
+    ["promptDirectoryReadBoundary", "storage", "blocked", "local-custom-prompts-boundary"],
+    ["promptFileContentBoundary", "prompt-files", "blocked", "local-custom-prompts-boundary"],
+    ["promptMetadataBoundary", "metadata", "blocked", "local-custom-prompts-boundary"],
+    ["promptArgumentBoundary", "arguments", "blocked", "local-custom-prompts-boundary"],
+    ["promptExpansionBoundary", "execution", "blocked", "local-custom-prompts-boundary"],
+    ["slashCommandBoundary", "invocation", "blocked", "local-custom-prompts-boundary"],
+    ["promptFileWriteBoundary", "management", "blocked", "local-custom-prompts-boundary"],
+    ["promptFileDeleteBoundary", "management", "blocked", "local-custom-prompts-boundary"],
+    ["localHomePathBoundary", "storage", "blocked", "local-custom-prompts-boundary"],
+    ["filesystemBoundary", "filesystem", "blocked", "local-custom-prompts-boundary"],
+    ["modelTrafficBoundary", "model", "blocked", "local-custom-prompts-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexCustomPromptsCatalog(payload) {
+  const catalog = payload.codexCustomPrompts;
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-custom-prompts-docs");
+  assert.equal(catalog.entryCount, 28);
+  assert.equal(catalog.officialEntryCount, 17);
+  assert.equal(catalog.localBoundaryEntryCount, 11);
+  assert.equal(catalog.catalogOnlyEntryCount, 17);
+  assert.equal(catalog.blockedEntryCount, 11);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({ key, group, state, source })),
+    expectedCodexCustomPromptsEntries(),
+  );
+
+  const entryRedactionFlags = [
+    "promptNameReturned",
+    "promptDescriptionReturned",
+    "argumentHintReturned",
+    "promptContentReturned",
+    "promptPathReturned",
+    "promptArgumentReturned",
+    "expandedPromptReturned",
+    "slashCommandReturned",
+    "localHomePathReturned",
+    "commandTextReturned",
+    "promptDirectoryRead",
+    "promptFileRead",
+    "promptFileWritten",
+    "promptFileDeleted",
+    "promptExpanded",
+    "slashCommandExecuted",
+    "filesystemRead",
+    "filesystemWrite",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.customPromptsCatalogReturned, true);
+  for (const flag of [
+    "promptNamesReturned",
+    "promptDescriptionsReturned",
+    "argumentHintsReturned",
+    "promptContentsReturned",
+    "promptPathsReturned",
+    "promptArgumentsReturned",
+    "expandedPromptsReturned",
+    "slashCommandsReturned",
+    "localHomePathsReturned",
+    "commandTextsReturned",
+    "promptDirectoriesRead",
+    "promptFilesRead",
+    "promptFilesWritten",
+    "promptFilesDeleted",
+    "promptsExpanded",
+    "slashCommandsExecuted",
+    "filesystemReads",
+    "filesystemWrites",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexCustomPromptsReturned", true],
+    ["codexCustomPromptsValuesReturned", false],
+    ["codexCustomPromptsNamesReturned", false],
+    ["codexCustomPromptsDescriptionsReturned", false],
+    ["codexCustomPromptsArgumentHintsReturned", false],
+    ["codexCustomPromptsContentsReturned", false],
+    ["codexCustomPromptsPathsReturned", false],
+    ["codexCustomPromptsArgumentsReturned", false],
+    ["codexCustomPromptsExpandedPromptsReturned", false],
+    ["codexCustomPromptsSlashCommandsReturned", false],
+    ["codexCustomPromptsLocalHomePathsReturned", false],
+    ["codexCustomPromptsCommandTextsReturned", false],
+    ["codexCustomPromptsDirectoryReadEnabled", false],
+    ["codexCustomPromptsFileReadEnabled", false],
+    ["codexCustomPromptsFileWriteEnabled", false],
+    ["codexCustomPromptsFileDeleteEnabled", false],
+    ["codexCustomPromptsExpansionEnabled", false],
+    ["codexCustomPromptsSlashExecutionEnabled", false],
+    ["codexCustomPromptsFilesystemAccess", false],
+    ["codexCustomPromptsModelTraffic", false],
+    ["codexCustomPromptsMutationsEnabled", false],
+    ["codexCustomPromptsUrlsReturned", false],
+    ["codexCustomPromptsSecretsReturned", false],
+    ["codexCustomPromptsRawPayloadsReturned", false],
+    ["codexCustomPromptsAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexSecurityEntries() {
   return [
     ["securityPluginOverview", "plugin-overview", "catalog-only", "official-codex-security-docs"],
@@ -43196,6 +43341,7 @@ function assertCodexAppSettingsParity(
   assertCodexAutoReviewCatalog(payload);
   assertCodexChronicleCatalog(payload);
   assertCodexMemoriesCatalog(payload);
+  assertCodexCustomPromptsCatalog(payload);
   assertCodexSecurityCatalog(payload);
   assertCodexOpenSourceCatalog(payload);
   assertCodexWindowsPlatformCatalog(payload);

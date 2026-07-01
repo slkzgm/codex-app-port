@@ -804,6 +804,19 @@ Current M1 status:
   reads, memory generation/injection, filesystem access, network access, model
   traffic, mutations, paths, URLs, secrets, raw payloads, and app-server traffic
   blocked
+- done: read-only Codex Custom Prompts catalog in `/api/settings-integrations`,
+  exposing only static official Custom Prompts documentation keys plus local
+  boundary keys/groups/states/sources/counts/redaction flags for the deprecated
+  lifecycle, skills migration guidance, reusable local Markdown prompt files,
+  CLI/IDE slash invocation, local Codex-home storage, repository sharing
+  boundaries, prompt-file setup, front-matter metadata, argument placeholders,
+  reload/top-level Markdown loading rules, expanded-instruction sending, and
+  file-based management, with prompt names, descriptions, argument hints,
+  prompt content, prompt paths, prompt arguments, expanded prompts, slash
+  commands, local-home paths, command text, prompt directory reads, prompt-file
+  reads/writes/deletes, prompt expansion, slash execution, filesystem access,
+  model traffic, mutations, paths, URLs, secrets, raw payloads, and app-server
+  traffic blocked
 - done: read-only Codex GitHub Action catalog in `/api/settings-integrations`,
   exposing only static official GitHub Action documentation keys plus local
   boundary keys/groups/states/sources/counts/redaction flags for CI workflows,

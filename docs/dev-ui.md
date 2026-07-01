@@ -861,6 +861,20 @@ raw payloads, or app-server traffic, and it must not read/write config, read
 memory files, generate or inject memories, access files/network, create model
 traffic, or mutate Memories state.
 
+The same response exposes `codexCustomPrompts` as a static review-only catalog
+for the official Custom Prompts guidance. The UI shows only catalog counts,
+entry keys, groups, state/source chips, and negative redaction chips for the
+deprecated lifecycle, skills migration guidance, reusable local Markdown prompt
+files, CLI/IDE slash invocation, local Codex-home storage, repository sharing
+boundaries, prompt-file setup, front-matter metadata, argument placeholders,
+reload/top-level Markdown loading rules, expanded-instruction sending, and
+file-based management. It must not show prompt names, descriptions, argument
+hints, prompt content, prompt paths, prompt arguments, expanded prompts, slash
+commands, local-home paths, command text, paths, URLs, secrets, raw payloads, or
+app-server traffic, and it must not read prompt directories, read/write/delete
+prompt files, expand prompts, execute slash commands, access files, create
+model traffic, or mutate Custom Prompts state.
+
 The same response exposes `codexSecurity` as a static review-only catalog for
 official Codex Security behavior. The UI shows only catalog counts, entry keys,
 groups, state/source chips, and negative redaction chips for local plugin

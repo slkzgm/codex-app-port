@@ -39,6 +39,8 @@ const elements = {
   codexChronicleValuesText: document.querySelector("#codex-chronicle-values-text"),
   codexMemoriesText: document.querySelector("#codex-memories-text"),
   codexMemoriesValuesText: document.querySelector("#codex-memories-values-text"),
+  codexCustomPromptsText: document.querySelector("#codex-custom-prompts-text"),
+  codexCustomPromptsValuesText: document.querySelector("#codex-custom-prompts-values-text"),
   codexSecurityText: document.querySelector("#codex-security-text"),
   codexSecurityValuesText: document.querySelector("#codex-security-values-text"),
   codexOpenSourceText: document.querySelector("#codex-open-source-text"),
@@ -516,6 +518,7 @@ const elements = {
   codexAutoReviewList: document.querySelector("#codex-auto-review-list"),
   codexChronicleList: document.querySelector("#codex-chronicle-list"),
   codexMemoriesList: document.querySelector("#codex-memories-list"),
+  codexCustomPromptsList: document.querySelector("#codex-custom-prompts-list"),
   codexSecurityList: document.querySelector("#codex-security-list"),
   codexOpenSourceList: document.querySelector("#codex-open-source-list"),
   codexWindowsPlatformList: document.querySelector("#codex-windows-platform-list"),
@@ -10601,6 +10604,7 @@ function renderSettingsIntegrations(payload) {
   const codexAutoReview = payload.codexAutoReview ?? {};
   const codexChronicle = payload.codexChronicle ?? {};
   const codexMemories = payload.codexMemories ?? {};
+  const codexCustomPrompts = payload.codexCustomPrompts ?? {};
   const codexSecurity = payload.codexSecurity ?? {};
   const codexOpenSource = payload.codexOpenSource ?? {};
   const codexWindowsPlatform = payload.codexWindowsPlatform ?? {};
@@ -10871,6 +10875,39 @@ function renderSettingsIntegrations(payload) {
     codexMemories.secretsReturned ||
     codexMemories.rawPayloadsReturned ||
     codexMemories.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexCustomPromptsText.textContent = codexCustomPrompts.returned
+    ? `${codexCustomPrompts.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexCustomPrompts.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexCustomPromptsValuesText.textContent =
+    codexCustomPrompts.promptNamesReturned ||
+    codexCustomPrompts.promptDescriptionsReturned ||
+    codexCustomPrompts.argumentHintsReturned ||
+    codexCustomPrompts.promptContentsReturned ||
+    codexCustomPrompts.promptPathsReturned ||
+    codexCustomPrompts.promptArgumentsReturned ||
+    codexCustomPrompts.expandedPromptsReturned ||
+    codexCustomPrompts.slashCommandsReturned ||
+    codexCustomPrompts.localHomePathsReturned ||
+    codexCustomPrompts.commandTextsReturned ||
+    codexCustomPrompts.promptDirectoriesRead ||
+    codexCustomPrompts.promptFilesRead ||
+    codexCustomPrompts.promptFilesWritten ||
+    codexCustomPrompts.promptFilesDeleted ||
+    codexCustomPrompts.promptsExpanded ||
+    codexCustomPrompts.slashCommandsExecuted ||
+    codexCustomPrompts.filesystemReads ||
+    codexCustomPrompts.filesystemWrites ||
+    codexCustomPrompts.modelTraffic ||
+    codexCustomPrompts.mutationEnabled ||
+    codexCustomPrompts.pathsReturned ||
+    codexCustomPrompts.urlsReturned ||
+    codexCustomPrompts.secretsReturned ||
+    codexCustomPrompts.rawPayloadsReturned ||
+    codexCustomPrompts.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexSecurityText.textContent = codexSecurity.returned
@@ -13129,6 +13166,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexAutoReviewCatalog(codexAutoReview);
   renderCodexChronicleCatalog(codexChronicle);
   renderCodexMemoriesCatalog(codexMemories);
+  renderCodexCustomPromptsCatalog(codexCustomPrompts);
   renderCodexSecurityCatalog(codexSecurity);
   renderCodexOpenSourceCatalog(codexOpenSource);
   renderCodexWindowsPlatformCatalog(codexWindowsPlatform);
@@ -15289,6 +15327,76 @@ function renderCodexMemoriesCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexMemoriesList.append(row);
+  }
+}
+
+function renderCodexCustomPromptsCatalog(summary) {
+  elements.codexCustomPromptsList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexCustomPromptsList.append(
+      emptyState("No Codex Custom Prompts catalog returned."),
+    );
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "custom-prompts";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.promptNameReturned ? "prompt names returned" : "prompt names hidden",
+      entry.promptDescriptionReturned ? "descriptions returned" : "descriptions hidden",
+      entry.argumentHintReturned ? "argument hints returned" : "argument hints hidden",
+      entry.promptContentReturned ? "prompt content returned" : "prompt content hidden",
+      entry.promptPathReturned ? "prompt paths returned" : "prompt paths hidden",
+      entry.promptArgumentReturned ? "arguments returned" : "arguments hidden",
+      entry.expandedPromptReturned ? "expanded prompts returned" : "expanded prompts hidden",
+      entry.slashCommandReturned ? "slash commands returned" : "slash commands hidden",
+      entry.localHomePathReturned ? "home paths returned" : "home paths hidden",
+      entry.commandTextReturned ? "command text returned" : "command text hidden",
+      entry.promptDirectoryRead ? "prompt directory read" : "prompt directory reads blocked",
+      entry.promptFileRead ? "prompt files read" : "prompt file reads blocked",
+      entry.promptFileWritten ? "prompt files written" : "prompt writes blocked",
+      entry.promptFileDeleted ? "prompt files deleted" : "prompt deletes blocked",
+      entry.promptExpanded ? "prompts expanded" : "prompt expansion blocked",
+      entry.slashCommandExecuted ? "slash commands executed" : "slash execution blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      entry.modelTraffic ? "model traffic" : "model traffic blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexCustomPromptsList.append(row);
   }
 }
 

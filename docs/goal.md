@@ -407,6 +407,19 @@ Target parity with the Codex desktop workflow:
   paths, URLs, secrets, raw payloads, or app-server traffic, and it does not
   read/write config, read memory files, generate or inject memories, access
   files/network, create model traffic, or mutate Memories state.
+- `/api/settings-integrations` now also exposes a read-only Codex Custom
+  Prompts catalog aligned to the official Custom Prompts guidance. It returns
+  only static keys, groups, states, sources, counts, and redaction flags for the
+  deprecated lifecycle, skills migration guidance, reusable local Markdown
+  prompt files, CLI/IDE slash invocation, local Codex-home storage, repository
+  sharing boundaries, prompt-file setup, front-matter metadata, argument
+  placeholders, reload/top-level Markdown loading rules, expanded-instruction
+  sending, and file-based management. It does not return prompt names,
+  descriptions, argument hints, prompt content, prompt paths, prompt arguments,
+  expanded prompts, slash commands, local-home paths, command text, paths, URLs,
+  secrets, raw payloads, or app-server traffic, and it does not read prompt
+  directories, read/write/delete prompt files, expand prompts, execute slash
+  commands, access files, create model traffic, or mutate Custom Prompts state.
 - `/api/settings-integrations` now also exposes a read-only Codex GitHub Action
   catalog aligned to the official GitHub Action guide. It returns only static
   keys, groups, states, sources, counts, and redaction flags for CI workflow
