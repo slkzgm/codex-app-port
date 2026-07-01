@@ -35504,10 +35504,13 @@ function expectedCodexAuthenticationEntries() {
     ["apiKeyUsageBasedAccess", "methods", "catalog-only", "official-codex-auth-docs"],
     ["cloudChatgptRequirement", "cloud", "catalog-only", "official-codex-auth-docs"],
     ["cliIdeDualAuthSupport", "surfaces", "catalog-only", "official-codex-auth-docs"],
+    ["cliDefaultChatgptLogin", "surfaces", "catalog-only", "official-codex-auth-docs"],
     ["workspacePolicyImplications", "policy", "catalog-only", "official-codex-auth-docs"],
+    ["chatgptWorkspacePolicyRetention", "policy", "catalog-only", "official-codex-auth-docs"],
     ["chatgptBrowserLogin", "chatgpt-login", "catalog-only", "official-codex-auth-docs"],
     ["stdinAccessTokenLogin", "chatgpt-login", "catalog-only", "official-codex-auth-docs"],
     ["apiKeyDashboardSource", "api-key", "catalog-only", "official-codex-auth-docs"],
+    ["apiKeyStandardPricing", "api-key", "catalog-only", "official-codex-auth-docs"],
     ["apiKeyFeatureLimitations", "api-key", "catalog-only", "official-codex-auth-docs"],
     ["apiKeyAutomationGuidance", "api-key", "catalog-only", "official-codex-auth-docs"],
     ["enterpriseAccessTokenUseCase", "access-tokens", "catalog-only", "official-codex-auth-docs"],
@@ -35515,12 +35518,17 @@ function expectedCodexAuthenticationEntries() {
     ["socialLoginMfaGuidance", "security", "catalog-only", "official-codex-auth-docs"],
     ["ssoMfaGuidance", "security", "catalog-only", "official-codex-auth-docs"],
     ["loginCaching", "sessions", "catalog-only", "official-codex-auth-docs"],
+    ["cliIdeSharedLoginCache", "sessions", "catalog-only", "official-codex-auth-docs"],
     ["credentialStorageModes", "credential-storage", "catalog-only", "official-codex-auth-docs"],
+    ["credentialStoreAutoFallback", "credential-storage", "catalog-only", "official-codex-auth-docs"],
     ["managedLoginRestrictions", "managed-auth", "catalog-only", "official-codex-auth-docs"],
+    ["managedRestrictionMismatchLogout", "managed-auth", "catalog-only", "official-codex-auth-docs"],
     ["loginDiagnostics", "diagnostics", "catalog-only", "official-codex-auth-docs"],
+    ["loginDedicatedLogFile", "diagnostics", "catalog-only", "official-codex-auth-docs"],
     ["customCaBundles", "networking", "catalog-only", "official-codex-auth-docs"],
     ["headlessLoginProblem", "headless", "catalog-only", "official-codex-auth-docs"],
     ["deviceCodeAuthentication", "headless", "catalog-only", "official-codex-auth-docs"],
+    ["deviceCodeServerFallback", "headless", "catalog-only", "official-codex-auth-docs"],
     ["localAuthCacheFallback", "headless", "catalog-only", "official-codex-auth-docs"],
     ["sshCallbackForwarding", "headless", "catalog-only", "official-codex-auth-docs"],
     ["providerOpenAiAuthentication", "providers", "catalog-only", "official-codex-auth-docs"],
@@ -35560,10 +35568,10 @@ function assertCodexAuthenticationCatalog(payload) {
   assert.equal(catalog?.returned, true);
   assert.equal(catalog.state, "partial");
   assert.equal(catalog.officialSource, "official-codex-auth-docs");
-  assert.equal(catalog.entryCount, 52);
-  assert.equal(catalog.officialEntryCount, 31);
+  assert.equal(catalog.entryCount, 60);
+  assert.equal(catalog.officialEntryCount, 39);
   assert.equal(catalog.localBoundaryEntryCount, 21);
-  assert.equal(catalog.catalogOnlyEntryCount, 31);
+  assert.equal(catalog.catalogOnlyEntryCount, 39);
   assert.equal(catalog.blockedEntryCount, 21);
   assert.equal(catalog.enabledEntryCount, 0);
   assert.deepEqual(

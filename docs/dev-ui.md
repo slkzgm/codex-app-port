@@ -779,11 +779,13 @@ The same response exposes `codexAuthentication` as a static review-only catalog
 for official Authentication and sessions behavior. The UI shows only catalog
 counts, entry keys, groups, state/source chips, and redaction chips for
 ChatGPT/API-key sign-in, cloud requirements, CLI/IDE support, data-policy
-implications, browser login, stdin token login, API-key automation guidance,
-enterprise access-token use cases, MFA/SSO guidance, login caching and refresh,
-credential storage, managed login restrictions, diagnostics, custom CA bundles,
-headless/device-code/fallback/callback-forwarding flows, provider auth modes,
-and CI/CD auth references. It does not show account or workspace identifiers,
+implications, ChatGPT-default CLI login, browser login, stdin token login,
+API-key pricing and automation guidance, enterprise access-token use cases,
+MFA/SSO guidance, login caching and refresh, CLI/IDE shared login cache,
+credential storage and auto fallback, managed login restrictions and mismatch
+logout behavior, diagnostics, dedicated login logs, custom CA bundles,
+headless/device-code/server-fallback/callback-forwarding flows, provider auth
+modes, and CI/CD auth references. It does not show account or workspace identifiers,
 access tokens, API keys, device codes, verification URLs, OAuth callbacks, auth
 caches or files, credential-store state, login logs, CA paths, MFA/SSO state,
 managed restriction values, provider credentials or env vars, billing or

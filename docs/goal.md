@@ -131,8 +131,10 @@ Target parity with the Codex desktop workflow:
   Authentication catalog aligned to the official Authentication and sessions
   documentation. It returns only static keys, groups, states, sources, counts,
   and redaction flags for sign-in methods, session and credential-storage
-  guidance, headless/device-code flows, provider auth modes, MFA/SSO, custom CA
-  bundles, and CI/CD references; account/workspace ids, tokens, API keys,
+  guidance, ChatGPT-default CLI login, API-key pricing, shared CLI/IDE login
+  cache, credential-store auto fallback, managed-restriction mismatch logout,
+  dedicated login logs, headless/device-code server fallback flows, provider
+  auth modes, MFA/SSO, custom CA bundles, and CI/CD references; account/workspace ids, tokens, API keys,
   device codes, verification URLs, OAuth callbacks, auth caches/files,
   credential-store state, logs, CA paths, provider envs, billing/entitlement
   values, commands, URLs, paths, secrets, raw payloads, app-server traffic, auth
