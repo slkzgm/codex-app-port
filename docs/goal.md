@@ -271,7 +271,7 @@ Target parity with the Codex desktop workflow:
   URLs, access files/network, or mutate subscription/billing/provider state.
 - `/api/settings-integrations` now also exposes a read-only Codex
   Configuration catalog aligned to the current official config basics,
-  advanced config, and model-selection docs. It returns only static keys,
+  advanced config, sample configuration, and model-selection docs. It returns only static keys,
   groups, states, sources, counts, and redaction flags for configuration
   reference/basics, user/project config files, precedence, trusted project
   layers, CLI overrides, profiles, Codex home/state files, provider setup,
@@ -279,15 +279,24 @@ Target parity with the Codex desktop workflow:
   built-in providers, model reasoning/verbosity/limits, approval/sandbox
   settings, permission profiles, shell environment policy, MCP config,
   telemetry, default/temporary/cloud model-selection boundaries, feature
-  flags, web search mode, TUI keymap, and log directory concepts. It does not
+  flags, web search mode, TUI keymap, log directory concepts, and sample
+  configuration section concepts for models, reasoning, instructions,
+  notifications, approvals/sandboxing, auth/login, project docs, history/file
+  openers, UI controls, web search, agents, skills, workspace sandboxing, shell
+  environment policy, sandboxed networking, permission profiles, TUI,
+  analytics/feedback/notices, features, memories, hooks, MCP servers, model
+  providers, apps/connectors, tool suggestions, profiles, project trust, tools,
+  telemetry, and Windows. It does not
   return config paths, `config.toml`, config values, profile names, model
   names, provider names, base URLs, environment variable names or values,
   header names or values, auth/hook commands, approval policies, sandbox modes,
   permission profiles, feature flags, telemetry payloads, MCP server names,
-  state files, log paths, cloud task data, command text, paths, URLs, secrets,
-  raw payloads, or app-server traffic, and it does not read or write config,
-  start telemetry, access files/network, create model traffic, or mutate
-  configuration state.
+  state files, log paths, cloud task data, command text, sample snippets,
+  default or recommended values, connector identifiers, permission/network
+  rules, telemetry endpoints, Windows values, paths, URLs, secrets, raw
+  payloads, or app-server traffic, and it does not read or write config, copy
+  sample config, start telemetry, access files/network, create model traffic,
+  or mutate configuration state.
 - `/api/settings-integrations` now also exposes a read-only Codex Workflow
   Guidance catalog aligned to the current official Best Practices, Workflows,
   Prompting, and Speed docs. It returns only static keys, groups, states,

@@ -623,22 +623,31 @@ Current M1 status:
   enterprise contracts, filesystem access, network access, mutations, paths,
   URLs, secrets, raw payloads, and app-server traffic blocked
 - done: read-only Codex Configuration catalog in `/api/settings-integrations`,
-  exposing only static official config basics, advanced config, and model
-  selection documentation keys plus local boundary keys/groups/states/sources/
+  exposing only static official config basics, advanced config, sample
+  configuration, and model selection documentation keys plus local boundary keys/groups/states/sources/
   counts/redaction flags for config reference/basics, user/project config
   files, precedence, trusted project layers, CLI overrides, profiles, Codex
   home/state files, provider setup, project ignored keys, hooks, subagents,
   project-root detection, custom and built-in providers, model reasoning/
   verbosity/limits, approval/sandbox settings, permission profiles, shell
   environment policy, MCP config, telemetry, model-selection boundaries,
-  feature flags, web search mode, TUI keymap, and log directory concepts, with
+  feature flags, web search mode, TUI keymap, log directory concepts, sample
+  section coverage for models, reasoning, instructions, notifications,
+  approvals/sandboxing, auth/login, project docs, history/file openers, UI,
+  web search, agents, skills, workspace sandboxing, shell environment policy,
+  sandboxed networking, permission profiles, TUI, analytics/feedback/notices,
+  features, memories, hooks, MCP servers, model providers, apps/connectors,
+  tool suggestions, profiles, project trust, tools, telemetry, and Windows,
+  with
   config paths, config.toml content, config values, profile names, model names,
   provider names, base URLs, env var names/values, headers, auth/hook commands,
   approval policies, sandbox modes, permission profiles, feature flags,
   telemetry payloads, MCP server names, state/log paths, cloud task data,
-  command text, config reads/writes, telemetry starts, filesystem access,
-  network access, model traffic, mutations, paths, URLs, secrets, raw payloads,
-  and app-server traffic blocked
+  command text, sample snippets, default/recommended values, connectors,
+  permission/network rules, telemetry endpoints, Windows values, sample-copy
+  mutations, config reads/writes, telemetry starts, filesystem access, network
+  access, model traffic, mutations, paths, URLs, secrets, raw payloads, and
+  app-server traffic blocked
 - done: read-only Codex Workflow Guidance catalog in
   `/api/settings-integrations`, exposing only static official Best Practices,
   Workflows, Prompting, and Speed documentation keys plus local boundary keys/

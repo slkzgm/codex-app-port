@@ -515,9 +515,11 @@
   header names or values, auth or hook commands, approval policies, sandbox
   modes, permission profiles, feature flags, telemetry payloads, MCP server
   names, state files, log paths, cloud task data, command text, paths, URLs,
-  secrets, raw payloads, app-server payloads, or app-server traffic, and must
-  not read or write config, inspect state files, start telemetry, access
-  filesystem or network, create model traffic, or mutate configuration state.
+  sample snippets, default or recommended values, connector identifiers,
+  permission or network rules, telemetry endpoints, Windows values, secrets,
+  raw payloads, app-server payloads, or app-server traffic, and must not read
+  or write config, copy sample config, inspect state files, start telemetry,
+  access filesystem or network, create model traffic, or mutate configuration state.
   Its Codex Workflow Guidance
   catalog may expose only static official-documentation keys plus local
   boundary keys, groups, states, sources, counts, and redaction flags; it must

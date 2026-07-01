@@ -37833,6 +37833,41 @@ function expectedCodexConfigurationEntries() {
     ["webSearchMode", "features", "catalog-only", "official-codex-config-docs"],
     ["tuiKeymap", "tui", "catalog-only", "official-codex-config-docs"],
     ["logDirectory", "logging", "catalog-only", "official-codex-config-docs"],
+    ["sampleConfigPurpose", "sample", "catalog-only", "official-codex-sample-config-docs"],
+    ["copyOnlyNeededKeys", "sample", "catalog-only", "official-codex-sample-config-docs"],
+    ["rootKeyOrderingNote", "sample", "catalog-only", "official-codex-sample-config-docs"],
+    ["optionalUnsetKeysNote", "sample", "catalog-only", "official-codex-sample-config-docs"],
+    ["sampleCoreModelSelection", "sample-models", "catalog-only", "official-codex-sample-config-docs"],
+    ["sampleReasoningVerbosity", "sample-models", "catalog-only", "official-codex-sample-config-docs"],
+    ["sampleInstructionOverrides", "sample-instructions", "catalog-only", "official-codex-sample-config-docs"],
+    ["sampleNotificationConfig", "sample-notifications", "catalog-only", "official-codex-sample-config-docs"],
+    ["sampleApprovalSandbox", "sample-safety", "catalog-only", "official-codex-sample-config-docs"],
+    ["sampleAuthenticationLogin", "sample-auth", "catalog-only", "official-codex-sample-config-docs"],
+    ["sampleProjectDocumentationControls", "sample-projects", "catalog-only", "official-codex-sample-config-docs"],
+    ["sampleHistoryFileOpeners", "sample-history", "catalog-only", "official-codex-sample-config-docs"],
+    ["sampleUiMiscControls", "sample-ui", "catalog-only", "official-codex-sample-config-docs"],
+    ["sampleWebSearchControls", "sample-features", "catalog-only", "official-codex-sample-config-docs"],
+    ["sampleAgentsRolesLimits", "sample-agents", "catalog-only", "official-codex-sample-config-docs"],
+    ["sampleSkillOverrides", "sample-skills", "catalog-only", "official-codex-sample-config-docs"],
+    ["sampleWorkspaceSandboxTable", "sample-safety", "catalog-only", "official-codex-sample-config-docs"],
+    ["sampleShellEnvironmentPolicyTable", "sample-environment", "catalog-only", "official-codex-sample-config-docs"],
+    ["sampleSandboxedNetworkingProfile", "sample-network", "catalog-only", "official-codex-sample-config-docs"],
+    ["samplePermissionProfileExamples", "sample-permissions", "catalog-only", "official-codex-sample-config-docs"],
+    ["sampleHistoryTable", "sample-history", "catalog-only", "official-codex-sample-config-docs"],
+    ["sampleTuiTable", "sample-tui", "catalog-only", "official-codex-sample-config-docs"],
+    ["sampleAnalyticsFeedbackNoticeTables", "sample-ui", "catalog-only", "official-codex-sample-config-docs"],
+    ["sampleFeatureFlagsTable", "sample-features", "catalog-only", "official-codex-sample-config-docs"],
+    ["sampleMemoriesTable", "sample-memories", "catalog-only", "official-codex-sample-config-docs"],
+    ["sampleInlineHooks", "sample-hooks", "catalog-only", "official-codex-sample-config-docs"],
+    ["sampleMcpServersTable", "sample-mcp", "catalog-only", "official-codex-sample-config-docs"],
+    ["sampleModelProvidersTable", "sample-providers", "catalog-only", "official-codex-sample-config-docs"],
+    ["sampleAppsConnectorsTable", "sample-apps", "catalog-only", "official-codex-sample-config-docs"],
+    ["sampleToolSuggestionTable", "sample-tools", "catalog-only", "official-codex-sample-config-docs"],
+    ["sampleProfileFiles", "sample-profiles", "catalog-only", "official-codex-sample-config-docs"],
+    ["sampleProjectTrustTable", "sample-projects", "catalog-only", "official-codex-sample-config-docs"],
+    ["sampleToolsTable", "sample-tools", "catalog-only", "official-codex-sample-config-docs"],
+    ["sampleTelemetryTable", "sample-telemetry", "catalog-only", "official-codex-sample-config-docs"],
+    ["sampleWindowsTable", "sample-windows", "catalog-only", "official-codex-sample-config-docs"],
     ["userConfigPathBoundary", "locations", "blocked", "local-configuration-boundary"],
     ["projectConfigPathBoundary", "locations", "blocked", "local-configuration-boundary"],
     ["profileNameBoundary", "profiles", "blocked", "local-configuration-boundary"],
@@ -37855,6 +37890,20 @@ function expectedCodexConfigurationEntries() {
     ["telemetryPayloadBoundary", "telemetry", "blocked", "local-configuration-boundary"],
     ["mcpServerBoundary", "mcp", "blocked", "local-configuration-boundary"],
     ["cloudTaskModelBoundary", "models", "blocked", "local-configuration-boundary"],
+    ["sampleConfigSnippetBoundary", "sample", "blocked", "local-configuration-boundary"],
+    ["sampleDefaultValueBoundary", "sample", "blocked", "local-configuration-boundary"],
+    ["sampleRecommendedValueBoundary", "sample", "blocked", "local-configuration-boundary"],
+    ["sampleModelValueBoundary", "sample-models", "blocked", "local-configuration-boundary"],
+    ["sampleProviderValueBoundary", "sample-providers", "blocked", "local-configuration-boundary"],
+    ["sampleCredentialValueBoundary", "sample-auth", "blocked", "local-configuration-boundary"],
+    ["sampleEnvironmentBoundary", "sample-environment", "blocked", "local-configuration-boundary"],
+    ["samplePermissionRuleBoundary", "sample-permissions", "blocked", "local-configuration-boundary"],
+    ["sampleNetworkRuleBoundary", "sample-network", "blocked", "local-configuration-boundary"],
+    ["sampleMcpServerBoundary", "sample-mcp", "blocked", "local-configuration-boundary"],
+    ["sampleConnectorBoundary", "sample-apps", "blocked", "local-configuration-boundary"],
+    ["sampleTelemetryEndpointBoundary", "sample-telemetry", "blocked", "local-configuration-boundary"],
+    ["sampleWindowsValueBoundary", "sample-windows", "blocked", "local-configuration-boundary"],
+    ["sampleCopyMutationBoundary", "sample", "blocked", "local-configuration-boundary"],
     ["configReadBoundary", "runtime", "blocked", "local-configuration-boundary"],
     ["configWriteBoundary", "runtime", "blocked", "local-configuration-boundary"],
     ["filesystemNetworkBoundary", "runtime", "blocked", "local-configuration-boundary"],
@@ -37866,11 +37915,11 @@ function assertCodexConfigurationCatalog(payload) {
   assert.equal(catalog?.returned, true);
   assert.equal(catalog.state, "partial");
   assert.equal(catalog.officialSource, "official-codex-config-docs");
-  assert.equal(catalog.entryCount, 65);
-  assert.equal(catalog.officialEntryCount, 40);
-  assert.equal(catalog.localBoundaryEntryCount, 25);
-  assert.equal(catalog.catalogOnlyEntryCount, 40);
-  assert.equal(catalog.blockedEntryCount, 25);
+  assert.equal(catalog.entryCount, 114);
+  assert.equal(catalog.officialEntryCount, 75);
+  assert.equal(catalog.localBoundaryEntryCount, 39);
+  assert.equal(catalog.catalogOnlyEntryCount, 75);
+  assert.equal(catalog.blockedEntryCount, 39);
   assert.equal(catalog.enabledEntryCount, 0);
   assert.deepEqual(
     (catalog.entries ?? []).map(({ key, group, state, source }) => ({ key, group, state, source })),
