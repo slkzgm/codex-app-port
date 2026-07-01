@@ -548,7 +548,15 @@
   create branches, commit, push, open PRs, open IDEs or terminals, copy ignored
   files, restore snapshots, change cleanup settings, create permanent
   worktrees, run local-environment setup, access files/network, or mutate
-  Git/app state. Its
+  Git/app state. Its Codex Local Environments catalog may expose only static
+  official-documentation keys plus local boundary keys, groups, states,
+  sources, counts, and redaction flags; it must not return project names,
+  project roots, config paths, config content, setup commands, action names,
+  action commands, action icons, platform names, dependency state, worktree
+  paths, terminal output, setting values, paths, URLs, secrets, raw payloads,
+  app-server payloads, or app-server traffic, and must not read or write local
+  environment config, run setup scripts, run actions or terminal commands, open
+  settings, access files/network, or mutate state. Its
   Codex Auto-review catalog may expose only static official-documentation keys
   plus local boundary keys, groups, states, sources, counts, and redaction
   flags; it must not return approval requests, reviewer rationales,

@@ -683,6 +683,19 @@ Current M1 status:
   writes, permanent worktree creation, local-environment setup, filesystem
   access, network access, Git/app mutations, paths, URLs, secrets, raw
   payloads, and app-server traffic blocked
+- done: read-only Codex Local Environments catalog in
+  `/api/settings-integrations`, exposing only static official Local
+  Environments documentation keys plus local boundary keys/groups/states/
+  sources/counts/redaction flags for worktree setup configuration, project
+  action configuration, settings-pane setup, shared repository configuration,
+  project-root selection, setup script auto-run semantics, dependency
+  preparation guidance, platform-specific setup/actions, top-bar actions,
+  integrated-terminal action execution, and action icon selection, with project
+  names, project roots, config paths/content, setup commands, action names/
+  commands/icons, platform names, dependency state, worktree paths, terminal
+  output, setting values, config reads/writes, setup/action/terminal command
+  execution, settings opens, filesystem access, network access, mutations,
+  paths, URLs, secrets, raw payloads, and app-server traffic blocked
 - done: read-only Codex Auto-review catalog in `/api/settings-integrations`,
   exposing only static official Auto-review documentation keys plus local
   boundary keys/groups/states/sources/counts/redaction flags for reviewer-swap

@@ -61,6 +61,10 @@ const elements = {
   ),
   codexWorktreesText: document.querySelector("#codex-worktrees-text"),
   codexWorktreesValuesText: document.querySelector("#codex-worktrees-values-text"),
+  codexLocalEnvironmentsText: document.querySelector("#codex-local-environments-text"),
+  codexLocalEnvironmentsValuesText: document.querySelector(
+    "#codex-local-environments-values-text",
+  ),
   codexGovernanceText: document.querySelector("#codex-governance-text"),
   codexGovernanceValuesText: document.querySelector("#codex-governance-values-text"),
   codexManagedConfigurationText: document.querySelector("#codex-managed-configuration-text"),
@@ -484,6 +488,7 @@ const elements = {
   codexOverviewQuickstartList: document.querySelector("#codex-overview-quickstart-list"),
   codexTroubleshootingList: document.querySelector("#codex-troubleshooting-list"),
   codexWorktreesList: document.querySelector("#codex-worktrees-list"),
+  codexLocalEnvironmentsList: document.querySelector("#codex-local-environments-list"),
   codexGovernanceList: document.querySelector("#codex-governance-list"),
   codexManagedConfigurationList: document.querySelector("#codex-managed-configuration-list"),
   codexEnvironmentVariablesList: document.querySelector("#codex-environment-variables-list"),
@@ -10554,6 +10559,7 @@ function renderSettingsIntegrations(payload) {
   const codexOverviewQuickstart = payload.codexOverviewQuickstart ?? {};
   const codexTroubleshooting = payload.codexTroubleshooting ?? {};
   const codexWorktrees = payload.codexWorktrees ?? {};
+  const codexLocalEnvironments = payload.codexLocalEnvironments ?? {};
   const codexGovernance = payload.codexGovernance ?? {};
   const codexManagedConfiguration = payload.codexManagedConfiguration ?? {};
   const codexEnvironmentVariables = payload.codexEnvironmentVariables ?? {};
@@ -11174,6 +11180,42 @@ function renderSettingsIntegrations(payload) {
     codexWorktrees.secretsReturned ||
     codexWorktrees.rawPayloadsReturned ||
     codexWorktrees.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexLocalEnvironmentsText.textContent = codexLocalEnvironments.returned
+    ? `${codexLocalEnvironments.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexLocalEnvironments.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexLocalEnvironmentsValuesText.textContent =
+    codexLocalEnvironments.projectNamesReturned ||
+    codexLocalEnvironments.projectRootsReturned ||
+    codexLocalEnvironments.configPathsReturned ||
+    codexLocalEnvironments.configContentsReturned ||
+    codexLocalEnvironments.setupCommandsReturned ||
+    codexLocalEnvironments.actionNamesReturned ||
+    codexLocalEnvironments.actionCommandsReturned ||
+    codexLocalEnvironments.actionIconsReturned ||
+    codexLocalEnvironments.platformNamesReturned ||
+    codexLocalEnvironments.dependencyStatesReturned ||
+    codexLocalEnvironments.worktreePathsReturned ||
+    codexLocalEnvironments.terminalOutputsReturned ||
+    codexLocalEnvironments.settingValuesReturned ||
+    codexLocalEnvironments.configReads ||
+    codexLocalEnvironments.configsWritten ||
+    codexLocalEnvironments.setupScriptsRun ||
+    codexLocalEnvironments.actionsRun ||
+    codexLocalEnvironments.terminalCommandsRun ||
+    codexLocalEnvironments.settingsOpened ||
+    codexLocalEnvironments.filesystemReads ||
+    codexLocalEnvironments.filesystemWrites ||
+    codexLocalEnvironments.networkAccess ||
+    codexLocalEnvironments.mutationEnabled ||
+    codexLocalEnvironments.pathsReturned ||
+    codexLocalEnvironments.urlsReturned ||
+    codexLocalEnvironments.secretsReturned ||
+    codexLocalEnvironments.rawPayloadsReturned ||
+    codexLocalEnvironments.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexGovernanceText.textContent = codexGovernance.returned
@@ -12346,6 +12388,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexOverviewQuickstartCatalog(codexOverviewQuickstart);
   renderCodexTroubleshootingCatalog(codexTroubleshooting);
   renderCodexWorktreesCatalog(codexWorktrees);
+  renderCodexLocalEnvironmentsCatalog(codexLocalEnvironments);
   renderCodexGovernanceCatalog(codexGovernance);
   renderCodexManagedConfigurationCatalog(codexManagedConfiguration);
   renderCodexEnvironmentVariablesCatalog(codexEnvironmentVariables);
@@ -15211,6 +15254,81 @@ function renderCodexWorktreesCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexWorktreesList.append(row);
+  }
+}
+
+function renderCodexLocalEnvironmentsCatalog(summary) {
+  elements.codexLocalEnvironmentsList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexLocalEnvironmentsList.append(
+      emptyState("No Codex local environments catalog returned."),
+    );
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "local-environments";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.projectNameReturned ? "project names returned" : "project names hidden",
+      entry.projectRootReturned ? "project roots returned" : "project roots hidden",
+      entry.configPathReturned ? "config paths returned" : "config paths hidden",
+      entry.configContentReturned ? "config content returned" : "config content hidden",
+      entry.setupCommandReturned ? "setup commands returned" : "setup commands hidden",
+      entry.actionNameReturned ? "action names returned" : "action names hidden",
+      entry.actionCommandReturned ? "action commands returned" : "action commands hidden",
+      entry.actionIconReturned ? "action icons returned" : "action icons hidden",
+      entry.platformNameReturned ? "platform names returned" : "platform names hidden",
+      entry.dependencyStateReturned
+        ? "dependency states returned"
+        : "dependency states hidden",
+      entry.worktreePathReturned ? "worktree paths returned" : "worktree paths hidden",
+      entry.terminalOutputReturned ? "terminal output returned" : "terminal output hidden",
+      entry.settingValueReturned ? "setting values returned" : "setting values hidden",
+      entry.configRead ? "config read" : "config reads blocked",
+      entry.configWritten ? "config written" : "config writes blocked",
+      entry.setupScriptRun ? "setup script run" : "setup scripts blocked",
+      entry.actionRun ? "action run" : "actions blocked",
+      entry.terminalCommandRun ? "terminal command run" : "terminal commands blocked",
+      entry.settingsOpened ? "settings opened" : "settings open blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexLocalEnvironmentsList.append(row);
   }
 }
 

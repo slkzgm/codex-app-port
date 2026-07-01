@@ -35638,6 +35638,158 @@ function assertCodexWorktreesCatalog(payload) {
   }
 }
 
+function expectedCodexLocalEnvironmentsEntries() {
+  return [
+    ["localEnvironmentOverview", "overview", "catalog-only", "official-codex-local-environments-docs"],
+    ["worktreeSetupConfiguration", "setup", "catalog-only", "official-codex-local-environments-docs"],
+    ["projectActionsConfiguration", "actions", "catalog-only", "official-codex-local-environments-docs"],
+    ["settingsPaneConfiguration", "settings", "catalog-only", "official-codex-local-environments-docs"],
+    ["sharedRepositoryConfiguration", "sharing", "catalog-only", "official-codex-local-environments-docs"],
+    ["projectRootSelection", "sharing", "catalog-only", "official-codex-local-environments-docs"],
+    ["setupScriptsAutoRun", "setup", "catalog-only", "official-codex-local-environments-docs"],
+    ["setupScriptsDependencyPreparation", "setup", "catalog-only", "official-codex-local-environments-docs"],
+    ["platformSpecificSetupScripts", "platform", "catalog-only", "official-codex-local-environments-docs"],
+    ["topBarActions", "actions", "catalog-only", "official-codex-local-environments-docs"],
+    ["integratedTerminalActionExecution", "actions", "catalog-only", "official-codex-local-environments-docs"],
+    ["platformSpecificActions", "platform", "catalog-only", "official-codex-local-environments-docs"],
+    ["actionIconSelection", "actions", "catalog-only", "official-codex-local-environments-docs"],
+    ["configPathBoundary", "configuration", "blocked", "local-local-environments-boundary"],
+    ["configContentBoundary", "configuration", "blocked", "local-local-environments-boundary"],
+    ["projectRootBoundary", "sharing", "blocked", "local-local-environments-boundary"],
+    ["setupCommandBoundary", "setup", "blocked", "local-local-environments-boundary"],
+    ["actionDefinitionBoundary", "actions", "blocked", "local-local-environments-boundary"],
+    ["actionCommandBoundary", "actions", "blocked", "local-local-environments-boundary"],
+    ["actionExecutionBoundary", "actions", "blocked", "local-local-environments-boundary"],
+    ["platformOverrideBoundary", "platform", "blocked", "local-local-environments-boundary"],
+    ["settingsWriteBoundary", "settings", "blocked", "local-local-environments-boundary"],
+    ["terminalOutputBoundary", "terminal", "blocked", "local-local-environments-boundary"],
+    ["filesystemBoundary", "filesystem", "blocked", "local-local-environments-boundary"],
+    ["networkBoundary", "network", "blocked", "local-local-environments-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexLocalEnvironmentsCatalog(payload) {
+  const catalog = payload.codexLocalEnvironments;
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-local-environments-docs");
+  assert.equal(catalog.entryCount, 25);
+  assert.equal(catalog.officialEntryCount, 13);
+  assert.equal(catalog.localBoundaryEntryCount, 12);
+  assert.equal(catalog.catalogOnlyEntryCount, 13);
+  assert.equal(catalog.blockedEntryCount, 12);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({ key, group, state, source })),
+    expectedCodexLocalEnvironmentsEntries(),
+  );
+
+  const entryRedactionFlags = [
+    "projectNameReturned",
+    "projectRootReturned",
+    "configPathReturned",
+    "configContentReturned",
+    "setupCommandReturned",
+    "actionNameReturned",
+    "actionCommandReturned",
+    "actionIconReturned",
+    "platformNameReturned",
+    "dependencyStateReturned",
+    "worktreePathReturned",
+    "terminalOutputReturned",
+    "settingValueReturned",
+    "configRead",
+    "configWritten",
+    "setupScriptRun",
+    "actionRun",
+    "terminalCommandRun",
+    "settingsOpened",
+    "filesystemRead",
+    "filesystemWrite",
+    "networkAccess",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.localEnvironmentsCatalogReturned, true);
+  for (const flag of [
+    "projectNamesReturned",
+    "projectRootsReturned",
+    "configPathsReturned",
+    "configContentsReturned",
+    "setupCommandsReturned",
+    "actionNamesReturned",
+    "actionCommandsReturned",
+    "actionIconsReturned",
+    "platformNamesReturned",
+    "dependencyStatesReturned",
+    "worktreePathsReturned",
+    "terminalOutputsReturned",
+    "settingValuesReturned",
+    "configReads",
+    "configsWritten",
+    "setupScriptsRun",
+    "actionsRun",
+    "terminalCommandsRun",
+    "settingsOpened",
+    "filesystemReads",
+    "filesystemWrites",
+    "networkAccess",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexLocalEnvironmentsReturned", true],
+    ["codexLocalEnvironmentsValuesReturned", false],
+    ["codexLocalEnvironmentsProjectNamesReturned", false],
+    ["codexLocalEnvironmentsProjectRootsReturned", false],
+    ["codexLocalEnvironmentsConfigPathsReturned", false],
+    ["codexLocalEnvironmentsConfigContentsReturned", false],
+    ["codexLocalEnvironmentsSetupCommandsReturned", false],
+    ["codexLocalEnvironmentsActionNamesReturned", false],
+    ["codexLocalEnvironmentsActionCommandsReturned", false],
+    ["codexLocalEnvironmentsActionIconsReturned", false],
+    ["codexLocalEnvironmentsPlatformNamesReturned", false],
+    ["codexLocalEnvironmentsDependencyStatesReturned", false],
+    ["codexLocalEnvironmentsWorktreePathsReturned", false],
+    ["codexLocalEnvironmentsTerminalOutputsReturned", false],
+    ["codexLocalEnvironmentsSettingValuesReturned", false],
+    ["codexLocalEnvironmentsConfigReadEnabled", false],
+    ["codexLocalEnvironmentsConfigWriteEnabled", false],
+    ["codexLocalEnvironmentsSetupScriptRunEnabled", false],
+    ["codexLocalEnvironmentsActionRunEnabled", false],
+    ["codexLocalEnvironmentsTerminalCommandEnabled", false],
+    ["codexLocalEnvironmentsSettingsOpenEnabled", false],
+    ["codexLocalEnvironmentsFilesystemAccess", false],
+    ["codexLocalEnvironmentsNetworkAccess", false],
+    ["codexLocalEnvironmentsMutationsEnabled", false],
+    ["codexLocalEnvironmentsPathsReturned", false],
+    ["codexLocalEnvironmentsUrlsReturned", false],
+    ["codexLocalEnvironmentsSecretsReturned", false],
+    ["codexLocalEnvironmentsRawPayloadsReturned", false],
+    ["codexLocalEnvironmentsAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexGovernanceEntries() {
   return [
     ["governanceVisibilityAuditability", "overview", "catalog-only", "official-codex-governance-docs"],
@@ -39963,6 +40115,7 @@ function assertCodexAppSettingsParity(
   assertCodexOverviewQuickstartCatalog(payload);
   assertCodexTroubleshootingCatalog(payload);
   assertCodexWorktreesCatalog(payload);
+  assertCodexLocalEnvironmentsCatalog(payload);
   assertCodexGovernanceCatalog(payload);
   assertCodexManagedConfigurationCatalog(payload);
   assertCodexEnvironmentVariablesCatalog(payload);

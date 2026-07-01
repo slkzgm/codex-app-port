@@ -967,6 +967,20 @@ push, open PRs, open IDEs/terminals, copy ignored files, restore snapshots,
 change cleanup settings, create permanent worktrees, run local-environment
 setup, access files/network, or mutate Git/app state.
 
+The same response exposes `codexLocalEnvironments` as a static review-only
+catalog for official Codex App Local Environments guidance. The UI shows only
+catalog counts, entry keys, groups, state/source chips, and negative redaction
+chips for worktree setup configuration, project action configuration,
+settings-pane setup, shared repository configuration, project-root selection,
+setup script auto-run semantics, dependency preparation guidance,
+platform-specific setup/actions, top-bar actions, integrated-terminal action
+execution, and action icon selection. It must not show project names, project
+roots, config paths, config content, setup commands, action names/commands/
+icons, platform names, dependency state, worktree paths, terminal output,
+setting values, paths, URLs, secrets, raw payloads, or app-server traffic, and
+it must not read/write local environment config, run setup scripts/actions/
+terminal commands, open settings, access files/network, or mutate state.
+
 The same response exposes `codexManagedConfiguration` as a static review-only
 catalog for official Codex managed-configuration behavior. The UI shows only
 catalog counts, entry keys, groups, state/source chips, and redaction chips for
