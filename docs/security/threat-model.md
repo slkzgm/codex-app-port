@@ -676,7 +676,17 @@
   sessions, read auth files/API keys/config/rules, start MCP servers, override
   sandboxes, bypass Git checks, write patch artifacts, invoke GitHub CLI, access
   filesystem or network, create model traffic, or mutate non-interactive state.
-  Its
+  Its Codex Agents SDK catalog may expose only static official-documentation keys
+  plus local boundary keys, groups, states, sources, counts, and redaction flags;
+  it must not return tool names, tool schemas, prompt text, thread references,
+  response content, approval prompts, config values, cwd, instruction text, model
+  values, profile names, sandbox modes, API keys, dependency names, command text,
+  script content, agent names, trace content, artifact content, paths, URLs,
+  secrets, raw payloads, app-server payloads, or app-server traffic, and must not
+  start MCP servers or inspectors, list/call tools, continue sessions, forward
+  approvals, install dependencies, execute scripts, run agents, start handoffs,
+  create traces, write artifacts, access filesystem or network, create model
+  traffic, or mutate Agents SDK state. Its
   Codex Environment variables catalog may expose only static
   official-documentation keys plus local boundary keys, groups, states,
   sources, counts, and redaction flags; it must not read `process.env`, return

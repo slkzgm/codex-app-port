@@ -446,6 +446,23 @@ Target parity with the Codex desktop workflow:
   files or API keys, read config/rules, start MCP servers, override sandboxes,
   bypass Git checks, write patch artifacts, invoke GitHub CLI, access
   files/network, create model traffic, or mutate state.
+- `/api/settings-integrations` now also exposes a read-only Codex Agents SDK
+  catalog aligned to the official guide for using Codex with the Agents SDK. It
+  returns only static keys, groups, states, sources, counts, and redaction flags
+  for Codex-as-MCP-server concepts, Agents SDK MCP integration, tool discovery,
+  start/reply tool surfaces, configuration parameters, thread-reference
+  propagation, structured-content compatibility, deterministic workflows,
+  long-running MCP server orchestration, single-agent and multi-agent handoff
+  patterns, guardrails/traces, local prerequisites, dependency isolation, and
+  runner orchestration. It does not return tool names, tool schemas, prompt text,
+  thread references, response content, approval prompts, config values, cwd,
+  instruction text, model values, profile names, sandbox modes, API keys,
+  dependency names, command text, script content, agent names, traces, artifact
+  content, paths, URLs, secrets, raw payloads, or app-server traffic, and it does
+  not start MCP servers or inspectors, list/call tools, continue sessions,
+  forward approvals, install dependencies, execute scripts, run agents, start
+  handoffs, create traces, write artifacts, access files/network, create model
+  traffic, or mutate state.
 - `/api/settings-integrations` now also exposes a read-only Codex Managed
   configuration catalog aligned to the official managed-configuration guide. It
   returns only static keys, groups, states, sources, counts, and redaction flags

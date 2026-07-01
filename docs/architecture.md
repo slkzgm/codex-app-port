@@ -840,6 +840,21 @@ Current M1 status:
   reads, MCP starts, sandbox overrides, Git-check bypasses, patch writes, GitHub
   CLI invocation, filesystem access, network access, model traffic, mutations,
   paths, URLs, secrets, raw payloads, and app-server traffic blocked
+- done: read-only Codex Agents SDK catalog in `/api/settings-integrations`,
+  exposing only static official Agents SDK guide keys plus local boundary keys/
+  groups/states/sources/counts/redaction flags for Codex-as-MCP-server concepts,
+  Agents SDK MCP integration, tool discovery, start/reply tool surfaces,
+  configuration parameters, thread-reference propagation, structured-content
+  compatibility, deterministic workflows, long-running MCP server orchestration,
+  single-agent and multi-agent handoff patterns, guardrails/traces, local
+  prerequisites, dependency isolation, and runner orchestration, with tool names,
+  tool schemas, prompts, thread references, response content, approval prompts,
+  config values, cwd, instruction text, model/profile/sandbox values, API keys,
+  dependency names, command text, script content, agent names, traces, artifact
+  content, MCP server/inspector starts, tool listing/calls, replies, approval
+  forwarding, dependency installs, script execution, agent runs, handoffs, trace
+  creation, artifact writes, filesystem access, network access, model traffic,
+  mutations, paths, URLs, secrets, raw payloads, and app-server traffic blocked
 - done: read-only Codex Environment variables catalog in
   `/api/settings-integrations`, exposing only static official Environment
   variables documentation keys plus local boundary keys/groups/states/sources/

@@ -1068,6 +1068,24 @@ config/rules, start MCP servers, override sandboxes, bypass Git checks, write
 patch artifacts, invoke GitHub CLI, access files/network, create model traffic,
 or mutate state.
 
+The same response exposes `codexAgentsSdk` as a static review-only catalog for
+official Codex Agents SDK integration behavior. The UI shows only catalog
+counts, entry keys, groups, state/source chips, and redaction chips for
+Codex-as-MCP-server concepts, Agents SDK MCP integration, tool discovery,
+start/reply tool surfaces, configuration parameters, thread-reference
+propagation, structured-content compatibility, deterministic workflows,
+long-running MCP server orchestration, single-agent and multi-agent handoff
+patterns, guardrails/traces, local prerequisites, dependency isolation, and
+runner orchestration. It must not show tool names, tool schemas, prompt text,
+thread references, response content, approval prompts, config values, cwd,
+instruction text, model values, profile names, sandbox modes, API keys,
+dependency names, command text, script content, agent names, trace content,
+artifact content, paths, URLs, secrets, raw payloads, or app-server traffic, and
+it must not start MCP servers or inspectors, list/call tools, continue sessions,
+forward approvals, install dependencies, execute scripts, run agents, start
+handoffs, create traces, write artifacts, access files/network, create model
+traffic, or mutate state.
+
 The same response exposes `codexManagedConfiguration` as a static review-only
 catalog for official Codex managed-configuration behavior. The UI shows only
 catalog counts, entry keys, groups, state/source chips, and redaction chips for

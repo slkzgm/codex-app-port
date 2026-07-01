@@ -75,6 +75,8 @@ const elements = {
   codexSdkValuesText: document.querySelector("#codex-sdk-values-text"),
   codexNonInteractiveText: document.querySelector("#codex-noninteractive-text"),
   codexNonInteractiveValuesText: document.querySelector("#codex-noninteractive-values-text"),
+  codexAgentsSdkText: document.querySelector("#codex-agents-sdk-text"),
+  codexAgentsSdkValuesText: document.querySelector("#codex-agents-sdk-values-text"),
   codexGovernanceText: document.querySelector("#codex-governance-text"),
   codexGovernanceValuesText: document.querySelector("#codex-governance-values-text"),
   codexManagedConfigurationText: document.querySelector("#codex-managed-configuration-text"),
@@ -504,6 +506,7 @@ const elements = {
   codexGithubActionList: document.querySelector("#codex-github-action-list"),
   codexSdkList: document.querySelector("#codex-sdk-list"),
   codexNonInteractiveList: document.querySelector("#codex-noninteractive-list"),
+  codexAgentsSdkList: document.querySelector("#codex-agents-sdk-list"),
   codexGovernanceList: document.querySelector("#codex-governance-list"),
   codexManagedConfigurationList: document.querySelector("#codex-managed-configuration-list"),
   codexEnvironmentVariablesList: document.querySelector("#codex-environment-variables-list"),
@@ -10580,6 +10583,7 @@ function renderSettingsIntegrations(payload) {
   const codexGithubAction = payload.codexGithubAction ?? {};
   const codexSdk = payload.codexSdk ?? {};
   const codexNonInteractive = payload.codexNonInteractive ?? {};
+  const codexAgentsSdk = payload.codexAgentsSdk ?? {};
   const codexGovernance = payload.codexGovernance ?? {};
   const codexManagedConfiguration = payload.codexManagedConfiguration ?? {};
   const codexEnvironmentVariables = payload.codexEnvironmentVariables ?? {};
@@ -11477,8 +11481,57 @@ function renderSettingsIntegrations(payload) {
     codexNonInteractive.pathsReturned ||
     codexNonInteractive.urlsReturned ||
     codexNonInteractive.secretsReturned ||
-    codexNonInteractive.rawPayloadsReturned ||
-    codexNonInteractive.appServerTraffic
+	    codexNonInteractive.rawPayloadsReturned ||
+	    codexNonInteractive.appServerTraffic
+	      ? "Returned"
+	      : "Hidden";
+  elements.codexAgentsSdkText.textContent = codexAgentsSdk.returned
+    ? `${codexAgentsSdk.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexAgentsSdk.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexAgentsSdkValuesText.textContent =
+    codexAgentsSdk.toolNamesReturned ||
+    codexAgentsSdk.toolSchemasReturned ||
+    codexAgentsSdk.promptTextsReturned ||
+    codexAgentsSdk.threadReferencesReturned ||
+    codexAgentsSdk.responseContentsReturned ||
+    codexAgentsSdk.approvalPromptsReturned ||
+    codexAgentsSdk.configValuesReturned ||
+    codexAgentsSdk.cwdReturned ||
+    codexAgentsSdk.instructionTextsReturned ||
+    codexAgentsSdk.modelValuesReturned ||
+    codexAgentsSdk.profileNamesReturned ||
+    codexAgentsSdk.sandboxModesReturned ||
+    codexAgentsSdk.apiKeysReturned ||
+    codexAgentsSdk.dependencyNamesReturned ||
+    codexAgentsSdk.commandTextsReturned ||
+    codexAgentsSdk.scriptContentsReturned ||
+    codexAgentsSdk.agentNamesReturned ||
+    codexAgentsSdk.traceContentsReturned ||
+    codexAgentsSdk.artifactContentsReturned ||
+    codexAgentsSdk.mcpServersStarted ||
+    codexAgentsSdk.inspectorsStarted ||
+    codexAgentsSdk.toolsListed ||
+    codexAgentsSdk.toolCallsStarted ||
+    codexAgentsSdk.repliesStarted ||
+    codexAgentsSdk.approvalsForwarded ||
+    codexAgentsSdk.dependenciesInstalled ||
+    codexAgentsSdk.scriptsExecuted ||
+    codexAgentsSdk.agentRunsStarted ||
+    codexAgentsSdk.handoffsStarted ||
+    codexAgentsSdk.tracesCreated ||
+    codexAgentsSdk.artifactsWritten ||
+    codexAgentsSdk.filesystemReads ||
+    codexAgentsSdk.filesystemWrites ||
+    codexAgentsSdk.networkAccess ||
+    codexAgentsSdk.modelTraffic ||
+    codexAgentsSdk.mutationEnabled ||
+    codexAgentsSdk.pathsReturned ||
+    codexAgentsSdk.urlsReturned ||
+    codexAgentsSdk.secretsReturned ||
+    codexAgentsSdk.rawPayloadsReturned ||
+    codexAgentsSdk.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexGovernanceText.textContent = codexGovernance.returned
@@ -12657,6 +12710,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexGithubActionCatalog(codexGithubAction);
   renderCodexSdkCatalog(codexSdk);
   renderCodexNonInteractiveCatalog(codexNonInteractive);
+  renderCodexAgentsSdkCatalog(codexAgentsSdk);
   renderCodexGovernanceCatalog(codexGovernance);
   renderCodexManagedConfigurationCatalog(codexManagedConfiguration);
   renderCodexEnvironmentVariablesCatalog(codexEnvironmentVariables);
@@ -16047,6 +16101,90 @@ function renderCodexNonInteractiveCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexNonInteractiveList.append(row);
+  }
+}
+
+function renderCodexAgentsSdkCatalog(summary) {
+  elements.codexAgentsSdkList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexAgentsSdkList.append(emptyState("No Codex Agents SDK catalog returned."));
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "agents-sdk";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.toolNameReturned ? "tool names returned" : "tool names hidden",
+      entry.toolSchemaReturned ? "tool schemas returned" : "tool schemas hidden",
+      entry.promptTextReturned ? "prompt text returned" : "prompt text hidden",
+      entry.threadReferenceReturned ? "thread references returned" : "thread references hidden",
+      entry.responseContentReturned ? "response content returned" : "response content hidden",
+      entry.approvalPromptReturned ? "approval prompts returned" : "approval prompts hidden",
+      entry.configValueReturned ? "config values returned" : "config values hidden",
+      entry.cwdReturned ? "cwd returned" : "cwd hidden",
+      entry.instructionTextReturned ? "instruction text returned" : "instruction text hidden",
+      entry.modelValueReturned ? "model values returned" : "model values hidden",
+      entry.profileNameReturned ? "profile names returned" : "profile names hidden",
+      entry.sandboxModeReturned ? "sandbox modes returned" : "sandbox modes hidden",
+      entry.apiKeyReturned ? "API keys returned" : "API keys hidden",
+      entry.dependencyNameReturned ? "dependency names returned" : "dependency names hidden",
+      entry.commandTextReturned ? "command text returned" : "command text hidden",
+      entry.scriptContentReturned ? "script content returned" : "script content hidden",
+      entry.agentNameReturned ? "agent names returned" : "agent names hidden",
+      entry.traceContentReturned ? "trace content returned" : "trace content hidden",
+      entry.artifactContentReturned ? "artifact content returned" : "artifact content hidden",
+      entry.mcpServerStarted ? "MCP server started" : "MCP server starts blocked",
+      entry.inspectorStarted ? "inspector started" : "inspector blocked",
+      entry.toolsListed ? "tools listed" : "tools list blocked",
+      entry.toolCallStarted ? "tool call started" : "tool calls blocked",
+      entry.replyStarted ? "reply started" : "reply blocked",
+      entry.approvalForwarded ? "approval forwarded" : "approval forwarding blocked",
+      entry.dependencyInstalled ? "dependency installed" : "dependency installs blocked",
+      entry.scriptExecuted ? "script executed" : "script execution blocked",
+      entry.agentRunStarted ? "agent run started" : "agent runs blocked",
+      entry.handoffStarted ? "handoff started" : "handoffs blocked",
+      entry.traceCreated ? "trace created" : "trace creation blocked",
+      entry.artifactWritten ? "artifact written" : "artifact writes blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.modelTraffic ? "model traffic" : "model traffic blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexAgentsSdkList.append(row);
   }
 }
 

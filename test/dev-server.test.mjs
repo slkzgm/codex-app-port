@@ -38671,6 +38671,227 @@ function assertCodexNonInteractiveCatalog(payload) {
   }
 }
 
+function expectedCodexAgentsSdkEntries() {
+  return [
+    ["agentsSdkOverview", "overview", "catalog-only", "official-codex-agents-sdk-docs"],
+    ["codexAsMcpServer", "mcp-server", "catalog-only", "official-codex-agents-sdk-docs"],
+    ["agentsSdkMcpIntegration", "agents-sdk", "catalog-only", "official-codex-agents-sdk-docs"],
+    ["mcpServerLaunchConcept", "mcp-server", "catalog-only", "official-codex-agents-sdk-docs"],
+    ["mcpInspectorLaunchConcept", "mcp-inspector", "catalog-only", "official-codex-agents-sdk-docs"],
+    ["toolsListDiscovery", "mcp-tools", "catalog-only", "official-codex-agents-sdk-docs"],
+    ["codexToolStartSession", "mcp-tools", "catalog-only", "official-codex-agents-sdk-docs"],
+    ["codexToolConfigParameters", "mcp-tools", "catalog-only", "official-codex-agents-sdk-docs"],
+    ["codexToolPromptRequired", "mcp-tools", "catalog-only", "official-codex-agents-sdk-docs"],
+    ["codexToolApprovalPolicyParameter", "mcp-tools", "catalog-only", "official-codex-agents-sdk-docs"],
+    ["codexToolBaseInstructionsParameter", "mcp-tools", "catalog-only", "official-codex-agents-sdk-docs"],
+    ["codexToolConfigOverrideParameter", "mcp-tools", "catalog-only", "official-codex-agents-sdk-docs"],
+    ["codexToolCwdParameter", "mcp-tools", "catalog-only", "official-codex-agents-sdk-docs"],
+    ["codexToolPlanToolParameter", "mcp-tools", "catalog-only", "official-codex-agents-sdk-docs"],
+    ["codexToolModelParameter", "mcp-tools", "catalog-only", "official-codex-agents-sdk-docs"],
+    ["codexToolProfileParameter", "mcp-tools", "catalog-only", "official-codex-agents-sdk-docs"],
+    ["codexToolSandboxParameter", "mcp-tools", "catalog-only", "official-codex-agents-sdk-docs"],
+    ["replyToolContinueSession", "mcp-tools", "catalog-only", "official-codex-agents-sdk-docs"],
+    ["replyToolThreadReference", "mcp-tools", "catalog-only", "official-codex-agents-sdk-docs"],
+    ["replyToolDeprecatedConversationReference", "mcp-tools", "catalog-only", "official-codex-agents-sdk-docs"],
+    ["structuredResultThreadReference", "mcp-results", "catalog-only", "official-codex-agents-sdk-docs"],
+    ["approvalPromptThreadReference", "approvals", "catalog-only", "official-codex-agents-sdk-docs"],
+    ["modernClientStructuredResult", "mcp-results", "catalog-only", "official-codex-agents-sdk-docs"],
+    ["legacyClientContentCompatibility", "mcp-results", "catalog-only", "official-codex-agents-sdk-docs"],
+    ["deterministicReviewableWorkflows", "workflow", "catalog-only", "official-codex-agents-sdk-docs"],
+    ["longRunningMcpServerWorkflow", "workflow", "catalog-only", "official-codex-agents-sdk-docs"],
+    ["singleAgentWorkflow", "workflow", "catalog-only", "official-codex-agents-sdk-docs"],
+    ["multiAgentTeamWorkflow", "workflow", "catalog-only", "official-codex-agents-sdk-docs"],
+    ["handoffGuardrailTraceWorkflow", "workflow", "catalog-only", "official-codex-agents-sdk-docs"],
+    ["localPrerequisites", "setup", "catalog-only", "official-codex-agents-sdk-docs"],
+    ["dependencyIsolationGuidance", "setup", "catalog-only", "official-codex-agents-sdk-docs"],
+    ["agentRunnerOrchestration", "agents-sdk", "catalog-only", "official-codex-agents-sdk-docs"],
+    ["mcpServerLaunchBoundary", "mcp-server", "blocked", "local-agents-sdk-boundary"],
+    ["mcpInspectorBoundary", "mcp-inspector", "blocked", "local-agents-sdk-boundary"],
+    ["toolsListBoundary", "mcp-tools", "blocked", "local-agents-sdk-boundary"],
+    ["toolCallBoundary", "mcp-tools", "blocked", "local-agents-sdk-boundary"],
+    ["replyToolBoundary", "mcp-tools", "blocked", "local-agents-sdk-boundary"],
+    ["promptBoundary", "prompts", "blocked", "local-agents-sdk-boundary"],
+    ["threadReferenceBoundary", "sessions", "blocked", "local-agents-sdk-boundary"],
+    ["approvalPromptBoundary", "approvals", "blocked", "local-agents-sdk-boundary"],
+    ["configOverrideBoundary", "configuration", "blocked", "local-agents-sdk-boundary"],
+    ["cwdBoundary", "filesystem", "blocked", "local-agents-sdk-boundary"],
+    ["baseInstructionsBoundary", "instructions", "blocked", "local-agents-sdk-boundary"],
+    ["modelOverrideBoundary", "model", "blocked", "local-agents-sdk-boundary"],
+    ["profileBoundary", "configuration", "blocked", "local-agents-sdk-boundary"],
+    ["sandboxOverrideBoundary", "sandbox", "blocked", "local-agents-sdk-boundary"],
+    ["apiKeyBoundary", "auth", "blocked", "local-agents-sdk-boundary"],
+    ["dependencyInstallBoundary", "setup", "blocked", "local-agents-sdk-boundary"],
+    ["pythonScriptBoundary", "runtime", "blocked", "local-agents-sdk-boundary"],
+    ["agentHandoffBoundary", "workflow", "blocked", "local-agents-sdk-boundary"],
+    ["traceBoundary", "observability", "blocked", "local-agents-sdk-boundary"],
+    ["generatedArtifactBoundary", "artifacts", "blocked", "local-agents-sdk-boundary"],
+    ["filesystemBoundary", "filesystem", "blocked", "local-agents-sdk-boundary"],
+    ["networkBoundary", "network", "blocked", "local-agents-sdk-boundary"],
+    ["modelTrafficBoundary", "model", "blocked", "local-agents-sdk-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexAgentsSdkCatalog(payload) {
+  const catalog = payload.codexAgentsSdk;
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-agents-sdk-docs");
+  assert.equal(catalog.entryCount, 55);
+  assert.equal(catalog.officialEntryCount, 32);
+  assert.equal(catalog.localBoundaryEntryCount, 23);
+  assert.equal(catalog.catalogOnlyEntryCount, 32);
+  assert.equal(catalog.blockedEntryCount, 23);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({ key, group, state, source })),
+    expectedCodexAgentsSdkEntries(),
+  );
+
+  const entryRedactionFlags = [
+    "toolNameReturned",
+    "toolSchemaReturned",
+    "promptTextReturned",
+    "threadReferenceReturned",
+    "responseContentReturned",
+    "approvalPromptReturned",
+    "configValueReturned",
+    "cwdReturned",
+    "instructionTextReturned",
+    "modelValueReturned",
+    "profileNameReturned",
+    "sandboxModeReturned",
+    "apiKeyReturned",
+    "dependencyNameReturned",
+    "commandTextReturned",
+    "scriptContentReturned",
+    "agentNameReturned",
+    "traceContentReturned",
+    "artifactContentReturned",
+    "mcpServerStarted",
+    "inspectorStarted",
+    "toolsListed",
+    "toolCallStarted",
+    "replyStarted",
+    "approvalForwarded",
+    "dependencyInstalled",
+    "scriptExecuted",
+    "agentRunStarted",
+    "handoffStarted",
+    "traceCreated",
+    "artifactWritten",
+    "filesystemRead",
+    "filesystemWrite",
+    "networkAccess",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.agentsSdkCatalogReturned, true);
+  for (const flag of [
+    "toolNamesReturned",
+    "toolSchemasReturned",
+    "promptTextsReturned",
+    "threadReferencesReturned",
+    "responseContentsReturned",
+    "approvalPromptsReturned",
+    "configValuesReturned",
+    "cwdReturned",
+    "instructionTextsReturned",
+    "modelValuesReturned",
+    "profileNamesReturned",
+    "sandboxModesReturned",
+    "apiKeysReturned",
+    "dependencyNamesReturned",
+    "commandTextsReturned",
+    "scriptContentsReturned",
+    "agentNamesReturned",
+    "traceContentsReturned",
+    "artifactContentsReturned",
+    "mcpServersStarted",
+    "inspectorsStarted",
+    "toolsListed",
+    "toolCallsStarted",
+    "repliesStarted",
+    "approvalsForwarded",
+    "dependenciesInstalled",
+    "scriptsExecuted",
+    "agentRunsStarted",
+    "handoffsStarted",
+    "tracesCreated",
+    "artifactsWritten",
+    "filesystemReads",
+    "filesystemWrites",
+    "networkAccess",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexAgentsSdkReturned", true],
+    ["codexAgentsSdkValuesReturned", false],
+    ["codexAgentsSdkToolNamesReturned", false],
+    ["codexAgentsSdkToolSchemasReturned", false],
+    ["codexAgentsSdkPromptTextsReturned", false],
+    ["codexAgentsSdkThreadReferencesReturned", false],
+    ["codexAgentsSdkResponseContentsReturned", false],
+    ["codexAgentsSdkApprovalPromptsReturned", false],
+    ["codexAgentsSdkConfigValuesReturned", false],
+    ["codexAgentsSdkCwdReturned", false],
+    ["codexAgentsSdkInstructionTextsReturned", false],
+    ["codexAgentsSdkModelValuesReturned", false],
+    ["codexAgentsSdkProfileNamesReturned", false],
+    ["codexAgentsSdkSandboxModesReturned", false],
+    ["codexAgentsSdkApiKeysReturned", false],
+    ["codexAgentsSdkDependencyNamesReturned", false],
+    ["codexAgentsSdkCommandTextsReturned", false],
+    ["codexAgentsSdkScriptContentsReturned", false],
+    ["codexAgentsSdkAgentNamesReturned", false],
+    ["codexAgentsSdkTraceContentsReturned", false],
+    ["codexAgentsSdkArtifactContentsReturned", false],
+    ["codexAgentsSdkMcpServerStartEnabled", false],
+    ["codexAgentsSdkInspectorStartEnabled", false],
+    ["codexAgentsSdkToolsListEnabled", false],
+    ["codexAgentsSdkToolCallEnabled", false],
+    ["codexAgentsSdkReplyEnabled", false],
+    ["codexAgentsSdkApprovalForwardingEnabled", false],
+    ["codexAgentsSdkDependencyInstallEnabled", false],
+    ["codexAgentsSdkScriptExecutionEnabled", false],
+    ["codexAgentsSdkAgentRunEnabled", false],
+    ["codexAgentsSdkHandoffEnabled", false],
+    ["codexAgentsSdkTraceCreationEnabled", false],
+    ["codexAgentsSdkArtifactWriteEnabled", false],
+    ["codexAgentsSdkFilesystemAccess", false],
+    ["codexAgentsSdkNetworkAccess", false],
+    ["codexAgentsSdkModelTraffic", false],
+    ["codexAgentsSdkMutationsEnabled", false],
+    ["codexAgentsSdkPathsReturned", false],
+    ["codexAgentsSdkUrlsReturned", false],
+    ["codexAgentsSdkSecretsReturned", false],
+    ["codexAgentsSdkRawPayloadsReturned", false],
+    ["codexAgentsSdkAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexGovernanceEntries() {
   return [
     ["governanceVisibilityAuditability", "overview", "catalog-only", "official-codex-governance-docs"],
@@ -43031,6 +43252,7 @@ function assertCodexAppSettingsParity(
   assertCodexGithubActionCatalog(payload);
   assertCodexSdkCatalog(payload);
   assertCodexNonInteractiveCatalog(payload);
+  assertCodexAgentsSdkCatalog(payload);
   assertCodexGovernanceCatalog(payload);
   assertCodexManagedConfigurationCatalog(payload);
   assertCodexEnvironmentVariablesCatalog(payload);
