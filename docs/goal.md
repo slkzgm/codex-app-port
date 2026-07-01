@@ -37,11 +37,16 @@ Target parity with the Codex desktop workflow:
   checked docs, so this repo remains a native Omarchy/Linux port effort rather
   than a repackaged official Linux client.
 - OpenAI documents Codex App Server as the interface for rich clients.
+- `/api/settings-integrations` now exposes Codex App Server as a static,
+  review-only catalog with protocol, transport, auth, lifecycle, and
+  experimental API coverage while keeping all JSON-RPC payloads, credentials,
+  thread/turn ids, prompts, events, paths, network/model traffic, and mutation
+  actions hidden or blocked.
 - OpenAI lists Codex CLI, SDK, and App Server as open-source components.
 - The stable npm `@openai/codex` latest dist-tag is `0.142.5`; the available
   `0.143.0-alpha.32` alpha dist-tag was not executed or used as a baseline.
 - The OpenAI `openai/codex` HEAD checked for source drift is
-  `db887d03e1f907467e33271572dffb73bceecd6b`.
+  `d059658ad1920bdb36e98798f44009a5f4c51735`.
 - The local official `codex-cli 0.142.5` app-server schema snapshot contains
   335 JSON Schema files, up from the prior `0.130.0` snapshot of 286.
 - The local schema was regenerated into a temporary directory and still

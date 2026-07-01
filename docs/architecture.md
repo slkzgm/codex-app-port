@@ -26,7 +26,7 @@ requires explicit auth if exposed beyond loopback.
 The app-server schema snapshot was regenerated from local `codex-cli 0.142.5`
 after confirming npm `@openai/codex` latest had moved to `0.142.5` and
 checking OpenAI `openai/codex` HEAD
-`db887d03e1f907467e33271572dffb73bceecd6b`. The snapshot still contains 335
+`d059658ad1920bdb36e98798f44009a5f4c51735`. The snapshot still contains 335
 JSON Schema files. `environment/info` and `thread/items/list` remain present
 only in the OpenAI HEAD source and absent from the stable generated schema, so
 they stay blocked until a stable schema exposes them and a dedicated browser
@@ -110,7 +110,8 @@ raw payloads.
 Remote-control mutations and pairing/client lists, environment add, plugin checkout/install, skills extra roots,
 thread settings, thread goal/memory/metadata, realtime audio/text/speech,
 review/feedback, filesystem read/watch, fuzzy file search, Windows sandbox,
-background terminal termination, tool input, dynamic tool-call, MCP
+background terminal termination, app-server transports/JSON-RPC/schema generation,
+thread and turn lifecycle calls, tool input, dynamic tool-call, MCP
 elicitation, auth-token refresh, attestation, current-time requests, import
 progress, model safety, and moderation notifications are classified in local
 fail-closed policies and must not be implicitly inherited from the updated

@@ -40761,6 +40761,238 @@ function assertCodexSdkCatalog(payload) {
   }
 }
 
+function expectedCodexAppServerEntries() {
+  return [
+    ["appServerOverview", "overview", "catalog-only", "official-codex-app-server-docs"],
+    ["richClientInterface", "overview", "catalog-only", "official-codex-app-server-docs"],
+    ["openSourceImplementation", "overview", "catalog-only", "official-codex-app-server-docs"],
+    ["sdkPreferredForAutomation", "overview", "catalog-only", "official-codex-app-server-docs"],
+    ["jsonRpcProtocol", "protocol", "catalog-only", "official-codex-app-server-docs"],
+    ["stdioTransport", "transport", "catalog-only", "official-codex-app-server-docs"],
+    ["websocketTransportExperimental", "transport", "catalog-only", "official-codex-app-server-docs"],
+    ["unixSocketTransport", "transport", "catalog-only", "official-codex-app-server-docs"],
+    ["transportOffMode", "transport", "catalog-only", "official-codex-app-server-docs"],
+    ["httpHealthProbes", "transport", "catalog-only", "official-codex-app-server-docs"],
+    ["websocketOriginRejection", "transport-security", "catalog-only", "official-codex-app-server-docs"],
+    ["websocketUnauthenticatedRolloutRisk", "transport-security", "catalog-only", "official-codex-app-server-docs"],
+    ["websocketCapabilityTokenAuth", "transport-security", "catalog-only", "official-codex-app-server-docs"],
+    ["websocketSignedBearerAuth", "transport-security", "catalog-only", "official-codex-app-server-docs"],
+    ["tokenFileGuidance", "transport-security", "catalog-only", "official-codex-app-server-docs"],
+    ["boundedQueuesBackpressure", "transport-security", "catalog-only", "official-codex-app-server-docs"],
+    ["requestMessageShape", "message-schema", "catalog-only", "official-codex-app-server-docs"],
+    ["responseMessageShape", "message-schema", "catalog-only", "official-codex-app-server-docs"],
+    ["notificationMessageShape", "message-schema", "catalog-only", "official-codex-app-server-docs"],
+    ["schemaGenerationCli", "message-schema", "catalog-only", "official-codex-app-server-docs"],
+    ["quickstartServerStart", "quickstart", "catalog-only", "official-codex-app-server-docs"],
+    ["quickstartInitialize", "quickstart", "catalog-only", "official-codex-app-server-docs"],
+    ["quickstartThreadTurn", "quickstart", "catalog-only", "official-codex-app-server-docs"],
+    ["threadPrimitive", "core-primitives", "catalog-only", "official-codex-app-server-docs"],
+    ["turnPrimitive", "core-primitives", "catalog-only", "official-codex-app-server-docs"],
+    ["itemPrimitive", "core-primitives", "catalog-only", "official-codex-app-server-docs"],
+    ["initializeOncePerConnection", "lifecycle", "catalog-only", "official-codex-app-server-docs"],
+    ["startResumeForkThread", "lifecycle", "catalog-only", "official-codex-app-server-docs"],
+    ["turnStartOverrides", "lifecycle", "catalog-only", "official-codex-app-server-docs"],
+    ["turnSteerAndInterrupt", "lifecycle", "catalog-only", "official-codex-app-server-docs"],
+    ["streamedTurnEvents", "lifecycle", "catalog-only", "official-codex-app-server-docs"],
+    ["initializeRuntimeMetadata", "initialization", "catalog-only", "official-codex-app-server-docs"],
+    ["notificationOptOut", "initialization", "catalog-only", "official-codex-app-server-docs"],
+    ["complianceClientInfo", "initialization", "catalog-only", "official-codex-app-server-docs"],
+    ["experimentalApiOptIn", "experimental-api", "catalog-only", "official-codex-app-server-docs"],
+    ["experimentalApiRejection", "experimental-api", "catalog-only", "official-codex-app-server-docs"],
+    ["appServerProcessBoundary", "runtime", "blocked", "local-app-server-boundary"],
+    ["transportConnectionBoundary", "transport", "blocked", "local-app-server-boundary"],
+    ["websocketAuthBoundary", "transport-security", "blocked", "local-app-server-boundary"],
+    ["remoteListenerBoundary", "transport-security", "blocked", "local-app-server-boundary"],
+    ["jsonRpcRequestBoundary", "message-schema", "blocked", "local-app-server-boundary"],
+    ["jsonRpcResponseBoundary", "message-schema", "blocked", "local-app-server-boundary"],
+    ["jsonRpcNotificationBoundary", "message-schema", "blocked", "local-app-server-boundary"],
+    ["schemaGenerationBoundary", "message-schema", "blocked", "local-app-server-boundary"],
+    ["initializePayloadBoundary", "initialization", "blocked", "local-app-server-boundary"],
+    ["threadLifecycleBoundary", "lifecycle", "blocked", "local-app-server-boundary"],
+    ["turnLifecycleBoundary", "lifecycle", "blocked", "local-app-server-boundary"],
+    ["promptContentBoundary", "prompts", "blocked", "local-app-server-boundary"],
+    ["streamedEventBoundary", "lifecycle", "blocked", "local-app-server-boundary"],
+    ["runtimeMetadataBoundary", "initialization", "blocked", "local-app-server-boundary"],
+    ["filesystemBoundary", "filesystem", "blocked", "local-app-server-boundary"],
+    ["networkBoundary", "network", "blocked", "local-app-server-boundary"],
+    ["modelTrafficBoundary", "model", "blocked", "local-app-server-boundary"],
+    ["mutationBoundary", "mutation", "blocked", "local-app-server-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexAppServerCatalog(payload) {
+  const catalog = payload.codexAppServer;
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-app-server-docs");
+  assert.equal(catalog.entryCount, 54);
+  assert.equal(catalog.officialEntryCount, 36);
+  assert.equal(catalog.localBoundaryEntryCount, 18);
+  assert.equal(catalog.catalogOnlyEntryCount, 36);
+  assert.equal(catalog.blockedEntryCount, 18);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({ key, group, state, source })),
+    expectedCodexAppServerEntries(),
+  );
+
+  const entryRedactionFlags = [
+    "transportValueReturned",
+    "listenerAddressReturned",
+    "authTokenReturned",
+    "sharedSecretReturned",
+    "jsonRpcPayloadReturned",
+    "requestPayloadReturned",
+    "responsePayloadReturned",
+    "notificationPayloadReturned",
+    "schemaContentReturned",
+    "clientInfoReturned",
+    "runtimeAgentStringReturned",
+    "platformValueReturned",
+    "threadIdReturned",
+    "turnIdReturned",
+    "itemContentReturned",
+    "promptTextReturned",
+    "streamedEventReturned",
+    "modelValueReturned",
+    "sandboxValueReturned",
+    "cwdReturned",
+    "appServerStarted",
+    "transportOpened",
+    "websocketListenerStarted",
+    "authCredentialRead",
+    "jsonRpcForwarded",
+    "schemasGenerated",
+    "connectionInitialized",
+    "threadStarted",
+    "threadResumed",
+    "threadForked",
+    "turnStarted",
+    "turnSteered",
+    "turnInterrupted",
+    "notificationsStreamed",
+    "remoteListenerExposed",
+    "filesystemRead",
+    "filesystemWrite",
+    "networkAccess",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.appServerCatalogReturned, true);
+  for (const flag of [
+    "transportValuesReturned",
+    "listenerAddressesReturned",
+    "authTokensReturned",
+    "sharedSecretsReturned",
+    "jsonRpcPayloadsReturned",
+    "requestPayloadsReturned",
+    "responsePayloadsReturned",
+    "notificationPayloadsReturned",
+    "schemaContentsReturned",
+    "clientInfoReturned",
+    "runtimeAgentStringsReturned",
+    "platformValuesReturned",
+    "threadIdsReturned",
+    "turnIdsReturned",
+    "itemContentsReturned",
+    "promptTextsReturned",
+    "streamedEventsReturned",
+    "modelValuesReturned",
+    "sandboxValuesReturned",
+    "cwdValuesReturned",
+    "appServersStarted",
+    "transportsOpened",
+    "websocketListenersStarted",
+    "authCredentialsRead",
+    "jsonRpcForwarded",
+    "schemasGenerated",
+    "connectionsInitialized",
+    "threadsStarted",
+    "threadsResumed",
+    "threadsForked",
+    "turnsStarted",
+    "turnsSteered",
+    "turnsInterrupted",
+    "notificationsStreamed",
+    "remoteListenersExposed",
+    "filesystemReads",
+    "filesystemWrites",
+    "networkAccess",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexAppServerReturned", true],
+    ["codexAppServerValuesReturned", false],
+    ["codexAppServerTransportValuesReturned", false],
+    ["codexAppServerListenerAddressesReturned", false],
+    ["codexAppServerAuthTokensReturned", false],
+    ["codexAppServerSharedSecretsReturned", false],
+    ["codexAppServerJsonRpcPayloadsReturned", false],
+    ["codexAppServerRequestPayloadsReturned", false],
+    ["codexAppServerResponsePayloadsReturned", false],
+    ["codexAppServerNotificationPayloadsReturned", false],
+    ["codexAppServerSchemaContentsReturned", false],
+    ["codexAppServerClientInfoReturned", false],
+    ["codexAppServerRuntimeAgentStringsReturned", false],
+    ["codexAppServerPlatformValuesReturned", false],
+    ["codexAppServerThreadIdsReturned", false],
+    ["codexAppServerTurnIdsReturned", false],
+    ["codexAppServerItemContentsReturned", false],
+    ["codexAppServerPromptTextsReturned", false],
+    ["codexAppServerStreamedEventsReturned", false],
+    ["codexAppServerModelValuesReturned", false],
+    ["codexAppServerSandboxValuesReturned", false],
+    ["codexAppServerCwdValuesReturned", false],
+    ["codexAppServerStartsEnabled", false],
+    ["codexAppServerTransportOpenEnabled", false],
+    ["codexAppServerWebsocketListenEnabled", false],
+    ["codexAppServerAuthCredentialReadEnabled", false],
+    ["codexAppServerJsonRpcForwardingEnabled", false],
+    ["codexAppServerSchemaGenerationEnabled", false],
+    ["codexAppServerInitializeEnabled", false],
+    ["codexAppServerThreadStartEnabled", false],
+    ["codexAppServerThreadResumeEnabled", false],
+    ["codexAppServerThreadForkEnabled", false],
+    ["codexAppServerTurnStartEnabled", false],
+    ["codexAppServerTurnSteerEnabled", false],
+    ["codexAppServerTurnInterruptEnabled", false],
+    ["codexAppServerNotificationStreamEnabled", false],
+    ["codexAppServerRemoteListenerEnabled", false],
+    ["codexAppServerFilesystemAccess", false],
+    ["codexAppServerNetworkAccess", false],
+    ["codexAppServerModelTraffic", false],
+    ["codexAppServerMutationsEnabled", false],
+    ["codexAppServerPathsReturned", false],
+    ["codexAppServerUrlsReturned", false],
+    ["codexAppServerSecretsReturned", false],
+    ["codexAppServerRawPayloadsReturned", false],
+    ["codexAppServerAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexNonInteractiveEntries() {
   return [
     ["nonInteractiveOverview", "overview", "catalog-only", "official-codex-noninteractive-docs"],
@@ -47501,6 +47733,7 @@ function assertCodexAppSettingsParity(
   assertCodexReviewCatalog(payload);
   assertCodexAppshotsCatalog(payload);
   assertCodexGithubActionCatalog(payload);
+  assertCodexAppServerCatalog(payload);
   assertCodexSdkCatalog(payload);
   assertCodexNonInteractiveCatalog(payload);
   assertCodexAgentsSdkCatalog(payload);

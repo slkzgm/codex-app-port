@@ -26,7 +26,7 @@ No real turn was started during this audit.
 Official source refresh:
 
 - OpenAI `openai/codex` HEAD:
-  `db887d03e1f907467e33271572dffb73bceecd6b`
+  `d059658ad1920bdb36e98798f44009a5f4c51735`
 - stable npm `@openai/codex` latest: `0.142.5`
 - alpha npm dist-tag observed: `0.143.0-alpha.32`
 - local stable schema regeneration check: 335 JSON Schema files, matching the

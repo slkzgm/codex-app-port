@@ -25,7 +25,7 @@ Why:
 
 - OpenAI Codex app/manual documentation, checked 2026-07-01.
 - OpenAI Codex changelog/open-source documentation, checked 2026-07-01.
-- OpenAI `openai/codex` repository at `db887d03e1f907467e33271572dffb73bceecd6b`.
+- OpenAI `openai/codex` repository at `d059658ad1920bdb36e98798f44009a5f4c51735`.
 - Local official `codex app-server` schema snapshot from `codex-cli 0.142.5`
   with 335 JSON Schema files.
 - Stable npm `@openai/codex` latest is `0.142.5`; `0.143.0-alpha.32` exists

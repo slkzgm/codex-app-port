@@ -91,6 +91,8 @@ const elements = {
   codexAppshotsValuesText: document.querySelector("#codex-appshots-values-text"),
   codexGithubActionText: document.querySelector("#codex-github-action-text"),
   codexGithubActionValuesText: document.querySelector("#codex-github-action-values-text"),
+  codexAppServerText: document.querySelector("#codex-app-server-text"),
+  codexAppServerValuesText: document.querySelector("#codex-app-server-values-text"),
   codexSdkText: document.querySelector("#codex-sdk-text"),
   codexSdkValuesText: document.querySelector("#codex-sdk-values-text"),
   codexNonInteractiveText: document.querySelector("#codex-noninteractive-text"),
@@ -560,6 +562,7 @@ const elements = {
   codexReviewList: document.querySelector("#codex-review-list"),
   codexAppshotsList: document.querySelector("#codex-appshots-list"),
   codexGithubActionList: document.querySelector("#codex-github-action-list"),
+  codexAppServerList: document.querySelector("#codex-app-server-list"),
   codexSdkList: document.querySelector("#codex-sdk-list"),
   codexNonInteractiveList: document.querySelector("#codex-noninteractive-list"),
   codexAgentsSdkList: document.querySelector("#codex-agents-sdk-list"),
@@ -10691,6 +10694,7 @@ function renderSettingsIntegrations(payload) {
   const codexReview = payload.codexReview ?? {};
   const codexAppshots = payload.codexAppshots ?? {};
   const codexGithubAction = payload.codexGithubAction ?? {};
+  const codexAppServer = payload.codexAppServer ?? {};
   const codexSdk = payload.codexSdk ?? {};
   const codexNonInteractive = payload.codexNonInteractive ?? {};
   const codexAgentsSdk = payload.codexAgentsSdk ?? {};
@@ -11867,6 +11871,59 @@ function renderSettingsIntegrations(payload) {
     codexGithubAction.secretsReturned ||
     codexGithubAction.rawPayloadsReturned ||
     codexGithubAction.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexAppServerText.textContent = codexAppServer.returned
+    ? `${codexAppServer.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexAppServer.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexAppServerValuesText.textContent =
+    codexAppServer.transportValuesReturned ||
+    codexAppServer.listenerAddressesReturned ||
+    codexAppServer.authTokensReturned ||
+    codexAppServer.sharedSecretsReturned ||
+    codexAppServer.jsonRpcPayloadsReturned ||
+    codexAppServer.requestPayloadsReturned ||
+    codexAppServer.responsePayloadsReturned ||
+    codexAppServer.notificationPayloadsReturned ||
+    codexAppServer.schemaContentsReturned ||
+    codexAppServer.clientInfoReturned ||
+    codexAppServer.runtimeAgentStringsReturned ||
+    codexAppServer.platformValuesReturned ||
+    codexAppServer.threadIdsReturned ||
+    codexAppServer.turnIdsReturned ||
+    codexAppServer.itemContentsReturned ||
+    codexAppServer.promptTextsReturned ||
+    codexAppServer.streamedEventsReturned ||
+    codexAppServer.modelValuesReturned ||
+    codexAppServer.sandboxValuesReturned ||
+    codexAppServer.cwdValuesReturned ||
+    codexAppServer.appServersStarted ||
+    codexAppServer.transportsOpened ||
+    codexAppServer.websocketListenersStarted ||
+    codexAppServer.authCredentialsRead ||
+    codexAppServer.jsonRpcForwarded ||
+    codexAppServer.schemasGenerated ||
+    codexAppServer.connectionsInitialized ||
+    codexAppServer.threadsStarted ||
+    codexAppServer.threadsResumed ||
+    codexAppServer.threadsForked ||
+    codexAppServer.turnsStarted ||
+    codexAppServer.turnsSteered ||
+    codexAppServer.turnsInterrupted ||
+    codexAppServer.notificationsStreamed ||
+    codexAppServer.remoteListenersExposed ||
+    codexAppServer.filesystemReads ||
+    codexAppServer.filesystemWrites ||
+    codexAppServer.networkAccess ||
+    codexAppServer.modelTraffic ||
+    codexAppServer.mutationEnabled ||
+    codexAppServer.pathsReturned ||
+    codexAppServer.urlsReturned ||
+    codexAppServer.secretsReturned ||
+    codexAppServer.rawPayloadsReturned ||
+    codexAppServer.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexSdkText.textContent = codexSdk.returned
@@ -13558,6 +13615,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexReviewCatalog(codexReview);
   renderCodexAppshotsCatalog(codexAppshots);
   renderCodexGithubActionCatalog(codexGithubAction);
+  renderCodexAppServerCatalog(codexAppServer);
   renderCodexSdkCatalog(codexSdk);
   renderCodexNonInteractiveCatalog(codexNonInteractive);
   renderCodexAgentsSdkCatalog(codexAgentsSdk);
@@ -17570,6 +17628,100 @@ function renderCodexSdkCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexSdkList.append(row);
+  }
+}
+
+function renderCodexAppServerCatalog(summary) {
+  elements.codexAppServerList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexAppServerList.append(emptyState("No Codex App Server catalog returned."));
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "app-server";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.transportValueReturned ? "transport values returned" : "transport values hidden",
+      entry.listenerAddressReturned ? "listener addresses returned" : "listener addresses hidden",
+      entry.authTokenReturned ? "auth tokens returned" : "auth tokens hidden",
+      entry.sharedSecretReturned ? "shared secrets returned" : "shared secrets hidden",
+      entry.jsonRpcPayloadReturned ? "JSON-RPC payloads returned" : "JSON-RPC payloads hidden",
+      entry.requestPayloadReturned ? "request payloads returned" : "request payloads hidden",
+      entry.responsePayloadReturned ? "response payloads returned" : "response payloads hidden",
+      entry.notificationPayloadReturned
+        ? "notification payloads returned"
+        : "notification payloads hidden",
+      entry.schemaContentReturned ? "schema content returned" : "schema content hidden",
+      entry.clientInfoReturned ? "client info returned" : "client info hidden",
+      entry.runtimeAgentStringReturned
+        ? "runtime agent strings returned"
+        : "runtime agent strings hidden",
+      entry.platformValueReturned ? "platform values returned" : "platform values hidden",
+      entry.threadIdReturned ? "thread ids returned" : "thread ids hidden",
+      entry.turnIdReturned ? "turn ids returned" : "turn ids hidden",
+      entry.itemContentReturned ? "item content returned" : "item content hidden",
+      entry.promptTextReturned ? "prompt text returned" : "prompt text hidden",
+      entry.streamedEventReturned ? "streamed events returned" : "streamed events hidden",
+      entry.modelValueReturned ? "model values returned" : "model values hidden",
+      entry.sandboxValueReturned ? "sandbox values returned" : "sandbox values hidden",
+      entry.cwdReturned ? "cwd returned" : "cwd hidden",
+      entry.appServerStarted ? "app-server started" : "app-server starts blocked",
+      entry.transportOpened ? "transport opened" : "transport opens blocked",
+      entry.websocketListenerStarted
+        ? "WebSocket listener started"
+        : "WebSocket listeners blocked",
+      entry.authCredentialRead ? "auth credentials read" : "auth credential reads blocked",
+      entry.jsonRpcForwarded ? "JSON-RPC forwarded" : "JSON-RPC forwarding blocked",
+      entry.schemasGenerated ? "schemas generated" : "schema generation blocked",
+      entry.connectionInitialized ? "connection initialized" : "initialization blocked",
+      entry.threadStarted ? "thread started" : "thread starts blocked",
+      entry.threadResumed ? "thread resumed" : "thread resumes blocked",
+      entry.threadForked ? "thread forked" : "thread forks blocked",
+      entry.turnStarted ? "turn started" : "turn starts blocked",
+      entry.turnSteered ? "turn steered" : "turn steering blocked",
+      entry.turnInterrupted ? "turn interrupted" : "turn interrupts blocked",
+      entry.notificationsStreamed ? "notifications streamed" : "notification streams blocked",
+      entry.remoteListenerExposed ? "remote listener exposed" : "remote listeners blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.modelTraffic ? "model traffic" : "model traffic blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexAppServerList.append(row);
   }
 }
 

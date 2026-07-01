@@ -1182,6 +1182,24 @@ reviews/comments, upload artifacts, change sudo/users, read repository
 checkouts, call GitHub APIs, access files/network, create model traffic, or
 mutate state.
 
+The same response exposes `codexAppServer` as a static review-only catalog for
+official Codex App Server behavior. The UI shows only catalog counts, entry
+keys, groups, state/source chips, and redaction chips for the rich-client
+interface, JSON-RPC protocol, stdio/WebSocket/Unix/off transports, health
+probes, WebSocket auth and origin guidance, bounded queues, request/response/
+notification shapes, schema generation, quickstart lifecycle, thread/turn/item
+primitives, initialization, notification opt-out, compliance client info, and
+experimental API opt-in behavior. It must not show transport values, listener
+addresses, auth tokens, shared secrets, JSON-RPC payloads, request/response/
+notification payloads, schema content, client info, user agents, platform
+values, thread/turn ids, item content, prompt text, streamed events, model
+values, sandbox values, cwd values, paths, URLs, secrets, raw payloads, or
+app-server traffic, and it must not start app-server, open transports, start
+WebSocket listeners, read auth credentials, forward JSON-RPC, generate schemas,
+initialize connections, start/resume/fork threads, start/steer/interrupt turns,
+stream notifications, expose remote listeners, access files/network, create
+model traffic, or mutate state.
+
 The same response exposes `codexSdk` as a static review-only catalog for
 official Codex SDK behavior. The UI shows only catalog counts, entry keys,
 groups, state/source chips, and redaction chips for programmatic control,
