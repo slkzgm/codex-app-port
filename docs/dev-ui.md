@@ -1049,6 +1049,25 @@ not install packages, import SDKs, start app-server/JSON-RPC, start/resume/run
 threads, start async runtimes, change sandboxes, launch executables, access
 files/network, create model traffic, or mutate state.
 
+The same response exposes `codexNonInteractive` as a static review-only catalog
+for official Codex non-interactive mode behavior. The UI shows only catalog
+counts, entry keys, groups, state/source chips, and redaction chips for
+`codex exec` use cases, prompt/stdin patterns, stdout/stderr separation,
+ephemeral sessions, sandbox and approval guidance, ignored config/rules
+switches, required MCP failure behavior, JSONL event/item concepts,
+last-message output, structured-output schemas, CLI/auth automation guidance,
+session resume, Git repository checks, GitHub Action autofix workflows, patch
+artifact separation, and advanced stdin piping patterns. It must not show prompt
+text, stdin/stdout/stderr contents, JSONL events/items, schema content, output
+files, session IDs, auth files, API keys, config values, rules files, MCP server
+names, sandbox modes, command text, workflow YAML, patch artifacts, GitHub
+tokens, repository names, paths, URLs, secrets, raw payloads, or app-server
+traffic, and it must not run `codex exec`, start processes, read stdin, write
+outputs, stream JSONL, load schemas, resume sessions, read auth files/API keys/
+config/rules, start MCP servers, override sandboxes, bypass Git checks, write
+patch artifacts, invoke GitHub CLI, access files/network, create model traffic,
+or mutate state.
+
 The same response exposes `codexManagedConfiguration` as a static review-only
 catalog for official Codex managed-configuration behavior. The UI shows only
 catalog counts, entry keys, groups, state/source chips, and redaction chips for

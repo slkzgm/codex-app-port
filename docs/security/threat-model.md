@@ -664,7 +664,19 @@
   payloads, or app-server traffic, and must not install packages, import SDKs,
   start app-server/JSON-RPC, start/resume/run threads, start async runtimes,
   change sandboxes, launch executables, access filesystem or network, create
-  model traffic, or mutate SDK state. Its
+  model traffic, or mutate SDK state. Its Codex non-interactive mode catalog
+  may expose only static official-documentation keys plus local boundary keys,
+  groups, states, sources, counts, and redaction flags; it must not return
+  prompt text, stdin/stdout/stderr contents, JSONL events/items, schema content,
+  output files, session IDs, auth files, API keys, config values, rules files,
+  MCP server names, sandbox modes, command text, workflow YAML, patch artifacts,
+  GitHub tokens, repository names, paths, URLs, secrets, raw payloads,
+  app-server payloads, or app-server traffic, and must not run `codex exec`,
+  start processes, read stdin, write outputs, stream JSONL, load schemas, resume
+  sessions, read auth files/API keys/config/rules, start MCP servers, override
+  sandboxes, bypass Git checks, write patch artifacts, invoke GitHub CLI, access
+  filesystem or network, create model traffic, or mutate non-interactive state.
+  Its
   Codex Environment variables catalog may expose only static
   official-documentation keys plus local boundary keys, groups, states,
   sources, counts, and redaction flags; it must not read `process.env`, return

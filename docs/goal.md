@@ -428,6 +428,24 @@ Target parity with the Codex desktop workflow:
   app-server/JSON-RPC, start/resume/run threads, start async runtimes, change
   sandboxes, launch executables, access files/network, create model traffic, or
   mutate state.
+- `/api/settings-integrations` now also exposes a read-only Codex
+  non-interactive mode catalog aligned to the official non-interactive guide. It
+  returns only static keys, groups, states, sources, counts, and redaction flags
+  for `codex exec` use cases, prompt/stdin patterns, stdout/stderr separation,
+  ephemeral sessions, sandbox and approval guidance, ignored config/rules
+  switches, required MCP failure behavior, JSONL event/item concepts,
+  last-message output, structured-output schemas, CLI/auth automation guidance,
+  session resume, Git repository checks, GitHub Action autofix workflows, patch
+  artifact separation, and advanced stdin piping patterns. It does not return
+  prompt text, stdin/stdout/stderr contents, JSONL events/items, schema content,
+  output files, session IDs, auth files, API keys, config values, rules files,
+  MCP server names, sandbox modes, command text, workflow YAML, patch artifacts,
+  GitHub tokens, repository names, paths, URLs, secrets, raw payloads, or
+  app-server traffic, and it does not run `codex exec`, start processes, read
+  stdin, write outputs, stream JSONL, load schemas, resume sessions, read auth
+  files or API keys, read config/rules, start MCP servers, override sandboxes,
+  bypass Git checks, write patch artifacts, invoke GitHub CLI, access
+  files/network, create model traffic, or mutate state.
 - `/api/settings-integrations` now also exposes a read-only Codex Managed
   configuration catalog aligned to the official managed-configuration guide. It
   returns only static keys, groups, states, sources, counts, and redaction flags

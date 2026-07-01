@@ -73,6 +73,8 @@ const elements = {
   codexGithubActionValuesText: document.querySelector("#codex-github-action-values-text"),
   codexSdkText: document.querySelector("#codex-sdk-text"),
   codexSdkValuesText: document.querySelector("#codex-sdk-values-text"),
+  codexNonInteractiveText: document.querySelector("#codex-noninteractive-text"),
+  codexNonInteractiveValuesText: document.querySelector("#codex-noninteractive-values-text"),
   codexGovernanceText: document.querySelector("#codex-governance-text"),
   codexGovernanceValuesText: document.querySelector("#codex-governance-values-text"),
   codexManagedConfigurationText: document.querySelector("#codex-managed-configuration-text"),
@@ -501,6 +503,7 @@ const elements = {
   codexAppshotsList: document.querySelector("#codex-appshots-list"),
   codexGithubActionList: document.querySelector("#codex-github-action-list"),
   codexSdkList: document.querySelector("#codex-sdk-list"),
+  codexNonInteractiveList: document.querySelector("#codex-noninteractive-list"),
   codexGovernanceList: document.querySelector("#codex-governance-list"),
   codexManagedConfigurationList: document.querySelector("#codex-managed-configuration-list"),
   codexEnvironmentVariablesList: document.querySelector("#codex-environment-variables-list"),
@@ -10576,6 +10579,7 @@ function renderSettingsIntegrations(payload) {
   const codexAppshots = payload.codexAppshots ?? {};
   const codexGithubAction = payload.codexGithubAction ?? {};
   const codexSdk = payload.codexSdk ?? {};
+  const codexNonInteractive = payload.codexNonInteractive ?? {};
   const codexGovernance = payload.codexGovernance ?? {};
   const codexManagedConfiguration = payload.codexManagedConfiguration ?? {};
   const codexEnvironmentVariables = payload.codexEnvironmentVariables ?? {};
@@ -11419,8 +11423,62 @@ function renderSettingsIntegrations(payload) {
     codexSdk.pathsReturned ||
     codexSdk.urlsReturned ||
     codexSdk.secretsReturned ||
-    codexSdk.rawPayloadsReturned ||
-    codexSdk.appServerTraffic
+	    codexSdk.rawPayloadsReturned ||
+	    codexSdk.appServerTraffic
+	      ? "Returned"
+	      : "Hidden";
+  elements.codexNonInteractiveText.textContent = codexNonInteractive.returned
+    ? `${codexNonInteractive.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexNonInteractive.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexNonInteractiveValuesText.textContent =
+    codexNonInteractive.promptTextsReturned ||
+    codexNonInteractive.stdinContentsReturned ||
+    codexNonInteractive.stdoutContentsReturned ||
+    codexNonInteractive.stderrProgressReturned ||
+    codexNonInteractive.jsonlEventsReturned ||
+    codexNonInteractive.jsonlItemsReturned ||
+    codexNonInteractive.schemaContentsReturned ||
+    codexNonInteractive.outputFilesReturned ||
+    codexNonInteractive.sessionIdsReturned ||
+    codexNonInteractive.authFilesReturned ||
+    codexNonInteractive.apiKeysReturned ||
+    codexNonInteractive.configValuesReturned ||
+    codexNonInteractive.rulesFilesReturned ||
+    codexNonInteractive.mcpServerNamesReturned ||
+    codexNonInteractive.sandboxModesReturned ||
+    codexNonInteractive.commandTextsReturned ||
+    codexNonInteractive.workflowYamlReturned ||
+    codexNonInteractive.patchArtifactsReturned ||
+    codexNonInteractive.githubTokensReturned ||
+    codexNonInteractive.repositoryNamesReturned ||
+    codexNonInteractive.execsStarted ||
+    codexNonInteractive.processesStarted ||
+    codexNonInteractive.stdinReads ||
+    codexNonInteractive.stdoutWrites ||
+    codexNonInteractive.jsonlStreamingStarted ||
+    codexNonInteractive.outputSchemasLoaded ||
+    codexNonInteractive.sessionsResumed ||
+    codexNonInteractive.authFilesRead ||
+    codexNonInteractive.apiKeysRead ||
+    codexNonInteractive.configReads ||
+    codexNonInteractive.rulesRead ||
+    codexNonInteractive.mcpServersStarted ||
+    codexNonInteractive.sandboxesOverridden ||
+    codexNonInteractive.gitRepoChecksBypassed ||
+    codexNonInteractive.patchArtifactsWritten ||
+    codexNonInteractive.githubCliInvoked ||
+    codexNonInteractive.filesystemReads ||
+    codexNonInteractive.filesystemWrites ||
+    codexNonInteractive.networkAccess ||
+    codexNonInteractive.modelTraffic ||
+    codexNonInteractive.mutationEnabled ||
+    codexNonInteractive.pathsReturned ||
+    codexNonInteractive.urlsReturned ||
+    codexNonInteractive.secretsReturned ||
+    codexNonInteractive.rawPayloadsReturned ||
+    codexNonInteractive.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexGovernanceText.textContent = codexGovernance.returned
@@ -12598,6 +12656,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexAppshotsCatalog(codexAppshots);
   renderCodexGithubActionCatalog(codexGithubAction);
   renderCodexSdkCatalog(codexSdk);
+  renderCodexNonInteractiveCatalog(codexNonInteractive);
   renderCodexGovernanceCatalog(codexGovernance);
   renderCodexManagedConfigurationCatalog(codexManagedConfiguration);
   renderCodexEnvironmentVariablesCatalog(codexEnvironmentVariables);
@@ -15847,7 +15906,7 @@ function renderCodexSdkCatalog(summary) {
       entry.packageNameReturned ? "package names returned" : "package names hidden",
       entry.packageVersionReturned ? "package versions returned" : "package versions hidden",
       entry.runtimeVersionReturned ? "runtime versions returned" : "runtime versions hidden",
-      entry.threadIdReturned ? "thread IDs returned" : "thread IDs hidden",
+      entry.threadReferenceReturned ? "thread references returned" : "thread references hidden",
       entry.promptTextReturned ? "prompt text returned" : "prompt text hidden",
       entry.finalResponseReturned ? "final responses returned" : "final responses hidden",
       entry.appServerPayloadReturned ? "app-server payloads returned" : "app-server payloads hidden",
@@ -15895,6 +15954,99 @@ function renderCodexSdkCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexSdkList.append(row);
+  }
+}
+
+function renderCodexNonInteractiveCatalog(summary) {
+  elements.codexNonInteractiveList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexNonInteractiveList.append(
+      emptyState("No Codex non-interactive catalog returned."),
+    );
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "non-interactive";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.promptTextReturned ? "prompt text returned" : "prompt text hidden",
+      entry.stdinContentReturned ? "stdin content returned" : "stdin content hidden",
+      entry.stdoutContentReturned ? "stdout content returned" : "stdout content hidden",
+      entry.stderrProgressReturned ? "stderr progress returned" : "stderr progress hidden",
+      entry.jsonlEventReturned ? "JSONL events returned" : "JSONL events hidden",
+      entry.jsonlItemReturned ? "JSONL items returned" : "JSONL items hidden",
+      entry.schemaContentReturned ? "schema content returned" : "schema content hidden",
+      entry.outputFileReturned ? "output files returned" : "output files hidden",
+      entry.sessionIdReturned ? "session IDs returned" : "session IDs hidden",
+      entry.authFileReturned ? "auth files returned" : "auth files hidden",
+      entry.apiKeyReturned ? "API keys returned" : "API keys hidden",
+      entry.configValueReturned ? "config values returned" : "config values hidden",
+      entry.rulesFileReturned ? "rules files returned" : "rules files hidden",
+      entry.mcpServerNameReturned ? "MCP server names returned" : "MCP server names hidden",
+      entry.sandboxModeReturned ? "sandbox modes returned" : "sandbox modes hidden",
+      entry.commandTextReturned ? "command text returned" : "command text hidden",
+      entry.workflowYamlReturned ? "workflow YAML returned" : "workflow YAML hidden",
+      entry.patchArtifactReturned ? "patch artifacts returned" : "patch artifacts hidden",
+      entry.githubTokenReturned ? "GitHub tokens returned" : "GitHub tokens hidden",
+      entry.repositoryNameReturned ? "repository names returned" : "repository names hidden",
+      entry.execStarted ? "exec started" : "exec blocked",
+      entry.processStarted ? "process started" : "process starts blocked",
+      entry.stdinRead ? "stdin read" : "stdin reads blocked",
+      entry.stdoutWritten ? "stdout written" : "stdout writes blocked",
+      entry.jsonlStreamingStarted ? "JSONL streaming started" : "JSONL streaming blocked",
+      entry.outputSchemaLoaded ? "output schema loaded" : "output schemas blocked",
+      entry.sessionResumed ? "session resumed" : "session resume blocked",
+      entry.authFileRead ? "auth file read" : "auth file reads blocked",
+      entry.apiKeyRead ? "API key read" : "API key reads blocked",
+      entry.configRead ? "config read" : "config reads blocked",
+      entry.rulesRead ? "rules read" : "rules reads blocked",
+      entry.mcpServerStarted ? "MCP server started" : "MCP server starts blocked",
+      entry.sandboxOverridden ? "sandbox overridden" : "sandbox overrides blocked",
+      entry.gitRepoCheckBypassed
+        ? "Git repo check bypassed"
+        : "Git repo check bypass blocked",
+      entry.patchArtifactWritten ? "patch artifact written" : "patch artifact writes blocked",
+      entry.githubCliInvoked ? "GitHub CLI invoked" : "GitHub CLI blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.modelTraffic ? "model traffic" : "model traffic blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexNonInteractiveList.append(row);
   }
 }
 

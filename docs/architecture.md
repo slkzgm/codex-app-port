@@ -823,6 +823,23 @@ Current M1 status:
   thread starts/resumes/runs, async runtimes, sandbox changes, executable
   launches, filesystem access, network access, model traffic, mutations, paths,
   URLs, secrets, raw payloads, and app-server traffic blocked
+- done: read-only Codex non-interactive mode catalog in
+  `/api/settings-integrations`, exposing only static official non-interactive
+  documentation keys plus local boundary keys/groups/states/sources/counts/
+  redaction flags for `codex exec` use cases, prompt/stdin patterns,
+  stdout/stderr separation, ephemeral sessions, sandbox and approval guidance,
+  ignored config/rules switches, required MCP failure behavior, JSONL event/item
+  concepts, last-message output, structured-output schemas, CLI/auth automation
+  guidance, session resume, Git repository checks, GitHub Action autofix
+  workflows, patch artifact separation, and advanced stdin piping patterns, with
+  prompt text, stdin/stdout/stderr contents, JSONL events/items, schema content,
+  output files, session IDs, auth files, API keys, config values, rules files,
+  MCP server names, sandbox modes, command text, workflow YAML, patch artifacts,
+  GitHub tokens, repository names, exec/process starts, stdin reads, stdout
+  writes, JSONL streaming, schema loading, session resume, auth/config/rules
+  reads, MCP starts, sandbox overrides, Git-check bypasses, patch writes, GitHub
+  CLI invocation, filesystem access, network access, model traffic, mutations,
+  paths, URLs, secrets, raw payloads, and app-server traffic blocked
 - done: read-only Codex Environment variables catalog in
   `/api/settings-integrations`, exposing only static official Environment
   variables documentation keys plus local boundary keys/groups/states/sources/
