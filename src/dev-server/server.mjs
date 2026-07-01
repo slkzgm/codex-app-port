@@ -138,6 +138,7 @@ const THREAD_GOAL_STATUSES = new Set([
 const THREAD_MEMORY_MODES = new Set(["enabled", "disabled"]);
 const SAFE_WORKSPACE_MESSAGE_TYPES = ["headline", "announcement", "unknown"];
 const SAFE_REMOTE_CONTROL_STATUSES = ["disabled", "connecting", "connected", "errored", "unknown"];
+const SAFE_MCP_AUTH_STATUSES = ["unsupported", "notLoggedIn", "bearerToken", "oAuth", "unknown"];
 const SAFE_PLUGIN_SOURCE_TYPES = ["local", "git", "remote", "unknown"];
 const SAFE_PLUGIN_INSTALL_POLICIES = [
   "NOT_AVAILABLE",
@@ -67970,7 +67971,7 @@ function sanitizeMcpInventory(mcp, { namesEnabled = false } = {}) {
   return {
     ok: Boolean(mcp?.ok),
     serverCount: safeCount(mcp?.serverCount),
-    authStatusCounts: sanitizeCountMap(mcp?.authStatusCounts),
+    authStatusCounts: sanitizeAllowedCountMap(mcp?.authStatusCounts, SAFE_MCP_AUTH_STATUSES),
     toolCount: safeCount(mcp?.toolCount),
     resourceCount: safeCount(mcp?.resourceCount),
     resourceTemplateCount: safeCount(mcp?.resourceTemplateCount),
@@ -68229,7 +68230,7 @@ function sanitizeMcpInventoryItems(items) {
       : [];
     return {
       name: sanitizeIntegrationDisplayName(item?.name),
-      authStatus: cleanDisplayText(item?.authStatus, 40) ?? "unknown",
+      authStatus: sanitizeMcpAuthStatus(item?.authStatus),
       toolCount: safeCount(item?.toolCount),
       returnedToolNameCount: toolNames.length,
       toolNames,
@@ -68312,6 +68313,11 @@ function sanitizePluginInstallPolicy(value) {
 function sanitizePluginAuthPolicy(value) {
   const clean = cleanDisplayText(value, 40);
   return SAFE_PLUGIN_AUTH_POLICIES.includes(clean) ? clean : "unknown";
+}
+
+function sanitizeMcpAuthStatus(value) {
+  const clean = cleanDisplayText(value, 40);
+  return SAFE_MCP_AUTH_STATUSES.includes(clean) ? clean : "unknown";
 }
 
 function sanitizeCountMap(value) {

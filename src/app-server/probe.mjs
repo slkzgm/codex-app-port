@@ -76,6 +76,7 @@ const PLUGIN_INSTALL_POLICIES = new Set([
   "unknown",
 ]);
 const PLUGIN_AUTH_POLICIES = new Set(["ON_INSTALL", "ON_USE", "unknown"]);
+const MCP_AUTH_STATUSES = new Set(["unsupported", "notLoggedIn", "bearerToken", "oAuth"]);
 const REALTIME_VOICES = new Set([
   "alloy",
   "arbor",
@@ -6539,7 +6540,7 @@ function summarizeMcpInventory(section, { includeNames = false } = {}) {
   let toolNameRedactedCount = 0;
 
   for (const server of data) {
-    const authStatus = firstSafeString(server?.authStatus) ?? "unknown";
+    const authStatus = safeMcpAuthStatus(server?.authStatus);
     authStatusCounts[authStatus] = (authStatusCounts[authStatus] ?? 0) + 1;
     if (server?.tools && typeof server.tools === "object" && !Array.isArray(server.tools)) {
       toolCount += Object.keys(server.tools).length;
@@ -6573,7 +6574,7 @@ function summarizeMcpInventory(section, { includeNames = false } = {}) {
         }
         return {
           name: safeName,
-          authStatus: firstSafeString(server?.authStatus) ?? "unknown",
+          authStatus: safeMcpAuthStatus(server?.authStatus),
           toolCount: rawToolNames.length,
           returnedToolNameCount: toolNames.length,
           toolNames,
@@ -6849,6 +6850,11 @@ function safePluginInstallPolicy(value) {
 function safePluginAuthPolicy(value) {
   const clean = firstSafeString(value);
   return PLUGIN_AUTH_POLICIES.has(clean) ? clean : "unknown";
+}
+
+function safeMcpAuthStatus(value) {
+  const clean = firstSafeString(value);
+  return MCP_AUTH_STATUSES.has(clean) ? clean : "unknown";
 }
 
 function summarizeSkillsInventory(section, { includeNames = false } = {}) {

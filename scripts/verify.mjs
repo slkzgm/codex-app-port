@@ -18873,6 +18873,7 @@ async function checkSettingsIntegrationsInventoryApi() {
               authStatusCounts: {
                 oAuth: 1,
                 bearerToken: 1,
+                "verify-private-auth-status": 1,
               },
               toolCount: 4,
               resourceCount: 3,
@@ -48091,6 +48092,9 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
     payload.inventory?.apps?.screenshotsReturned !== false ||
     payload.inventory?.mcp?.serverCount !== 2 ||
     payload.inventory?.mcp?.toolCount !== 4 ||
+    payload.inventory?.mcp?.authStatusCounts?.oAuth !== 1 ||
+    payload.inventory?.mcp?.authStatusCounts?.bearerToken !== 1 ||
+    Object.hasOwn(payload.inventory?.mcp?.authStatusCounts ?? {}, "verify-private-auth-status") ||
     payload.inventory?.skills?.skillCount !== 5 ||
     payload.inventory?.plugins?.pluginCount !== 3 ||
     payload.inventory?.plugins?.localMarketplaceCount !== 1 ||
@@ -48299,10 +48303,14 @@ function assertSanitizedSettingsIntegrationsNames(payload) {
     payload.inventory?.mcp?.namesReturned !== true ||
     payload.inventory?.mcp?.toolNamesReturned !== true ||
     payload.inventory?.mcp?.toolSchemasReturned !== false ||
+    payload.inventory?.mcp?.authStatusCounts?.oAuth !== 1 ||
+    Object.hasOwn(payload.inventory?.mcp?.authStatusCounts ?? {}, "none") ||
     payload.inventory?.mcp?.items?.[0]?.name !== "verify-safe-mcp" ||
+    payload.inventory?.mcp?.items?.[0]?.authStatus !== "oAuth" ||
     JSON.stringify(payload.inventory?.mcp?.items?.[0]?.toolNames ?? []) !==
       JSON.stringify(["verify_safe_tool"]) ||
     payload.inventory?.mcp?.items?.[1]?.name !== null ||
+    payload.inventory?.mcp?.items?.[1]?.authStatus !== "unknown" ||
     (payload.inventory?.mcp?.items?.[1]?.toolNames ?? []).length !== 0 ||
     payload.inventory?.skills?.namesReturned !== true ||
     payload.inventory?.skills?.pathsReturned !== false ||

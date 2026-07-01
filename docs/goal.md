@@ -1056,6 +1056,11 @@ Target parity with the Codex desktop workflow:
 - `account/usage/read` and `account/workspaceMessages/read` also have opt-in,
   counts-only inventory paths; they omit token usage values, bucket dates,
   workspace message ids, bodies, timestamps, and raw payloads.
+- `mcpServerStatus/list` reports only server/tool/resource/resource-template
+  counts and documented auth-status buckets (`unsupported`, `notLoggedIn`,
+  `bearerToken`, `oAuth`, or `unknown`); arbitrary auth status values, server
+  names, resource URIs, tool schemas, paths, URLs, tokens, and raw payloads
+  remain hidden.
 - `externalAgentConfig/import/readHistories`, `plugin/list`, and
   `plugin/installed` also have opt-in inventory paths. Import histories remain
   counts-only; plugin inventories return only marketplace local/remote counts

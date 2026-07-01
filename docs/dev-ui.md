@@ -1816,6 +1816,9 @@ prompts/capabilities, hook commands/paths/keys/
 matchers/plugin IDs, experimental feature names/display text/descriptions/
 announcements/cursors, config requirement values/domains, imports, installs,
 callbacks, or tool invocations are returned.
+MCP auth status is reduced to documented enum buckets only
+(`unsupported`, `notLoggedIn`, `bearerToken`, `oAuth`, or `unknown`), with
+unknown upstream values dropped or normalized before reaching the browser.
 
 When `CODEX_APP_PORT_ALLOW_INTEGRATION_NAMES=1` is also set, the inventory may
 include bounded display names for models, collaboration modes, apps/connectors,

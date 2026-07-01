@@ -1514,6 +1514,9 @@ Current M1 status:
   workspace-directory marketplace kinds unless
   `CODEX_APP_PORT_ALLOW_REMOTE_PLUGIN_CATALOG_INVENTORY=1` explicitly enables
   remote curated/shared/created catalog inventory, which remains counts-only.
+  MCP authentication state is exposed only as documented enum buckets
+  (`unsupported`, `notLoggedIn`, `bearerToken`, `oAuth`, or `unknown`);
+  arbitrary upstream auth status strings are dropped or normalized.
 - done: second-gate integration display inventory behind
   `CODEX_APP_PORT_ALLOW_INTEGRATION_NAMES=1`, returning bounded model display
   names, collaboration-mode names, app/connector, app plugin display, MCP

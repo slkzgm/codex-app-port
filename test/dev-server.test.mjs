@@ -22310,6 +22310,7 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
               authStatusCounts: {
                 oAuth: 1,
                 bearerToken: 1,
+                "private-auth-status": 1,
               },
               toolCount: 5,
               resourceCount: 3,
@@ -22852,6 +22853,7 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
     assert.equal(payload.inventory.permissionProfiles.rawPayloadReturned, false);
     assert.equal(payload.inventory.mcp.serverCount, 2);
     assert.equal(payload.inventory.mcp.toolCount, 5);
+    assert.deepEqual(payload.inventory.mcp.authStatusCounts, { bearerToken: 1, oAuth: 1 });
     assert.equal(payload.inventory.skills.skillCount, 4);
     assert.equal(payload.inventory.plugins.pluginCount, 3);
     assert.equal(payload.inventory.plugins.localMarketplaceCount, 1);
@@ -23594,9 +23596,12 @@ test("dev server returns integration display names only behind explicit opt-in",
     assert.equal(payload.inventory.mcp.namesReturned, true);
     assert.equal(payload.inventory.mcp.toolNamesReturned, true);
     assert.equal(payload.inventory.mcp.toolSchemasReturned, false);
+    assert.deepEqual(payload.inventory.mcp.authStatusCounts, { oAuth: 1 });
     assert.equal(payload.inventory.mcp.items[0].name, "safe-mcp");
+    assert.equal(payload.inventory.mcp.items[0].authStatus, "oAuth");
     assert.deepEqual(payload.inventory.mcp.items[0].toolNames, ["safe_tool"]);
     assert.equal(payload.inventory.mcp.items[1].name, null);
+    assert.equal(payload.inventory.mcp.items[1].authStatus, "unknown");
     assert.deepEqual(payload.inventory.mcp.items[1].toolNames, []);
     assert.equal(payload.inventory.skills.namesReturned, true);
     assert.equal(payload.inventory.skills.pathsReturned, false);
