@@ -407,6 +407,20 @@ Target parity with the Codex desktop workflow:
   paths, URLs, secrets, raw payloads, or app-server traffic, and it does not
   read/write config, read memory files, generate or inject memories, access
   files/network, create model traffic, or mutate Memories state.
+- `/api/settings-integrations` now also exposes a read-only Codex Agents
+  guidance catalog aligned to the official AGENTS guidance. It returns only
+  static keys, groups, states, sources, counts, and redaction flags for
+  discovery timing, global/project scope selection, override precedence,
+  directory traversal, merge order, empty-file skipping, size limits, fallback
+  filename configuration, custom profile homes, setup verification,
+  loaded-source audit, restart/reload semantics, troubleshooting, and prompting
+  pairing. It does not return instruction file names or contents,
+  global/project/override guidance, fallback names, config values, profile
+  homes, workspace roots, directory names, loaded sources, command text, log
+  paths, session log paths, external URLs, paths, secrets, raw payloads, or
+  app-server traffic, and it does not read plaintext logs, session logs,
+  config, or guidance files, run verification commands, access files, create
+  model traffic, or mutate guidance state.
 - `/api/settings-integrations` now also exposes a read-only Codex Custom
   Prompts catalog aligned to the official Custom Prompts guidance. It returns
   only static keys, groups, states, sources, counts, and redaction flags for the

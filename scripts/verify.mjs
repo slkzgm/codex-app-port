@@ -34091,6 +34091,180 @@ function assertCodexMemoriesCatalog(payload) {
   }
 }
 
+function expectedCodexAgentsGuidanceEntries() {
+  return [
+    ["instructionDiscoveryTiming", "discovery", "catalog-only", "official-codex-agents-guidance-docs"],
+    ["globalScopeSelection", "global-scope", "catalog-only", "official-codex-agents-guidance-docs"],
+    ["globalOverridePrecedence", "global-scope", "catalog-only", "official-codex-agents-guidance-docs"],
+    ["projectScopeTraversal", "project-scope", "catalog-only", "official-codex-agents-guidance-docs"],
+    ["directoryLayerSelection", "project-scope", "catalog-only", "official-codex-agents-guidance-docs"],
+    ["mergeOrderPrecedence", "precedence", "catalog-only", "official-codex-agents-guidance-docs"],
+    ["emptyFileSkip", "discovery", "catalog-only", "official-codex-agents-guidance-docs"],
+    ["combinedInstructionSizeLimit", "limits", "catalog-only", "official-codex-agents-guidance-docs"],
+    ["globalGuidancePurpose", "global-scope", "catalog-only", "official-codex-agents-guidance-docs"],
+    ["temporaryGlobalOverride", "global-scope", "catalog-only", "official-codex-agents-guidance-docs"],
+    ["projectInstructionLayering", "project-scope", "catalog-only", "official-codex-agents-guidance-docs"],
+    ["nestedOverridePlacement", "project-scope", "catalog-only", "official-codex-agents-guidance-docs"],
+    ["fallbackFilenameConfiguration", "configuration", "catalog-only", "official-codex-agents-guidance-docs"],
+    ["customProfileHome", "profiles", "catalog-only", "official-codex-agents-guidance-docs"],
+    ["setupVerification", "verification", "catalog-only", "official-codex-agents-guidance-docs"],
+    ["loadedSourcesAudit", "verification", "catalog-only", "official-codex-agents-guidance-docs"],
+    ["restartReloadSemantics", "loading", "catalog-only", "official-codex-agents-guidance-docs"],
+    ["troubleshootMissingGuidance", "troubleshooting", "catalog-only", "official-codex-agents-guidance-docs"],
+    ["troubleshootWrongGuidance", "troubleshooting", "catalog-only", "official-codex-agents-guidance-docs"],
+    ["troubleshootFallbackNames", "troubleshooting", "catalog-only", "official-codex-agents-guidance-docs"],
+    ["troubleshootTruncation", "troubleshooting", "catalog-only", "official-codex-agents-guidance-docs"],
+    ["troubleshootProfileConfusion", "troubleshooting", "catalog-only", "official-codex-agents-guidance-docs"],
+    ["promptingPairingGuidance", "next-steps", "catalog-only", "official-codex-agents-guidance-docs"],
+    ["externalReferenceBoundary", "next-steps", "catalog-only", "official-codex-agents-guidance-docs"],
+    ["globalGuidanceFileBoundary", "global-scope", "blocked", "local-agents-guidance-boundary"],
+    ["projectGuidanceFileBoundary", "project-scope", "blocked", "local-agents-guidance-boundary"],
+    ["overrideGuidanceFileBoundary", "precedence", "blocked", "local-agents-guidance-boundary"],
+    ["fallbackFilenameBoundary", "configuration", "blocked", "local-agents-guidance-boundary"],
+    ["guidanceContentBoundary", "guidance-content", "blocked", "local-agents-guidance-boundary"],
+    ["configFileBoundary", "configuration", "blocked", "local-agents-guidance-boundary"],
+    ["profileHomeBoundary", "profiles", "blocked", "local-agents-guidance-boundary"],
+    ["workspaceRootBoundary", "project-scope", "blocked", "local-agents-guidance-boundary"],
+    ["loadedSourcesBoundary", "verification", "blocked", "local-agents-guidance-boundary"],
+    ["plaintextLogBoundary", "verification", "blocked", "local-agents-guidance-boundary"],
+    ["sessionLogBoundary", "verification", "blocked", "local-agents-guidance-boundary"],
+    ["verificationCommandBoundary", "verification", "blocked", "local-agents-guidance-boundary"],
+    ["guidanceWriteBoundary", "guidance-content", "blocked", "local-agents-guidance-boundary"],
+    ["filesystemBoundary", "filesystem", "blocked", "local-agents-guidance-boundary"],
+    ["modelTrafficBoundary", "model", "blocked", "local-agents-guidance-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexAgentsGuidanceCatalog(payload) {
+  const catalog = payload.codexAgentsGuidance;
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-agents-guidance-docs");
+  assert.equal(catalog.entryCount, 39);
+  assert.equal(catalog.officialEntryCount, 24);
+  assert.equal(catalog.localBoundaryEntryCount, 15);
+  assert.equal(catalog.catalogOnlyEntryCount, 24);
+  assert.equal(catalog.blockedEntryCount, 15);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({ key, group, state, source })),
+    expectedCodexAgentsGuidanceEntries(),
+  );
+
+  const entryRedactionFlags = [
+    "instructionFileNameReturned",
+    "instructionFileContentReturned",
+    "globalGuidanceReturned",
+    "projectGuidanceReturned",
+    "overrideGuidanceReturned",
+    "fallbackFilenameReturned",
+    "configValueReturned",
+    "profileHomeReturned",
+    "workspaceRootReturned",
+    "directoryNameReturned",
+    "loadedSourceReturned",
+    "commandTextReturned",
+    "logPathReturned",
+    "sessionLogPathReturned",
+    "externalUrlReturned",
+    "plaintextLogRead",
+    "sessionLogRead",
+    "configRead",
+    "configWritten",
+    "guidanceFileRead",
+    "guidanceFileWritten",
+    "verificationCommandRun",
+    "filesystemRead",
+    "filesystemWrite",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.agentsGuidanceCatalogReturned, true);
+  for (const flag of [
+    "instructionFileNamesReturned",
+    "instructionFileContentsReturned",
+    "globalGuidanceReturned",
+    "projectGuidanceReturned",
+    "overrideGuidanceReturned",
+    "fallbackFilenamesReturned",
+    "configValuesReturned",
+    "profileHomesReturned",
+    "workspaceRootsReturned",
+    "directoryNamesReturned",
+    "loadedSourcesReturned",
+    "commandTextsReturned",
+    "logPathsReturned",
+    "sessionLogPathsReturned",
+    "externalUrlsReturned",
+    "plaintextLogsRead",
+    "sessionLogsRead",
+    "configReads",
+    "configWrites",
+    "guidanceFileReads",
+    "guidanceFileWrites",
+    "verificationCommandsRun",
+    "filesystemReads",
+    "filesystemWrites",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexAgentsGuidanceReturned", true],
+    ["codexAgentsGuidanceValuesReturned", false],
+    ["codexAgentsGuidanceInstructionFileNamesReturned", false],
+    ["codexAgentsGuidanceInstructionFileContentsReturned", false],
+    ["codexAgentsGuidanceGlobalGuidanceReturned", false],
+    ["codexAgentsGuidanceProjectGuidanceReturned", false],
+    ["codexAgentsGuidanceOverrideGuidanceReturned", false],
+    ["codexAgentsGuidanceFallbackFilenamesReturned", false],
+    ["codexAgentsGuidanceConfigValuesReturned", false],
+    ["codexAgentsGuidanceProfileHomesReturned", false],
+    ["codexAgentsGuidanceWorkspaceRootsReturned", false],
+    ["codexAgentsGuidanceDirectoryNamesReturned", false],
+    ["codexAgentsGuidanceLoadedSourcesReturned", false],
+    ["codexAgentsGuidanceCommandTextsReturned", false],
+    ["codexAgentsGuidanceLogPathsReturned", false],
+    ["codexAgentsGuidanceSessionLogPathsReturned", false],
+    ["codexAgentsGuidanceExternalUrlsReturned", false],
+    ["codexAgentsGuidancePlaintextLogReadEnabled", false],
+    ["codexAgentsGuidanceSessionLogReadEnabled", false],
+    ["codexAgentsGuidanceConfigReadEnabled", false],
+    ["codexAgentsGuidanceConfigWriteEnabled", false],
+    ["codexAgentsGuidanceFileReadEnabled", false],
+    ["codexAgentsGuidanceFileWriteEnabled", false],
+    ["codexAgentsGuidanceVerificationCommandEnabled", false],
+    ["codexAgentsGuidanceFilesystemAccess", false],
+    ["codexAgentsGuidanceModelTraffic", false],
+    ["codexAgentsGuidanceMutationsEnabled", false],
+    ["codexAgentsGuidanceUrlsReturned", false],
+    ["codexAgentsGuidanceSecretsReturned", false],
+    ["codexAgentsGuidanceRawPayloadsReturned", false],
+    ["codexAgentsGuidanceAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexCustomPromptsEntries() {
   return [
     ["deprecatedCustomPrompts", "lifecycle", "catalog-only", "official-codex-custom-prompts-docs"],
@@ -43525,6 +43699,7 @@ function assertCodexAppSettingsParity(
   assertCodexAutoReviewCatalog(payload);
   assertCodexChronicleCatalog(payload);
   assertCodexMemoriesCatalog(payload);
+  assertCodexAgentsGuidanceCatalog(payload);
   assertCodexCustomPromptsCatalog(payload);
   assertCodexCustomizationCatalog(payload);
   assertCodexSecurityCatalog(payload);

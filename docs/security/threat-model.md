@@ -608,6 +608,15 @@
   not read/write files, call MCP tools, read MCP resources, load MCP prompts,
   load skills, install plugins, start subagents or automations, create model
   traffic, or mutate customization state. Its
+  Codex Agents guidance catalog may expose only static official-documentation
+  keys plus local boundary keys, groups, states, sources, counts, and redaction
+  flags; it must not return instruction file names/content,
+  global/project/override guidance, fallback filenames, config values, profile
+  homes, workspace roots, directory names, loaded sources, command text, log
+  paths, session log paths, external URLs, paths, secrets, raw payloads,
+  app-server payloads, or app-server traffic, and must not read plaintext logs,
+  session logs, config, or guidance files, run verification commands, access
+  filesystem, create model traffic, or mutate guidance state. Its
   Codex Security catalog may expose only static official-documentation keys
   plus local boundary keys, groups, states, sources, counts, and redaction
   flags; it must not return plugin install state, scan prompts, setup
@@ -731,7 +740,16 @@
   payloads, or app-server traffic, and must not read/write files, call MCP
   tools, read MCP resources, load MCP prompts, load skills, install plugins,
   start subagents or automations, create model traffic, or mutate customization
-  state. Its Codex CLI command reference catalog
+  state. Its Codex Agents guidance catalog may expose only static
+  official-documentation keys plus local boundary keys, groups, states,
+  sources, counts, and redaction flags; it must not return instruction file
+  names/content, global/project/override guidance, fallback filenames, config
+  values, profile homes, workspace roots, directory names, loaded sources,
+  command text, log paths, session log paths, external URLs, paths, secrets,
+  raw payloads, app-server payloads, or app-server traffic, and must not read
+  plaintext logs, session logs, config, or guidance files, run verification
+  commands, access filesystem, create model traffic, or mutate guidance state.
+  Its Codex CLI command reference catalog
   may expose only static official-documentation keys plus local boundary keys,
   groups, states, sources, counts, and redaction flags; it must not return exact
   command names, flag names, option values, prompt text, config keys or values,

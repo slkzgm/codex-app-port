@@ -39,6 +39,8 @@ const elements = {
   codexChronicleValuesText: document.querySelector("#codex-chronicle-values-text"),
   codexMemoriesText: document.querySelector("#codex-memories-text"),
   codexMemoriesValuesText: document.querySelector("#codex-memories-values-text"),
+  codexAgentsGuidanceText: document.querySelector("#codex-agents-guidance-text"),
+  codexAgentsGuidanceValuesText: document.querySelector("#codex-agents-guidance-values-text"),
   codexCustomPromptsText: document.querySelector("#codex-custom-prompts-text"),
   codexCustomPromptsValuesText: document.querySelector("#codex-custom-prompts-values-text"),
   codexCustomizationText: document.querySelector("#codex-customization-text"),
@@ -520,6 +522,7 @@ const elements = {
   codexAutoReviewList: document.querySelector("#codex-auto-review-list"),
   codexChronicleList: document.querySelector("#codex-chronicle-list"),
   codexMemoriesList: document.querySelector("#codex-memories-list"),
+  codexAgentsGuidanceList: document.querySelector("#codex-agents-guidance-list"),
   codexCustomPromptsList: document.querySelector("#codex-custom-prompts-list"),
   codexCustomizationList: document.querySelector("#codex-customization-list"),
   codexSecurityList: document.querySelector("#codex-security-list"),
@@ -10607,6 +10610,7 @@ function renderSettingsIntegrations(payload) {
   const codexAutoReview = payload.codexAutoReview ?? {};
   const codexChronicle = payload.codexChronicle ?? {};
   const codexMemories = payload.codexMemories ?? {};
+  const codexAgentsGuidance = payload.codexAgentsGuidance ?? {};
   const codexCustomPrompts = payload.codexCustomPrompts ?? {};
   const codexCustomization = payload.codexCustomization ?? {};
   const codexSecurity = payload.codexSecurity ?? {};
@@ -10879,6 +10883,45 @@ function renderSettingsIntegrations(payload) {
     codexMemories.secretsReturned ||
     codexMemories.rawPayloadsReturned ||
     codexMemories.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexAgentsGuidanceText.textContent = codexAgentsGuidance.returned
+    ? `${codexAgentsGuidance.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexAgentsGuidance.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexAgentsGuidanceValuesText.textContent =
+    codexAgentsGuidance.instructionFileNamesReturned ||
+    codexAgentsGuidance.instructionFileContentsReturned ||
+    codexAgentsGuidance.globalGuidanceReturned ||
+    codexAgentsGuidance.projectGuidanceReturned ||
+    codexAgentsGuidance.overrideGuidanceReturned ||
+    codexAgentsGuidance.fallbackFilenamesReturned ||
+    codexAgentsGuidance.configValuesReturned ||
+    codexAgentsGuidance.profileHomesReturned ||
+    codexAgentsGuidance.workspaceRootsReturned ||
+    codexAgentsGuidance.directoryNamesReturned ||
+    codexAgentsGuidance.loadedSourcesReturned ||
+    codexAgentsGuidance.commandTextsReturned ||
+    codexAgentsGuidance.logPathsReturned ||
+    codexAgentsGuidance.sessionLogPathsReturned ||
+    codexAgentsGuidance.externalUrlsReturned ||
+    codexAgentsGuidance.plaintextLogsRead ||
+    codexAgentsGuidance.sessionLogsRead ||
+    codexAgentsGuidance.configReads ||
+    codexAgentsGuidance.configWrites ||
+    codexAgentsGuidance.guidanceFileReads ||
+    codexAgentsGuidance.guidanceFileWrites ||
+    codexAgentsGuidance.verificationCommandsRun ||
+    codexAgentsGuidance.filesystemReads ||
+    codexAgentsGuidance.filesystemWrites ||
+    codexAgentsGuidance.modelTraffic ||
+    codexAgentsGuidance.mutationEnabled ||
+    codexAgentsGuidance.pathsReturned ||
+    codexAgentsGuidance.urlsReturned ||
+    codexAgentsGuidance.secretsReturned ||
+    codexAgentsGuidance.rawPayloadsReturned ||
+    codexAgentsGuidance.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexCustomPromptsText.textContent = codexCustomPrompts.returned
@@ -13213,6 +13256,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexAutoReviewCatalog(codexAutoReview);
   renderCodexChronicleCatalog(codexChronicle);
   renderCodexMemoriesCatalog(codexMemories);
+  renderCodexAgentsGuidanceCatalog(codexAgentsGuidance);
   renderCodexCustomPromptsCatalog(codexCustomPrompts);
   renderCodexCustomizationCatalog(codexCustomization);
   renderCodexSecurityCatalog(codexSecurity);
@@ -15375,6 +15419,88 @@ function renderCodexMemoriesCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexMemoriesList.append(row);
+  }
+}
+
+function renderCodexAgentsGuidanceCatalog(summary) {
+  elements.codexAgentsGuidanceList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexAgentsGuidanceList.append(
+      emptyState("No Codex Agents guidance catalog returned."),
+    );
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "agents-guidance";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.instructionFileNameReturned
+        ? "instruction file names returned"
+        : "instruction file names hidden",
+      entry.instructionFileContentReturned
+        ? "instruction file content returned"
+        : "instruction file content hidden",
+      entry.globalGuidanceReturned ? "global guidance returned" : "global guidance hidden",
+      entry.projectGuidanceReturned ? "project guidance returned" : "project guidance hidden",
+      entry.overrideGuidanceReturned ? "override guidance returned" : "override guidance hidden",
+      entry.fallbackFilenameReturned ? "fallback names returned" : "fallback names hidden",
+      entry.configValueReturned ? "config values returned" : "config values hidden",
+      entry.profileHomeReturned ? "profile homes returned" : "profile homes hidden",
+      entry.workspaceRootReturned ? "workspace roots returned" : "workspace roots hidden",
+      entry.directoryNameReturned ? "directory names returned" : "directory names hidden",
+      entry.loadedSourceReturned ? "loaded sources returned" : "loaded sources hidden",
+      entry.commandTextReturned ? "command text returned" : "command text hidden",
+      entry.logPathReturned ? "log paths returned" : "log paths hidden",
+      entry.sessionLogPathReturned ? "session log paths returned" : "session log paths hidden",
+      entry.externalUrlReturned ? "external URLs returned" : "external URLs hidden",
+      entry.plaintextLogRead ? "plaintext logs read" : "plaintext log reads blocked",
+      entry.sessionLogRead ? "session logs read" : "session log reads blocked",
+      entry.configRead ? "config read" : "config reads blocked",
+      entry.configWritten ? "config written" : "config writes blocked",
+      entry.guidanceFileRead ? "guidance files read" : "guidance file reads blocked",
+      entry.guidanceFileWritten ? "guidance files written" : "guidance file writes blocked",
+      entry.verificationCommandRun
+        ? "verification commands run"
+        : "verification commands blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      entry.modelTraffic ? "model traffic" : "model traffic blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexAgentsGuidanceList.append(row);
   }
 }
 

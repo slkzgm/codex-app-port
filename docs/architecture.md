@@ -804,6 +804,20 @@ Current M1 status:
   reads, memory generation/injection, filesystem access, network access, model
   traffic, mutations, paths, URLs, secrets, raw payloads, and app-server traffic
   blocked
+- done: read-only Codex Agents guidance catalog in
+  `/api/settings-integrations`, exposing only static official AGENTS guidance
+  documentation keys plus local boundary keys/groups/states/sources/counts/
+  redaction flags for discovery timing, global/project scope selection,
+  override precedence, directory traversal, merge order, empty-file skipping,
+  size limits, fallback filename configuration, custom profile homes, setup
+  verification, loaded-source audit, restart/reload semantics,
+  troubleshooting, and prompting pairing, with instruction file names/content,
+  global/project/override guidance, fallback names, config values, profile
+  homes, workspace roots, directory names, loaded sources, command text, log
+  paths, session log paths, external URLs, plaintext/session log reads,
+  config reads/writes, guidance file reads/writes, verification command
+  execution, filesystem access, model traffic, mutations, paths, URLs, secrets,
+  raw payloads, and app-server traffic blocked
 - done: read-only Codex Custom Prompts catalog in `/api/settings-integrations`,
   exposing only static official Custom Prompts documentation keys plus local
   boundary keys/groups/states/sources/counts/redaction flags for the deprecated

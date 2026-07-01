@@ -861,6 +861,20 @@ raw payloads, or app-server traffic, and it must not read/write config, read
 memory files, generate or inject memories, access files/network, create model
 traffic, or mutate Memories state.
 
+The same response exposes `codexAgentsGuidance` as a static review-only catalog
+for the official Codex AGENTS guidance. The UI shows only catalog counts, entry
+keys, groups, state/source chips, and negative redaction chips for discovery
+timing, global/project scope selection, override precedence, directory
+traversal, merge order, empty-file skipping, size limits, fallback filename
+configuration, custom profile homes, setup verification, loaded-source audit,
+restart/reload semantics, troubleshooting, and prompting pairing. It must not
+show instruction file names or contents, global/project/override guidance,
+fallback names, config values, profile homes, workspace roots, directory names,
+loaded sources, command text, log paths, session log paths, external URLs,
+paths, secrets, raw payloads, or app-server traffic, and it must not read
+plaintext logs, session logs, config, or guidance files, run verification
+commands, access files, create model traffic, or mutate guidance state.
+
 The same response exposes `codexCustomPrompts` as a static review-only catalog
 for the official Custom Prompts guidance. The UI shows only catalog counts,
 entry keys, groups, state/source chips, and negative redaction chips for the
