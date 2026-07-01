@@ -38000,6 +38000,239 @@ function assertCodexAppshotsCatalog(payload) {
   }
 }
 
+function expectedCodexGithubActionEntries() {
+  return [
+    ["githubActionOverview", "overview", "catalog-only", "official-codex-github-action-docs"],
+    ["ciCdWorkflowJobs", "workflow", "catalog-only", "official-codex-github-action-docs"],
+    ["applyPatchesUseCase", "use-cases", "catalog-only", "official-codex-github-action-docs"],
+    ["postReviewsUseCase", "use-cases", "catalog-only", "official-codex-github-action-docs"],
+    ["pullRequestFeedbackWorkflow", "workflow", "catalog-only", "official-codex-github-action-docs"],
+    ["cliInstallStep", "runtime", "catalog-only", "official-codex-github-action-docs"],
+    ["responsesProxyStartup", "runtime", "catalog-only", "official-codex-github-action-docs"],
+    ["codexExecInvocation", "runtime", "catalog-only", "official-codex-github-action-docs"],
+    ["repeatableTaskWorkflow", "use-cases", "catalog-only", "official-codex-github-action-docs"],
+    ["githubSecretPrerequisite", "prerequisites", "catalog-only", "official-codex-github-action-docs"],
+    ["linuxMacosRunnerPrerequisite", "runners", "catalog-only", "official-codex-github-action-docs"],
+    ["windowsUnsafeStrategyRequirement", "runners", "catalog-only", "official-codex-github-action-docs"],
+    ["checkoutBeforeAction", "prerequisites", "catalog-only", "official-codex-github-action-docs"],
+    ["promptInputSelection", "prompts", "catalog-only", "official-codex-github-action-docs"],
+    ["promptFileInput", "prompts", "catalog-only", "official-codex-github-action-docs"],
+    ["codexArgsInput", "codex-exec", "catalog-only", "official-codex-github-action-docs"],
+    ["modelEffortInput", "codex-exec", "catalog-only", "official-codex-github-action-docs"],
+    ["sandboxInput", "codex-exec", "catalog-only", "official-codex-github-action-docs"],
+    ["outputFileInput", "outputs", "catalog-only", "official-codex-github-action-docs"],
+    ["codexVersionPinning", "runtime", "catalog-only", "official-codex-github-action-docs"],
+    ["sharedConfigDirectory", "runtime", "catalog-only", "official-codex-github-action-docs"],
+    ["dropSudoSafetyStrategy", "privileges", "catalog-only", "official-codex-github-action-docs"],
+    ["unprivilegedUserStrategy", "privileges", "catalog-only", "official-codex-github-action-docs"],
+    ["readOnlyPrivilegeCaveat", "privileges", "catalog-only", "official-codex-github-action-docs"],
+    ["triggerAllowUsersBots", "privileges", "catalog-only", "official-codex-github-action-docs"],
+    ["finalMessageOutput", "outputs", "catalog-only", "official-codex-github-action-docs"],
+    ["structuredOutputSchema", "outputs", "catalog-only", "official-codex-github-action-docs"],
+    ["securityChecklist", "security", "catalog-only", "official-codex-github-action-docs"],
+    ["troubleshootingPromptConflict", "troubleshooting", "catalog-only", "official-codex-github-action-docs"],
+    ["troubleshootingProxyStartup", "troubleshooting", "catalog-only", "official-codex-github-action-docs"],
+    ["troubleshootingSudoRemoval", "troubleshooting", "catalog-only", "official-codex-github-action-docs"],
+    ["troubleshootingPermissionErrors", "troubleshooting", "catalog-only", "official-codex-github-action-docs"],
+    ["troubleshootingUnauthorizedTrigger", "troubleshooting", "catalog-only", "official-codex-github-action-docs"],
+    ["workflowYamlBoundary", "workflow", "blocked", "local-github-action-boundary"],
+    ["githubSecretBoundary", "credentials", "blocked", "local-github-action-boundary"],
+    ["githubTokenBoundary", "credentials", "blocked", "local-github-action-boundary"],
+    ["repositoryCheckoutBoundary", "repository", "blocked", "local-github-action-boundary"],
+    ["promptContentBoundary", "prompts", "blocked", "local-github-action-boundary"],
+    ["codexArgsBoundary", "codex-exec", "blocked", "local-github-action-boundary"],
+    ["runnerEnvironmentBoundary", "runners", "blocked", "local-github-action-boundary"],
+    ["codexCliInstallBoundary", "runtime", "blocked", "local-github-action-boundary"],
+    ["responsesProxyBoundary", "runtime", "blocked", "local-github-action-boundary"],
+    ["codexExecBoundary", "runtime", "blocked", "local-github-action-boundary"],
+    ["patchApplyBoundary", "repository", "blocked", "local-github-action-boundary"],
+    ["reviewPostBoundary", "github-api", "blocked", "local-github-action-boundary"],
+    ["artifactOutputBoundary", "outputs", "blocked", "local-github-action-boundary"],
+    ["privilegeMutationBoundary", "privileges", "blocked", "local-github-action-boundary"],
+    ["githubApiBoundary", "github-api", "blocked", "local-github-action-boundary"],
+    ["modelTrafficBoundary", "model", "blocked", "local-github-action-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexGithubActionCatalog(payload) {
+  const catalog = payload.codexGithubAction;
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-github-action-docs");
+  assert.equal(catalog.entryCount, 49);
+  assert.equal(catalog.officialEntryCount, 33);
+  assert.equal(catalog.localBoundaryEntryCount, 16);
+  assert.equal(catalog.catalogOnlyEntryCount, 33);
+  assert.equal(catalog.blockedEntryCount, 16);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({ key, group, state, source })),
+    expectedCodexGithubActionEntries(),
+  );
+
+  const entryRedactionFlags = [
+    "workflowNameReturned",
+    "workflowYamlReturned",
+    "repositoryNameReturned",
+    "pullRequestNumberReturned",
+    "issueCommentReturned",
+    "promptTextReturned",
+    "promptFileReturned",
+    "outputFileReturned",
+    "finalMessageReturned",
+    "actionVersionReturned",
+    "runnerLabelReturned",
+    "permissionScopeReturned",
+    "apiKeyReturned",
+    "githubTokenReturned",
+    "codexArgReturned",
+    "modelValueReturned",
+    "effortValueReturned",
+    "sandboxModeReturned",
+    "sharedConfigPathReturned",
+    "allowlistUserReturned",
+    "allowlistBotReturned",
+    "logReturned",
+    "artifactContentReturned",
+    "commandTextReturned",
+    "workflowStarted",
+    "githubActionInvoked",
+    "codexCliInstalled",
+    "responsesProxyStarted",
+    "codexExecStarted",
+    "patchApplied",
+    "reviewPosted",
+    "issueCommentPosted",
+    "artifactUploaded",
+    "sudoChanged",
+    "userChanged",
+    "repositoryCheckoutRead",
+    "filesystemRead",
+    "filesystemWrite",
+    "githubApiTraffic",
+    "networkAccess",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.githubActionCatalogReturned, true);
+  for (const flag of [
+    "workflowNamesReturned",
+    "workflowYamlReturned",
+    "repositoryNamesReturned",
+    "pullRequestNumbersReturned",
+    "issueCommentsReturned",
+    "promptTextsReturned",
+    "promptFilesReturned",
+    "outputFilesReturned",
+    "finalMessagesReturned",
+    "actionVersionsReturned",
+    "runnerLabelsReturned",
+    "permissionScopesReturned",
+    "apiKeysReturned",
+    "githubTokensReturned",
+    "codexArgsReturned",
+    "modelValuesReturned",
+    "effortValuesReturned",
+    "sandboxModesReturned",
+    "sharedConfigPathsReturned",
+    "allowlistUsersReturned",
+    "allowlistBotsReturned",
+    "logsReturned",
+    "artifactContentsReturned",
+    "commandTextsReturned",
+    "workflowsStarted",
+    "githubActionsInvoked",
+    "codexCliInstallsStarted",
+    "responsesProxiesStarted",
+    "codexExecsStarted",
+    "patchesApplied",
+    "reviewsPosted",
+    "issueCommentsPosted",
+    "artifactsUploaded",
+    "sudoChangesApplied",
+    "usersChanged",
+    "repositoryCheckoutsRead",
+    "filesystemReads",
+    "filesystemWrites",
+    "githubApiTraffic",
+    "networkAccess",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexGithubActionReturned", true],
+    ["codexGithubActionValuesReturned", false],
+    ["codexGithubActionWorkflowNamesReturned", false],
+    ["codexGithubActionWorkflowYamlReturned", false],
+    ["codexGithubActionRepositoryNamesReturned", false],
+    ["codexGithubActionPullRequestNumbersReturned", false],
+    ["codexGithubActionIssueCommentsReturned", false],
+    ["codexGithubActionPromptTextsReturned", false],
+    ["codexGithubActionPromptFilesReturned", false],
+    ["codexGithubActionOutputFilesReturned", false],
+    ["codexGithubActionFinalMessagesReturned", false],
+    ["codexGithubActionActionVersionsReturned", false],
+    ["codexGithubActionRunnerLabelsReturned", false],
+    ["codexGithubActionPermissionScopesReturned", false],
+    ["codexGithubActionApiKeysReturned", false],
+    ["codexGithubActionGithubTokensReturned", false],
+    ["codexGithubActionCodexArgsReturned", false],
+    ["codexGithubActionModelValuesReturned", false],
+    ["codexGithubActionEffortValuesReturned", false],
+    ["codexGithubActionSandboxModesReturned", false],
+    ["codexGithubActionSharedConfigPathsReturned", false],
+    ["codexGithubActionAllowlistUsersReturned", false],
+    ["codexGithubActionAllowlistBotsReturned", false],
+    ["codexGithubActionLogsReturned", false],
+    ["codexGithubActionArtifactContentsReturned", false],
+    ["codexGithubActionCommandTextsReturned", false],
+    ["codexGithubActionWorkflowStartEnabled", false],
+    ["codexGithubActionInvocationEnabled", false],
+    ["codexGithubActionCliInstallEnabled", false],
+    ["codexGithubActionResponsesProxyEnabled", false],
+    ["codexGithubActionCodexExecEnabled", false],
+    ["codexGithubActionPatchApplyEnabled", false],
+    ["codexGithubActionReviewPostEnabled", false],
+    ["codexGithubActionIssueCommentPostEnabled", false],
+    ["codexGithubActionArtifactUploadEnabled", false],
+    ["codexGithubActionSudoChangeEnabled", false],
+    ["codexGithubActionUserChangeEnabled", false],
+    ["codexGithubActionRepositoryCheckoutReadEnabled", false],
+    ["codexGithubActionFilesystemAccess", false],
+    ["codexGithubActionGithubApiTraffic", false],
+    ["codexGithubActionNetworkAccess", false],
+    ["codexGithubActionModelTraffic", false],
+    ["codexGithubActionMutationsEnabled", false],
+    ["codexGithubActionPathsReturned", false],
+    ["codexGithubActionUrlsReturned", false],
+    ["codexGithubActionSecretsReturned", false],
+    ["codexGithubActionRawPayloadsReturned", false],
+    ["codexGithubActionAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexGovernanceEntries() {
   return [
     ["governanceVisibilityAuditability", "overview", "catalog-only", "official-codex-governance-docs"],
@@ -42357,6 +42590,7 @@ function assertCodexAppSettingsParity(
   assertCodexLocalEnvironmentsCatalog(payload);
   assertCodexReviewCatalog(payload);
   assertCodexAppshotsCatalog(payload);
+  assertCodexGithubActionCatalog(payload);
   assertCodexGovernanceCatalog(payload);
   assertCodexManagedConfigurationCatalog(payload);
   assertCodexEnvironmentVariablesCatalog(payload);

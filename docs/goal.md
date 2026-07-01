@@ -393,6 +393,25 @@ Target parity with the Codex desktop workflow:
   reads, plugin access, or model traffic, write attachments/session files/
   settings, create/update threads, prompt permissions, open settings, access
   files/network, or mutate state.
+- `/api/settings-integrations` now also exposes a read-only Codex GitHub Action
+  catalog aligned to the official GitHub Action guide. It returns only static
+  keys, groups, states, sources, counts, and redaction flags for CI workflow
+  jobs, patch/review use cases, pull-request feedback workflows, CLI install,
+  Responses proxy startup, `codex exec` invocation, runner requirements,
+  checkout requirements, prompt and prompt-file inputs, `codex-args`,
+  model/effort/sandbox inputs, output files, CLI version pinning, shared config
+  directory setup, sudo-dropping and unprivileged-user strategies, read-only caveats,
+  trigger allowlists, final-message and structured-output concepts, security
+  checklist items, and troubleshooting categories. It does not return workflow
+  names/YAML, repository names, pull request numbers, issue comments, prompt
+  text, prompt files, output files, final messages, action versions, runner
+  labels, permission scopes, API keys, GitHub tokens, Codex args, model/effort/
+  sandbox values, shared config paths, allowlist users/bots, logs, artifact
+  contents, command text, paths, URLs, secrets, raw payloads, or app-server
+  traffic, and it does not start workflows, invoke GitHub Actions, install the
+  CLI, start the proxy, run `codex exec`, apply patches, post reviews/comments,
+  upload artifacts, change sudo/users, read repository checkouts, call GitHub
+  APIs, access files/network, create model traffic, or mutate state.
 - `/api/settings-integrations` now also exposes a read-only Codex Managed
   configuration catalog aligned to the official managed-configuration guide. It
   returns only static keys, groups, states, sources, counts, and redaction flags

@@ -643,6 +643,18 @@
   accessibility reads, plugin access, model traffic, write attachments/session
   files/settings, create or update threads, prompt permissions, open settings,
   access filesystem or network, or mutate Appshots state. Its
+  Codex GitHub Action catalog may expose only static official-documentation
+  keys plus local boundary keys, groups, states, sources, counts, and redaction
+  flags; it must not return workflow names/YAML, repository names, pull request
+  numbers, issue comments, prompt text, prompt files, output files, final
+  messages, action versions, runner labels, permission scopes, API keys, GitHub
+  tokens, Codex args, model/effort/sandbox values, shared config paths, allowlist
+  users/bots, logs, artifact contents, command text, paths, URLs, secrets, raw
+  payloads, app-server payloads, or app-server traffic, and must not start
+  workflows, invoke GitHub Actions, install the CLI, start the proxy, run
+  `codex exec`, apply patches, post reviews/comments, upload artifacts, change
+  sudo/users, read repository checkouts, call GitHub APIs, access filesystem or
+  network, create model traffic, or mutate GitHub Action state. Its
   Codex Environment variables catalog may expose only static
   official-documentation keys plus local boundary keys, groups, states,
   sources, counts, and redaction flags; it must not read `process.env`, return

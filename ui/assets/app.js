@@ -69,6 +69,8 @@ const elements = {
   codexReviewValuesText: document.querySelector("#codex-review-values-text"),
   codexAppshotsText: document.querySelector("#codex-appshots-text"),
   codexAppshotsValuesText: document.querySelector("#codex-appshots-values-text"),
+  codexGithubActionText: document.querySelector("#codex-github-action-text"),
+  codexGithubActionValuesText: document.querySelector("#codex-github-action-values-text"),
   codexGovernanceText: document.querySelector("#codex-governance-text"),
   codexGovernanceValuesText: document.querySelector("#codex-governance-values-text"),
   codexManagedConfigurationText: document.querySelector("#codex-managed-configuration-text"),
@@ -495,6 +497,7 @@ const elements = {
   codexLocalEnvironmentsList: document.querySelector("#codex-local-environments-list"),
   codexReviewList: document.querySelector("#codex-review-list"),
   codexAppshotsList: document.querySelector("#codex-appshots-list"),
+  codexGithubActionList: document.querySelector("#codex-github-action-list"),
   codexGovernanceList: document.querySelector("#codex-governance-list"),
   codexManagedConfigurationList: document.querySelector("#codex-managed-configuration-list"),
   codexEnvironmentVariablesList: document.querySelector("#codex-environment-variables-list"),
@@ -10568,6 +10571,7 @@ function renderSettingsIntegrations(payload) {
   const codexLocalEnvironments = payload.codexLocalEnvironments ?? {};
   const codexReview = payload.codexReview ?? {};
   const codexAppshots = payload.codexAppshots ?? {};
+  const codexGithubAction = payload.codexGithubAction ?? {};
   const codexGovernance = payload.codexGovernance ?? {};
   const codexManagedConfiguration = payload.codexManagedConfiguration ?? {};
   const codexEnvironmentVariables = payload.codexEnvironmentVariables ?? {};
@@ -11316,6 +11320,61 @@ function renderSettingsIntegrations(payload) {
     codexAppshots.secretsReturned ||
     codexAppshots.rawPayloadsReturned ||
     codexAppshots.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexGithubActionText.textContent = codexGithubAction.returned
+    ? `${codexGithubAction.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexGithubAction.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexGithubActionValuesText.textContent =
+    codexGithubAction.workflowNamesReturned ||
+    codexGithubAction.workflowYamlReturned ||
+    codexGithubAction.repositoryNamesReturned ||
+    codexGithubAction.pullRequestNumbersReturned ||
+    codexGithubAction.issueCommentsReturned ||
+    codexGithubAction.promptTextsReturned ||
+    codexGithubAction.promptFilesReturned ||
+    codexGithubAction.outputFilesReturned ||
+    codexGithubAction.finalMessagesReturned ||
+    codexGithubAction.actionVersionsReturned ||
+    codexGithubAction.runnerLabelsReturned ||
+    codexGithubAction.permissionScopesReturned ||
+    codexGithubAction.apiKeysReturned ||
+    codexGithubAction.githubTokensReturned ||
+    codexGithubAction.codexArgsReturned ||
+    codexGithubAction.modelValuesReturned ||
+    codexGithubAction.effortValuesReturned ||
+    codexGithubAction.sandboxModesReturned ||
+    codexGithubAction.sharedConfigPathsReturned ||
+    codexGithubAction.allowlistUsersReturned ||
+    codexGithubAction.allowlistBotsReturned ||
+    codexGithubAction.logsReturned ||
+    codexGithubAction.artifactContentsReturned ||
+    codexGithubAction.commandTextsReturned ||
+    codexGithubAction.workflowsStarted ||
+    codexGithubAction.githubActionsInvoked ||
+    codexGithubAction.codexCliInstallsStarted ||
+    codexGithubAction.responsesProxiesStarted ||
+    codexGithubAction.codexExecsStarted ||
+    codexGithubAction.patchesApplied ||
+    codexGithubAction.reviewsPosted ||
+    codexGithubAction.issueCommentsPosted ||
+    codexGithubAction.artifactsUploaded ||
+    codexGithubAction.sudoChangesApplied ||
+    codexGithubAction.usersChanged ||
+    codexGithubAction.repositoryCheckoutsRead ||
+    codexGithubAction.filesystemReads ||
+    codexGithubAction.filesystemWrites ||
+    codexGithubAction.githubApiTraffic ||
+    codexGithubAction.networkAccess ||
+    codexGithubAction.modelTraffic ||
+    codexGithubAction.mutationEnabled ||
+    codexGithubAction.pathsReturned ||
+    codexGithubAction.urlsReturned ||
+    codexGithubAction.secretsReturned ||
+    codexGithubAction.rawPayloadsReturned ||
+    codexGithubAction.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexGovernanceText.textContent = codexGovernance.returned
@@ -12491,6 +12550,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexLocalEnvironmentsCatalog(codexLocalEnvironments);
   renderCodexReviewCatalog(codexReview);
   renderCodexAppshotsCatalog(codexAppshots);
+  renderCodexGithubActionCatalog(codexGithubAction);
   renderCodexGovernanceCatalog(codexGovernance);
   renderCodexManagedConfigurationCatalog(codexManagedConfiguration);
   renderCodexEnvironmentVariablesCatalog(codexEnvironmentVariables);
@@ -15609,6 +15669,104 @@ function renderCodexAppshotsCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexAppshotsList.append(row);
+  }
+}
+
+function renderCodexGithubActionCatalog(summary) {
+  elements.codexGithubActionList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexGithubActionList.append(emptyState("No Codex GitHub Action catalog returned."));
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "github-action";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.workflowNameReturned ? "workflow names returned" : "workflow names hidden",
+      entry.workflowYamlReturned ? "workflow YAML returned" : "workflow YAML hidden",
+      entry.repositoryNameReturned ? "repository names returned" : "repository names hidden",
+      entry.pullRequestNumberReturned
+        ? "pull request numbers returned"
+        : "pull request numbers hidden",
+      entry.issueCommentReturned ? "issue comments returned" : "issue comments hidden",
+      entry.promptTextReturned ? "prompt text returned" : "prompt text hidden",
+      entry.promptFileReturned ? "prompt files returned" : "prompt files hidden",
+      entry.outputFileReturned ? "output files returned" : "output files hidden",
+      entry.finalMessageReturned ? "final messages returned" : "final messages hidden",
+      entry.actionVersionReturned ? "action versions returned" : "action versions hidden",
+      entry.runnerLabelReturned ? "runner labels returned" : "runner labels hidden",
+      entry.permissionScopeReturned
+        ? "permission scopes returned"
+        : "permission scopes hidden",
+      entry.apiKeyReturned ? "API keys returned" : "API keys hidden",
+      entry.githubTokenReturned ? "GitHub tokens returned" : "GitHub tokens hidden",
+      entry.codexArgReturned ? "Codex args returned" : "Codex args hidden",
+      entry.modelValueReturned ? "model values returned" : "model values hidden",
+      entry.effortValueReturned ? "effort values returned" : "effort values hidden",
+      entry.sandboxModeReturned ? "sandbox modes returned" : "sandbox modes hidden",
+      entry.sharedConfigPathReturned
+        ? "shared config paths returned"
+        : "shared config paths hidden",
+      entry.allowlistUserReturned ? "allowlist users returned" : "allowlist users hidden",
+      entry.allowlistBotReturned ? "allowlist bots returned" : "allowlist bots hidden",
+      entry.logReturned ? "logs returned" : "logs hidden",
+      entry.artifactContentReturned ? "artifact content returned" : "artifact content hidden",
+      entry.commandTextReturned ? "command text returned" : "command text hidden",
+      entry.workflowStarted ? "workflow started" : "workflow starts blocked",
+      entry.githubActionInvoked ? "GitHub Action invoked" : "GitHub Action blocked",
+      entry.codexCliInstalled ? "Codex CLI installed" : "Codex CLI install blocked",
+      entry.responsesProxyStarted ? "Responses proxy started" : "Responses proxy blocked",
+      entry.codexExecStarted ? "Codex exec started" : "Codex exec blocked",
+      entry.patchApplied ? "patch applied" : "patch apply blocked",
+      entry.reviewPosted ? "review posted" : "review posts blocked",
+      entry.issueCommentPosted ? "issue comment posted" : "issue comments blocked",
+      entry.artifactUploaded ? "artifact uploaded" : "artifact uploads blocked",
+      entry.sudoChanged ? "sudo changed" : "sudo changes blocked",
+      entry.userChanged ? "user changed" : "user changes blocked",
+      entry.repositoryCheckoutRead
+        ? "repository checkout read"
+        : "repository checkout reads blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      entry.githubApiTraffic ? "GitHub API traffic" : "GitHub API blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.modelTraffic ? "model traffic" : "model traffic blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexGithubActionList.append(row);
   }
 }
 

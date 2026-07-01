@@ -790,6 +790,24 @@ Current M1 status:
   activity, attachment/session/settings writes, thread creation or updates,
   permission prompts, settings opens, filesystem access, network access,
   mutations, paths, URLs, secrets, raw payloads, and app-server traffic blocked
+- done: read-only Codex GitHub Action catalog in `/api/settings-integrations`,
+  exposing only static official GitHub Action documentation keys plus local
+  boundary keys/groups/states/sources/counts/redaction flags for CI workflows,
+  patch/review use cases, pull-request feedback, CLI install, Responses proxy
+  startup, `codex exec`, runner requirements, checkout requirements, prompt and
+  prompt-file inputs, `codex-args`, model/effort/sandbox inputs, output files,
+  CLI version pinning, shared config directory setup, sudo-dropping, unprivileged-user
+  execution, read-only caveats, trigger allowlists, final-message and
+  structured-output concepts, security checklist items, and troubleshooting,
+  with workflow names/YAML, repository names, pull request numbers, issue
+  comments, prompt text/files, output files, final messages, action versions,
+  runner labels, permission scopes, API keys, GitHub tokens, Codex args,
+  model/effort/sandbox values, shared config paths, allowlist users/bots, logs,
+  artifact contents, command text, workflow starts, action invocation, CLI
+  installs, proxy startup, `codex exec`, patch/review/comment/artifact writes,
+  sudo/user changes, repository checkout reads, GitHub API traffic, filesystem
+  access, network access, model traffic, mutations, paths, URLs, secrets, raw
+  payloads, and app-server traffic blocked
 - done: read-only Codex Environment variables catalog in
   `/api/settings-integrations`, exposing only static official Environment
   variables documentation keys plus local boundary keys/groups/states/sources/

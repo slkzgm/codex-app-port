@@ -1013,6 +1013,26 @@ plugin access, or model traffic, write attachments/session files/settings,
 create/update threads, prompt permissions, open settings, access files/network,
 or mutate state.
 
+The same response exposes `codexGithubAction` as a static review-only catalog
+for official Codex GitHub Action behavior. The UI shows only catalog counts,
+entry keys, groups, state/source chips, and redaction chips for CI workflows,
+patch/review use cases, pull-request feedback, CLI install, Responses proxy
+startup, `codex exec`, runner requirements, checkout requirements, prompt and
+prompt-file inputs, `codex-args`, model/effort/sandbox inputs, output files,
+CLI version pinning, shared config directory setup, sudo-dropping, unprivileged-user
+execution, read-only caveats, trigger allowlists, final-message and
+structured-output concepts, security checklist items, and troubleshooting. It
+must not show workflow names/YAML, repository names, pull request numbers,
+issue comments, prompt text, prompt files, output files, final messages, action
+versions, runner labels, permission scopes, API keys, GitHub tokens, Codex
+args, model/effort/sandbox values, shared config paths, allowlist users/bots,
+logs, artifact contents, command text, paths, URLs, secrets, raw payloads, or
+app-server traffic, and it must not start workflows, invoke GitHub Actions,
+install the CLI, start the proxy, run `codex exec`, apply patches, post
+reviews/comments, upload artifacts, change sudo/users, read repository
+checkouts, call GitHub APIs, access files/network, create model traffic, or
+mutate state.
+
 The same response exposes `codexManagedConfiguration` as a static review-only
 catalog for official Codex managed-configuration behavior. The UI shows only
 catalog counts, entry keys, groups, state/source chips, and redaction chips for
