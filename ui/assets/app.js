@@ -224,6 +224,10 @@ const elements = {
   integrationExternalCodeContract: document.querySelector("#integration-external-code-contract"),
   integrationExecutableActions: document.querySelector("#integration-executable-actions"),
   integrationBlockedCount: document.querySelector("#integration-blocked-count"),
+  accountReadButton: document.querySelector("#account-read-button"),
+  accountReadStatus: document.querySelector("#account-read-status"),
+  accountReadStateText: document.querySelector("#account-read-state-text"),
+  accountReadTypeText: document.querySelector("#account-read-type-text"),
   accountLoginPreflightButton: document.querySelector("#account-login-preflight-button"),
   accountLoginButton: document.querySelector("#account-login-button"),
   accountLoginStatus: document.querySelector("#account-login-status"),
@@ -1153,6 +1157,9 @@ elements.workspaceSelect.addEventListener("change", () => {
   lastAccountLoginCancelRef = null;
   lastAccountResetCreditPreflight = null;
   lastAccountLogoutPreflight = null;
+  elements.accountReadStatus.textContent = "Account read disabled by default.";
+  elements.accountReadStateText.textContent = "Blocked";
+  elements.accountReadTypeText.textContent = "Hidden";
   lastApprovalPayload = null;
   lastApprovalQueue = [];
   approvalQueueFilter = "all";
@@ -2115,6 +2122,10 @@ for (const input of [
   });
 }
 
+elements.accountReadButton.addEventListener("click", () => {
+  runAccountRead();
+});
+
 elements.accountLoginPreflightButton.addEventListener("click", () => {
   runAccountLoginPreflight();
 });
@@ -2557,6 +2568,16 @@ function reviewFeedbackPreflightEndpoint() {
 
 function memoryResetPreflightEndpoint() {
   return "/api/memory-reset-preflight";
+}
+
+function accountReadEndpoint() {
+  if (!selectedWorkspaceId) {
+    return "/api/account-read";
+  }
+
+  const params = new URLSearchParams();
+  params.set("workspace", selectedWorkspaceId);
+  return `/api/account-read?${params.toString()}`;
 }
 
 function accountLoginPreflightEndpoint() {
@@ -4553,6 +4574,28 @@ async function runMemoryResetPreflight() {
     renderError(error);
   } finally {
     setMemoryResetLoading(false);
+  }
+}
+
+async function runAccountRead() {
+  setAccountReadLoading(true);
+  hideError();
+
+  try {
+    const response = await fetch(accountReadEndpoint(), {
+      headers: apiHeaders(),
+      cache: "no-store",
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderAccountRead(payload);
+  } catch (error) {
+    elements.accountReadStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    setAccountReadLoading(false);
   }
 }
 
@@ -13351,6 +13394,11 @@ function renderSettingsIntegrations(payload) {
     : "Blocked";
   elements.settingsMutationsText.textContent = settings.mutationEnabled ? "Enabled" : "Blocked";
   elements.authStateText.textContent = authStateText(inventory.account, auth);
+  elements.accountReadStatus.textContent = auth.accountReadEnabled
+    ? "Account read enabled"
+    : "Account read disabled";
+  elements.accountReadStateText.textContent = auth.stateVisible ? "Available" : "Blocked";
+  elements.accountReadTypeText.textContent = "Hidden";
   elements.rateLimitsStateText.textContent = rateLimitsStateText(inventory.rateLimits, auth);
   elements.accountUsageStateText.textContent = auth.usageAvailable
     ? `${inventory.accountUsage?.summaryMetricCount ?? 0} metrics`
@@ -14891,6 +14939,24 @@ function renderMemoryResetPreflight(payload) {
     memoryReset.memoryPathsReturned
       ? "Returned"
       : "Hidden";
+}
+
+function renderAccountRead(payload) {
+  const auth = payload.auth ?? {};
+  const result = payload.result ?? {};
+  const blocked = auth.accountReadEnabled !== true || payload.appServer?.touched !== true;
+  const status = result.status ?? auth.state ?? (blocked ? "blocked" : "unknown");
+  elements.accountReadStatus.textContent = blocked ? "Read blocked" : status;
+  elements.accountReadStateText.textContent = status;
+  elements.accountReadTypeText.textContent =
+    auth.accountType && auth.accountIdentifiersReturned === false ? auth.accountType : "Hidden";
+  elements.authStateText.textContent = blocked
+    ? "Blocked"
+    : auth.hasAccount
+      ? auth.accountType ?? "Account"
+      : auth.requiresOpenaiAuth
+        ? "Needs auth"
+        : "No account";
 }
 
 function renderAccountLoginPreflight(payload) {
@@ -22575,6 +22641,14 @@ function setMemoryResetLoading(isLoading) {
   elements.memoryResetPreflightButton.textContent = isLoading ? "Checking" : "Memory Reset Check";
   if (isLoading) {
     elements.memoryResetStatus.textContent = "Checking";
+  }
+}
+
+function setAccountReadLoading(isLoading) {
+  elements.accountReadButton.disabled = isLoading;
+  elements.accountReadButton.textContent = isLoading ? "Checking" : "Account Check";
+  if (isLoading) {
+    elements.accountReadStatus.textContent = "Checking";
   }
 }
 

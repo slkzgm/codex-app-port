@@ -1369,8 +1369,9 @@ Current M1 status:
   `CODEX_APP_PORT_ALLOW_ACCOUNT_READ=1`, calling only `account/read` with
   `refreshToken:false`, no model traffic or auth mutation, and sanitized
   responses with signed-in/signed-out/sign-in-required state plus account type
-  only, without email addresses, tokens, account identifiers, auth URLs, cwd,
-  paths, or raw app-server payloads
+  only; the local UI exposes it through Account Check without local history,
+  email addresses, tokens, account identifiers, auth URLs, cwd, paths, or raw
+  app-server payloads
 - done: opt-in `/api/account-login-start` path behind
   `CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN=1`, with matching one-time
   account-login-preflight token consumption, `account/login/start` device-code

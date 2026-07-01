@@ -55392,6 +55392,12 @@ async function readUiSessionToken(baseUrl) {
     throw new Error("dev server UI is missing the live session interaction control");
   }
   if (
+    !html.includes("account-read-button") ||
+    !html.includes("account-read-status") ||
+    !html.includes("account-read-state-text") ||
+    !html.includes("account-read-type-text") ||
+    !appScript.includes("runAccountRead") ||
+    !appScript.includes("renderAccountRead") ||
     !html.includes("account-login-button") ||
     !html.includes("account-login-cancel-button") ||
     !html.includes("account-reset-credit-button") ||

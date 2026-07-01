@@ -1746,7 +1746,9 @@ calls only `account/read` with `refreshToken:false` and returns signed-in,
 signed-out, or sign-in-required state plus account type. It never returns email
 addresses, tokens, account identifiers, auth URLs, cwd, paths, or raw
 app-server payloads, and `/api/settings-integrations` marks it as a read gate
-rather than a mutation.
+rather than a mutation. The Account Check control calls only this route and
+renders the sanitized state/type fields; it does not write local history or show
+account identity values.
 
 Device-code account login, login cancel, account credits nudge, account reset
 credit consumption, and account logout are the only dedicated account

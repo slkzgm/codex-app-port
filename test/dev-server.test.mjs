@@ -348,6 +348,12 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /experimental-feature-form/);
     assert.match(html, /experimental-feature-status/);
     assert.match(html, /experimental-feature-run-button/);
+    assert.match(html, /account-read-button/);
+    assert.match(html, /account-read-status/);
+    assert.match(html, /account-read-state-text/);
+    assert.match(html, /account-read-type-text/);
+    assert.match(appScript, /runAccountRead/);
+    assert.match(appScript, /renderAccountRead/);
     assert.match(html, /account-login-preflight-button/);
     assert.match(html, /account-login-button/);
     assert.match(html, /thread-delete-preflight-button/);
