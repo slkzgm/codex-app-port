@@ -191,6 +191,25 @@ Target parity with the Codex desktop workflow:
   does not start background agents, screen recording, menu-bar controls,
   settings writes, memory generation/injection, capture reads, memory-file
   reads, model traffic, filesystem/network access, or Chronicle mutations.
+- `/api/settings-integrations` now also exposes a read-only Codex Security
+  catalog aligned to the current official Codex Security docs. It returns only
+  static keys, groups, states, sources, counts, and redaction flags for plugin
+  overview, authorized code assessment, local plugin setup, first scan workflow,
+  setup workspace confirmation, scan context, findings workspace, reports,
+  structured artifacts, standard/deep/code-change/backlog/fix/export
+  workflows, CLI install guidance, cloud research preview, connected GitHub
+  repository scanning, commit-by-commit context, validation evidence, suggested
+  fixes, access plans, environment prerequisites, initial backfill, findings
+  review, and threat-model editing. It does not return plugin install state,
+  scan prompts, setup workspaces, repository/branch/commit identity, scan
+  areas, threat model guidance, findings, evidence, code excerpts, file paths,
+  report paths, artifact paths/content, export artifacts, issue or PR payloads,
+  destinations, GitHub org/repo names, environment names, cloud scan states,
+  validation outputs, model/reasoning values, paths, URLs, secrets, raw
+  payloads, or app-server traffic, and it does not install plugins, start
+  local/deep/cloud scans, export findings, track issues, create remediation,
+  write threat models/config, create model traffic, access files/network, or
+  mutate Codex Security state.
 - `/api/settings-integrations` now also exposes a read-only Codex Governance
   catalog aligned to the official enterprise governance guide. It returns only
   static keys, groups, states, sources, counts, and redaction flags for

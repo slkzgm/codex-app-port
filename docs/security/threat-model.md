@@ -510,6 +510,18 @@
   settings, generate or inject memories, read screen captures or memory files,
   create model traffic, access filesystem or network, or mutate Chronicle
   state. Its
+  Codex Security catalog may expose only static official-documentation keys
+  plus local boundary keys, groups, states, sources, counts, and redaction
+  flags; it must not return plugin install state, scan prompts, setup
+  workspaces, repository names, branches, commits, scan areas, threat model
+  guidance, findings, finding evidence, code excerpts, file paths, report
+  paths, structured artifact paths/content, export artifacts, issue or PR
+  payloads, destinations, GitHub org/repo names, environment names, cloud scan
+  state, validation output, model/reasoning values, paths, URLs, secrets, raw
+  payloads, app-server payloads, or app-server traffic, and must not install
+  plugins, start local/deep/cloud scans, export findings, track issues, start
+  remediation, write threat models or configuration, create model traffic,
+  access filesystem or network, or mutate Codex Security state. Its
   Codex Managed configuration catalog may expose only static
   official-documentation keys plus local boundary keys, groups, states,
   sources, counts, and redaction flags; it must not return requirement names or

@@ -616,6 +616,16 @@ Current M1 status:
   screen recording, settings writes, memory generation/injection,
   capture/memory-file reads, model traffic, filesystem access, network access,
   mutations, paths, URLs, secrets, raw payloads, and app-server traffic blocked
+- done: read-only Codex Security catalog in `/api/settings-integrations`,
+  exposing only static official Codex Security documentation keys plus local
+  boundary keys/groups/states/sources/counts/redaction flags for local plugin
+  scans, scan workspaces, findings artifacts, export/track/fix workflows, and
+  cloud GitHub repository scans, with plugin installation, scan starts,
+  findings, evidence, code excerpts, repository/branch/commit identity, report
+  or artifact paths/content, issue/PR payloads, GitHub/cloud/environment
+  identifiers, model/reasoning values, filesystem access, network access,
+  model traffic, mutations, paths, URLs, secrets, raw payloads, and app-server
+  traffic blocked
 - done: read-only Codex Managed configuration catalog in
   `/api/settings-integrations`, exposing only static official Managed
   configuration documentation keys plus local boundary keys/groups/states/

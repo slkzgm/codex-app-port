@@ -846,6 +846,18 @@ URLs, secrets, raw payloads, and app-server traffic. It must not activate
 Chronicle, read screen or memory data, touch local Chronicle directories, start
 background agents, create model traffic, or mutate Chronicle settings.
 
+The same response exposes `codexSecurity` as a static review-only catalog for
+official Codex Security behavior. The UI shows only catalog counts, entry keys,
+groups, state/source chips, and negative redaction chips for local plugin
+scans, scan workspaces, reports, structured artifacts, export/track/fix
+workflows, cloud GitHub repository scans, validation evidence, suggested fixes,
+access, environments, initial backfill, findings review, and threat-model
+editing. It must not install plugins, start local/deep/cloud scans, return
+findings, evidence, code excerpts, repository identity, report/artifact paths
+or content, issue/PR payloads, GitHub/cloud/environment identifiers,
+model/reasoning values, paths, URLs, secrets, raw payloads, create model
+traffic, access files/network, or mutate Codex Security state.
+
 The same response exposes `codexManagedConfiguration` as a static review-only
 catalog for official Codex managed-configuration behavior. The UI shows only
 catalog counts, entry keys, groups, state/source chips, and redaction chips for

@@ -37,6 +37,8 @@ const elements = {
   codexAutoReviewValuesText: document.querySelector("#codex-auto-review-values-text"),
   codexChronicleText: document.querySelector("#codex-chronicle-text"),
   codexChronicleValuesText: document.querySelector("#codex-chronicle-values-text"),
+  codexSecurityText: document.querySelector("#codex-security-text"),
+  codexSecurityValuesText: document.querySelector("#codex-security-values-text"),
   codexGovernanceText: document.querySelector("#codex-governance-text"),
   codexGovernanceValuesText: document.querySelector("#codex-governance-values-text"),
   codexManagedConfigurationText: document.querySelector("#codex-managed-configuration-text"),
@@ -451,6 +453,7 @@ const elements = {
   codexAdminSetupList: document.querySelector("#codex-admin-setup-list"),
   codexAutoReviewList: document.querySelector("#codex-auto-review-list"),
   codexChronicleList: document.querySelector("#codex-chronicle-list"),
+  codexSecurityList: document.querySelector("#codex-security-list"),
   codexGovernanceList: document.querySelector("#codex-governance-list"),
   codexManagedConfigurationList: document.querySelector("#codex-managed-configuration-list"),
   codexEnvironmentVariablesList: document.querySelector("#codex-environment-variables-list"),
@@ -10512,6 +10515,7 @@ function renderSettingsIntegrations(payload) {
   const codexAdminSetup = payload.codexAdminSetup ?? {};
   const codexAutoReview = payload.codexAutoReview ?? {};
   const codexChronicle = payload.codexChronicle ?? {};
+  const codexSecurity = payload.codexSecurity ?? {};
   const codexGovernance = payload.codexGovernance ?? {};
   const codexManagedConfiguration = payload.codexManagedConfiguration ?? {};
   const codexEnvironmentVariables = payload.codexEnvironmentVariables ?? {};
@@ -10723,6 +10727,60 @@ function renderSettingsIntegrations(payload) {
     codexChronicle.secretsReturned ||
     codexChronicle.rawPayloadsReturned ||
     codexChronicle.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexSecurityText.textContent = codexSecurity.returned
+    ? `${codexSecurity.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexSecurity.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexSecurityValuesText.textContent =
+    codexSecurity.availabilityValuesReturned ||
+    codexSecurity.pluginInstallStatesReturned ||
+    codexSecurity.scanPromptsReturned ||
+    codexSecurity.setupWorkspacesReturned ||
+    codexSecurity.repositoryNamesReturned ||
+    codexSecurity.branchNamesReturned ||
+    codexSecurity.commitShasReturned ||
+    codexSecurity.scanAreasReturned ||
+    codexSecurity.threatModelGuidanceReturned ||
+    codexSecurity.findingsReturned ||
+    codexSecurity.findingEvidenceReturned ||
+    codexSecurity.codeExcerptsReturned ||
+    codexSecurity.filePathsReturned ||
+    codexSecurity.reportPathsReturned ||
+    codexSecurity.structuredArtifactPathsReturned ||
+    codexSecurity.structuredArtifactContentsReturned ||
+    codexSecurity.exportArtifactsReturned ||
+    codexSecurity.issuePayloadsReturned ||
+    codexSecurity.destinationsReturned ||
+    codexSecurity.prPayloadsReturned ||
+    codexSecurity.githubOrgsReturned ||
+    codexSecurity.githubReposReturned ||
+    codexSecurity.environmentNamesReturned ||
+    codexSecurity.cloudScanStatesReturned ||
+    codexSecurity.validationOutputsReturned ||
+    codexSecurity.modelNamesReturned ||
+    codexSecurity.reasoningValuesReturned ||
+    codexSecurity.pluginsInstalled ||
+    codexSecurity.scansStarted ||
+    codexSecurity.deepScansStarted ||
+    codexSecurity.cloudScansStarted ||
+    codexSecurity.exportsStarted ||
+    codexSecurity.issueTrackingStarted ||
+    codexSecurity.remediationStarted ||
+    codexSecurity.threatModelsWritten ||
+    codexSecurity.configurationsWritten ||
+    codexSecurity.filesystemReads ||
+    codexSecurity.filesystemWrites ||
+    codexSecurity.networkAccess ||
+    codexSecurity.modelTraffic ||
+    codexSecurity.mutationEnabled ||
+    codexSecurity.pathsReturned ||
+    codexSecurity.urlsReturned ||
+    codexSecurity.secretsReturned ||
+    codexSecurity.rawPayloadsReturned ||
+    codexSecurity.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexGovernanceText.textContent = codexGovernance.returned
@@ -11886,6 +11944,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexAdminSetupCatalog(codexAdminSetup);
   renderCodexAutoReviewCatalog(codexAutoReview);
   renderCodexChronicleCatalog(codexChronicle);
+  renderCodexSecurityCatalog(codexSecurity);
   renderCodexGovernanceCatalog(codexGovernance);
   renderCodexManagedConfigurationCatalog(codexManagedConfiguration);
   renderCodexEnvironmentVariablesCatalog(codexEnvironmentVariables);
@@ -13952,6 +14011,103 @@ function renderCodexChronicleCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexChronicleList.append(row);
+  }
+}
+
+function renderCodexSecurityCatalog(summary) {
+  elements.codexSecurityList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexSecurityList.append(emptyState("No Codex Security catalog returned."));
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "security";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.availabilityValueReturned ? "availability returned" : "availability hidden",
+      entry.pluginInstallStateReturned ? "install state returned" : "install state hidden",
+      entry.scanPromptReturned ? "scan prompts returned" : "scan prompts hidden",
+      entry.setupWorkspaceReturned ? "setup workspace returned" : "setup workspace hidden",
+      entry.repositoryNameReturned ? "repository names returned" : "repository names hidden",
+      entry.branchNameReturned ? "branch names returned" : "branch names hidden",
+      entry.commitShaReturned ? "commit SHAs returned" : "commit SHAs hidden",
+      entry.scanAreaReturned ? "scan area returned" : "scan area hidden",
+      entry.threatModelGuidanceReturned
+        ? "threat model guidance returned"
+        : "threat model guidance hidden",
+      entry.findingReturned ? "findings returned" : "findings hidden",
+      entry.findingEvidenceReturned ? "finding evidence returned" : "finding evidence hidden",
+      entry.codeExcerptReturned ? "code excerpts returned" : "code excerpts hidden",
+      entry.filePathReturned ? "file paths returned" : "file paths hidden",
+      entry.reportPathReturned ? "report paths returned" : "report paths hidden",
+      entry.structuredArtifactPathReturned
+        ? "structured artifact paths returned"
+        : "structured artifact paths hidden",
+      entry.structuredArtifactContentReturned
+        ? "structured artifacts returned"
+        : "structured artifacts hidden",
+      entry.exportArtifactReturned ? "export artifacts returned" : "export artifacts hidden",
+      entry.issuePayloadReturned ? "issue payloads returned" : "issue payloads hidden",
+      entry.destinationReturned ? "destinations returned" : "destinations hidden",
+      entry.prPayloadReturned ? "PR payloads returned" : "PR payloads hidden",
+      entry.githubOrgReturned ? "GitHub orgs returned" : "GitHub orgs hidden",
+      entry.githubRepoReturned ? "GitHub repos returned" : "GitHub repos hidden",
+      entry.environmentNameReturned ? "environment names returned" : "environment names hidden",
+      entry.cloudScanStateReturned ? "cloud scan state returned" : "cloud scan state hidden",
+      entry.validationOutputReturned
+        ? "validation output returned"
+        : "validation output hidden",
+      entry.modelNameReturned ? "model names returned" : "model names hidden",
+      entry.reasoningValueReturned ? "reasoning values returned" : "reasoning values hidden",
+      entry.pluginInstalled ? "plugin installed" : "plugin install blocked",
+      entry.scanStarted ? "scan started" : "scan start blocked",
+      entry.deepScanStarted ? "deep scan started" : "deep scan blocked",
+      entry.cloudScanStarted ? "cloud scan started" : "cloud scan blocked",
+      entry.exportStarted ? "export started" : "export blocked",
+      entry.issueTrackingStarted ? "issue tracking started" : "issue tracking blocked",
+      entry.remediationStarted ? "remediation started" : "remediation blocked",
+      entry.threatModelWritten ? "threat model written" : "threat model writes blocked",
+      entry.configurationWritten ? "configuration written" : "configuration writes blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.modelTraffic ? "model traffic" : "model traffic blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexSecurityList.append(row);
   }
 }
 

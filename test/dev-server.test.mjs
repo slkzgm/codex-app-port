@@ -35770,6 +35770,232 @@ function assertCodexChronicleCatalog(payload) {
   }
 }
 
+function expectedCodexSecurityEntries() {
+  return [
+    ["securityPluginOverview", "plugin-overview", "catalog-only", "official-codex-security-docs"],
+    ["authorizedCodeAssessment", "plugin-overview", "catalog-only", "official-codex-security-docs"],
+    ["localPluginInstallFlow", "plugin-setup", "catalog-only", "official-codex-security-docs"],
+    ["newThreadPluginLoad", "plugin-setup", "catalog-only", "official-codex-security-docs"],
+    ["firstScanPrompt", "local-scan", "catalog-only", "official-codex-security-docs"],
+    ["setupWorkspaceConfirmation", "local-scan", "catalog-only", "official-codex-security-docs"],
+    ["codebaseScanType", "local-scan", "catalog-only", "official-codex-security-docs"],
+    ["scanAreaEntireCodebase", "local-scan", "catalog-only", "official-codex-security-docs"],
+    ["threatModelGuidance", "scan-context", "catalog-only", "official-codex-security-docs"],
+    ["scanCompletionWorkspace", "scan-results", "catalog-only", "official-codex-security-docs"],
+    ["generatedReportArtifact", "scan-results", "catalog-only", "official-codex-security-docs"],
+    ["structuredScanDataArtifacts", "scan-results", "catalog-only", "official-codex-security-docs"],
+    ["standardScopedScanWorkflow", "plugin-workflows", "catalog-only", "official-codex-security-docs"],
+    ["deepScanWorkflow", "plugin-workflows", "catalog-only", "official-codex-security-docs"],
+    ["codeChangesReviewWorkflow", "plugin-workflows", "catalog-only", "official-codex-security-docs"],
+    ["backlogTriageWorkflow", "plugin-workflows", "catalog-only", "official-codex-security-docs"],
+    ["fixVerifyWorkflow", "plugin-workflows", "catalog-only", "official-codex-security-docs"],
+    ["exportTrackWorkflow", "plugin-workflows", "catalog-only", "official-codex-security-docs"],
+    ["cliPluginInstallFlow", "plugin-setup", "catalog-only", "official-codex-security-docs"],
+    ["cloudResearchPreview", "security-cloud", "catalog-only", "official-codex-security-docs"],
+    ["cloudConnectedGithubRepositories", "security-cloud", "catalog-only", "official-codex-security-docs"],
+    ["cloudCommitByCommitScanning", "security-cloud", "catalog-only", "official-codex-security-docs"],
+    ["cloudThreatModelContext", "security-cloud", "catalog-only", "official-codex-security-docs"],
+    ["cloudValidationEvidence", "security-cloud", "catalog-only", "official-codex-security-docs"],
+    ["cloudSuggestedFixes", "security-cloud", "catalog-only", "official-codex-security-docs"],
+    ["cloudAccessPlans", "security-cloud", "catalog-only", "official-codex-security-docs"],
+    ["cloudEnvironmentPrerequisite", "security-cloud", "catalog-only", "official-codex-security-docs"],
+    ["cloudInitialBackfill", "security-cloud", "catalog-only", "official-codex-security-docs"],
+    ["cloudFindingsReview", "security-cloud", "catalog-only", "official-codex-security-docs"],
+    ["cloudThreatModelEditing", "security-cloud", "catalog-only", "official-codex-security-docs"],
+    ["pluginInstallBoundary", "plugin-setup", "blocked", "local-security-boundary"],
+    ["localScanStartBoundary", "local-scan", "blocked", "local-security-boundary"],
+    ["scanWorkspaceBoundary", "scan-results", "blocked", "local-security-boundary"],
+    ["repositoryIdentityBoundary", "repository-data", "blocked", "local-security-boundary"],
+    ["filePathBoundary", "repository-data", "blocked", "local-security-boundary"],
+    ["codeExcerptBoundary", "repository-data", "blocked", "local-security-boundary"],
+    ["findingContentBoundary", "scan-results", "blocked", "local-security-boundary"],
+    ["scanArtifactBoundary", "scan-results", "blocked", "local-security-boundary"],
+    ["threatModelContentBoundary", "scan-context", "blocked", "local-security-boundary"],
+    ["cloudEnvironmentBoundary", "security-cloud", "blocked", "local-security-boundary"],
+    ["githubRepositoryBoundary", "security-cloud", "blocked", "local-security-boundary"],
+    ["cloudScanBoundary", "security-cloud", "blocked", "local-security-boundary"],
+    ["exportArtifactBoundary", "exports", "blocked", "local-security-boundary"],
+    ["issueTrackingBoundary", "tracking", "blocked", "local-security-boundary"],
+    ["remediationPrBoundary", "remediation", "blocked", "local-security-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexSecurityCatalog(payload) {
+  const catalog = payload.codexSecurity;
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-security-docs");
+  assert.equal(catalog.entryCount, 45);
+  assert.equal(catalog.officialEntryCount, 30);
+  assert.equal(catalog.localBoundaryEntryCount, 15);
+  assert.equal(catalog.catalogOnlyEntryCount, 30);
+  assert.equal(catalog.blockedEntryCount, 15);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({ key, group, state, source })),
+    expectedCodexSecurityEntries(),
+  );
+
+  const entryRedactionFlags = [
+    "availabilityValueReturned",
+    "pluginInstallStateReturned",
+    "scanPromptReturned",
+    "setupWorkspaceReturned",
+    "repositoryNameReturned",
+    "branchNameReturned",
+    "commitShaReturned",
+    "scanAreaReturned",
+    "threatModelGuidanceReturned",
+    "findingReturned",
+    "findingEvidenceReturned",
+    "codeExcerptReturned",
+    "filePathReturned",
+    "reportPathReturned",
+    "structuredArtifactPathReturned",
+    "structuredArtifactContentReturned",
+    "exportArtifactReturned",
+    "issuePayloadReturned",
+    "destinationReturned",
+    "prPayloadReturned",
+    "githubOrgReturned",
+    "githubRepoReturned",
+    "environmentNameReturned",
+    "cloudScanStateReturned",
+    "validationOutputReturned",
+    "modelNameReturned",
+    "reasoningValueReturned",
+    "pluginInstalled",
+    "scanStarted",
+    "deepScanStarted",
+    "cloudScanStarted",
+    "exportStarted",
+    "issueTrackingStarted",
+    "remediationStarted",
+    "threatModelWritten",
+    "configurationWritten",
+    "filesystemRead",
+    "filesystemWrite",
+    "networkAccess",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.securityCatalogReturned, true);
+  for (const flag of [
+    "availabilityValuesReturned",
+    "pluginInstallStatesReturned",
+    "scanPromptsReturned",
+    "setupWorkspacesReturned",
+    "repositoryNamesReturned",
+    "branchNamesReturned",
+    "commitShasReturned",
+    "scanAreasReturned",
+    "threatModelGuidanceReturned",
+    "findingsReturned",
+    "findingEvidenceReturned",
+    "codeExcerptsReturned",
+    "filePathsReturned",
+    "reportPathsReturned",
+    "structuredArtifactPathsReturned",
+    "structuredArtifactContentsReturned",
+    "exportArtifactsReturned",
+    "issuePayloadsReturned",
+    "destinationsReturned",
+    "prPayloadsReturned",
+    "githubOrgsReturned",
+    "githubReposReturned",
+    "environmentNamesReturned",
+    "cloudScanStatesReturned",
+    "validationOutputsReturned",
+    "modelNamesReturned",
+    "reasoningValuesReturned",
+    "pluginsInstalled",
+    "scansStarted",
+    "deepScansStarted",
+    "cloudScansStarted",
+    "exportsStarted",
+    "issueTrackingStarted",
+    "remediationStarted",
+    "threatModelsWritten",
+    "configurationsWritten",
+    "filesystemReads",
+    "filesystemWrites",
+    "networkAccess",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexSecurityReturned", true],
+    ["codexSecurityValuesReturned", false],
+    ["codexSecurityAvailabilityValuesReturned", false],
+    ["codexSecurityPluginInstallStatesReturned", false],
+    ["codexSecurityScanPromptsReturned", false],
+    ["codexSecuritySetupWorkspacesReturned", false],
+    ["codexSecurityRepositoryNamesReturned", false],
+    ["codexSecurityBranchNamesReturned", false],
+    ["codexSecurityCommitShasReturned", false],
+    ["codexSecurityScanAreasReturned", false],
+    ["codexSecurityThreatModelGuidanceReturned", false],
+    ["codexSecurityFindingsReturned", false],
+    ["codexSecurityFindingEvidenceReturned", false],
+    ["codexSecurityCodeExcerptsReturned", false],
+    ["codexSecurityFilePathsReturned", false],
+    ["codexSecurityReportPathsReturned", false],
+    ["codexSecurityStructuredArtifactPathsReturned", false],
+    ["codexSecurityStructuredArtifactContentsReturned", false],
+    ["codexSecurityExportArtifactsReturned", false],
+    ["codexSecurityIssuePayloadsReturned", false],
+    ["codexSecurityDestinationsReturned", false],
+    ["codexSecurityPrPayloadsReturned", false],
+    ["codexSecurityGithubOrgsReturned", false],
+    ["codexSecurityGithubReposReturned", false],
+    ["codexSecurityEnvironmentNamesReturned", false],
+    ["codexSecurityCloudScanStatesReturned", false],
+    ["codexSecurityValidationOutputsReturned", false],
+    ["codexSecurityModelNamesReturned", false],
+    ["codexSecurityReasoningValuesReturned", false],
+    ["codexSecurityPluginInstallEnabled", false],
+    ["codexSecurityScanStartEnabled", false],
+    ["codexSecurityDeepScanStartEnabled", false],
+    ["codexSecurityCloudScanStartEnabled", false],
+    ["codexSecurityExportStartEnabled", false],
+    ["codexSecurityIssueTrackingEnabled", false],
+    ["codexSecurityRemediationEnabled", false],
+    ["codexSecurityThreatModelWriteEnabled", false],
+    ["codexSecurityConfigurationWriteEnabled", false],
+    ["codexSecurityFilesystemAccess", false],
+    ["codexSecurityNetworkAccess", false],
+    ["codexSecurityModelTraffic", false],
+    ["codexSecurityMutationsEnabled", false],
+    ["codexSecurityPathsReturned", false],
+    ["codexSecurityUrlsReturned", false],
+    ["codexSecuritySecretsReturned", false],
+    ["codexSecurityRawPayloadsReturned", false],
+    ["codexSecurityAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexGovernanceEntries() {
   return [
     ["governanceVisibilityAuditability", "overview", "catalog-only", "official-codex-governance-docs"],
@@ -40115,6 +40341,7 @@ function assertCodexAppSettingsParity(
   assertCodexAdminSetupCatalog(payload);
   assertCodexAutoReviewCatalog(payload);
   assertCodexChronicleCatalog(payload);
+  assertCodexSecurityCatalog(payload);
   assertCodexGovernanceCatalog(payload);
   assertCodexManagedConfigurationCatalog(payload);
   assertCodexEnvironmentVariablesCatalog(payload);
