@@ -696,13 +696,15 @@
   keys plus local boundary keys, groups, states, sources, counts, and redaction
   flags; it must not return platform values, Windows versions, sandbox modes,
   private desktop values, managed policy content, config values, command text,
-  WSL distributions, WSL paths, Windows paths, repository paths, VS Code state,
-  winget state, administrator state, firewall state, user accounts, install
-  state, paths, URLs, secrets, raw payloads, app-server payloads, or app-server
-  traffic, and must not configure sandboxes, change private desktop settings,
-  write managed policy, modify firewall or sandbox users, install WSL, invoke
-  winget, open VS Code, execute commands, access filesystem or network, or
-  mutate Windows/WSL state. Its
+  Store URLs, default editor or terminal settings, developer tool state, GitHub
+  auth state, PowerShell policy values, settings directory paths, WSL distributions,
+  WSL paths, Windows paths, repository paths, VS Code state, winget state,
+  administrator state, firewall state, user accounts, install state, paths,
+  URLs, secrets, raw payloads, app-server payloads, or app-server traffic, and
+  must not configure sandboxes, change private desktop settings, write managed
+  policy, modify firewall or sandbox users, install WSL, invoke winget, launch
+  the Store, open VS Code, start GitHub auth, sync the settings directory,
+  execute commands, access filesystem or network, or mutate Windows/WSL state. Its
   Codex Managed configuration catalog may expose only static
   official-documentation keys plus local boundary keys, groups, states,
   sources, counts, and redaction flags; it must not return requirement names or

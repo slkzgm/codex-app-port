@@ -11315,6 +11315,13 @@ function renderSettingsIntegrations(payload) {
     codexWindowsPlatform.managedPoliciesReturned ||
     codexWindowsPlatform.configValuesReturned ||
     codexWindowsPlatform.commandTextsReturned ||
+    codexWindowsPlatform.storeUrlsReturned ||
+    codexWindowsPlatform.defaultEditorsReturned ||
+    codexWindowsPlatform.defaultTerminalsReturned ||
+    codexWindowsPlatform.developerToolStatesReturned ||
+    codexWindowsPlatform.githubAuthStatesReturned ||
+    codexWindowsPlatform.powershellPoliciesReturned ||
+    codexWindowsPlatform.settingsDirectoryPathsReturned ||
     codexWindowsPlatform.wslDistributionsReturned ||
     codexWindowsPlatform.wslPathsReturned ||
     codexWindowsPlatform.windowsPathsReturned ||
@@ -11333,6 +11340,9 @@ function renderSettingsIntegrations(payload) {
     codexWindowsPlatform.wslInstallsStarted ||
     codexWindowsPlatform.wingetInvocationsStarted ||
     codexWindowsPlatform.vscodeOpensStarted ||
+    codexWindowsPlatform.storeLaunchesStarted ||
+    codexWindowsPlatform.githubAuthLoginsStarted ||
+    codexWindowsPlatform.settingsDirectorySyncsStarted ||
     codexWindowsPlatform.commandsExecuted ||
     codexWindowsPlatform.filesystemReads ||
     codexWindowsPlatform.filesystemWrites ||
@@ -16417,6 +16427,19 @@ function renderCodexWindowsPlatformCatalog(summary) {
       entry.managedPolicyReturned ? "managed policies returned" : "managed policies hidden",
       entry.configValueReturned ? "config values returned" : "config values hidden",
       entry.commandTextReturned ? "command text returned" : "command text hidden",
+      entry.storeUrlReturned ? "Store URLs returned" : "Store URLs hidden",
+      entry.defaultEditorReturned ? "default editors returned" : "default editors hidden",
+      entry.defaultTerminalReturned ? "default terminals returned" : "default terminals hidden",
+      entry.developerToolStateReturned
+        ? "developer tool state returned"
+        : "developer tool state hidden",
+      entry.githubAuthStateReturned ? "GitHub auth state returned" : "GitHub auth state hidden",
+      entry.powershellPolicyReturned
+        ? "PowerShell policies returned"
+        : "PowerShell policies hidden",
+      entry.settingsDirectoryPathReturned
+        ? "settings directory paths returned"
+        : "settings directory paths hidden",
       entry.wslDistributionReturned ? "WSL distributions returned" : "WSL distributions hidden",
       entry.wslPathReturned ? "WSL paths returned" : "WSL paths hidden",
       entry.windowsPathReturned ? "Windows paths returned" : "Windows paths hidden",
@@ -16435,6 +16458,11 @@ function renderCodexWindowsPlatformCatalog(summary) {
       entry.wslInstalled ? "WSL installed" : "WSL install blocked",
       entry.wingetInvoked ? "winget invoked" : "winget blocked",
       entry.vscodeOpened ? "VS Code opened" : "VS Code open blocked",
+      entry.storeLaunchStarted ? "Store launch started" : "Store launch blocked",
+      entry.githubAuthLoginStarted ? "GitHub auth login started" : "GitHub auth login blocked",
+      entry.settingsDirectorySyncStarted
+        ? "settings directory sync started"
+        : "settings directory sync blocked",
       entry.commandExecuted ? "command executed" : "command execution blocked",
       entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
       entry.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
