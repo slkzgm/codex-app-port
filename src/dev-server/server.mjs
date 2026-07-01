@@ -47767,6 +47767,24 @@ const CODEX_REMOTE_CONNECTIONS_CATALOG = Object.freeze([
     source: "official-codex-remote-connections-docs",
   },
   {
+    key: "hostAwakeOnlineSignedInRequirement",
+    group: "setup",
+    state: "catalog-only",
+    source: "official-codex-remote-connections-docs",
+  },
+  {
+    key: "mobileSetupNotCliIde",
+    group: "setup",
+    state: "catalog-only",
+    source: "official-codex-remote-connections-docs",
+  },
+  {
+    key: "mfaSsoPasskeyRequirement",
+    group: "setup",
+    state: "catalog-only",
+    source: "official-codex-remote-connections-docs",
+  },
+  {
     key: "workspaceAdminRemoteControl",
     group: "managed-policy",
     state: "catalog-only",
@@ -47853,6 +47871,24 @@ const CODEX_REMOTE_CONNECTIONS_CATALOG = Object.freeze([
   {
     key: "connectedHostSandboxApprovals",
     group: "security",
+    state: "catalog-only",
+    source: "official-codex-remote-connections-docs",
+  },
+  {
+    key: "phonePromptsApprovalsFollowups",
+    group: "host-environment",
+    state: "catalog-only",
+    source: "official-codex-remote-connections-docs",
+  },
+  {
+    key: "hostSignedInWebsitesDesktopApps",
+    group: "host-environment",
+    state: "catalog-only",
+    source: "official-codex-remote-connections-docs",
+  },
+  {
+    key: "remoteHostDependenciesSecurityCompute",
+    group: "host-environment",
     state: "catalog-only",
     source: "official-codex-remote-connections-docs",
   },

@@ -44567,6 +44567,14 @@ function expectedCodexRemoteConnectionsEntries() {
     ["mobileAppRequirement", "setup", "catalog-only", "official-codex-remote-connections-docs"],
     ["codexAppHostRequirement", "setup", "catalog-only", "official-codex-remote-connections-docs"],
     [
+      "hostAwakeOnlineSignedInRequirement",
+      "setup",
+      "catalog-only",
+      "official-codex-remote-connections-docs",
+    ],
+    ["mobileSetupNotCliIde", "setup", "catalog-only", "official-codex-remote-connections-docs"],
+    ["mfaSsoPasskeyRequirement", "setup", "catalog-only", "official-codex-remote-connections-docs"],
+    [
       "workspaceAdminRemoteControl",
       "managed-policy",
       "catalog-only",
@@ -44641,6 +44649,24 @@ function expectedCodexRemoteConnectionsEntries() {
       "catalog-only",
       "official-codex-remote-connections-docs",
     ],
+    [
+      "phonePromptsApprovalsFollowups",
+      "host-environment",
+      "catalog-only",
+      "official-codex-remote-connections-docs",
+    ],
+    [
+      "hostSignedInWebsitesDesktopApps",
+      "host-environment",
+      "catalog-only",
+      "official-codex-remote-connections-docs",
+    ],
+    [
+      "remoteHostDependenciesSecurityCompute",
+      "host-environment",
+      "catalog-only",
+      "official-codex-remote-connections-docs",
+    ],
     ["secureRelayLayer", "security", "catalog-only", "official-codex-remote-connections-docs"],
     [
       "multiDeviceContinuation",
@@ -44690,10 +44716,10 @@ function assertCodexRemoteConnectionsCatalog(payload) {
   assert.equal(catalog?.returned, true);
   assert.equal(catalog.state, "partial");
   assert.equal(catalog.officialSource, "official-codex-remote-connections-docs");
-  assert.equal(catalog.entryCount, 47);
-  assert.equal(catalog.officialEntryCount, 33);
+  assert.equal(catalog.entryCount, 53);
+  assert.equal(catalog.officialEntryCount, 39);
   assert.equal(catalog.localBoundaryEntryCount, 14);
-  assert.equal(catalog.catalogOnlyEntryCount, 33);
+  assert.equal(catalog.catalogOnlyEntryCount, 39);
   assert.equal(catalog.blockedEntryCount, 14);
   assert.equal(catalog.enabledEntryCount, 0);
   assert.deepEqual(

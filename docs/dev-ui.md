@@ -1457,11 +1457,15 @@ catalog for official Codex Remote connections. The UI shows only catalog
 counts, entry keys, groups, state/source chips, and redaction chips for mobile
 and multi-device remote access, connected-host environment inheritance, remote
 thread/follow-up/approval/review/notification workflows, host/platform
-availability, same-account/workspace setup, admin policy, QR pairing flow,
-Settings > Connections management, keep-awake/Computer Use/Chrome options,
-laptop/always-on/SSH host choices, connected-host projects/plugins/MCP/skills
-and sandbox approvals, secure relay, SSH alias discovery, OpenSSH resolution,
-remote app-server startup, and SSH security expectations. It does not show host
+availability, same-account/workspace setup, host awake/online/signed-in and
+MFA/SSO/passkey setup requirements, CLI/IDE setup limits, admin policy, QR
+pairing flow, Settings > Connections management, keep-awake/Computer
+Use/Chrome options, laptop/always-on/SSH host choices, connected-host
+projects/plugins/MCP/skills and sandbox approvals, phone-sent
+prompt/approval/follow-up routing, host website/desktop-app availability,
+remote-host dependencies/security/compute guidance, secure relay, SSH alias
+discovery, OpenSSH resolution, remote app-server startup, and SSH security
+expectations. It does not show host
 names or ids, device names or ids, QR codes, pairing codes, relay endpoints,
 remote status values, SSH config, SSH aliases or commands, remote project
 paths, remote filesystem content, remote shell output, credentials, plugin/MCP

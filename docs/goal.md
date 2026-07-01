@@ -867,13 +867,16 @@ Target parity with the Codex desktop workflow:
   It returns only static keys, groups, states, sources, counts, and redaction
   flags for mobile and multi-device remote access, connected-host environment
   inheritance, remote thread/follow-up/approval/review/notification workflows,
-  host/platform availability, same-account/workspace setup, admin policy, QR
-  pairing flow, Settings > Connections management, keep-awake/Computer
-  Use/Chrome options, laptop/always-on/SSH host choices, connected-host
-  projects/plugins/MCP/skills and sandbox approvals, secure relay, SSH alias
-  discovery, OpenSSH resolution, remote app-server startup, and SSH security
-  expectations. It does not return host names or ids, device names or ids, QR
-  codes, pairing codes, relay endpoints, remote status values, SSH config,
+  host/platform availability, same-account/workspace setup,
+  host awake/online/signed-in and MFA/SSO/passkey setup requirements, CLI/IDE
+  setup limits, admin policy, QR pairing flow, Settings > Connections
+  management, keep-awake/Computer Use/Chrome options, laptop/always-on/SSH host
+  choices, connected-host projects/plugins/MCP/skills and sandbox approvals,
+  phone-sent prompt/approval/follow-up routing, host website/desktop-app
+  availability, remote-host dependencies/security/compute guidance, secure
+  relay, SSH alias discovery, OpenSSH resolution, remote app-server startup,
+  and SSH security expectations. It does not return host names or ids, device
+  names or ids, QR codes, pairing codes, relay endpoints, remote status values, SSH config,
   aliases or commands, remote project paths, remote filesystem content, remote
   shell output, credentials, plugin/MCP server/skill names, browser or Computer
   Use state, approval details, notification payloads, screenshots, terminal

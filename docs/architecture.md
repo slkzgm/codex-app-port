@@ -1208,13 +1208,16 @@ Current M1 status:
   local boundary keys/groups/states/sources/counts/redaction flags for mobile
   and multi-device remote access, connected-host environment inheritance,
   remote thread/follow-up/approval/review/notification workflows,
-  host/platform availability, same-account/workspace setup, admin policy, QR
-  pairing flow, Settings > Connections management, keep-awake/Computer
-  Use/Chrome options, laptop/always-on/SSH host choices, connected-host
-  projects/plugins/MCP/skills and sandbox approvals, secure relay, SSH alias
-  discovery, OpenSSH resolution, remote app-server startup, and SSH security
-  expectations, with host names/ids, device names/ids, QR codes, pairing codes,
-  relay endpoints, remote status values, SSH config/aliases/commands, remote
+  host/platform availability, same-account/workspace setup,
+  host awake/online/signed-in and MFA/SSO/passkey setup requirements, CLI/IDE
+  setup limits, admin policy, QR pairing flow, Settings > Connections
+  management, keep-awake/Computer Use/Chrome options, laptop/always-on/SSH host
+  choices, connected-host projects/plugins/MCP/skills and sandbox approvals,
+  phone-sent prompt/approval/follow-up routing, host website/desktop-app
+  availability, remote-host dependencies/security/compute guidance, secure
+  relay, SSH alias discovery, OpenSSH resolution, remote app-server startup,
+  and SSH security expectations, with host names/ids, device names/ids, QR
+  codes, pairing codes, relay endpoints, remote status values, SSH config/aliases/commands, remote
   project paths, remote filesystem content, remote shell output, credentials,
   plugin/MCP server/skill names, browser/Computer Use states, approval details,
   notification payloads, screenshots, terminal output, setting values, host
