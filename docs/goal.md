@@ -131,9 +131,11 @@ Target parity with the Codex desktop workflow:
   catalog aligned to the official Skills and Plugins documentation. It returns
   only static keys, groups, states, sources, counts, and redaction flags for
   skills progressive disclosure, skill scope locations, skill enablement
-  config, optional skill app metadata, plugin directory browsing, bundled
-  skills/apps/MCP capabilities, plugin permissions/data-sharing, plugin
-  disable config, and local install/share/marketplace/preflight plus opt-in
+  config, optional skill app metadata, plugin overview, app and CLI directory
+  browsing, marketplace sharing, install/auth timing, new-thread usage,
+  direct-task and `@` invocation flows, bundled skills/apps/MCP setup,
+  external app data terms, uninstall semantics, plugin disable config, plugin
+  guide references, and local install/share/marketplace/preflight plus opt-in
   read/uninstall/enablement/share-checkout/skills-config boundaries. It does
   not return skill names, descriptions, paths, content, scripts, metadata,
   dependency tools, plugin names, ids, paths, URLs, descriptions, manifests,

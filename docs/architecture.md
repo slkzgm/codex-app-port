@@ -537,7 +537,10 @@ Current M1 status:
   exposing only static official Skills/Plugins documentation keys plus local
   preflight boundary keys/groups/states/sources/counts/redaction flags for
   progressive disclosure, scope locations, enablement config, optional app
-  metadata, plugin directory/capabilities/permissions/disable config, and
+  metadata, plugin overview, app and CLI directory browsing, marketplace
+  sharing, install/auth timing, new-thread usage, direct-task and `@`
+  invocation flows, bundled skills/apps/MCP setup, external app data terms,
+  uninstall semantics, plugin disable config, plugin guide references, and
   install/share/marketplace/read/uninstall/enablement/share-checkout/skills
   config boundaries, with skill names/descriptions/paths/content/scripts/
   metadata, dependency tools, plugin names/ids/paths/URLs/descriptions/

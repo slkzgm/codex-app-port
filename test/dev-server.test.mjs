@@ -34969,8 +34969,62 @@ function expectedSkillsPluginsCatalogEntries(scope = {}) {
       source: "official-codex-plugins-docs",
     },
     {
+      key: "pluginOverviewReusableWorkflows",
+      group: "plugin-overview",
+      state: "catalog-only",
+      source: "official-codex-plugins-docs",
+    },
+    {
       key: "pluginBundledCapabilities",
       group: "plugin-capabilities",
+      state: "catalog-only",
+      source: "official-codex-plugins-docs",
+    },
+    {
+      key: "pluginMarketplaceSharing",
+      group: "plugin-sharing",
+      state: "catalog-only",
+      source: "official-codex-plugins-docs",
+    },
+    {
+      key: "pluginAppDirectoryCategories",
+      group: "plugin-directory",
+      state: "catalog-only",
+      source: "official-codex-plugins-docs",
+    },
+    {
+      key: "pluginCliMarketplaceTabs",
+      group: "plugin-directory",
+      state: "catalog-only",
+      source: "official-codex-plugins-docs",
+    },
+    {
+      key: "pluginDetailInstallFlow",
+      group: "plugin-lifecycle",
+      state: "catalog-only",
+      source: "official-codex-plugins-docs",
+    },
+    {
+      key: "pluginExternalAppAuthTiming",
+      group: "plugin-auth",
+      state: "catalog-only",
+      source: "official-codex-plugins-docs",
+    },
+    {
+      key: "pluginNewThreadAfterInstall",
+      group: "plugin-usage",
+      state: "catalog-only",
+      source: "official-codex-plugins-docs",
+    },
+    {
+      key: "pluginPromptDirectTask",
+      group: "plugin-usage",
+      state: "catalog-only",
+      source: "official-codex-plugins-docs",
+    },
+    {
+      key: "pluginAtInvocation",
+      group: "plugin-usage",
       state: "catalog-only",
       source: "official-codex-plugins-docs",
     },
@@ -34981,8 +35035,56 @@ function expectedSkillsPluginsCatalogEntries(scope = {}) {
       source: "official-codex-plugins-docs",
     },
     {
+      key: "pluginBundledSkillsImmediate",
+      group: "plugin-capabilities",
+      state: "catalog-only",
+      source: "official-codex-plugins-docs",
+    },
+    {
+      key: "pluginBundledAppsSetup",
+      group: "plugin-capabilities",
+      state: "catalog-only",
+      source: "official-codex-plugins-docs",
+    },
+    {
+      key: "pluginBundledMcpSetup",
+      group: "plugin-capabilities",
+      state: "catalog-only",
+      source: "official-codex-plugins-docs",
+    },
+    {
+      key: "pluginExternalAppTerms",
+      group: "plugin-safety",
+      state: "catalog-only",
+      source: "official-codex-plugins-docs",
+    },
+    {
+      key: "pluginUninstallKeepsBundledApps",
+      group: "plugin-lifecycle",
+      state: "catalog-only",
+      source: "official-codex-plugins-docs",
+    },
+    {
       key: "pluginDisableConfig",
       group: "plugin-config",
+      state: "catalog-only",
+      source: "official-codex-plugins-docs",
+    },
+    {
+      key: "pluginBuildOwnReference",
+      group: "plugin-build-reference",
+      state: "catalog-only",
+      source: "official-codex-plugins-docs",
+    },
+    {
+      key: "pluginGuidesRecordReplay",
+      group: "plugin-guides",
+      state: "catalog-only",
+      source: "official-codex-plugins-docs",
+    },
+    {
+      key: "pluginGuidesSecurity",
+      group: "plugin-guides",
       state: "catalog-only",
       source: "official-codex-plugins-docs",
     },
@@ -35061,8 +35163,8 @@ function assertSkillsPluginsCatalog(payload) {
   const countState = (state) => expectedEntries.filter((entry) => entry.state === state).length;
   assert.equal(catalog?.returned, true);
   assert.equal(catalog.state, "partial");
-  assert.equal(catalog.settingCount, 18);
-  assert.equal(catalog.officialSettingCount, 8);
+  assert.equal(catalog.settingCount, 35);
+  assert.equal(catalog.officialSettingCount, 25);
   assert.equal(catalog.localBoundarySettingCount, 10);
   assert.equal(catalog.catalogOnlySettingCount, countState("catalog-only"));
   assert.equal(catalog.preflightOnlySettingCount, countState("preflight-only"));

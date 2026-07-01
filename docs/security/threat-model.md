@@ -449,7 +449,12 @@
   commands, share links or principals, setting values, secrets, raw payloads,
   app-server payloads, or app-server traffic, and must not materialize external
   code, install or uninstall plugins, write plugin enablement, write skill
-  config, clear extra roots, mutate sharing, or mutate marketplaces. Its
+  config, clear extra roots, mutate sharing, or mutate marketplaces. Static
+  plugin coverage may include only documentation keys for overview, app and
+  CLI directory browsing, marketplace sharing, install/auth timing,
+  new-thread usage, direct-task and `@` invocation, bundled skills/apps/MCP
+  setup, external app data terms, uninstall semantics, disable config, and
+  plugin guide references. Its
   Codex Sites catalog may expose only static official-documentation keys plus
   local boundary keys, groups, states, sources, counts, and redaction flags; it
   must not return Sites projects, project ids, `.openai/hosting.json`, storage

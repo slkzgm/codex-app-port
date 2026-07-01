@@ -774,10 +774,12 @@ URLs, raw payloads, and app-server traffic remain blocked.
 The same Settings & Integrations response also exposes `skillsPluginsCatalog`
 as a static review-only Skills & Plugins catalog. The UI shows only catalog
 counts, setting keys, groups, state/source chips, and redaction chips for
-official Skills runtime/discovery/config metadata, official Plugin directory/
-capability/permission/disable surfaces, and local preflight boundaries for
-plugin install/share/marketplace/read/content/uninstall/enablement/share
-checkout plus skills config/extra-roots writes. It does not show skill names,
+official Skills runtime/discovery/config metadata, official Plugin overview,
+app and CLI directory, marketplace sharing, install/auth timing, usage,
+permission/data-sharing, uninstall/disable, and guide-reference surfaces, plus
+local preflight boundaries for plugin install/share/marketplace/read/content/
+uninstall/enablement/share checkout and skills config/extra-roots writes. It
+does not show skill names,
 descriptions, paths, content, scripts, metadata, dependency tools, plugin
 names, ids, paths, URLs, descriptions, manifests, default prompts,
 screenshots, marketplace names or sources, app names, MCP server names, hook
