@@ -244,16 +244,19 @@ test("runIntegrationsInventoryProbe returns counts without integration secrets",
     assert.equal(inventory.mcp.serverCount, 1);
     assert.equal(inventory.mcp.toolCount, 1);
     assert.equal(inventory.skills.skillCount, 1);
-    assert.equal(inventory.plugins.marketplaceCount, 2);
+    assert.equal(inventory.plugins.marketplaceCount, 1);
     assert.equal(inventory.plugins.localMarketplaceCount, 1);
-    assert.equal(inventory.plugins.remoteMarketplaceCount, 1);
-    assert.equal(inventory.plugins.marketplaceDisplayNameCount, 2);
-    assert.equal(inventory.plugins.pluginCount, 2);
-    assert.deepEqual(inventory.plugins.sourceTypeCounts, { local: 1, remote: 1 });
-    assert.deepEqual(inventory.plugins.installPolicyCounts, { AVAILABLE: 1, NOT_AVAILABLE: 1 });
-    assert.deepEqual(inventory.plugins.authPolicyCounts, { ON_USE: 1, ON_INSTALL: 1 });
+    assert.equal(inventory.plugins.remoteMarketplaceCount, 0);
+    assert.equal(inventory.plugins.marketplaceDisplayNameCount, 1);
+    assert.equal(inventory.plugins.pluginCount, 1);
+    assert.deepEqual(inventory.plugins.sourceTypeCounts, { local: 1 });
+    assert.deepEqual(inventory.plugins.installPolicyCounts, { AVAILABLE: 1 });
+    assert.deepEqual(inventory.plugins.authPolicyCounts, { ON_USE: 1 });
+    assert.equal(inventory.plugins.remotePluginCatalogRequested, false);
+    assert.equal(inventory.plugins.requestedMarketplaceKindCount, 2);
     assert.equal(inventory.plugins.marketplaceNamesReturned, false);
     assert.equal(inventory.plugins.marketplaceDisplayNamesReturned, false);
+    assert.equal(inventory.plugins.marketplaceKindsReturned, false);
     assert.equal(inventory.installedPlugins.pluginCount, 1);
     assert.equal(inventory.installedPlugins.localMarketplaceCount, 1);
     assert.equal(inventory.installedPlugins.remoteMarketplaceCount, 0);
@@ -408,6 +411,54 @@ test("runIntegrationsInventoryProbe returns counts without integration secrets",
       "cat /tmp",
       "codexHome",
       "userAgent",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    if (previous === undefined) {
+      delete process.env.CODEX_APP_PORT_ALLOW_INTEGRATION_INVENTORY;
+    } else {
+      process.env.CODEX_APP_PORT_ALLOW_INTEGRATION_INVENTORY = previous;
+    }
+  }
+});
+
+test("runIntegrationsInventoryProbe can opt into remote plugin catalog counts", async () => {
+  const previous = process.env.CODEX_APP_PORT_ALLOW_INTEGRATION_INVENTORY;
+  process.env.CODEX_APP_PORT_ALLOW_INTEGRATION_INVENTORY = "1";
+  try {
+    const summary = await runIntegrationsInventoryProbe({
+      codexBin: process.execPath,
+      codexArgs: [mockServer.pathname],
+      cwd: process.cwd(),
+      timeoutMs: 1_000,
+      includeRemotePluginCatalog: true,
+    });
+
+    const inventory = summary.probes.integrationsInventory;
+    assert.equal(inventory.plugins.marketplaceCount, 2);
+    assert.equal(inventory.plugins.localMarketplaceCount, 1);
+    assert.equal(inventory.plugins.remoteMarketplaceCount, 1);
+    assert.equal(inventory.plugins.marketplaceDisplayNameCount, 2);
+    assert.equal(inventory.plugins.pluginCount, 2);
+    assert.deepEqual(inventory.plugins.sourceTypeCounts, { local: 1, remote: 1 });
+    assert.deepEqual(inventory.plugins.installPolicyCounts, { AVAILABLE: 1, NOT_AVAILABLE: 1 });
+    assert.deepEqual(inventory.plugins.authPolicyCounts, { ON_USE: 1, ON_INSTALL: 1 });
+    assert.equal(inventory.plugins.remotePluginCatalogRequested, true);
+    assert.equal(inventory.plugins.requestedMarketplaceKindCount, 5);
+    assert.equal(inventory.plugins.marketplaceNamesReturned, false);
+    assert.equal(inventory.plugins.marketplaceDisplayNamesReturned, false);
+    assert.equal(inventory.plugins.marketplaceKindsReturned, false);
+
+    const serialized = JSON.stringify(summary);
+    for (const marker of [
+      "private-remote-marketplace",
+      "private remote marketplace",
+      "private-remote-plugin-id",
+      "https://example.test/private-remote-plugin",
+      "vertical",
+      "shared-with-me",
+      "created-by-me-remote",
     ]) {
       assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
     }
@@ -628,12 +679,11 @@ test("runIntegrationsInventoryProbe can return opt-in display names without path
     assert.equal(inventory.plugins.urlsReturned, false);
     assert.equal(inventory.plugins.marketplaceNamesReturned, false);
     assert.equal(inventory.plugins.marketplaceDisplayNamesReturned, false);
+    assert.equal(inventory.plugins.marketplaceKindsReturned, false);
+    assert.equal(inventory.plugins.remotePluginCatalogRequested, false);
+    assert.equal(inventory.plugins.requestedMarketplaceKindCount, 2);
     assert.equal(inventory.plugins.items[0].authPolicy, "ON_USE");
     assert.equal(inventory.plugins.items[0].name, "private-plugin");
-    assert.equal(inventory.plugins.items[1].name, null);
-    assert.equal(inventory.plugins.items[1].sourceType, "remote");
-    assert.equal(inventory.plugins.items[1].installPolicy, "NOT_AVAILABLE");
-    assert.equal(inventory.plugins.items[1].authPolicy, "ON_INSTALL");
     assert.equal(inventory.installedPlugins.namesReturned, true);
     assert.equal(inventory.installedPlugins.idsReturned, false);
     assert.equal(inventory.installedPlugins.pathsReturned, false);

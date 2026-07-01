@@ -18918,6 +18918,9 @@ async function checkSettingsIntegrationsInventoryApi() {
               },
               marketplaceNamesReturned: true,
               marketplaceDisplayNamesReturned: true,
+              marketplaceKindsReturned: true,
+              remotePluginCatalogRequested: false,
+              requestedMarketplaceKindCount: 2,
               privateMarketplaceName: "verify-private-marketplace",
               privateMarketplaceDisplayName: "verify private marketplace display",
               privateUrl: "https://verify.example.test/plugin",
@@ -19039,7 +19042,8 @@ async function checkSettingsIntegrationsInventoryApi() {
     if (
       calls.length !== 1 ||
       calls[0].cwd !== "/tmp/codex-app-port-verify" ||
-      calls[0].includeNames !== false
+      calls[0].includeNames !== false ||
+      calls[0].includeRemotePluginCatalog !== false
     ) {
       throw new Error("settings integrations inventory did not use the allowlisted workspace cwd");
     }
@@ -48097,6 +48101,9 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
     Object.hasOwn(payload.inventory?.plugins?.authPolicyCounts ?? {}, "verify-private-auth-policy") ||
     payload.inventory?.plugins?.marketplaceNamesReturned !== false ||
     payload.inventory?.plugins?.marketplaceDisplayNamesReturned !== false ||
+    payload.inventory?.plugins?.marketplaceKindsReturned !== false ||
+    payload.inventory?.plugins?.remotePluginCatalogRequested !== false ||
+    payload.inventory?.plugins?.requestedMarketplaceKindCount !== 2 ||
     payload.inventory?.experimentalFeatures?.featureCount !== 2 ||
     payload.inventory?.experimentalFeatures?.enabledCount !== 1 ||
     payload.inventory?.experimentalFeatures?.disabledCount !== 1 ||

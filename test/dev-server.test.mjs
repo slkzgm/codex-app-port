@@ -20782,6 +20782,7 @@ test("dev server exposes settings and integration boundary without app-server tr
     assert.equal(payload.integrationScope.pluginShareEnabled, false);
     assert.equal(payload.integrationScope.pluginContentReadEnabled, false);
     assert.equal(payload.integrationScope.pluginShareListEnabled, false);
+    assert.equal(payload.integrationScope.remotePluginCatalogInventoryEnabled, false);
     assert.equal(payload.integrationScope.marketplaceMutationEnabled, false);
     assert.equal(payload.integrationScope.namesReturned, false);
     assert.equal(payload.integrationScope.hookCommandsReturned, false);
@@ -22355,6 +22356,9 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
               },
               marketplaceNamesReturned: true,
               marketplaceDisplayNamesReturned: true,
+              marketplaceKindsReturned: true,
+              remotePluginCatalogRequested: false,
+              requestedMarketplaceKindCount: 2,
               privateMarketplaceName: "private-marketplace",
               privateMarketplaceDisplayName: "private marketplace display",
               url: "https://example.test/private/plugin",
@@ -22567,6 +22571,7 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
     assert.equal(payload.surfaces.plugins.listingAvailable, true);
     assert.equal(payload.surfaces.plugins.installedListingAvailable, true);
     assert.equal(payload.surfaces.plugins.sharePreflightEnabled, true);
+    assert.equal(calls[0].includeRemotePluginCatalog, false);
     assert.equal(payload.integrationScope.returned, true);
     assert.equal(payload.integrationScope.state, "partial");
     assert.equal(
@@ -22855,6 +22860,9 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
     assert.deepEqual(payload.inventory.plugins.authPolicyCounts, { ON_USE: 2, ON_INSTALL: 1 });
     assert.equal(payload.inventory.plugins.marketplaceNamesReturned, false);
     assert.equal(payload.inventory.plugins.marketplaceDisplayNamesReturned, false);
+    assert.equal(payload.inventory.plugins.marketplaceKindsReturned, false);
+    assert.equal(payload.inventory.plugins.remotePluginCatalogRequested, false);
+    assert.equal(payload.inventory.plugins.requestedMarketplaceKindCount, 2);
     assert.equal(payload.inventory.installedPlugins.pluginCount, 2);
     assert.deepEqual(payload.inventory.installedPlugins.authPolicyCounts, {
       ON_USE: 1,
@@ -23060,6 +23068,75 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
       "cat /tmp",
       "codexHome",
       "userAgent",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    await closeServer(server);
+  }
+});
+
+test("dev server passes remote plugin catalog inventory only behind explicit opt-in", async () => {
+  const calls = [];
+  const { server, url } = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    integrationsInventoryEnabled: true,
+    remotePluginCatalogInventoryEnabled: true,
+    integrationsInventoryFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-05-16T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {},
+        probes: {
+          integrationsInventory: {
+            plugins: {
+              ok: true,
+              marketplaceCount: 2,
+              localMarketplaceCount: 1,
+              remoteMarketplaceCount: 1,
+              marketplaceDisplayNameCount: 2,
+              pluginCount: 2,
+              sourceTypeCounts: { local: 1, remote: 1 },
+              installPolicyCounts: { AVAILABLE: 1, NOT_AVAILABLE: 1 },
+              authPolicyCounts: { ON_USE: 1, ON_INSTALL: 1 },
+              remotePluginCatalogRequested: true,
+              requestedMarketplaceKindCount: 5,
+              marketplaceNamesReturned: true,
+              marketplaceDisplayNamesReturned: true,
+              marketplaceKindsReturned: true,
+              privateMarketplaceKind: "shared-with-me",
+              privateMarketplaceName: "private-remote-marketplace",
+            },
+          },
+        },
+        notifications: {},
+      };
+    },
+  });
+
+  try {
+    const response = await fetch(`${url}/api/settings-integrations`, {
+      headers: apiHeaders(server),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(calls[0].includeRemotePluginCatalog, true);
+    assert.equal(payload.integrationScope.remotePluginCatalogInventoryEnabled, true);
+    assert.equal(payload.inventory.plugins.remotePluginCatalogRequested, true);
+    assert.equal(payload.inventory.plugins.requestedMarketplaceKindCount, 5);
+    assert.equal(payload.inventory.plugins.marketplaceCount, 2);
+    assert.equal(payload.inventory.plugins.remoteMarketplaceCount, 1);
+    assert.equal(payload.inventory.plugins.marketplaceNamesReturned, false);
+    assert.equal(payload.inventory.plugins.marketplaceDisplayNamesReturned, false);
+    assert.equal(payload.inventory.plugins.marketplaceKindsReturned, false);
+    for (const marker of [
+      "shared-with-me",
+      "private-remote-marketplace",
+      "privateMarketplaceKind",
     ]) {
       assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
     }

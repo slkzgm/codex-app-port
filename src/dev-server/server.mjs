@@ -13141,6 +13141,8 @@ export function createDevServer({
   fileActionEnabled = process.env.CODEX_APP_PORT_ALLOW_FILE_ACTION === "1",
   integrationsInventoryEnabled = process.env.CODEX_APP_PORT_ALLOW_INTEGRATION_INVENTORY === "1",
   integrationNamesEnabled = process.env.CODEX_APP_PORT_ALLOW_INTEGRATION_NAMES === "1",
+  remotePluginCatalogInventoryEnabled =
+    process.env.CODEX_APP_PORT_ALLOW_REMOTE_PLUGIN_CATALOG_INVENTORY === "1",
   configBatchWriteEnabled = process.env.CODEX_APP_PORT_ALLOW_CONFIG_BATCH_WRITE === "1",
   configBatchWriteAllowlist = parseConfigValueWriteAllowlist(
     process.env.CODEX_APP_PORT_CONFIG_BATCH_WRITE_ALLOWLIST,
@@ -13346,6 +13348,7 @@ export function createDevServer({
       fileActionEnabled,
       integrationsInventoryEnabled,
       integrationNamesEnabled,
+      remotePluginCatalogInventoryEnabled,
       configBatchWriteEnabled,
       configBatchWriteAllowlist,
       configValueWriteEnabled,
@@ -19359,6 +19362,7 @@ export async function handleRequest(request, response, options) {
           cwd: workspace.cwd,
           timeoutMs: options.timeoutMs,
           includeNames: options.integrationNamesEnabled,
+          includeRemotePluginCatalog: options.remotePluginCatalogInventoryEnabled,
         });
         sendJson(
           response,
@@ -19366,6 +19370,7 @@ export async function handleRequest(request, response, options) {
           sanitizeSettingsIntegrationsPayload(payload, {
             workspace,
             integrationNamesEnabled: options.integrationNamesEnabled,
+            remotePluginCatalogInventoryEnabled: options.remotePluginCatalogInventoryEnabled,
             accountReadEnabled: options.accountReadEnabled,
             accountLoginCancelEnabled: options.accountLoginCancelEnabled,
             accountLoginEnabled: options.accountLoginEnabled,
@@ -19411,6 +19416,7 @@ export async function handleRequest(request, response, options) {
           accountCreditsNudgeEnabled: options.accountCreditsNudgeEnabled,
           accountResetCreditConsumeEnabled: options.accountResetCreditConsumeEnabled,
           accountLogoutEnabled: options.accountLogoutEnabled,
+          remotePluginCatalogInventoryEnabled: options.remotePluginCatalogInventoryEnabled,
           configBatchWriteEnabled: options.configBatchWriteEnabled,
           configValueWriteEnabled: options.configValueWriteEnabled,
           experimentalFeatureSetEnabled: options.experimentalFeatureSetEnabled,
@@ -51164,6 +51170,7 @@ export function sanitizeSettingsIntegrationsPayload(
   {
     workspace = null,
     integrationNamesEnabled = false,
+    remotePluginCatalogInventoryEnabled = false,
     accountReadEnabled = false,
     accountLoginCancelEnabled = false,
     accountLoginEnabled = false,
@@ -51257,6 +51264,7 @@ export function sanitizeSettingsIntegrationsPayload(
     skillsExtraRootsClearEnabled,
     remoteControlDisableEnabled,
     environmentAddEnabled,
+    remotePluginCatalogInventoryEnabled,
     namesReturned,
   });
   const result = {
@@ -61097,6 +61105,7 @@ export function buildSettingsIntegrations({
   skillsExtraRootsClearEnabled = false,
   remoteControlDisableEnabled = false,
   environmentAddEnabled = false,
+  remotePluginCatalogInventoryEnabled = false,
   integrationPreflightHistory = [],
   integrationPreflightConfirmationHistory = [],
   accountLoginFlowSummary = null,
@@ -61152,6 +61161,7 @@ export function buildSettingsIntegrations({
     skillsExtraRootsClearEnabled,
     remoteControlDisableEnabled,
     environmentAddEnabled,
+    remotePluginCatalogInventoryEnabled,
   });
   const result = {
     ok: true,
@@ -63768,6 +63778,7 @@ function buildIntegrationActionScope({
   skillsExtraRootsClearEnabled = false,
   remoteControlDisableEnabled = false,
   environmentAddEnabled = false,
+  remotePluginCatalogInventoryEnabled = false,
   namesReturned = false,
 } = {}) {
   const readMethods = [
@@ -63885,6 +63896,7 @@ function buildIntegrationActionScope({
     pluginShareEnabled: false,
     pluginContentReadEnabled: Boolean(pluginContentReadEnabled),
     pluginShareListEnabled: Boolean(pluginShareListEnabled),
+    remotePluginCatalogInventoryEnabled: Boolean(remotePluginCatalogInventoryEnabled),
     marketplaceMutationEnabled: false,
     namesReturned: Boolean(namesReturned),
     hookCommandsReturned: false,
@@ -68121,6 +68133,9 @@ function sanitizePluginsInventory(plugins, { namesEnabled = false } = {}) {
     nameRedactedCount: safeCount(plugins?.nameRedactedCount),
     marketplaceNamesReturned: false,
     marketplaceDisplayNamesReturned: false,
+    marketplaceKindsReturned: false,
+    remotePluginCatalogRequested: Boolean(plugins?.remotePluginCatalogRequested),
+    requestedMarketplaceKindCount: safeCount(plugins?.requestedMarketplaceKindCount),
     idsReturned: false,
     pathsReturned: false,
     urlsReturned: false,

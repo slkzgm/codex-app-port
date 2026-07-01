@@ -1510,7 +1510,10 @@ Current M1 status:
   percentages, reset times, MCP names/schemas, skill paths/descriptions,
   marketplace names/display names/sources, plugin ids/paths/URLs, experimental feature names/display text/descriptions/
   announcements/cursors, hook commands/paths/keys/matchers/plugin IDs, or
-  config requirement values/domains
+  config requirement values/domains. `plugin/list` stays limited to local and
+  workspace-directory marketplace kinds unless
+  `CODEX_APP_PORT_ALLOW_REMOTE_PLUGIN_CATALOG_INVENTORY=1` explicitly enables
+  remote curated/shared/created catalog inventory, which remains counts-only.
 - done: second-gate integration display inventory behind
   `CODEX_APP_PORT_ALLOW_INTEGRATION_NAMES=1`, returning bounded model display
   names, collaboration-mode names, app/connector, app plugin display, MCP

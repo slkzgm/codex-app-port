@@ -1061,7 +1061,10 @@ Target parity with the Codex desktop workflow:
   counts-only; plugin inventories return only marketplace local/remote counts
   plus source/install/auth-policy buckets by default, and may return bounded
   safe plugin display names only when `CODEX_APP_PORT_ALLOW_INTEGRATION_NAMES=1`
-  is also set. They still omit import ids, paths, messages, timestamps,
+  is also set. `plugin/list` queries only local and workspace-directory
+  marketplaces by default; remote curated/shared/created catalog categories are
+  queried only when `CODEX_APP_PORT_ALLOW_REMOTE_PLUGIN_CATALOG_INVENTORY=1` is
+  also set, and still return counts only. They still omit import ids, paths, messages, timestamps,
   marketplace names/display names/sources, plugin ids, plugin paths, URLs,
   prompts, capabilities, and raw payloads.
 - `remoteControl/status/read` has an opt-in, counts-only inventory path; it

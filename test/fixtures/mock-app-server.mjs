@@ -981,53 +981,62 @@ function handle(message) {
   }
 
   if (message.method === "plugin/list") {
+    const marketplaceKinds = Array.isArray(message.params?.marketplaceKinds)
+      ? message.params.marketplaceKinds
+      : [];
+    const includeRemoteCatalog = marketplaceKinds.some((kind) =>
+      ["vertical", "shared-with-me", "created-by-me-remote"].includes(kind),
+    );
+    const marketplaces = [
+      {
+        name: "private-local-marketplace",
+        path: "/tmp/mock-workspace/.codex/plugins/private-marketplace.json",
+        interface: {
+          displayName: "private local marketplace",
+        },
+        plugins: [
+          {
+            id: "private-plugin-id",
+            name: "private-plugin",
+            installed: true,
+            enabled: true,
+            installPolicy: "AVAILABLE",
+            authPolicy: "ON_USE",
+            source: {
+              type: "local",
+              path: "/tmp/mock-workspace/.codex/plugins/private",
+              url: "https://example.test/private/plugin",
+            },
+          },
+        ],
+      },
+    ];
+    if (includeRemoteCatalog) {
+      marketplaces.push({
+        name: "private-remote-marketplace",
+        path: null,
+        interface: {
+          displayName: "private remote marketplace",
+        },
+        plugins: [
+          {
+            id: "private-remote-plugin-id",
+            name: "https://example.test/private-remote-plugin",
+            installed: false,
+            enabled: false,
+            installPolicy: "NOT_AVAILABLE",
+            authPolicy: "ON_INSTALL",
+            source: {
+              type: "remote",
+            },
+          },
+        ],
+      });
+    }
     send({
       id: message.id,
       result: {
-        marketplaces: [
-          {
-            name: "private-local-marketplace",
-            path: "/tmp/mock-workspace/.codex/plugins/private-marketplace.json",
-            interface: {
-              displayName: "private local marketplace",
-            },
-            plugins: [
-              {
-                id: "private-plugin-id",
-                name: "private-plugin",
-                installed: true,
-                enabled: true,
-                installPolicy: "AVAILABLE",
-                authPolicy: "ON_USE",
-                source: {
-                  type: "local",
-                  path: "/tmp/mock-workspace/.codex/plugins/private",
-                  url: "https://example.test/private/plugin",
-                },
-              },
-            ],
-          },
-          {
-            name: "private-remote-marketplace",
-            path: null,
-            interface: {
-              displayName: "private remote marketplace",
-            },
-            plugins: [
-              {
-                id: "private-remote-plugin-id",
-                name: "https://example.test/private-remote-plugin",
-                installed: false,
-                enabled: false,
-                installPolicy: "NOT_AVAILABLE",
-                authPolicy: "ON_INSTALL",
-                source: {
-                  type: "remote",
-                },
-              },
-            ],
-          },
-        ],
+        marketplaces,
         marketplaceLoadErrors: [
           {
             message: "private marketplace error",

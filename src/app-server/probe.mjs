@@ -2527,6 +2527,8 @@ export async function runIntegrationsInventoryProbe({
   cwd = process.cwd(),
   timeoutMs = DEFAULT_TIMEOUT_MS,
   includeNames = process.env.CODEX_APP_PORT_ALLOW_INTEGRATION_NAMES === "1",
+  includeRemotePluginCatalog =
+    process.env.CODEX_APP_PORT_ALLOW_REMOTE_PLUGIN_CATALOG_INVENTORY === "1",
   onNotification = null,
 } = {}) {
   if (process.env.CODEX_APP_PORT_ALLOW_INTEGRATION_INVENTORY !== "1") {
@@ -2552,6 +2554,10 @@ export async function runIntegrationsInventoryProbe({
   await client.start();
 
   try {
+    const pluginMarketplaceKinds = includeRemotePluginCatalog
+      ? ["local", "workspace-directory", "vertical", "shared-with-me", "created-by-me-remote"]
+      : ["local", "workspace-directory"];
+
     const initialize = normalizeInitializeResponse(
       await client.request("initialize", {
         clientInfo: {
@@ -2638,7 +2644,7 @@ export async function runIntegrationsInventoryProbe({
       readInventorySection(() =>
         client.request("plugin/list", {
           cwds: [cwd],
-          marketplaceKinds: ["local", "workspace-directory"],
+          marketplaceKinds: pluginMarketplaceKinds,
         }),
       ),
       readInventorySection(() =>
@@ -2695,7 +2701,11 @@ export async function runIntegrationsInventoryProbe({
           apps: summarizeAppsInventory(apps, { includeNames }),
           mcp: summarizeMcpInventory(mcp, { includeNames }),
           skills: summarizeSkillsInventory(skills, { includeNames }),
-          plugins: summarizePluginsInventory(plugins, { includeNames }),
+          plugins: summarizePluginsInventory(plugins, {
+            includeNames,
+            remotePluginCatalogRequested: includeRemotePluginCatalog,
+            requestedMarketplaceKindCount: pluginMarketplaceKinds.length,
+          }),
           installedPlugins: summarizeInstalledPluginsInventory(installedPlugins, {
             includeNames,
           }),
@@ -6903,7 +6913,14 @@ function summarizeSkillsInventory(section, { includeNames = false } = {}) {
   };
 }
 
-function summarizePluginsInventory(section, { includeNames = false } = {}) {
+function summarizePluginsInventory(
+  section,
+  {
+    includeNames = false,
+    remotePluginCatalogRequested = false,
+    requestedMarketplaceKindCount = 0,
+  } = {},
+) {
   const marketplaces =
     section.ok && Array.isArray(section.result?.marketplaces) ? section.result.marketplaces : [];
   const marketplaceErrors = Array.isArray(section.result?.marketplaceLoadErrors)
@@ -6985,6 +7002,9 @@ function summarizePluginsInventory(section, { includeNames = false } = {}) {
     nameRedactedCount,
     marketplaceNamesReturned: false,
     marketplaceDisplayNamesReturned: false,
+    marketplaceKindsReturned: false,
+    remotePluginCatalogRequested: Boolean(remotePluginCatalogRequested),
+    requestedMarketplaceKindCount,
     idsReturned: false,
     pathsReturned: false,
     urlsReturned: false,
