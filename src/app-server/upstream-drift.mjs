@@ -1,11 +1,11 @@
 export const OFFICIAL_CODEX_SOURCE_AUDIT = Object.freeze({
-  checkedOn: "2026-06-30",
-  stablePackage: "@openai/codex@0.142.4",
-  stableCodexVersion: "codex-cli 0.142.4",
+  checkedOn: "2026-07-01",
+  stablePackage: "@openai/codex@0.142.5",
+  stableCodexVersion: "codex-cli 0.142.5",
   stableSchemaCount: 335,
   stableDistTag: "latest",
-  alphaDistTag: "0.143.0-alpha.31",
-  openaiCodexHead: "cfead68e5d3984b247cf0758e3e53b19165de848",
+  alphaDistTag: "0.143.0-alpha.32",
+  openaiCodexHead: "db887d03e1f907467e33271572dffb73bceecd6b",
   localSchemaStatus: "matches-stable-cli",
 });
 
@@ -14,7 +14,7 @@ export const UPSTREAM_HEAD_METHOD_DRIFT = Object.freeze([
     method: "environment/info",
     kind: "client-request",
     upstreamStatus: "present-in-openai-codex-head",
-    stableSchemaStatus: "absent-from-codex-cli-0.142.4",
+    stableSchemaStatus: "absent-from-codex-cli-0.142.5",
     sourcePaths: [
       "codex-rs/app-server-protocol/src/protocol/common.rs",
       "codex-rs/app-server-protocol/src/protocol/v2/environment.rs",
@@ -34,7 +34,7 @@ export const UPSTREAM_HEAD_METHOD_DRIFT = Object.freeze([
     method: "thread/items/list",
     kind: "client-request",
     upstreamStatus: "present-in-openai-codex-head",
-    stableSchemaStatus: "absent-from-codex-cli-0.142.4",
+    stableSchemaStatus: "absent-from-codex-cli-0.142.5",
     stablePredecessor: "thread/turns/items/list",
     sourcePaths: [
       "codex-rs/app-server-protocol/src/protocol/common.rs",

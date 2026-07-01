@@ -6,7 +6,7 @@ This directory contains JSON Schema generated from the local official Codex CLI:
 npm run protocol:generate
 ```
 
-Current manifest: `codex-cli 0.142.4`, generated with
+Current manifest: `codex-cli 0.142.5`, generated with
 `codex app-server generate-json-schema --experimental`.
 
 The snapshot is intentionally read-only input for this port. It is used to audit

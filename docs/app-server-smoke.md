@@ -53,8 +53,8 @@ cannot silently proceed.
 
 ## Verified Locally
 
-On 2026-06-29, the smoke client and schema generator were recalibrated against
-local `codex-cli 0.142.4` on Linux. The generated app-server snapshot contains
+On 2026-07-01, the smoke client and schema generator were recalibrated against
+local `codex-cli 0.142.5` on Linux. The generated app-server snapshot contains
 335 JSON Schema files. The smoke path confirms:
 
 - stdio JSONL transport works

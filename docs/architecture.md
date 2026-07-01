@@ -21,6 +21,17 @@ The initial transport should be stdio unless a Unix socket is needed for
 multi-window behavior. WebSocket transport is marked experimental upstream and
 requires explicit auth if exposed beyond loopback.
 
+## 2026-07-01 Stable Snapshot Refresh
+
+The app-server schema snapshot was regenerated from local `codex-cli 0.142.5`
+after confirming npm `@openai/codex` latest had moved to `0.142.5` and
+checking OpenAI `openai/codex` HEAD
+`db887d03e1f907467e33271572dffb73bceecd6b`. The snapshot still contains 335
+JSON Schema files. `environment/info` and `thread/items/list` remain present
+only in the OpenAI HEAD source and absent from the stable generated schema, so
+they stay blocked until a stable schema exposes them and a dedicated browser
+route audit exists.
+
 ## 2026-06-29 Upstream Recalibration
 
 The reference app-server snapshot was refreshed from local `codex-cli 0.142.4`

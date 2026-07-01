@@ -209,7 +209,7 @@ test("known OpenAI head-only methods remain blocked until a stable schema expose
 
   for (const entry of upstreamHeadMethodDrift()) {
     assert.equal(clientMethods.has(entry.method), false, `head-only method entered schema: ${entry.method}`);
-    assert.equal(entry.stableSchemaStatus, "absent-from-codex-cli-0.142.4");
+    assert.equal(entry.stableSchemaStatus, "absent-from-codex-cli-0.142.5");
     assert.equal(entry.localPolicy, "blocked-until-stable-schema");
     assert.equal(entry.sourcePaths.length > 0, true);
     assert.equal(entry.requiredBeforeExposure.length > 0, true);

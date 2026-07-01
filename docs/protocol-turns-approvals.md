@@ -1,6 +1,6 @@
 # Turn Start and Approval Protocol Audit
 
-Source audited locally: `codex-cli 0.142.4`.
+Source audited locally: `codex-cli 0.142.5`.
 
 Commands used:
 
@@ -21,16 +21,16 @@ Generated evidence:
 
 No real turn was started during this audit.
 
-## 2026-06-30 Upstream HEAD Drift
+## 2026-07-01 Upstream HEAD Drift
 
 Official source refresh:
 
 - OpenAI `openai/codex` HEAD:
-  `cfead68e5d3984b247cf0758e3e53b19165de848`
-- stable npm `@openai/codex` latest: `0.142.4`
-- alpha npm dist-tag observed: `0.143.0-alpha.31`
+  `db887d03e1f907467e33271572dffb73bceecd6b`
+- stable npm `@openai/codex` latest: `0.142.5`
+- alpha npm dist-tag observed: `0.143.0-alpha.32`
 - local stable schema regeneration check: 335 JSON Schema files, matching the
-  committed `codex-cli 0.142.4` manifest
+  committed `codex-cli 0.142.5` manifest
 
 The HEAD source contains app-server protocol methods that are not present in
 the stable local schema:
@@ -41,7 +41,7 @@ the stable local schema:
   allowlist, disabled-by-default gate, no raw cwd URI, no environment id, no
   paths, and no raw app-server payloads.
 - `thread/items/list`: HEAD successor/extension for persisted item paging.
-  Stable `0.142.4` still exposes `thread/turns/items/list`, which this port
+  Stable `0.142.5` still exposes `thread/turns/items/list`, which this port
   already gates through the item-count/suffix/type/status-only route. The HEAD
   method stays blocked until schema regeneration, route versioning, and a
   fresh response contract prove that no message text, commands, output,
