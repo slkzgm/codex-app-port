@@ -34486,6 +34486,45 @@ function assertCodexAgentsGuidanceCatalog(payload) {
   }
 }
 
+function assertStaticCatalogBoundary(catalog, { catalogName, allowedTrueBooleanFields }) {
+  const allowedStringFields = new Set(["key", "group", "state", "source", "officialSource"]);
+  const allowedTrueBooleanSet = new Set(allowedTrueBooleanFields);
+  const unexpectedStrings = [];
+  const unexpectedTrueBooleans = [];
+
+  const visit = (value, path) => {
+    if (typeof value === "string") {
+      const field = path.at(-1);
+      if (!allowedStringFields.has(field)) {
+        unexpectedStrings.push(path.join("."));
+      }
+      return;
+    }
+    if (typeof value === "boolean") {
+      if (value === true) {
+        const field = path.at(-1);
+        if (!allowedTrueBooleanSet.has(field)) {
+          unexpectedTrueBooleans.push(path.join("."));
+        }
+      }
+      return;
+    }
+    if (Array.isArray(value)) {
+      value.forEach((item, index) => visit(item, [...path, String(index)]));
+      return;
+    }
+    if (value && typeof value === "object") {
+      for (const [field, item] of Object.entries(value)) {
+        visit(item, [...path, field]);
+      }
+    }
+  };
+
+  visit(catalog, [catalogName]);
+  assert.deepEqual(unexpectedStrings, []);
+  assert.deepEqual(unexpectedTrueBooleans, []);
+}
+
 function expectedCodexThirdPartyIntegrationsEntries() {
   return [
     ["linearDelegationOverview", "linear", "catalog-only", "official-codex-linear-docs"],
@@ -34546,6 +34585,10 @@ function expectedCodexThirdPartyIntegrationsEntries() {
 function assertCodexThirdPartyIntegrationsCatalog(payload) {
   const catalog = payload.codexThirdPartyIntegrations;
   assert.equal(catalog?.returned, true);
+  assertStaticCatalogBoundary(catalog, {
+    catalogName: "codexThirdPartyIntegrations",
+    allowedTrueBooleanFields: ["returned", "thirdPartyIntegrationsCatalogReturned"],
+  });
   assert.equal(catalog.state, "partial");
   assert.equal(catalog.officialSource, "official-codex-linear-slack-docs");
   assert.equal(catalog.entryCount, 52);
@@ -34781,6 +34824,10 @@ function expectedCodexMcpEntries() {
 function assertCodexMcpCatalog(payload) {
   const catalog = payload.codexMcp;
   assert.equal(catalog?.returned, true);
+  assertStaticCatalogBoundary(catalog, {
+    catalogName: "codexMcp",
+    allowedTrueBooleanFields: ["returned", "mcpCatalogReturned"],
+  });
   assert.equal(catalog.state, "partial");
   assert.equal(catalog.officialSource, "official-codex-mcp-docs");
   assert.equal(catalog.entryCount, 66);
@@ -41240,6 +41287,16 @@ function assertSkillsPluginsCatalog(payload) {
   const expectedEntries = expectedSkillsPluginsCatalogEntries(payload.integrationScope ?? {});
   const countState = (state) => expectedEntries.filter((entry) => entry.state === state).length;
   assert.equal(catalog?.returned, true);
+  assertStaticCatalogBoundary(catalog, {
+    catalogName: "skillsPluginsCatalog",
+    allowedTrueBooleanFields: [
+      "returned",
+      "skillsCatalogReturned",
+      "pluginsCatalogReturned",
+      "pluginDirectoryCatalogReturned",
+      "localPreflightBoundariesReturned",
+    ],
+  });
   assert.equal(catalog.state, "partial");
   assert.equal(catalog.settingCount, 54);
   assert.equal(catalog.officialSettingCount, 44);

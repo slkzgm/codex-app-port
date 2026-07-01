@@ -908,6 +908,10 @@ payloads, or app-server traffic, and it must not install connectors or Slack
 apps, link accounts, assign issues, post comments or messages, write triage
 rules, start cloud tasks, configure or log into MCP, access files/network,
 create model traffic, or mutate integration state.
+The test and verification contracts additionally walk this static catalog and
+fail if any string field outside `key`, `group`, `state`, `source`, and
+`officialSource` appears, or if any truthy boolean appears outside the explicit
+catalog-presence flags.
 
 The same response exposes `codexMcp` as a static review-only catalog for the
 official Codex Model Context Protocol guide. The UI shows only catalog counts,
@@ -928,6 +932,10 @@ payloads, or app-server traffic, and it must not read local or remote
 environments, read/write config, start/reload MCP servers, start OAuth login,
 call tools, read resources, load prompts, access files/network, create model
 traffic, or mutate MCP state.
+The test and verification contracts additionally walk this static catalog and
+fail if any string field outside `key`, `group`, `state`, `source`, and
+`officialSource` appears, or if any truthy boolean appears outside the explicit
+catalog-presence flags.
 
 The same response exposes `codexCustomPrompts` as a static review-only catalog
 for the official Custom Prompts guidance. The UI shows only catalog counts,
@@ -1376,6 +1384,10 @@ commands, share links or principals, setting values, external code, paths,
 URLs, raw payloads, app-server traffic, installs, uninstalls, enablement writes,
 skill config writes, extra-root writes, share mutations, or marketplace
 mutations.
+The test and verification contracts additionally walk this static catalog and
+fail if any string field outside `key`, `group`, `state`, `source`, and
+`officialSource` appears, or if any truthy boolean appears outside the explicit
+catalog-presence flags.
 The same response exposes `codexPluginBuild` as a static review-only catalog
 for official plugin authoring. The UI shows only catalog counts, entry keys,
 groups, state/source chips, and redaction chips for plugin creator scaffolding,

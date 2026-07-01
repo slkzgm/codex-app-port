@@ -477,6 +477,10 @@ Target parity with the Codex desktop workflow:
   connectors or Slack apps, link accounts, assign issues, post comments or
   messages, write triage rules, start cloud tasks, configure or log into MCP,
   access files/network, create model traffic, or mutate integration state.
+  Test and verification contracts also walk the static catalog recursively and
+  fail if any string field outside `key`, `group`, `state`, `source`, and
+  `officialSource` appears, or if any truthy boolean appears outside explicit
+  catalog-presence flags.
 - `/api/settings-integrations` now also exposes a read-only Codex MCP catalog
   aligned to the official Model Context Protocol guide. It returns only static
   keys, groups, states, sources, counts, and redaction flags for MCP purpose,
@@ -496,6 +500,10 @@ Target parity with the Codex desktop workflow:
   local or remote environments, read/write config, start/reload MCP servers,
   start OAuth login, call tools, read resources, load prompts, access
   files/network, create model traffic, or mutate MCP state.
+  Test and verification contracts also walk the static catalog recursively and
+  fail if any string field outside `key`, `group`, `state`, `source`, and
+  `officialSource` appears, or if any truthy boolean appears outside explicit
+  catalog-presence flags.
 - `/api/settings-integrations` now also exposes a read-only Codex Custom
   Prompts catalog aligned to the official Custom Prompts guidance. It returns
   only static keys, groups, states, sources, counts, and redaction flags for the
@@ -755,6 +763,10 @@ Target parity with the Codex desktop workflow:
   secrets, raw payloads, app-server traffic, external code, installs,
   uninstalls, enablement writes, config writes, extra-root writes, share
   mutations, or marketplace mutations.
+  Test and verification contracts also walk the static catalog recursively and
+  fail if any string field outside `key`, `group`, `state`, `source`, and
+  `officialSource` appears, or if any truthy boolean appears outside explicit
+  catalog-presence flags.
 - `/api/settings-integrations` now also exposes a read-only Codex Sites catalog
   aligned to the official Sites plugin documentation. It returns only static
   keys, groups, states, sources, counts, and redaction flags for hosted website,
