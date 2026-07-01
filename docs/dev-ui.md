@@ -1121,6 +1121,24 @@ themes, start reviews, run web search or shell completions, change approval
 modes, run exec/cloud tasks, start MCP servers, access files/network, create
 model traffic, or mutate state.
 
+The same response exposes `codexCliSlashCommands` as a static review-only
+catalog for official Codex CLI slash-command workflow categories. The UI shows
+only catalog counts, entry keys, groups, state/source chips, and redaction chips
+for discovery, queued parsing, completion, permissions, editor context,
+terminal UI, composer controls, sandbox read grants, subagents, apps, plugins,
+hooks, session management, transcript compaction, clipboard, Git review,
+experimental features, review retry approval, memory, skills, imports, auth,
+MCP, file mentions, model controls, planning, goals, response style,
+background terminal controls, side conversations, status, usage, diagnostics,
+and terminal display configuration. It must not show exact slash commands,
+arguments, prompts, transcripts, session IDs, config values, file paths or
+content, model names, approval policies, plugin/skill/app/hook names, import
+artifacts, feedback logs, terminal output, paths, URLs, secrets, raw payloads,
+or app-server traffic, and it must not open slash popups, queue or execute
+commands, mutate sessions/config/files/plugins/skills/hooks/imports, switch
+models or approval policy, control terminals, access files/network, create
+model traffic, or mutate state.
+
 The same response exposes `codexIdeExtension` as a static review-only catalog
 for official Codex IDE extension commands, features, settings, and slash
 commands. The UI shows only catalog counts, entry keys, groups, state/source

@@ -39405,6 +39405,243 @@ function assertCodexCliFeaturesCatalog(payload) {
   }
 }
 
+function expectedCodexCliSlashCommandsEntries() {
+  return [
+    ["slashPopupDiscovery", "discovery", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["queuedCommandParsing", "queueing", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["commandCompletionFlow", "completion", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["permissionModeControl", "permissions", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["editorContextInclusion", "ide-context", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["tuiKeymapRemapping", "terminal-ui", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["composerEditingModeToggle", "composer", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["extraSandboxReadGrant", "sandbox", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["subagentThreadSwitch", "subagents", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["appConnectorBrowser", "apps", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["pluginBrowser", "plugins", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["hookManager", "hooks", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["terminalClearNewChat", "session", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["archiveCurrentSession", "session", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["destructiveSessionDeletion", "session", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["transcriptCompaction", "context", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["latestResponseCopy", "clipboard", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["workingTreeDiffReview", "git", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["cliExitAliases", "session", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["experimentalFeatureToggle", "features", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["autoReviewRetryApproval", "review", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["memoryConfiguration", "memory", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["skillSelection", "skills", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["externalAgentImport", "import", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["credentialSignOut", "auth", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["mcpToolListing", "mcp", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["fileMentionAttachment", "files", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["activeModelSelection", "model", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["fastTierToggle", "model", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["planningModeSwitch", "planning", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["goalLifecycle", "goal", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["responsePersonalitySelection", "style", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["backgroundTerminalInspection", "terminal", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["backgroundTerminalStop", "terminal", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["sessionFork", "session", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["sideConversation", "session", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["rawScrollbackToggle", "terminal-ui", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["savedConversationResume", "session", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["newConversation", "session", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["localReviewRequest", "review", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["sessionStatusInspection", "status", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["accountUsageInspection", "usage", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["configDiagnostics", "diagnostics", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["statusLineConfiguration", "terminal-ui", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["terminalTitleConfiguration", "terminal-ui", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["syntaxThemePicker", "terminal-ui", "catalog-only", "official-codex-cli-slash-commands-docs"],
+    ["exactSlashCommandBoundary", "commands", "blocked", "local-cli-slash-commands-boundary"],
+    ["commandArgumentBoundary", "commands", "blocked", "local-cli-slash-commands-boundary"],
+    ["promptTextBoundary", "prompts", "blocked", "local-cli-slash-commands-boundary"],
+    ["sessionTranscriptBoundary", "session", "blocked", "local-cli-slash-commands-boundary"],
+    ["sessionIdentifierBoundary", "session", "blocked", "local-cli-slash-commands-boundary"],
+    ["configValueBoundary", "configuration", "blocked", "local-cli-slash-commands-boundary"],
+    ["filePathBoundary", "filesystem", "blocked", "local-cli-slash-commands-boundary"],
+    ["fileContentBoundary", "filesystem", "blocked", "local-cli-slash-commands-boundary"],
+    ["modelValueBoundary", "model", "blocked", "local-cli-slash-commands-boundary"],
+    ["approvalPolicyBoundary", "permissions", "blocked", "local-cli-slash-commands-boundary"],
+    ["pluginSkillAppBoundary", "extensions", "blocked", "local-cli-slash-commands-boundary"],
+    ["hookTrustBoundary", "hooks", "blocked", "local-cli-slash-commands-boundary"],
+    ["importArtifactBoundary", "import", "blocked", "local-cli-slash-commands-boundary"],
+    ["feedbackLogBoundary", "feedback", "blocked", "local-cli-slash-commands-boundary"],
+    ["terminalOutputBoundary", "terminal", "blocked", "local-cli-slash-commands-boundary"],
+    ["slashExecutionBoundary", "execution", "blocked", "local-cli-slash-commands-boundary"],
+    ["filesystemBoundary", "filesystem", "blocked", "local-cli-slash-commands-boundary"],
+    ["networkBoundary", "network", "blocked", "local-cli-slash-commands-boundary"],
+    ["modelTrafficBoundary", "model", "blocked", "local-cli-slash-commands-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexCliSlashCommandsCatalog(payload) {
+  const catalog = payload.codexCliSlashCommands;
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-cli-slash-commands-docs");
+  assert.equal(catalog.entryCount, 65);
+  assert.equal(catalog.officialEntryCount, 46);
+  assert.equal(catalog.localBoundaryEntryCount, 19);
+  assert.equal(catalog.catalogOnlyEntryCount, 46);
+  assert.equal(catalog.blockedEntryCount, 19);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({ key, group, state, source })),
+    expectedCodexCliSlashCommandsEntries(),
+  );
+
+  const entryRedactionFlags = [
+    "slashCommandReturned",
+    "commandArgumentReturned",
+    "promptTextReturned",
+    "transcriptContentReturned",
+    "sessionIdReturned",
+    "configValueReturned",
+    "filePathReturned",
+    "fileContentReturned",
+    "modelNameReturned",
+    "approvalPolicyReturned",
+    "pluginNameReturned",
+    "skillNameReturned",
+    "appSlugReturned",
+    "hookNameReturned",
+    "importArtifactReturned",
+    "feedbackLogReturned",
+    "terminalOutputReturned",
+    "slashPopupOpened",
+    "commandQueued",
+    "commandExecuted",
+    "sessionMutated",
+    "configWritten",
+    "fileRead",
+    "fileWritten",
+    "modelSwitched",
+    "approvalPolicyChanged",
+    "pluginMutated",
+    "skillInvoked",
+    "appInserted",
+    "hookTrusted",
+    "importStarted",
+    "feedbackSubmitted",
+    "terminalControlled",
+    "filesystemRead",
+    "filesystemWrite",
+    "networkAccess",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.cliSlashCommandsCatalogReturned, true);
+  for (const flag of [
+    "slashCommandsReturned",
+    "commandArgumentsReturned",
+    "promptTextsReturned",
+    "transcriptContentsReturned",
+    "sessionIdsReturned",
+    "configValuesReturned",
+    "filePathsReturned",
+    "fileContentsReturned",
+    "modelNamesReturned",
+    "approvalPoliciesReturned",
+    "pluginNamesReturned",
+    "skillNamesReturned",
+    "appSlugsReturned",
+    "hookNamesReturned",
+    "importArtifactsReturned",
+    "feedbackLogsReturned",
+    "terminalOutputsReturned",
+    "slashPopupOpenEnabled",
+    "commandQueueEnabled",
+    "commandExecutionEnabled",
+    "sessionMutationEnabled",
+    "configWriteEnabled",
+    "fileReads",
+    "fileWrites",
+    "modelSwitchEnabled",
+    "approvalPolicyChangeEnabled",
+    "pluginMutationEnabled",
+    "skillInvocationEnabled",
+    "appInsertionEnabled",
+    "hookTrustEnabled",
+    "importStartEnabled",
+    "feedbackSubmissionEnabled",
+    "terminalControlEnabled",
+    "filesystemReads",
+    "filesystemWrites",
+    "networkAccess",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexCliSlashCommandsReturned", true],
+    ["codexCliSlashCommandsValuesReturned", false],
+    ["codexCliSlashCommandsExactCommandsReturned", false],
+    ["codexCliSlashCommandsArgumentsReturned", false],
+    ["codexCliSlashCommandsPromptTextsReturned", false],
+    ["codexCliSlashCommandsTranscriptContentsReturned", false],
+    ["codexCliSlashCommandsSessionIdsReturned", false],
+    ["codexCliSlashCommandsConfigValuesReturned", false],
+    ["codexCliSlashCommandsFilePathsReturned", false],
+    ["codexCliSlashCommandsFileContentsReturned", false],
+    ["codexCliSlashCommandsModelNamesReturned", false],
+    ["codexCliSlashCommandsApprovalPoliciesReturned", false],
+    ["codexCliSlashCommandsPluginNamesReturned", false],
+    ["codexCliSlashCommandsSkillNamesReturned", false],
+    ["codexCliSlashCommandsAppSlugsReturned", false],
+    ["codexCliSlashCommandsHookNamesReturned", false],
+    ["codexCliSlashCommandsImportArtifactsReturned", false],
+    ["codexCliSlashCommandsFeedbackLogsReturned", false],
+    ["codexCliSlashCommandsTerminalOutputsReturned", false],
+    ["codexCliSlashCommandsPopupOpenEnabled", false],
+    ["codexCliSlashCommandsQueueEnabled", false],
+    ["codexCliSlashCommandsExecutionEnabled", false],
+    ["codexCliSlashCommandsSessionMutationEnabled", false],
+    ["codexCliSlashCommandsConfigWriteEnabled", false],
+    ["codexCliSlashCommandsFileReads", false],
+    ["codexCliSlashCommandsFileWrites", false],
+    ["codexCliSlashCommandsModelSwitchEnabled", false],
+    ["codexCliSlashCommandsApprovalPolicyChangeEnabled", false],
+    ["codexCliSlashCommandsPluginMutationEnabled", false],
+    ["codexCliSlashCommandsSkillInvocationEnabled", false],
+    ["codexCliSlashCommandsAppInsertionEnabled", false],
+    ["codexCliSlashCommandsHookTrustEnabled", false],
+    ["codexCliSlashCommandsImportStartEnabled", false],
+    ["codexCliSlashCommandsFeedbackSubmissionEnabled", false],
+    ["codexCliSlashCommandsTerminalControlEnabled", false],
+    ["codexCliSlashCommandsFilesystemAccess", false],
+    ["codexCliSlashCommandsNetworkAccess", false],
+    ["codexCliSlashCommandsModelTraffic", false],
+    ["codexCliSlashCommandsMutationsEnabled", false],
+    ["codexCliSlashCommandsPathsReturned", false],
+    ["codexCliSlashCommandsUrlsReturned", false],
+    ["codexCliSlashCommandsSecretsReturned", false],
+    ["codexCliSlashCommandsRawPayloadsReturned", false],
+    ["codexCliSlashCommandsAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexIdeExtensionEntries() {
   return [
     ["ideCommandPaletteControl", "commands", "catalog-only", "official-codex-ide-extension-docs"],
@@ -44684,6 +44921,7 @@ function assertCodexAppSettingsParity(
   assertCodexAgentsSdkCatalog(payload);
   assertCodexCliCommandReferenceCatalog(payload);
   assertCodexCliFeaturesCatalog(payload);
+  assertCodexCliSlashCommandsCatalog(payload);
   assertCodexIdeExtensionCatalog(payload);
   assertCodexWebCatalog(payload);
   assertCodexAgentInternetAccessCatalog(payload);

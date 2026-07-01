@@ -710,7 +710,17 @@
   sessions, connect remotes, write feature flags, start subagents, attach or
   generate images, write themes, start reviews, run web search or shell
   completions, change approval modes, run exec/cloud tasks, start MCP servers,
-  access filesystem or network, create model traffic, or mutate CLI state. Its Codex
+  access filesystem or network, create model traffic, or mutate CLI state. Its
+  Codex CLI slash commands catalog may expose only static
+  official-documentation keys plus local boundary keys, groups, states, sources,
+  counts, and redaction flags; it must not return exact slash commands,
+  arguments, prompt text, transcripts, session IDs, config values, file paths or
+  content, model names, approval policies, plugin/skill/app/hook names, import
+  artifacts, feedback logs, terminal output, paths, URLs, secrets, raw payloads,
+  app-server payloads, or app-server traffic, and must not open slash popups,
+  queue or execute commands, mutate sessions/config/files/plugins/skills/hooks/
+  imports, switch models or approval policy, control terminals, access
+  filesystem or network, create model traffic, or mutate CLI state. Its Codex
   IDE extension catalog may expose only static official-documentation keys plus
   local boundary keys, groups, states, sources, counts, and redaction flags; it
   must not return command IDs or names, keybindings, editor selections, file

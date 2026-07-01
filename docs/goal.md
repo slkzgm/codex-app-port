@@ -497,6 +497,24 @@ Target parity with the Codex desktop workflow:
   search or shell completions, change approval modes, run exec/cloud tasks,
   start MCP servers, access files/network, create model traffic, or mutate
   state.
+- `/api/settings-integrations` now also exposes a read-only Codex CLI slash
+  commands catalog aligned to the official CLI slash-command guide. It returns
+  only static keys, groups, states, sources, counts, and redaction flags for
+  slash workflow categories such as discovery, queued parsing, completion,
+  permissions, editor context, terminal UI, composer controls, sandbox read
+  grants, subagents, apps, plugins, hooks, session management, transcript
+  compaction, clipboard, Git review, experimental features, review retry
+  approval, memory, skills, imports, auth, MCP, file mentions, model controls,
+  planning, goals, response style, background terminal controls, side
+  conversations, status, usage, diagnostics, and terminal display
+  configuration. It does not return exact slash commands, arguments, prompts,
+  transcripts, session IDs, config values, file paths or content, model names,
+  approval policies, plugin/skill/app/hook names, import artifacts, feedback
+  logs, terminal output, paths, URLs, secrets, raw payloads, or app-server
+  traffic, and it does not open slash popups, queue or execute commands, mutate
+  sessions/config/files/plugins/skills/hooks/imports, switch models or approval
+  policy, control terminals, access files/network, create model traffic, or
+  mutate state.
 - `/api/settings-integrations` now also exposes a read-only Codex IDE extension
   catalog aligned to the official IDE extension commands, features, settings,
   and slash-command guides. It returns only static keys, groups, states,

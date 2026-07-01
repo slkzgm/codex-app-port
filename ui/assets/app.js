@@ -83,6 +83,10 @@ const elements = {
   ),
   codexCliFeaturesText: document.querySelector("#codex-cli-features-text"),
   codexCliFeaturesValuesText: document.querySelector("#codex-cli-features-values-text"),
+  codexCliSlashCommandsText: document.querySelector("#codex-cli-slash-commands-text"),
+  codexCliSlashCommandsValuesText: document.querySelector(
+    "#codex-cli-slash-commands-values-text",
+  ),
   codexIdeExtensionText: document.querySelector("#codex-ide-extension-text"),
   codexIdeExtensionValuesText: document.querySelector("#codex-ide-extension-values-text"),
   codexWebText: document.querySelector("#codex-web-text"),
@@ -527,6 +531,7 @@ const elements = {
   codexAgentsSdkList: document.querySelector("#codex-agents-sdk-list"),
   codexCliCommandReferenceList: document.querySelector("#codex-cli-command-reference-list"),
   codexCliFeaturesList: document.querySelector("#codex-cli-features-list"),
+  codexCliSlashCommandsList: document.querySelector("#codex-cli-slash-commands-list"),
   codexIdeExtensionList: document.querySelector("#codex-ide-extension-list"),
   codexWebList: document.querySelector("#codex-web-list"),
   codexAgentInternetAccessList: document.querySelector("#codex-agent-internet-access-list"),
@@ -10610,6 +10615,7 @@ function renderSettingsIntegrations(payload) {
   const codexAgentsSdk = payload.codexAgentsSdk ?? {};
   const codexCliCommandReference = payload.codexCliCommandReference ?? {};
   const codexCliFeatures = payload.codexCliFeatures ?? {};
+  const codexCliSlashCommands = payload.codexCliSlashCommands ?? {};
   const codexIdeExtension = payload.codexIdeExtension ?? {};
   const codexWeb = payload.codexWeb ?? {};
   const codexAgentInternetAccess = payload.codexAgentInternetAccess ?? {};
@@ -11675,6 +11681,57 @@ function renderSettingsIntegrations(payload) {
     codexCliFeatures.secretsReturned ||
     codexCliFeatures.rawPayloadsReturned ||
     codexCliFeatures.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexCliSlashCommandsText.textContent = codexCliSlashCommands.returned
+    ? `${codexCliSlashCommands.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexCliSlashCommands.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexCliSlashCommandsValuesText.textContent =
+    codexCliSlashCommands.slashCommandsReturned ||
+    codexCliSlashCommands.commandArgumentsReturned ||
+    codexCliSlashCommands.promptTextsReturned ||
+    codexCliSlashCommands.transcriptContentsReturned ||
+    codexCliSlashCommands.sessionIdsReturned ||
+    codexCliSlashCommands.configValuesReturned ||
+    codexCliSlashCommands.filePathsReturned ||
+    codexCliSlashCommands.fileContentsReturned ||
+    codexCliSlashCommands.modelNamesReturned ||
+    codexCliSlashCommands.approvalPoliciesReturned ||
+    codexCliSlashCommands.pluginNamesReturned ||
+    codexCliSlashCommands.skillNamesReturned ||
+    codexCliSlashCommands.appSlugsReturned ||
+    codexCliSlashCommands.hookNamesReturned ||
+    codexCliSlashCommands.importArtifactsReturned ||
+    codexCliSlashCommands.feedbackLogsReturned ||
+    codexCliSlashCommands.terminalOutputsReturned ||
+    codexCliSlashCommands.slashPopupOpenEnabled ||
+    codexCliSlashCommands.commandQueueEnabled ||
+    codexCliSlashCommands.commandExecutionEnabled ||
+    codexCliSlashCommands.sessionMutationEnabled ||
+    codexCliSlashCommands.configWriteEnabled ||
+    codexCliSlashCommands.fileReads ||
+    codexCliSlashCommands.fileWrites ||
+    codexCliSlashCommands.modelSwitchEnabled ||
+    codexCliSlashCommands.approvalPolicyChangeEnabled ||
+    codexCliSlashCommands.pluginMutationEnabled ||
+    codexCliSlashCommands.skillInvocationEnabled ||
+    codexCliSlashCommands.appInsertionEnabled ||
+    codexCliSlashCommands.hookTrustEnabled ||
+    codexCliSlashCommands.importStartEnabled ||
+    codexCliSlashCommands.feedbackSubmissionEnabled ||
+    codexCliSlashCommands.terminalControlEnabled ||
+    codexCliSlashCommands.filesystemReads ||
+    codexCliSlashCommands.filesystemWrites ||
+    codexCliSlashCommands.networkAccess ||
+    codexCliSlashCommands.modelTraffic ||
+    codexCliSlashCommands.mutationEnabled ||
+    codexCliSlashCommands.pathsReturned ||
+    codexCliSlashCommands.urlsReturned ||
+    codexCliSlashCommands.secretsReturned ||
+    codexCliSlashCommands.rawPayloadsReturned ||
+    codexCliSlashCommands.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexIdeExtensionText.textContent = codexIdeExtension.returned
@@ -13049,6 +13106,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexAgentsSdkCatalog(codexAgentsSdk);
   renderCodexCliCommandReferenceCatalog(codexCliCommandReference);
   renderCodexCliFeaturesCatalog(codexCliFeatures);
+  renderCodexCliSlashCommandsCatalog(codexCliSlashCommands);
   renderCodexIdeExtensionCatalog(codexIdeExtension);
   renderCodexWebCatalog(codexWeb);
   renderCodexAgentInternetAccessCatalog(codexAgentInternetAccess);
@@ -16738,6 +16796,104 @@ function renderCodexCliFeaturesCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexCliFeaturesList.append(row);
+  }
+}
+
+function renderCodexCliSlashCommandsCatalog(summary) {
+  elements.codexCliSlashCommandsList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexCliSlashCommandsList.append(
+      emptyState("No Codex CLI slash commands catalog returned."),
+    );
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "slash";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.slashCommandReturned ? "slash commands returned" : "slash commands hidden",
+      entry.commandArgumentReturned
+        ? "command arguments returned"
+        : "command arguments hidden",
+      entry.promptTextReturned ? "prompt text returned" : "prompt text hidden",
+      entry.transcriptContentReturned ? "transcripts returned" : "transcripts hidden",
+      entry.sessionIdReturned ? "session IDs returned" : "session IDs hidden",
+      entry.configValueReturned ? "config values returned" : "config values hidden",
+      entry.filePathReturned ? "file paths returned" : "file paths hidden",
+      entry.fileContentReturned ? "file contents returned" : "file contents hidden",
+      entry.modelNameReturned ? "model names returned" : "model names hidden",
+      entry.approvalPolicyReturned
+        ? "approval policies returned"
+        : "approval policies hidden",
+      entry.pluginNameReturned ? "plugin names returned" : "plugin names hidden",
+      entry.skillNameReturned ? "skill names returned" : "skill names hidden",
+      entry.appSlugReturned ? "app slugs returned" : "app slugs hidden",
+      entry.hookNameReturned ? "hook names returned" : "hook names hidden",
+      entry.importArtifactReturned
+        ? "import artifacts returned"
+        : "import artifacts hidden",
+      entry.feedbackLogReturned ? "feedback logs returned" : "feedback logs hidden",
+      entry.terminalOutputReturned
+        ? "terminal output returned"
+        : "terminal output hidden",
+      entry.slashPopupOpened ? "slash popup opened" : "slash popup blocked",
+      entry.commandQueued ? "command queued" : "command queueing blocked",
+      entry.commandExecuted ? "command executed" : "command execution blocked",
+      entry.sessionMutated ? "session mutated" : "session mutations blocked",
+      entry.configWritten ? "config written" : "config writes blocked",
+      entry.fileRead ? "file read" : "file reads blocked",
+      entry.fileWritten ? "file written" : "file writes blocked",
+      entry.modelSwitched ? "model switched" : "model switches blocked",
+      entry.approvalPolicyChanged
+        ? "approval policy changed"
+        : "approval policy changes blocked",
+      entry.pluginMutated ? "plugin mutated" : "plugin mutations blocked",
+      entry.skillInvoked ? "skill invoked" : "skill invocation blocked",
+      entry.appInserted ? "app inserted" : "app insertion blocked",
+      entry.hookTrusted ? "hook trusted" : "hook trust blocked",
+      entry.importStarted ? "import started" : "import starts blocked",
+      entry.feedbackSubmitted ? "feedback submitted" : "feedback submission blocked",
+      entry.terminalControlled ? "terminal controlled" : "terminal control blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem written" : "filesystem writes blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.modelTraffic ? "model traffic" : "model traffic blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexCliSlashCommandsList.append(row);
   }
 }
 

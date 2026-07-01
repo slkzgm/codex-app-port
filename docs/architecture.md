@@ -888,6 +888,24 @@ Current M1 status:
   mode changes, exec/cloud task runs, MCP server starts, filesystem access,
   network access, model traffic, mutations, paths, URLs, secrets, raw payloads,
   and app-server traffic blocked
+- done: read-only Codex CLI slash commands catalog in
+  `/api/settings-integrations`, exposing only static official CLI
+  slash-command guide keys plus local boundary keys/groups/states/sources/
+  counts/redaction flags for discovery, queued parsing, completion,
+  permissions, editor context, terminal UI, composer controls, sandbox read
+  grants, subagents, apps, plugins, hooks, session management, transcript
+  compaction, clipboard, Git review, experimental features, review retry
+  approval, memory, skills, imports, auth, MCP, file mentions, model controls,
+  planning, goals, response style, background terminal controls, side
+  conversations, status, usage, diagnostics, and terminal display
+  configuration, with exact slash commands, arguments, prompts, transcripts,
+  session IDs, config values, file paths/content, model names, approval
+  policies, plugin/skill/app/hook names, import artifacts, feedback logs,
+  terminal output, slash popup opening, command queueing/execution,
+  session/config/file/plugin/skill/hook/import mutations, model switching,
+  approval-policy changes, terminal control, filesystem access, network access,
+  model traffic, mutations, paths, URLs, secrets, raw payloads, and app-server
+  traffic blocked
 - done: read-only Codex IDE extension catalog in `/api/settings-integrations`,
   exposing only static official IDE extension command/feature/settings/slash
   guide keys plus local boundary keys/groups/states/sources/counts/redaction
