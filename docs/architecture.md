@@ -1602,6 +1602,13 @@ Current M1 status:
   image-generation, namespace-tool, and web-search capability flags plus enabled
   and disabled counts while omitting provider names, model ids, cwd, model
   traffic, settings writes, URLs, paths, tokens, and raw payloads.
+- done: dedicated `/api/collaboration-modes` read route for
+  `collaborationMode/list`, disabled by default behind
+  `CODEX_APP_PORT_ALLOW_COLLABORATION_MODES=1`, calling with an empty parameter
+  object and returning only mode-kind, model-override, and reasoning-effort
+  counts while omitting mode names, model ids, model override values, raw
+  reasoning-effort values, cwd, model traffic, settings writes, URLs, paths,
+  tokens, and raw payloads.
 - done: dedicated `/api/mcp-server-status` read route for
   `mcpServerStatus/list`, disabled by default behind
   `CODEX_APP_PORT_ALLOW_MCP_SERVER_STATUS=1`, using `toolsAndAuthOnly` detail

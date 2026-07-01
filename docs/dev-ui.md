@@ -1878,6 +1878,16 @@ model ids, cwd, settings writes, model traffic, URLs, paths, tokens, or raw
 app-server payloads. The Provider Check control renders only sanitized
 capability/count/detail-redaction fields.
 
+`/api/collaboration-modes` is a separate dedicated collaboration mode inventory
+read route. It is disabled unless
+`CODEX_APP_PORT_ALLOW_COLLABORATION_MODES=1` is set; when enabled, it calls only
+`collaborationMode/list` with an empty parameter object. It returns only
+mode-kind, model-override, and reasoning-effort counts. It never returns mode
+names, model ids, model override values, raw reasoning-effort values, cwd,
+settings writes, model traffic, URLs, paths, tokens, or raw app-server
+payloads. The Modes Check control renders only sanitized count/override/
+detail-redaction fields.
+
 `/api/mcp-server-status` is a separate dedicated MCP status read route. It is
 disabled unless `CODEX_APP_PORT_ALLOW_MCP_SERVER_STATUS=1` is set; when enabled,
 it calls only `mcpServerStatus/list` with `toolsAndAuthOnly` detail and returns

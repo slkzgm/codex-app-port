@@ -4,6 +4,7 @@ import process from "node:process";
 
 import { JsonlRpcClient, JsonlRpcError } from "../src/app-server/jsonl-rpc.mjs";
 import {
+  runCollaborationModesReadProbe,
   runAccountLogoutProbe,
   runAccountReadProbe,
   runConfigBatchWriteProbe,
@@ -2716,6 +2717,52 @@ test("runModelProviderCapabilitiesReadProbe returns capability flags without raw
       delete process.env.CODEX_APP_PORT_ALLOW_MODEL_PROVIDER_CAPABILITIES;
     } else {
       process.env.CODEX_APP_PORT_ALLOW_MODEL_PROVIDER_CAPABILITIES = previous;
+    }
+  }
+});
+
+test("runCollaborationModesReadProbe returns mode counts without names or model overrides", async () => {
+  const previous = process.env.CODEX_APP_PORT_ALLOW_COLLABORATION_MODES;
+  process.env.CODEX_APP_PORT_ALLOW_COLLABORATION_MODES = "1";
+  try {
+    const summary = await runCollaborationModesReadProbe({
+      codexBin: process.execPath,
+      codexArgs: [mockServer.pathname],
+      cwd: process.cwd(),
+      timeoutMs: 1_000,
+    });
+    const modes = summary.probes.collaborationModes;
+    const serialized = JSON.stringify(summary);
+    assert.equal(summary.ok, true);
+    assert.equal(modes.ok, true);
+    assert.equal(modes.modeCount, 2);
+    assert.equal(modes.modeKindCounts.default, 1);
+    assert.equal(modes.modeKindCounts.plan, 1);
+    assert.equal(modes.modelOverrideCount, 1);
+    assert.equal(modes.reasoningEffortOverrideCount, 1);
+    assert.equal(modes.reasoningEffortCounts.medium, 1);
+    assert.equal(modes.returnedModeCount, 0);
+    assert.deepEqual(modes.items, []);
+    assert.equal(modes.namesReturned, false);
+    assert.equal(modes.modelIdsReturned, false);
+    assert.equal(modes.rawPayloadReturned, false);
+    for (const marker of [
+      "private-mode",
+      "private-model",
+      "/tmp/mock-workspace",
+      "codexHome",
+      "userAgent",
+      "\"namesReturned\":true",
+      "\"modelIdsReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    if (previous === undefined) {
+      delete process.env.CODEX_APP_PORT_ALLOW_COLLABORATION_MODES;
+    } else {
+      process.env.CODEX_APP_PORT_ALLOW_COLLABORATION_MODES = previous;
     }
   }
 });

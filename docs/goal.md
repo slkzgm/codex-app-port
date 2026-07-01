@@ -1117,6 +1117,13 @@ Target parity with the Codex desktop workflow:
   namespace-tool, and web-search flags plus enabled/disabled counts; provider
   names, model ids, model traffic, settings writes, cwd, paths, URLs, tokens,
   and raw payloads remain hidden or blocked.
+- `collaborationMode/list` has both an opt-in counts-only inventory path and a
+  dedicated opt-in `/api/collaboration-modes` route behind
+  `CODEX_APP_PORT_ALLOW_COLLABORATION_MODES=1`. The dedicated route sends an
+  empty parameter object and returns only mode-kind, model-override, and
+  reasoning-effort counts; mode names, model ids, model override values, raw
+  reasoning-effort values, model traffic, settings writes, cwd, paths, URLs,
+  tokens, and raw payloads remain hidden or blocked.
 - `mcpServerStatus/list` reports only server/tool/resource/resource-template
   counts and documented auth-status buckets (`unsupported`, `notLoggedIn`,
   `bearerToken`, `oAuth`, or `unknown`); arbitrary auth status values, server

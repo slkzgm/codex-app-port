@@ -281,6 +281,13 @@ const elements = {
   modelProviderCapabilitiesDetailsText: document.querySelector(
     "#model-provider-capabilities-details-text",
   ),
+  collaborationModesButton: document.querySelector("#collaboration-modes-button"),
+  collaborationModesStatus: document.querySelector("#collaboration-modes-status"),
+  collaborationModesCountText: document.querySelector("#collaboration-modes-count-text"),
+  collaborationModesOverridesText: document.querySelector(
+    "#collaboration-modes-overrides-text",
+  ),
+  collaborationModesDetailsText: document.querySelector("#collaboration-modes-details-text"),
   mcpServerStatusButton: document.querySelector("#mcp-server-status-button"),
   mcpServerStatusStatus: document.querySelector("#mcp-server-status-status"),
   mcpServerStatusCountText: document.querySelector("#mcp-server-status-count-text"),
@@ -1298,6 +1305,10 @@ elements.workspaceSelect.addEventListener("change", () => {
   elements.modelProviderCapabilitiesCountText.textContent = "0";
   elements.modelProviderCapabilitiesEnabledText.textContent = "0 / 0";
   elements.modelProviderCapabilitiesDetailsText.textContent = "Hidden";
+  elements.collaborationModesStatus.textContent = "Mode read disabled by default.";
+  elements.collaborationModesCountText.textContent = "0";
+  elements.collaborationModesOverridesText.textContent = "0 / 0";
+  elements.collaborationModesDetailsText.textContent = "Hidden";
   elements.mcpServerStatusStatus.textContent = "MCP status disabled by default.";
   elements.mcpServerStatusCountText.textContent = "0";
   elements.mcpServerStatusToolsText.textContent = "0";
@@ -2325,6 +2336,10 @@ elements.modelProviderCapabilitiesButton.addEventListener("click", () => {
   runModelProviderCapabilities();
 });
 
+elements.collaborationModesButton.addEventListener("click", () => {
+  runCollaborationModes();
+});
+
 elements.mcpServerStatusButton.addEventListener("click", () => {
   runMcpServerStatus();
 });
@@ -2884,6 +2899,16 @@ function modelProviderCapabilitiesEndpoint() {
   const params = new URLSearchParams();
   params.set("workspace", selectedWorkspaceId);
   return `/api/model-provider-capabilities?${params.toString()}`;
+}
+
+function collaborationModesEndpoint() {
+  if (!selectedWorkspaceId) {
+    return "/api/collaboration-modes";
+  }
+
+  const params = new URLSearchParams();
+  params.set("workspace", selectedWorkspaceId);
+  return `/api/collaboration-modes?${params.toString()}`;
 }
 
 function mcpServerStatusEndpoint() {
@@ -5161,6 +5186,28 @@ async function runModelProviderCapabilities() {
     renderError(error);
   } finally {
     setModelProviderCapabilitiesLoading(false);
+  }
+}
+
+async function runCollaborationModes() {
+  setCollaborationModesLoading(true);
+  hideError();
+
+  try {
+    const response = await fetch(collaborationModesEndpoint(), {
+      headers: apiHeaders(),
+      cache: "no-store",
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderCollaborationModes(payload);
+  } catch (error) {
+    elements.collaborationModesStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    setCollaborationModesLoading(false);
   }
 }
 
@@ -14259,7 +14306,11 @@ function renderSettingsIntegrations(payload) {
         : "Blocked"
     : "Blocked";
   elements.collaborationModesStateText.textContent = settings.collaborationModeListingAvailable
-    ? `${inventory.collaborationModes?.modeCount ?? 0} modes`
+    ? inventory.collaborationModes?.ok
+      ? `${inventory.collaborationModes?.modeCount ?? 0} modes`
+      : settings.collaborationModesEnabled
+        ? "Read gate"
+        : "Blocked"
     : "Blocked";
   elements.permissionProfilesStateText.textContent = settings.permissionProfileListingAvailable
     ? `${inventory.permissionProfiles?.profileCount ?? 0} profiles`
@@ -16071,6 +16122,34 @@ function renderModelProviderCapabilities(payload) {
   elements.modelCapabilitiesStateText.textContent = blocked
     ? "Blocked"
     : `${enabledCapabilityCount} enabled`;
+}
+
+function renderCollaborationModes(payload) {
+  const settings = payload.settings ?? {};
+  const result = payload.result ?? {};
+  const blocked = settings.collaborationModesEnabled !== true || payload.appServer?.touched !== true;
+  const modeCount = result.modeCount ?? payload.probes?.collaborationModes?.modeCount ?? 0;
+  const modelOverrideCount =
+    result.modelOverrideCount ?? payload.probes?.collaborationModes?.modelOverrideCount ?? 0;
+  const reasoningEffortOverrideCount =
+    result.reasoningEffortOverrideCount ??
+    payload.probes?.collaborationModes?.reasoningEffortOverrideCount ??
+    0;
+  const status = result.status ?? (blocked ? "blocked" : "available");
+  elements.collaborationModesStatus.textContent = blocked ? "Read blocked" : status;
+  elements.collaborationModesCountText.textContent = String(modeCount);
+  elements.collaborationModesOverridesText.textContent =
+    `${modelOverrideCount} / ${reasoningEffortOverrideCount}`;
+  elements.collaborationModesDetailsText.textContent =
+    result.namesReturned ||
+    result.modelIdsReturned ||
+    result.modelOverridesReturned ||
+    result.reasoningEffortValuesReturned ||
+    result.rawPayloadReturned ||
+    settings.rawPayloadReturned
+      ? "Returned"
+      : "Hidden";
+  elements.collaborationModesStateText.textContent = blocked ? "Blocked" : `${modeCount} modes`;
 }
 
 function renderMcpServerStatus(payload) {
@@ -24295,6 +24374,14 @@ function setModelProviderCapabilitiesLoading(isLoading) {
     : "Provider Check";
   if (isLoading) {
     elements.modelProviderCapabilitiesStatus.textContent = "Checking";
+  }
+}
+
+function setCollaborationModesLoading(isLoading) {
+  elements.collaborationModesButton.disabled = isLoading;
+  elements.collaborationModesButton.textContent = isLoading ? "Checking" : "Modes Check";
+  if (isLoading) {
+    elements.collaborationModesStatus.textContent = "Checking";
   }
 }
 

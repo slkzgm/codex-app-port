@@ -1688,6 +1688,12 @@
   enabled/disabled counts; provider names, model ids, cwd, model traffic,
   settings writes, URLs, paths, tokens, and raw app-server payloads remain
   blocked.
+- `/api/collaboration-modes` may call only `collaborationMode/list` behind
+  `CODEX_APP_PORT_ALLOW_COLLABORATION_MODES=1`. It is GET-only, local-token
+  protected, sends an empty parameter object, and returns only mode-kind,
+  model-override, and reasoning-effort counts; mode names, model ids, model
+  override values, raw reasoning-effort values, cwd, model traffic, settings
+  writes, URLs, paths, tokens, and raw app-server payloads remain blocked.
 - `/api/mcp-server-status` may call only `mcpServerStatus/list` behind
   `CODEX_APP_PORT_ALLOW_MCP_SERVER_STATUS=1`. It is GET-only, local-token
   protected, requests `toolsAndAuthOnly` detail, and returns server/tool/

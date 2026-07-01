@@ -390,6 +390,11 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /model-provider-capabilities-count-text/);
     assert.match(html, /model-provider-capabilities-enabled-text/);
     assert.match(html, /model-provider-capabilities-details-text/);
+    assert.match(html, /collaboration-modes-button/);
+    assert.match(html, /collaboration-modes-status/);
+    assert.match(html, /collaboration-modes-count-text/);
+    assert.match(html, /collaboration-modes-overrides-text/);
+    assert.match(html, /collaboration-modes-details-text/);
     assert.match(html, /mcp-server-status-button/);
     assert.match(html, /mcp-server-status-status/);
     assert.match(html, /mcp-server-status-count-text/);
@@ -452,6 +457,9 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(appScript, /runModelProviderCapabilities/);
     assert.match(appScript, /renderModelProviderCapabilities/);
     assert.match(appScript, /setModelProviderCapabilitiesLoading/);
+    assert.match(appScript, /runCollaborationModes/);
+    assert.match(appScript, /renderCollaborationModes/);
+    assert.match(appScript, /setCollaborationModesLoading/);
     assert.match(appScript, /runMcpServerStatus/);
     assert.match(appScript, /renderMcpServerStatus/);
     assert.match(appScript, /setMcpServerStatusLoading/);
@@ -15598,6 +15606,182 @@ test("dev server exposes model provider capabilities only behind explicit opt-in
       "private-model-id",
       "provider-secret-token",
       "provider.json",
+      "\"rawPayloadReturned\":true",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    await closeServer(enabledServer.server);
+  }
+});
+
+test("dev server exposes collaboration modes only behind explicit opt-in and redacts mode details", async () => {
+  const blockedCalls = [];
+  const blockedServer = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    collaborationModesFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+
+  try {
+    const settingsResponse = await fetch(`${blockedServer.url}/api/settings-integrations`, {
+      headers: apiHeaders(blockedServer.server),
+    });
+    assert.equal(settingsResponse.status, 200);
+    const settingsPayload = await settingsResponse.json();
+    assert.equal(settingsPayload.surfaces.settings.collaborationModeListingAvailable, false);
+    assert.equal(settingsPayload.surfaces.settings.collaborationModesEnabled, false);
+    assert.equal(settingsPayload.integrationScope.collaborationModesEnabled, false);
+
+    const response = await fetch(`${blockedServer.url}/api/collaboration-modes`, {
+      headers: apiHeaders(blockedServer.server),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, false);
+    assert.deepEqual(payload.appServer.auditedMethods, ["collaborationMode/list"]);
+    assert.equal(payload.settings.collaborationModesEnabled, false);
+    assert.equal(payload.policy.appServerTraffic, false);
+    assert.equal(payload.result.status, "blocked");
+    assert.equal(blockedCalls.length, 0);
+    assert.equal(serialized.includes("/tmp/default-workspace"), false);
+  } finally {
+    await closeServer(blockedServer.server);
+  }
+
+  const calls = [];
+  const enabledServer = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    collaborationModesEnabled: true,
+    collaborationModesFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-07-01T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/private-home",
+          userAgent: "mock/0.0.0",
+        },
+        probes: {
+          collaborationModes: {
+            ok: true,
+            modeCount: 3,
+            modeKindCounts: {
+              default: 1,
+              plan: 1,
+              privateMode: 1,
+            },
+            modelOverrideCount: 2,
+            reasoningEffortOverrideCount: 2,
+            reasoningEffortCounts: {
+              low: 1,
+              medium: 1,
+              privateEffort: 1,
+            },
+            returnedModeCount: 2,
+            items: [
+              {
+                name: "private-mode-name",
+                mode: "default",
+                hasModelOverride: true,
+                hasReasoningEffortOverride: true,
+              },
+            ],
+            namesReturned: true,
+            modelIdsReturned: true,
+            rawPayloadReturned: true,
+          },
+        },
+        rawModes: {
+          name: "private-mode-name",
+          model: "private-model-id",
+          reasoning_effort: "privateEffort",
+          path: "/tmp/default-workspace/modes.json",
+        },
+        notifications: {},
+      };
+    },
+  });
+
+  try {
+    const settingsResponse = await fetch(`${enabledServer.url}/api/settings-integrations`, {
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(settingsResponse.status, 200);
+    const settingsPayload = await settingsResponse.json();
+    assert.equal(settingsPayload.surfaces.settings.collaborationModeListingAvailable, true);
+    assert.equal(settingsPayload.surfaces.settings.collaborationModesEnabled, true);
+    assert.equal(settingsPayload.integrationScope.collaborationModesEnabled, true);
+    assert.equal(
+      settingsPayload.integrationScope.enabledReadMethods.includes("collaborationMode/list"),
+      true,
+    );
+
+    const methodResponse = await fetch(`${enabledServer.url}/api/collaboration-modes`, {
+      method: "POST",
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(methodResponse.status, 405);
+
+    const response = await fetch(`${enabledServer.url}/api/collaboration-modes`, {
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, true);
+    assert.equal(payload.appServer.modelTraffic, false);
+    assert.deepEqual(payload.appServer.auditedMethods, ["collaborationMode/list"]);
+    assert.equal(payload.settings.collaborationModesEnabled, true);
+    assert.equal(payload.result.status, "available");
+    assert.equal(payload.result.modeCount, 3);
+    assert.equal(payload.result.modeKindCounts.default, 1);
+    assert.equal(payload.result.modeKindCounts.plan, 1);
+    assert.equal(payload.result.modeKindCounts.privateMode, undefined);
+    assert.equal(payload.result.modelOverrideCount, 2);
+    assert.equal(payload.result.reasoningEffortOverrideCount, 2);
+    assert.equal(payload.result.reasoningEffortCounts.low, 1);
+    assert.equal(payload.result.reasoningEffortCounts.medium, 1);
+    assert.equal(payload.result.reasoningEffortCounts.privateEffort, undefined);
+    assert.equal(payload.result.returnedModeCount, 0);
+    assert.deepEqual(payload.probes.collaborationModes.items, []);
+    assert.equal(payload.result.namesReturned, false);
+    assert.equal(payload.result.modelIdsReturned, false);
+    assert.equal(payload.result.modelOverridesReturned, false);
+    assert.equal(payload.result.reasoningEffortValuesReturned, false);
+    assert.equal(payload.result.rawPayloadReturned, false);
+    assert.equal(payload.policy.readOnly, true);
+    assert.equal(payload.policy.modelTraffic, false);
+    assert.equal(payload.policy.settingsWrites, false);
+    assert.equal(payload.policy.namesReturned, false);
+    assert.equal(payload.policy.modelIdsReturned, false);
+    assert.equal(payload.policy.modelOverridesReturned, false);
+    assert.equal(payload.policy.reasoningEffortValuesReturned, false);
+    assert.equal(payload.policy.pathsReturned, false);
+    assert.equal(payload.policy.rawPayloadReturned, false);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].cwd, "/tmp/default-workspace");
+    for (const marker of [
+      "/tmp/default-workspace",
+      "/tmp/private-home",
+      "codexHome",
+      "userAgent",
+      "private-mode-name",
+      "private-model-id",
+      "privateEffort",
+      "privateMode",
+      "modes.json",
+      "\"namesReturned\":true",
+      "\"modelIdsReturned\":true",
       "\"rawPayloadReturned\":true",
     ]) {
       assert.equal(serialized.includes(marker), false, `leaked ${marker}`);

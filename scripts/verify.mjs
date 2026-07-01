@@ -87,6 +87,7 @@ async function main() {
   await checkConfigRequirementsApi();
   await checkModelsListApi();
   await checkModelProviderCapabilitiesApi();
+  await checkCollaborationModesApi();
   await checkMcpServerStatusApi();
   await checkPermissionProfilesApi();
   await checkAppsListApi();
@@ -18798,6 +18799,211 @@ async function checkModelProviderCapabilitiesApi() {
     await closeServer(server);
   }
   pass("dev server model provider capabilities exposes flags behind opt-in without returning provider details");
+}
+
+async function checkCollaborationModesApi() {
+  const blockedCalls = [];
+  const blockedServer = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    collaborationModesFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+  const blockedPort = await listenWithFallback(blockedServer, { host: "127.0.0.1", port: 0 });
+  const blockedBaseUrl = `http://127.0.0.1:${blockedPort}`;
+
+  try {
+    const token = await readUiSessionToken(blockedBaseUrl);
+    const settingsResponse = await fetch(`${blockedBaseUrl}/api/settings-integrations`, {
+      headers: apiHeaders(token),
+    });
+    if (!settingsResponse.ok) {
+      throw new Error(
+        `settings integrations for blocked collaboration modes returned HTTP ${settingsResponse.status}`,
+      );
+    }
+    const settingsPayload = await settingsResponse.json();
+    if (
+      settingsPayload.surfaces?.settings?.collaborationModeListingAvailable !== false ||
+      settingsPayload.surfaces?.settings?.collaborationModesEnabled !== false ||
+      settingsPayload.integrationScope?.collaborationModesEnabled !== false
+    ) {
+      throw new Error("settings integrations did not expose the blocked collaboration modes gate safely");
+    }
+
+    const response = await fetch(`${blockedBaseUrl}/api/collaboration-modes`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`blocked collaboration modes returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (
+      payload.appServer?.touched !== false ||
+      payload.settings?.collaborationModesEnabled !== false ||
+      payload.result?.status !== "blocked" ||
+      payload.policy?.appServerTraffic !== false
+    ) {
+      throw new Error("blocked collaboration modes did not fail closed without app-server traffic");
+    }
+    if (blockedCalls.length !== 0) {
+      throw new Error("blocked collaboration modes unexpectedly touched app-server");
+    }
+    assertNoMarkers(JSON.stringify(payload), ["/tmp/codex-app-port-verify"]);
+  } finally {
+    await closeServer(blockedServer);
+  }
+
+  const calls = [];
+  const server = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    collaborationModesEnabled: true,
+    collaborationModesFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-07-01T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/verify-private-home",
+          userAgent: "verify-private-agent",
+        },
+        probes: {
+          collaborationModes: {
+            ok: true,
+            modeCount: 3,
+            modeKindCounts: {
+              default: 1,
+              plan: 1,
+              verifyPrivateMode: 1,
+            },
+            modelOverrideCount: 2,
+            reasoningEffortOverrideCount: 2,
+            reasoningEffortCounts: {
+              low: 1,
+              medium: 1,
+              verifyPrivateEffort: 1,
+            },
+            returnedModeCount: 2,
+            items: [
+              {
+                name: "verify-private-mode",
+                mode: "default",
+                hasModelOverride: true,
+                hasReasoningEffortOverride: true,
+              },
+            ],
+            namesReturned: true,
+            modelIdsReturned: true,
+            rawPayloadReturned: true,
+          },
+        },
+        rawModes: {
+          name: "verify-private-mode",
+          model: "verify-private-model-id",
+          reasoning_effort: "verifyPrivateEffort",
+          path: "/tmp/codex-app-port-verify/modes.json",
+        },
+        notifications: {},
+      };
+    },
+  });
+  const port = await listenWithFallback(server, { host: "127.0.0.1", port: 0 });
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  try {
+    const token = await readUiSessionToken(baseUrl);
+    const settingsResponse = await fetch(`${baseUrl}/api/settings-integrations`, {
+      headers: apiHeaders(token),
+    });
+    if (!settingsResponse.ok) {
+      throw new Error(
+        `settings integrations for collaboration modes returned HTTP ${settingsResponse.status}`,
+      );
+    }
+    const settingsPayload = await settingsResponse.json();
+    if (
+      settingsPayload.surfaces?.settings?.collaborationModeListingAvailable !== true ||
+      settingsPayload.surfaces?.settings?.collaborationModesEnabled !== true ||
+      settingsPayload.integrationScope?.collaborationModesEnabled !== true ||
+      !settingsPayload.integrationScope?.enabledReadMethods?.includes("collaborationMode/list")
+    ) {
+      throw new Error("settings integrations did not expose the collaboration modes gate safely");
+    }
+
+    const wrongMethod = await fetch(`${baseUrl}/api/collaboration-modes`, {
+      method: "POST",
+      headers: apiHeaders(token),
+    });
+    if (wrongMethod.status !== 405) {
+      throw new Error(`collaboration modes POST returned HTTP ${wrongMethod.status}`);
+    }
+
+    const response = await fetch(`${baseUrl}/api/collaboration-modes`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`collaboration modes returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (
+      payload.appServer?.touched !== true ||
+      payload.appServer?.modelTraffic !== false ||
+      payload.settings?.collaborationModesEnabled !== true ||
+      payload.result?.status !== "available" ||
+      payload.result?.modeCount !== 3 ||
+      payload.result?.modeKindCounts?.default !== 1 ||
+      payload.result?.modeKindCounts?.plan !== 1 ||
+      payload.result?.modeKindCounts?.verifyPrivateMode != null ||
+      payload.result?.modelOverrideCount !== 2 ||
+      payload.result?.reasoningEffortOverrideCount !== 2 ||
+      payload.result?.reasoningEffortCounts?.low !== 1 ||
+      payload.result?.reasoningEffortCounts?.medium !== 1 ||
+      payload.result?.reasoningEffortCounts?.verifyPrivateEffort != null ||
+      payload.result?.returnedModeCount !== 0 ||
+      payload.result?.namesReturned !== false ||
+      payload.result?.modelIdsReturned !== false ||
+      payload.result?.modelOverridesReturned !== false ||
+      payload.result?.reasoningEffortValuesReturned !== false ||
+      payload.result?.rawPayloadReturned !== false ||
+      payload.policy?.readOnly !== true ||
+      payload.policy?.modelTraffic !== false ||
+      payload.policy?.settingsWrites !== false ||
+      payload.policy?.namesReturned !== false ||
+      payload.policy?.modelIdsReturned !== false ||
+      payload.policy?.modelOverridesReturned !== false ||
+      payload.policy?.reasoningEffortValuesReturned !== false ||
+      payload.policy?.pathsReturned !== false ||
+      payload.policy?.rawPayloadReturned !== false
+    ) {
+      throw new Error("collaboration modes did not return the safe counts-only summary shape");
+    }
+    if (calls.length !== 1 || calls[0].cwd !== "/tmp/codex-app-port-verify") {
+      throw new Error("collaboration modes did not call the app-server read path once");
+    }
+    assertNoMarkers(JSON.stringify(payload), [
+      "/tmp/codex-app-port-verify",
+      "/tmp/verify-private-home",
+      "verify-private-agent",
+      "codexHome",
+      "userAgent",
+      "verify-private-mode",
+      "verify-private-model-id",
+      "verifyPrivateEffort",
+      "verifyPrivateMode",
+      "modes.json",
+      "\"namesReturned\":true",
+      "\"modelIdsReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]);
+  } finally {
+    await closeServer(server);
+  }
+  pass("dev server collaboration modes exposes counts behind opt-in without returning mode details");
 }
 
 async function checkMcpServerStatusApi() {

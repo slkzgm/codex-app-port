@@ -11,6 +11,7 @@ import {
   DEFAULT_LOADED_SESSION_LIMIT,
   MAX_TERMINAL_OUTPUT_PREVIEW_CHARS,
   openReadOnlyNotificationStream,
+  runCollaborationModesReadProbe,
   runAccountCreditsNudgeProbe,
   runAccountLoginCancelProbe,
   runAccountLoginStartProbe,
@@ -13164,6 +13165,7 @@ export function createDevServer({
   appsListFn = runAppsListReadProbe,
   modelsListFn = runModelsListReadProbe,
   modelProviderCapabilitiesFn = runModelProviderCapabilitiesReadProbe,
+  collaborationModesFn = runCollaborationModesReadProbe,
   configRequirementsFn = runConfigRequirementsReadProbe,
   mcpServerStatusFn = runMcpServerStatusReadProbe,
   permissionProfilesFn = runPermissionProfilesReadProbe,
@@ -13246,6 +13248,7 @@ export function createDevServer({
   modelsListEnabled = process.env.CODEX_APP_PORT_ALLOW_MODELS_LIST === "1",
   modelProviderCapabilitiesEnabled =
     process.env.CODEX_APP_PORT_ALLOW_MODEL_PROVIDER_CAPABILITIES === "1",
+  collaborationModesEnabled = process.env.CODEX_APP_PORT_ALLOW_COLLABORATION_MODES === "1",
   configRequirementsEnabled = process.env.CODEX_APP_PORT_ALLOW_CONFIG_REQUIREMENTS === "1",
   mcpServerStatusEnabled = process.env.CODEX_APP_PORT_ALLOW_MCP_SERVER_STATUS === "1",
   permissionProfilesEnabled = process.env.CODEX_APP_PORT_ALLOW_PERMISSION_PROFILES === "1",
@@ -13413,6 +13416,7 @@ export function createDevServer({
       appsListFn,
       modelsListFn,
       modelProviderCapabilitiesFn,
+      collaborationModesFn,
       configRequirementsFn,
       mcpServerStatusFn,
       permissionProfilesFn,
@@ -13490,6 +13494,7 @@ export function createDevServer({
       appsListEnabled,
       modelsListEnabled,
       modelProviderCapabilitiesEnabled,
+      collaborationModesEnabled,
       configRequirementsEnabled,
       mcpServerStatusEnabled,
       permissionProfilesEnabled,
@@ -15120,6 +15125,48 @@ export async function handleRequest(request, response, options) {
         error:
           cleanDisplayText(error.message, 200) ??
           "Invalid model provider capabilities request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/collaboration-modes") {
+    if (request.method !== "GET") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        url.searchParams.get("workspace"),
+      );
+      if (!options.collaborationModesEnabled) {
+        sendJson(response, 200, buildCollaborationModesBlockedPayload({ workspace }));
+        return;
+      }
+      const payload = await options.collaborationModesFn({
+        codexBin: options.codexBin,
+        cwd: workspace.cwd,
+        timeoutMs: options.timeoutMs,
+      });
+      sendJson(
+        response,
+        200,
+        sanitizeCollaborationModesPayload(payload, {
+          workspace,
+          enabled: true,
+        }),
+      );
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 502, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid collaboration modes request",
       });
     }
     return;
@@ -20199,6 +20246,7 @@ export async function handleRequest(request, response, options) {
             appsListEnabled: options.appsListEnabled,
             modelsListEnabled: options.modelsListEnabled,
             modelProviderCapabilitiesEnabled: options.modelProviderCapabilitiesEnabled,
+            collaborationModesEnabled: options.collaborationModesEnabled,
             configRequirementsEnabled: options.configRequirementsEnabled,
             mcpServerStatusEnabled: options.mcpServerStatusEnabled,
             permissionProfilesEnabled: options.permissionProfilesEnabled,
@@ -20254,6 +20302,7 @@ export async function handleRequest(request, response, options) {
           appsListEnabled: options.appsListEnabled,
           modelsListEnabled: options.modelsListEnabled,
           modelProviderCapabilitiesEnabled: options.modelProviderCapabilitiesEnabled,
+          collaborationModesEnabled: options.collaborationModesEnabled,
           configRequirementsEnabled: options.configRequirementsEnabled,
           mcpServerStatusEnabled: options.mcpServerStatusEnabled,
           permissionProfilesEnabled: options.permissionProfilesEnabled,
@@ -52562,6 +52611,7 @@ export function sanitizeSettingsIntegrationsPayload(
     appsListEnabled = false,
     modelsListEnabled = false,
     modelProviderCapabilitiesEnabled = false,
+    collaborationModesEnabled = false,
     configRequirementsEnabled = false,
     mcpServerStatusEnabled = false,
     permissionProfilesEnabled = false,
@@ -52612,6 +52662,7 @@ export function sanitizeSettingsIntegrationsPayload(
   const appsReadEnabled = Boolean(appsListEnabled);
   const modelsReadEnabled = Boolean(modelsListEnabled);
   const providerCapabilitiesReadEnabled = Boolean(modelProviderCapabilitiesEnabled);
+  const collaborationModesReadEnabled = Boolean(collaborationModesEnabled);
   const requirementsEnabled = Boolean(configRequirementsEnabled);
   const mcpStatusEnabled = Boolean(mcpServerStatusEnabled);
   const profilesEnabled = Boolean(permissionProfilesEnabled);
@@ -52663,6 +52714,7 @@ export function sanitizeSettingsIntegrationsPayload(
     appsListEnabled: appsReadEnabled,
     modelsListEnabled: modelsReadEnabled,
     modelProviderCapabilitiesEnabled: providerCapabilitiesReadEnabled,
+    collaborationModesEnabled: collaborationModesReadEnabled,
     configRequirementsEnabled: requirementsEnabled,
     mcpServerStatusEnabled: mcpStatusEnabled,
     permissionProfilesEnabled: profilesEnabled,
@@ -52732,7 +52784,9 @@ export function sanitizeSettingsIntegrationsPayload(
         modelProviderCapabilitiesAvailable:
           inventory.modelProviderCapabilities.ok || providerCapabilitiesReadEnabled,
         modelProviderCapabilitiesEnabled: providerCapabilitiesReadEnabled,
-        collaborationModeListingAvailable: inventory.collaborationModes.ok,
+        collaborationModeListingAvailable:
+          inventory.collaborationModes.ok || collaborationModesReadEnabled,
+        collaborationModesEnabled: collaborationModesReadEnabled,
         permissionProfileListingAvailable: inventory.permissionProfiles.ok || profilesEnabled,
         permissionProfilesEnabled: profilesEnabled,
         remoteControlStatusAvailable: inventory.remoteControlStatus.ok || remoteStatusEnabled,
@@ -59278,6 +59332,138 @@ function modelProviderCapabilitiesPolicy({ appServerTraffic }) {
   };
 }
 
+export function buildCollaborationModesBlockedPayload({ workspace } = {}) {
+  const collaborationModes = sanitizeCollaborationModesInventory(null, { namesEnabled: false });
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["collaborationMode/list"],
+    },
+    settings: {
+      collaborationModeListingAvailable: true,
+      collaborationModesEnabled: false,
+      appServerTraffic: false,
+      namesReturned: false,
+      modelIdsReturned: false,
+      modelOverridesReturned: false,
+      reasoningEffortValuesReturned: false,
+      rawPayloadReturned: false,
+      reason: "collaboration-modes-requires-opt-in",
+    },
+    probes: {
+      collaborationModes,
+    },
+    result: {
+      status: "blocked",
+      collaborationModesEnabled: false,
+      appServerTraffic: false,
+      modeCount: 0,
+      modeKindCounts: {},
+      modelOverrideCount: 0,
+      reasoningEffortOverrideCount: 0,
+      reasoningEffortCounts: {},
+      returnedModeCount: 0,
+      namesReturned: false,
+      modelIdsReturned: false,
+      modelOverridesReturned: false,
+      reasoningEffortValuesReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: collaborationModesPolicy({ appServerTraffic: false }),
+    notifications: sanitizeNotificationCounts(null),
+  };
+}
+
+export function sanitizeCollaborationModesPayload(
+  payload,
+  { workspace = null, enabled = false } = {},
+) {
+  const collaborationModes = sanitizeCollaborationModesInventory(
+    payload?.probes?.collaborationModes,
+    { namesEnabled: false },
+  );
+  const status = enabled ? "available" : "blocked";
+  return {
+    ok: Boolean(payload?.ok),
+    generatedAt: payload?.generatedAt ?? new Date().toISOString(),
+    transport: cleanDisplayText(payload?.transport, 80),
+    protocol: cleanDisplayText(payload?.protocol, 80),
+    initialize: sanitizeInitialize(payload?.initialize),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: Boolean(enabled),
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["collaborationMode/list"],
+    },
+    settings: {
+      collaborationModeListingAvailable: true,
+      collaborationModesEnabled: Boolean(enabled),
+      appServerTraffic: Boolean(enabled),
+      namesReturned: false,
+      modelIdsReturned: false,
+      modelOverridesReturned: false,
+      reasoningEffortValuesReturned: false,
+      rawPayloadReturned: false,
+      reason: Boolean(enabled)
+        ? "collaboration-modes-counts-only"
+        : "collaboration-modes-requires-opt-in",
+    },
+    probes: {
+      collaborationModes,
+    },
+    result: {
+      status,
+      collaborationModesEnabled: Boolean(enabled),
+      appServerTraffic: Boolean(enabled),
+      modeCount: collaborationModes.modeCount,
+      modeKindCounts: collaborationModes.modeKindCounts,
+      modelOverrideCount: collaborationModes.modelOverrideCount,
+      reasoningEffortOverrideCount: collaborationModes.reasoningEffortOverrideCount,
+      reasoningEffortCounts: collaborationModes.reasoningEffortCounts,
+      returnedModeCount: collaborationModes.returnedModeCount,
+      namesReturned: false,
+      modelIdsReturned: false,
+      modelOverridesReturned: false,
+      reasoningEffortValuesReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: collaborationModesPolicy({ appServerTraffic: Boolean(enabled) }),
+    notifications: sanitizeNotificationCounts(payload?.notifications),
+  };
+}
+
+function collaborationModesPolicy({ appServerTraffic }) {
+  return {
+    readOnly: true,
+    appServerTraffic: Boolean(appServerTraffic),
+    modelTraffic: false,
+    commandTraffic: false,
+    settingsWrites: false,
+    authCallbacks: false,
+    authMutations: false,
+    toolInvocation: false,
+    installsEnabled: false,
+    secretsReturned: false,
+    tokensReturned: false,
+    namesReturned: false,
+    modelIdsReturned: false,
+    modelOverridesReturned: false,
+    reasoningEffortValuesReturned: false,
+    urlsReturned: false,
+    pathsReturned: false,
+    rawPayloadReturned: false,
+    requiresExplicitEnablement: true,
+    browserMethodCallsAccepted: true,
+    implemented: true,
+  };
+}
+
 export function buildAppsListBlockedPayload({ workspace } = {}) {
   const apps = sanitizeAppsInventory(null, { namesEnabled: false });
   return {
@@ -65237,6 +65423,7 @@ export function buildSettingsIntegrations({
   appsListEnabled = false,
   modelsListEnabled = false,
   modelProviderCapabilitiesEnabled = false,
+  collaborationModesEnabled = false,
   configRequirementsEnabled = false,
   mcpServerStatusEnabled = false,
   permissionProfilesEnabled = false,
@@ -65287,6 +65474,7 @@ export function buildSettingsIntegrations({
   const appsReadEnabled = Boolean(appsListEnabled);
   const modelsReadEnabled = Boolean(modelsListEnabled);
   const providerCapabilitiesReadEnabled = Boolean(modelProviderCapabilitiesEnabled);
+  const collaborationModesReadEnabled = Boolean(collaborationModesEnabled);
   const requirementsEnabled = Boolean(configRequirementsEnabled);
   const mcpStatusEnabled = Boolean(mcpServerStatusEnabled);
   const profilesEnabled = Boolean(permissionProfilesEnabled);
@@ -65319,6 +65507,7 @@ export function buildSettingsIntegrations({
       "config/read",
       modelsReadEnabled ? "model/list" : null,
       providerCapabilitiesReadEnabled ? "modelProvider/capabilities/read" : null,
+      collaborationModesReadEnabled ? "collaborationMode/list" : null,
       appsReadEnabled ? "app/list" : null,
       requirementsEnabled ? "configRequirements/read" : null,
       mcpStatusEnabled ? "mcpServerStatus/list" : null,
@@ -65341,6 +65530,7 @@ export function buildSettingsIntegrations({
     appsListEnabled: appsReadEnabled,
     modelsListEnabled: modelsReadEnabled,
     modelProviderCapabilitiesEnabled: providerCapabilitiesReadEnabled,
+    collaborationModesEnabled: collaborationModesReadEnabled,
     configRequirementsEnabled: requirementsEnabled,
     mcpServerStatusEnabled: mcpStatusEnabled,
     permissionProfilesEnabled: profilesEnabled,
@@ -65385,6 +65575,7 @@ export function buildSettingsIntegrations({
         "config/read",
         modelsReadEnabled ? "model/list" : null,
         providerCapabilitiesReadEnabled ? "modelProvider/capabilities/read" : null,
+        collaborationModesReadEnabled ? "collaborationMode/list" : null,
         appsReadEnabled ? "app/list" : null,
         requirementsEnabled ? "configRequirements/read" : null,
         mcpStatusEnabled ? "mcpServerStatus/list" : null,
@@ -65420,7 +65611,8 @@ export function buildSettingsIntegrations({
         modelsListEnabled: modelsReadEnabled,
         modelProviderCapabilitiesAvailable: providerCapabilitiesReadEnabled,
         modelProviderCapabilitiesEnabled: providerCapabilitiesReadEnabled,
-        collaborationModeListingAvailable: false,
+        collaborationModeListingAvailable: collaborationModesReadEnabled,
+        collaborationModesEnabled: collaborationModesReadEnabled,
         permissionProfileListingAvailable: profilesEnabled,
         permissionProfilesEnabled: profilesEnabled,
         remoteControlStatusAvailable: remoteStatusEnabled,
@@ -68102,6 +68294,7 @@ function buildIntegrationActionScope({
   appsListEnabled = false,
   modelsListEnabled = false,
   modelProviderCapabilitiesEnabled = false,
+  collaborationModesEnabled = false,
   configRequirementsEnabled = false,
   mcpServerStatusEnabled = false,
   permissionProfilesEnabled = false,
@@ -68201,6 +68394,7 @@ function buildIntegrationActionScope({
     appsListEnabled: Boolean(appsListEnabled),
     modelsListEnabled: Boolean(modelsListEnabled),
     modelProviderCapabilitiesEnabled: Boolean(modelProviderCapabilitiesEnabled),
+    collaborationModesEnabled: Boolean(collaborationModesEnabled),
     configRequirementsEnabled: Boolean(configRequirementsEnabled),
     mcpServerStatusEnabled: Boolean(mcpServerStatusEnabled),
     permissionProfilesEnabled: Boolean(permissionProfilesEnabled),

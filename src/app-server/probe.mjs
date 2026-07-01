@@ -3147,6 +3147,78 @@ export async function runModelProviderCapabilitiesReadProbe({
   }
 }
 
+export async function runCollaborationModesReadProbe({
+  codexBin = process.env.CODEX_BIN || "codex",
+  codexArgs = ["app-server", "--listen", "stdio://"],
+  cwd = process.cwd(),
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+  onNotification,
+} = {}) {
+  if (process.env.CODEX_APP_PORT_ALLOW_COLLABORATION_MODES !== "1") {
+    throw new Error(
+      "collaborationMode/list requires CODEX_APP_PORT_ALLOW_COLLABORATION_MODES=1 because it inspects collaboration mode presets",
+    );
+  }
+  const notifications = [];
+  const client = new JsonlRpcClient({
+    command: codexBin,
+    args: codexArgs,
+    cwd,
+    timeoutMs,
+    onNotification(notification) {
+      notifications.push({
+        method: notification.method,
+      });
+      onNotification?.(notification);
+    },
+  });
+
+  await client.start();
+
+  try {
+    const initialize = normalizeInitializeResponse(
+      await client.request(APP_SERVER_METHODS.initialize, {
+        clientInfo: {
+          name: "codex_app_port",
+          title: "Codex App Port",
+          version: "0.1.0",
+        },
+        capabilities: {
+          experimentalApi: false,
+          requestAttestation: false,
+        },
+      }),
+    );
+
+    client.notify(APP_SERVER_METHODS.initialized);
+    const collaborationModes = await client.request(
+      APP_SERVER_METHODS.collaborationModeList,
+      {},
+      { timeoutMs },
+    );
+
+    return {
+      ok: true,
+      generatedAt: new Date().toISOString(),
+      transport: "stdio-jsonl",
+      protocol: "json-rpc-2.0-without-jsonrpc-field",
+      initialize: summarizeInitialize(initialize),
+      probes: {
+        collaborationModes: summarizeCollaborationModesInventory(
+          {
+            ok: true,
+            result: collaborationModes,
+          },
+          { includeNames: false },
+        ),
+      },
+      notifications: notificationCounts(notifications),
+    };
+  } finally {
+    await client.close();
+  }
+}
+
 export async function runPermissionProfilesReadProbe({
   codexBin = process.env.CODEX_BIN || "codex",
   codexArgs = ["app-server", "--listen", "stdio://"],
