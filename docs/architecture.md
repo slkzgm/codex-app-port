@@ -1733,6 +1733,13 @@ Current M1 status:
   status buckets plus identity-field presence counts without raw status values,
   server names, installation ids, environment ids, cwd, paths, client lists,
   pairing state, mutations, or raw payloads
+- done: opt-in `/api/installed-plugins` behind
+  `CODEX_APP_PORT_ALLOW_INSTALLED_PLUGINS=1`, GET-only and local-token
+  protected, calling only `plugin/installed` with current workspace `cwd` and
+  null install suggestions, returning marketplace/plugin/install/auth-policy
+  counts and plugin metadata presence counts without plugin names, ids, paths,
+  URLs, descriptions, prompts, capabilities, screenshots, marketplace names,
+  install suggestion names, mutations, or raw payloads
 - done: local-only `/api/remote-control-enable-preflight` for audited
   `remoteControl/enable` intent, with route-specific nested response schemas,
   argument/key counts, optional `ephemeral` presence, unknown-param and

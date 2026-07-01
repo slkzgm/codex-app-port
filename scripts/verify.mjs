@@ -86,6 +86,7 @@ async function main() {
   await checkAccountWorkspaceMessagesApi();
   await checkPermissionProfilesApi();
   await checkRemoteControlStatusApi();
+  await checkInstalledPluginsApi();
   await checkAccountLoginApi();
   await checkAccountLoginCancelApi();
   await checkAccountCreditsNudgeApi();
@@ -18542,6 +18543,242 @@ async function checkRemoteControlStatusApi() {
     await closeServer(server);
   }
   pass("dev server remote control status exposes enum counts behind opt-in without returning identities");
+}
+
+async function checkInstalledPluginsApi() {
+  const blockedCalls = [];
+  const blockedServer = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    installedPluginsFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+  const blockedPort = await listenWithFallback(blockedServer, { host: "127.0.0.1", port: 0 });
+  const blockedBaseUrl = `http://127.0.0.1:${blockedPort}`;
+
+  try {
+    const token = await readUiSessionToken(blockedBaseUrl);
+    const settingsResponse = await fetch(`${blockedBaseUrl}/api/settings-integrations`, {
+      headers: apiHeaders(token),
+    });
+    if (!settingsResponse.ok) {
+      throw new Error(`settings integrations for blocked installed plugins returned HTTP ${settingsResponse.status}`);
+    }
+    const settingsPayload = await settingsResponse.json();
+    if (
+      settingsPayload.surfaces?.plugins?.installedListingAvailable !== false ||
+      settingsPayload.surfaces?.plugins?.installedPluginsEnabled !== false ||
+      settingsPayload.integrationScope?.installedPluginsEnabled !== false
+    ) {
+      throw new Error("settings integrations did not expose the blocked installed plugins gate safely");
+    }
+
+    const response = await fetch(`${blockedBaseUrl}/api/installed-plugins`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`blocked installed plugins returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (
+      payload.appServer?.touched !== false ||
+      payload.settings?.installedPluginsEnabled !== false ||
+      payload.result?.status !== "blocked" ||
+      payload.policy?.appServerTraffic !== false
+    ) {
+      throw new Error("blocked installed plugins did not fail closed without app-server traffic");
+    }
+    if (blockedCalls.length !== 0) {
+      throw new Error("blocked installed plugins unexpectedly touched app-server");
+    }
+    assertNoMarkers(JSON.stringify(payload), ["/tmp/codex-app-port-verify"]);
+  } finally {
+    await closeServer(blockedServer);
+  }
+
+  const calls = [];
+  const server = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    installedPluginsEnabled: true,
+    installedPluginsFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-07-01T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/verify-private-home",
+          userAgent: "verify-private-agent",
+        },
+        probes: {
+          installedPlugins: {
+            ok: true,
+            marketplaceCount: 1,
+            localMarketplaceCount: 1,
+            remoteMarketplaceCount: 0,
+            marketplaceDisplayNameCount: 1,
+            pluginCount: 2,
+            installedCount: 2,
+            enabledCount: 1,
+            pluginWithDisplayNameCount: 1,
+            pluginWithDescriptionCount: 1,
+            pluginWithDefaultPromptCount: 1,
+            pluginWithCapabilityCount: 1,
+            pluginWithScreenshotCount: 1,
+            loadErrorCount: 1,
+            featuredCount: 1,
+            sourceTypeCounts: {
+              local: 1,
+              privateSource: 1,
+            },
+            installPolicyCounts: {
+              AVAILABLE: 1,
+              privatePolicy: 1,
+            },
+            authPolicyCounts: {
+              ON_USE: 1,
+              privateAuth: 1,
+            },
+            returnedPluginCount: 2,
+            items: [
+              {
+                name: "verify-safe-installed-plugin",
+                installed: true,
+                enabled: true,
+                sourceType: "local",
+                installPolicy: "AVAILABLE",
+                authPolicy: "ON_USE",
+                hasDisplayName: true,
+                hasDescription: true,
+                hasDefaultPrompt: true,
+                hasCapability: true,
+                hasScreenshot: true,
+              },
+            ],
+            namesReturned: true,
+            idsReturned: true,
+            pathsReturned: true,
+            urlsReturned: true,
+            installSuggestionNamesReturned: true,
+            marketplaceNamesReturned: true,
+            descriptionsReturned: true,
+            defaultPromptsReturned: true,
+            capabilityNamesReturned: true,
+            screenshotsReturned: true,
+            rawPayloadReturned: true,
+          },
+        },
+        rawInstalledPlugins: {
+          id: "verify-private-plugin-id",
+          name: "verify-safe-installed-plugin",
+          path: "/tmp/codex-app-port-verify/.codex/plugins/private-plugin",
+          url: "https://example.test/verify-private-plugin",
+          prompt: "verify private installed prompt",
+        },
+        notifications: {},
+      };
+    },
+  });
+  const port = await listenWithFallback(server, { host: "127.0.0.1", port: 0 });
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  try {
+    const token = await readUiSessionToken(baseUrl);
+    const settingsResponse = await fetch(`${baseUrl}/api/settings-integrations`, {
+      headers: apiHeaders(token),
+    });
+    if (!settingsResponse.ok) {
+      throw new Error(`settings integrations for installed plugins returned HTTP ${settingsResponse.status}`);
+    }
+    const settingsPayload = await settingsResponse.json();
+    if (
+      settingsPayload.surfaces?.plugins?.installedListingAvailable !== true ||
+      settingsPayload.surfaces?.plugins?.installedPluginsEnabled !== true ||
+      settingsPayload.integrationScope?.installedPluginsEnabled !== true ||
+      !settingsPayload.integrationScope?.enabledReadMethods?.includes("plugin/installed")
+    ) {
+      throw new Error("settings integrations did not expose the installed plugins gate safely");
+    }
+
+    const wrongMethod = await fetch(`${baseUrl}/api/installed-plugins`, {
+      method: "POST",
+      headers: apiHeaders(token),
+    });
+    if (wrongMethod.status !== 405) {
+      throw new Error(`installed plugins POST returned HTTP ${wrongMethod.status}`);
+    }
+
+    const response = await fetch(`${baseUrl}/api/installed-plugins`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`installed plugins returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (
+      payload.appServer?.touched !== true ||
+      payload.appServer?.modelTraffic !== false ||
+      payload.settings?.installedPluginsEnabled !== true ||
+      payload.result?.status !== "available" ||
+      payload.result?.pluginCount !== 2 ||
+      payload.result?.installedCount !== 2 ||
+      payload.result?.enabledCount !== 1 ||
+      payload.result?.sourceTypeCounts?.local !== 1 ||
+      payload.result?.sourceTypeCounts?.privateSource != null ||
+      payload.result?.installPolicyCounts?.AVAILABLE !== 1 ||
+      payload.result?.installPolicyCounts?.privatePolicy != null ||
+      payload.result?.authPolicyCounts?.ON_USE !== 1 ||
+      payload.result?.authPolicyCounts?.privateAuth != null ||
+      payload.result?.namesReturned !== false ||
+      payload.result?.idsReturned !== false ||
+      payload.result?.pathsReturned !== false ||
+      payload.result?.urlsReturned !== false ||
+      payload.result?.descriptionsReturned !== false ||
+      payload.result?.defaultPromptsReturned !== false ||
+      payload.result?.capabilityNamesReturned !== false ||
+      payload.result?.screenshotsReturned !== false ||
+      payload.result?.rawPayloadReturned !== false ||
+      payload.policy?.readOnly !== true ||
+      payload.policy?.pluginMutations !== false ||
+      payload.policy?.pluginInstalls !== false ||
+      payload.policy?.pluginUninstalls !== false ||
+      payload.policy?.pluginEnablementWrites !== false ||
+      payload.policy?.pluginContentReads !== false ||
+      payload.policy?.pluginShareReads !== false ||
+      payload.policy?.rawPayloadReturned !== false
+    ) {
+      throw new Error("installed plugins did not return the safe counts-only summary shape");
+    }
+    if (calls.length !== 1 || calls[0].cwd !== "/tmp/codex-app-port-verify") {
+      throw new Error("installed plugins did not call the app-server read path once");
+    }
+    assertNoMarkers(JSON.stringify(payload), [
+      "/tmp/codex-app-port-verify",
+      "/tmp/verify-private-home",
+      "verify-private-agent",
+      "codexHome",
+      "userAgent",
+      "verify-safe-installed-plugin",
+      "verify-private-plugin-id",
+      "privateSource",
+      "privatePolicy",
+      "privateAuth",
+      "verify private installed prompt",
+      "https://example.test/verify-private-plugin",
+      "\"namesReturned\":true",
+      "\"idsReturned\":true",
+      "\"pathsReturned\":true",
+      "\"urlsReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]);
+  } finally {
+    await closeServer(server);
+  }
+  pass("dev server installed plugins exposes counts behind opt-in without returning plugin details");
 }
 
 async function checkAccountLoginApi() {
@@ -57245,6 +57482,11 @@ async function readUiSessionToken(baseUrl) {
     !html.includes("remote-control-status-count-text") ||
     !html.includes("remote-control-status-identities-text") ||
     !html.includes("remote-control-status-details-text") ||
+    !html.includes("installed-plugins-button") ||
+    !html.includes("installed-plugins-status") ||
+    !html.includes("installed-plugins-count-text") ||
+    !html.includes("installed-plugins-enabled-text") ||
+    !html.includes("installed-plugins-details-text") ||
     !appScript.includes("runAccountRead") ||
     !appScript.includes("renderAccountRead") ||
     !appScript.includes("runAccountRateLimits") ||
@@ -57257,6 +57499,8 @@ async function readUiSessionToken(baseUrl) {
     !appScript.includes("renderPermissionProfiles") ||
     !appScript.includes("runRemoteControlStatus") ||
     !appScript.includes("renderRemoteControlStatus") ||
+    !appScript.includes("runInstalledPlugins") ||
+    !appScript.includes("renderInstalledPlugins") ||
     !html.includes("account-login-button") ||
     !html.includes("account-login-cancel-button") ||
     !html.includes("account-reset-credit-button") ||

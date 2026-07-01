@@ -26,6 +26,7 @@ import {
   runEnvironmentAddProbe,
   runExperimentalFeatureEnablementSetProbe,
   runFsDirectoryProbe,
+  runInstalledPluginsReadProbe,
   runIntegrationsInventoryProbe,
   runLiveSessionControlProbe,
   runLoadedSessionsProbe,
@@ -13113,6 +13114,7 @@ export function createDevServer({
   accountWorkspaceMessagesFn = runAccountWorkspaceMessagesReadProbe,
   permissionProfilesFn = runPermissionProfilesReadProbe,
   remoteControlStatusFn = runRemoteControlStatusReadProbe,
+  installedPluginsFn = runInstalledPluginsReadProbe,
   accountLoginCancelFn = runAccountLoginCancelProbe,
   accountLoginStartFn = runAccountLoginStartProbe,
   accountCreditsNudgeFn = runAccountCreditsNudgeProbe,
@@ -13185,6 +13187,7 @@ export function createDevServer({
   permissionProfilesEnabled = process.env.CODEX_APP_PORT_ALLOW_PERMISSION_PROFILES === "1",
   remoteControlStatusEnabled =
     process.env.CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_STATUS === "1",
+  installedPluginsEnabled = process.env.CODEX_APP_PORT_ALLOW_INSTALLED_PLUGINS === "1",
   accountLoginCancelEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN_CANCEL === "1",
   accountLoginEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN === "1",
   accountCreditsNudgeEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_CREDITS_NUDGE === "1",
@@ -13340,6 +13343,7 @@ export function createDevServer({
       accountWorkspaceMessagesFn,
       permissionProfilesFn,
       remoteControlStatusFn,
+      installedPluginsFn,
       accountLoginCancelFn,
       accountLoginStartFn,
       accountCreditsNudgeFn,
@@ -13407,6 +13411,7 @@ export function createDevServer({
       accountWorkspaceMessagesEnabled,
       permissionProfilesEnabled,
       remoteControlStatusEnabled,
+      installedPluginsEnabled,
       accountLoginCancelEnabled,
       accountLoginEnabled,
       accountCreditsNudgeEnabled,
@@ -14984,6 +14989,48 @@ export async function handleRequest(request, response, options) {
       sendJson(response, error.statusCode ?? 502, {
         ok: false,
         error: cleanDisplayText(error.message, 200) ?? "Invalid remote control status request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/installed-plugins") {
+    if (request.method !== "GET") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        url.searchParams.get("workspace"),
+      );
+      if (!options.installedPluginsEnabled) {
+        sendJson(response, 200, buildInstalledPluginsBlockedPayload({ workspace }));
+        return;
+      }
+      const payload = await options.installedPluginsFn({
+        codexBin: options.codexBin,
+        cwd: workspace.cwd,
+        timeoutMs: options.timeoutMs,
+      });
+      sendJson(
+        response,
+        200,
+        sanitizeInstalledPluginsPayload(payload, {
+          workspace,
+          enabled: true,
+        }),
+      );
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 502, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid installed plugins request",
       });
     }
     return;
@@ -19683,6 +19730,7 @@ export async function handleRequest(request, response, options) {
             accountWorkspaceMessagesEnabled: options.accountWorkspaceMessagesEnabled,
             permissionProfilesEnabled: options.permissionProfilesEnabled,
             remoteControlStatusEnabled: options.remoteControlStatusEnabled,
+            installedPluginsEnabled: options.installedPluginsEnabled,
             accountLoginCancelEnabled: options.accountLoginCancelEnabled,
             accountLoginEnabled: options.accountLoginEnabled,
             accountCreditsNudgeEnabled: options.accountCreditsNudgeEnabled,
@@ -19727,6 +19775,7 @@ export async function handleRequest(request, response, options) {
           accountWorkspaceMessagesEnabled: options.accountWorkspaceMessagesEnabled,
           permissionProfilesEnabled: options.permissionProfilesEnabled,
           remoteControlStatusEnabled: options.remoteControlStatusEnabled,
+          installedPluginsEnabled: options.installedPluginsEnabled,
           accountLoginCancelEnabled: options.accountLoginCancelEnabled,
           accountLoginEnabled: options.accountLoginEnabled,
           accountCreditsNudgeEnabled: options.accountCreditsNudgeEnabled,
@@ -52025,6 +52074,7 @@ export function sanitizeSettingsIntegrationsPayload(
     accountWorkspaceMessagesEnabled = false,
     permissionProfilesEnabled = false,
     remoteControlStatusEnabled = false,
+    installedPluginsEnabled = false,
     accountLoginCancelEnabled = false,
     accountLoginEnabled = false,
     accountCreditsNudgeEnabled = false,
@@ -52065,6 +52115,7 @@ export function sanitizeSettingsIntegrationsPayload(
   const workspaceMessagesEnabled = Boolean(accountWorkspaceMessagesEnabled);
   const profilesEnabled = Boolean(permissionProfilesEnabled);
   const remoteStatusEnabled = Boolean(remoteControlStatusEnabled);
+  const installedPluginReadEnabled = Boolean(installedPluginsEnabled);
   const loginEnabled = Boolean(accountLoginEnabled);
   const loginCancelEnabled = Boolean(accountLoginCancelEnabled);
   const creditsNudgeEnabled = Boolean(accountCreditsNudgeEnabled);
@@ -52106,6 +52157,7 @@ export function sanitizeSettingsIntegrationsPayload(
     accountWorkspaceMessagesEnabled: workspaceMessagesEnabled,
     permissionProfilesEnabled: profilesEnabled,
     remoteControlStatusEnabled: remoteStatusEnabled,
+    installedPluginsEnabled: installedPluginReadEnabled,
     accountLoginCancelEnabled: loginCancelEnabled,
     accountLoginEnabled: loginEnabled,
     accountCreditsNudgeEnabled: creditsNudgeEnabled,
@@ -52331,7 +52383,8 @@ export function sanitizeSettingsIntegrationsPayload(
       plugins: {
         state: "partial",
         listingAvailable: inventory.plugins.ok,
-        installedListingAvailable: inventory.installedPlugins.ok,
+        installedListingAvailable: inventory.installedPlugins.ok || installedPluginReadEnabled,
+        installedPluginsEnabled: installedPluginReadEnabled,
         detailReadEnabled: Boolean(pluginReadEnabled),
         installPreflightEnabled: true,
         marketplacePreflightEnabled: true,
@@ -58630,6 +58683,202 @@ export function sanitizeRemoteControlStatusPayload(
   };
 }
 
+export function buildInstalledPluginsBlockedPayload({ workspace } = {}) {
+  const installedPlugins = sanitizeInstalledPluginsInventory(null, { namesEnabled: false });
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["plugin/installed"],
+    },
+    settings: {
+      installedPluginsAvailable: true,
+      installedPluginsEnabled: false,
+      appServerTraffic: false,
+      namesReturned: false,
+      idsReturned: false,
+      pathsReturned: false,
+      urlsReturned: false,
+      descriptionsReturned: false,
+      defaultPromptsReturned: false,
+      capabilityNamesReturned: false,
+      screenshotsReturned: false,
+      rawPayloadReturned: false,
+      reason: "installed-plugins-requires-opt-in",
+    },
+    probes: {
+      installedPlugins,
+    },
+    result: {
+      status: "blocked",
+      installedPluginsEnabled: false,
+      appServerTraffic: false,
+      marketplaceCount: 0,
+      pluginCount: 0,
+      installedCount: 0,
+      enabledCount: 0,
+      pluginWithDisplayNameCount: 0,
+      pluginWithDescriptionCount: 0,
+      pluginWithDefaultPromptCount: 0,
+      pluginWithCapabilityCount: 0,
+      pluginWithScreenshotCount: 0,
+      loadErrorCount: 0,
+      sourceTypeCounts: {},
+      installPolicyCounts: {},
+      authPolicyCounts: {},
+      namesReturned: false,
+      idsReturned: false,
+      pathsReturned: false,
+      urlsReturned: false,
+      descriptionsReturned: false,
+      defaultPromptsReturned: false,
+      capabilityNamesReturned: false,
+      screenshotsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      settingsWrites: false,
+      authCallbacks: false,
+      authMutations: false,
+      toolInvocation: false,
+      installsEnabled: false,
+      pluginMutations: false,
+      pluginInstalls: false,
+      pluginUninstalls: false,
+      pluginEnablementWrites: false,
+      pluginContentReads: false,
+      pluginShareReads: false,
+      secretsReturned: false,
+      tokensReturned: false,
+      namesReturned: false,
+      idsReturned: false,
+      urlsReturned: false,
+      pathsReturned: false,
+      descriptionsReturned: false,
+      defaultPromptsReturned: false,
+      capabilityNamesReturned: false,
+      screenshotsReturned: false,
+      rawPayloadReturned: false,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: true,
+      implemented: true,
+    },
+    notifications: sanitizeNotificationCounts(null),
+  };
+}
+
+export function sanitizeInstalledPluginsPayload(
+  payload,
+  { workspace = null, enabled = false } = {},
+) {
+  const installedPlugins = sanitizeInstalledPluginsInventory(
+    payload?.probes?.installedPlugins,
+    { namesEnabled: false },
+  );
+  const status = enabled ? "available" : "blocked";
+  return {
+    ok: Boolean(payload?.ok),
+    generatedAt: payload?.generatedAt ?? new Date().toISOString(),
+    transport: cleanDisplayText(payload?.transport, 80),
+    protocol: cleanDisplayText(payload?.protocol, 80),
+    initialize: sanitizeInitialize(payload?.initialize),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: Boolean(enabled),
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["plugin/installed"],
+    },
+    settings: {
+      installedPluginsAvailable: true,
+      installedPluginsEnabled: Boolean(enabled),
+      appServerTraffic: Boolean(enabled),
+      namesReturned: false,
+      idsReturned: false,
+      pathsReturned: false,
+      urlsReturned: false,
+      descriptionsReturned: false,
+      defaultPromptsReturned: false,
+      capabilityNamesReturned: false,
+      screenshotsReturned: false,
+      rawPayloadReturned: false,
+      reason: Boolean(enabled)
+        ? "installed-plugins-counts-only"
+        : "installed-plugins-requires-opt-in",
+    },
+    probes: {
+      installedPlugins,
+    },
+    result: {
+      status,
+      installedPluginsEnabled: Boolean(enabled),
+      appServerTraffic: Boolean(enabled),
+      marketplaceCount: installedPlugins.marketplaceCount,
+      pluginCount: installedPlugins.pluginCount,
+      installedCount: installedPlugins.installedCount,
+      enabledCount: installedPlugins.enabledCount,
+      pluginWithDisplayNameCount: installedPlugins.pluginWithDisplayNameCount,
+      pluginWithDescriptionCount: installedPlugins.pluginWithDescriptionCount,
+      pluginWithDefaultPromptCount: installedPlugins.pluginWithDefaultPromptCount,
+      pluginWithCapabilityCount: installedPlugins.pluginWithCapabilityCount,
+      pluginWithScreenshotCount: installedPlugins.pluginWithScreenshotCount,
+      loadErrorCount: installedPlugins.loadErrorCount,
+      sourceTypeCounts: installedPlugins.sourceTypeCounts,
+      installPolicyCounts: installedPlugins.installPolicyCounts,
+      authPolicyCounts: installedPlugins.authPolicyCounts,
+      namesReturned: false,
+      idsReturned: false,
+      pathsReturned: false,
+      urlsReturned: false,
+      descriptionsReturned: false,
+      defaultPromptsReturned: false,
+      capabilityNamesReturned: false,
+      screenshotsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: Boolean(enabled),
+      modelTraffic: false,
+      commandTraffic: false,
+      settingsWrites: false,
+      authCallbacks: false,
+      authMutations: false,
+      toolInvocation: false,
+      installsEnabled: false,
+      pluginMutations: false,
+      pluginInstalls: false,
+      pluginUninstalls: false,
+      pluginEnablementWrites: false,
+      pluginContentReads: false,
+      pluginShareReads: false,
+      secretsReturned: false,
+      tokensReturned: false,
+      namesReturned: false,
+      idsReturned: false,
+      urlsReturned: false,
+      pathsReturned: false,
+      descriptionsReturned: false,
+      defaultPromptsReturned: false,
+      capabilityNamesReturned: false,
+      screenshotsReturned: false,
+      rawPayloadReturned: false,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: true,
+      implemented: true,
+    },
+    notifications: sanitizeNotificationCounts(payload?.notifications),
+  };
+}
+
 export function buildAccountLoginCancelPreflight(
   body,
   { workspace, accountLoginCancelEnabled = false, accountLoginFlowRegistry = null } = {},
@@ -62864,6 +63113,7 @@ export function buildSettingsIntegrations({
   accountWorkspaceMessagesEnabled = false,
   permissionProfilesEnabled = false,
   remoteControlStatusEnabled = false,
+  installedPluginsEnabled = false,
   accountLoginCancelEnabled = false,
   accountLoginEnabled = false,
   accountCreditsNudgeEnabled = false,
@@ -62904,6 +63154,7 @@ export function buildSettingsIntegrations({
   const workspaceMessagesEnabled = Boolean(accountWorkspaceMessagesEnabled);
   const profilesEnabled = Boolean(permissionProfilesEnabled);
   const remoteStatusEnabled = Boolean(remoteControlStatusEnabled);
+  const installedPluginReadEnabled = Boolean(installedPluginsEnabled);
   const loginCancelEnabled = Boolean(accountLoginCancelEnabled);
   const loginEnabled = Boolean(accountLoginEnabled);
   const creditsNudgeEnabled = Boolean(accountCreditsNudgeEnabled);
@@ -62927,6 +63178,7 @@ export function buildSettingsIntegrations({
       "config/read",
       profilesEnabled ? "permissionProfile/list" : null,
       remoteStatusEnabled ? "remoteControl/status/read" : null,
+      installedPluginReadEnabled ? "plugin/installed" : null,
       readEnabled ? "account/read" : null,
       rateLimitsEnabled ? "account/rateLimits/read" : null,
       usageEnabled ? "account/usage/read" : null,
@@ -62938,6 +63190,7 @@ export function buildSettingsIntegrations({
     accountWorkspaceMessagesEnabled: workspaceMessagesEnabled,
     permissionProfilesEnabled: profilesEnabled,
     remoteControlStatusEnabled: remoteStatusEnabled,
+    installedPluginsEnabled: installedPluginReadEnabled,
     accountLoginCancelEnabled: loginCancelEnabled,
     accountLoginEnabled: loginEnabled,
     accountCreditsNudgeEnabled: creditsNudgeEnabled,
@@ -62973,6 +63226,7 @@ export function buildSettingsIntegrations({
         "config/read",
         profilesEnabled ? "permissionProfile/list" : null,
         remoteStatusEnabled ? "remoteControl/status/read" : null,
+        installedPluginReadEnabled ? "plugin/installed" : null,
         readEnabled ? "account/read" : null,
         rateLimitsEnabled ? "account/rateLimits/read" : null,
         usageEnabled ? "account/usage/read" : null,
@@ -63146,6 +63400,8 @@ export function buildSettingsIntegrations({
       plugins: {
         state: "partial",
         listingAvailable: false,
+        installedListingAvailable: installedPluginReadEnabled,
+        installedPluginsEnabled: installedPluginReadEnabled,
         detailReadEnabled: Boolean(pluginReadEnabled),
         installPreflightEnabled: true,
         marketplacePreflightEnabled: true,
@@ -65658,6 +65914,7 @@ function buildIntegrationActionScope({
   accountWorkspaceMessagesEnabled = false,
   permissionProfilesEnabled = false,
   remoteControlStatusEnabled = false,
+  installedPluginsEnabled = false,
   accountLoginCancelEnabled = false,
   accountLoginEnabled = false,
   accountCreditsNudgeEnabled = false,
@@ -65747,6 +66004,7 @@ function buildIntegrationActionScope({
     accountWorkspaceMessagesEnabled: Boolean(accountWorkspaceMessagesEnabled),
     permissionProfilesEnabled: Boolean(permissionProfilesEnabled),
     remoteControlStatusEnabled: Boolean(remoteControlStatusEnabled),
+    installedPluginsEnabled: Boolean(installedPluginsEnabled),
     accountLoginEnabled: Boolean(accountLoginEnabled),
     authDeviceCodeLoginEnabled: Boolean(accountLoginEnabled),
     accountLoginCancelEnabled: Boolean(accountLoginCancelEnabled),

@@ -266,6 +266,11 @@ const elements = {
     "#remote-control-status-identities-text",
   ),
   remoteControlStatusDetailsText: document.querySelector("#remote-control-status-details-text"),
+  installedPluginsButton: document.querySelector("#installed-plugins-button"),
+  installedPluginsStatus: document.querySelector("#installed-plugins-status"),
+  installedPluginsCountText: document.querySelector("#installed-plugins-count-text"),
+  installedPluginsEnabledText: document.querySelector("#installed-plugins-enabled-text"),
+  installedPluginsDetailsText: document.querySelector("#installed-plugins-details-text"),
   accountLoginPreflightButton: document.querySelector("#account-login-preflight-button"),
   accountLoginButton: document.querySelector("#account-login-button"),
   accountLoginStatus: document.querySelector("#account-login-status"),
@@ -1221,6 +1226,10 @@ elements.workspaceSelect.addEventListener("change", () => {
   elements.remoteControlStatusCountText.textContent = "0";
   elements.remoteControlStatusIdentitiesText.textContent = "Hidden";
   elements.remoteControlStatusDetailsText.textContent = "Hidden";
+  elements.installedPluginsStatus.textContent = "Installed plugin read disabled by default.";
+  elements.installedPluginsCountText.textContent = "0";
+  elements.installedPluginsEnabledText.textContent = "0";
+  elements.installedPluginsDetailsText.textContent = "Hidden";
   lastApprovalPayload = null;
   lastApprovalQueue = [];
   approvalQueueFilter = "all";
@@ -2207,6 +2216,10 @@ elements.remoteControlStatusButton.addEventListener("click", () => {
   runRemoteControlStatus();
 });
 
+elements.installedPluginsButton.addEventListener("click", () => {
+  runInstalledPlugins();
+});
+
 elements.accountLoginPreflightButton.addEventListener("click", () => {
   runAccountLoginPreflight();
 });
@@ -2720,6 +2733,16 @@ function remoteControlStatusEndpoint() {
   const params = new URLSearchParams();
   params.set("workspace", selectedWorkspaceId);
   return `/api/remote-control-status?${params.toString()}`;
+}
+
+function installedPluginsEndpoint() {
+  if (!selectedWorkspaceId) {
+    return "/api/installed-plugins";
+  }
+
+  const params = new URLSearchParams();
+  params.set("workspace", selectedWorkspaceId);
+  return `/api/installed-plugins?${params.toString()}`;
 }
 
 function accountLoginPreflightEndpoint() {
@@ -4863,6 +4886,28 @@ async function runRemoteControlStatus() {
     renderError(error);
   } finally {
     setRemoteControlStatusLoading(false);
+  }
+}
+
+async function runInstalledPlugins() {
+  setInstalledPluginsLoading(true);
+  hideError();
+
+  try {
+    const response = await fetch(installedPluginsEndpoint(), {
+      headers: apiHeaders(),
+      cache: "no-store",
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderInstalledPlugins(payload);
+  } catch (error) {
+    elements.installedPluginsStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    setInstalledPluginsLoading(false);
   }
 }
 
@@ -13951,6 +13996,8 @@ function renderSettingsIntegrations(payload) {
       : "Blocked";
   elements.installedPluginsStateText.textContent = plugins.installedListingAvailable
     ? `${inventory.installedPlugins?.installedCount ?? 0} installed`
+    : plugins.installedPluginsEnabled
+      ? "Read gate"
     : "Blocked";
   elements.integrationsTrafficText.textContent = payload.appServer?.touched ? "App-server" : "None";
   const methodAudit = Array.isArray(payload.methodAudit) ? payload.methodAudit : [];
@@ -15528,6 +15575,36 @@ function renderRemoteControlStatus(payload) {
   elements.remoteControlStateText.textContent = blocked
     ? "Blocked"
     : remoteControlStatusText({ statusCounts });
+}
+
+function renderInstalledPlugins(payload) {
+  const settings = payload.settings ?? {};
+  const result = payload.result ?? {};
+  const blocked = settings.installedPluginsEnabled !== true || payload.appServer?.touched !== true;
+  const pluginCount = result.pluginCount ?? payload.probes?.installedPlugins?.pluginCount ?? 0;
+  const installedCount =
+    result.installedCount ?? payload.probes?.installedPlugins?.installedCount ?? 0;
+  const enabledCount = result.enabledCount ?? payload.probes?.installedPlugins?.enabledCount ?? 0;
+  const status = result.status ?? (blocked ? "blocked" : "available");
+  elements.installedPluginsStatus.textContent = blocked ? "Read blocked" : status;
+  elements.installedPluginsCountText.textContent = String(pluginCount);
+  elements.installedPluginsEnabledText.textContent = String(enabledCount);
+  elements.installedPluginsDetailsText.textContent =
+    result.namesReturned ||
+    result.idsReturned ||
+    result.pathsReturned ||
+    result.urlsReturned ||
+    result.descriptionsReturned ||
+    result.defaultPromptsReturned ||
+    result.capabilityNamesReturned ||
+    result.screenshotsReturned ||
+    result.rawPayloadReturned ||
+    settings.rawPayloadReturned
+      ? "Returned"
+      : "Hidden";
+  elements.installedPluginsStateText.textContent = blocked
+    ? "Blocked"
+    : `${installedCount} installed`;
 }
 
 function renderAccountLoginPreflight(payload) {
@@ -23459,6 +23536,14 @@ function setRemoteControlStatusLoading(isLoading) {
   elements.remoteControlStatusButton.textContent = isLoading ? "Checking" : "Remote Check";
   if (isLoading) {
     elements.remoteControlStatusStatus.textContent = "Checking";
+  }
+}
+
+function setInstalledPluginsLoading(isLoading) {
+  elements.installedPluginsButton.disabled = isLoading;
+  elements.installedPluginsButton.textContent = isLoading ? "Checking" : "Plugins Check";
+  if (isLoading) {
+    elements.installedPluginsStatus.textContent = "Checking";
   }
 }
 

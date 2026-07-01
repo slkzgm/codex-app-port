@@ -1076,12 +1076,16 @@
             <button id="remote-control-status-button" class="secondary-button" type="button">
               Remote Check
             </button>
+            <button id="installed-plugins-button" class="secondary-button" type="button">
+              Plugins Check
+            </button>
             <span id="account-read-status" class="empty-state">Account read disabled by default.</span>
             <span id="account-rate-limits-status" class="empty-state">Limit read disabled by default.</span>
             <span id="account-usage-status" class="empty-state">Usage read disabled by default.</span>
             <span id="account-workspace-messages-status" class="empty-state">Messages read disabled by default.</span>
             <span id="permission-profiles-status" class="empty-state">Profile read disabled by default.</span>
             <span id="remote-control-status-status" class="empty-state">Remote status disabled by default.</span>
+            <span id="installed-plugins-status" class="empty-state">Installed plugin read disabled by default.</span>
           </div>
           <dl class="agent-grid">
             <div>
@@ -1151,6 +1155,18 @@
             <div>
               <dt>Remote Details</dt>
               <dd id="remote-control-status-details-text">Hidden</dd>
+            </div>
+            <div>
+              <dt>Plugin Count</dt>
+              <dd id="installed-plugins-count-text">0</dd>
+            </div>
+            <div>
+              <dt>Plugin Enabled</dt>
+              <dd id="installed-plugins-enabled-text">0</dd>
+            </div>
+            <div>
+              <dt>Plugin Details</dt>
+              <dd id="installed-plugins-details-text">Hidden</dd>
             </div>
           </dl>
           <div class="turn-actions">

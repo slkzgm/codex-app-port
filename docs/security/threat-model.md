@@ -1659,6 +1659,14 @@
   counts only; raw status strings, server names, installation ids, environment
   ids, cwd, paths, client lists, pairing state, mutations, and raw app-server
   payloads remain blocked.
+- `/api/installed-plugins` may call only `plugin/installed` behind
+  `CODEX_APP_PORT_ALLOW_INSTALLED_PLUGINS=1`. It is GET-only, local-token
+  protected, uses only the selected workspace `cwd` plus null install
+  suggestions, and returns marketplace/plugin/install/auth-policy counts plus
+  plugin metadata presence counts only; plugin names, ids, paths, URLs,
+  descriptions, prompts, capabilities, screenshots, marketplace names, install
+  suggestion names, plugin mutations, and raw app-server payloads remain
+  blocked.
 - Browser-facing action preflights may issue short-lived process-local tokens
   for future mutation gates. The registry may store only token metadata and a
   non-returned hash of the intent; it must not store or return raw prompts,

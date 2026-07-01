@@ -2159,6 +2159,15 @@ identity-field presence counts. Raw status strings, server names, installation
 ids, environment ids, cwd, paths, client lists, pairing state, mutations, and
 raw payloads are not returned.
 
+`/api/installed-plugins` is a dedicated disabled-by-default GET route for
+`plugin/installed`. It requires `CODEX_APP_PORT_ALLOW_INSTALLED_PLUGINS=1`,
+accepts only the local session token and workspace selector, passes only the
+current workspace `cwd` plus null install suggestions to the app-server, and
+returns marketplace/plugin/install/auth-policy counts plus plugin metadata
+presence counts. Plugin names, ids, paths, URLs, descriptions, prompts,
+capabilities, screenshots, marketplace names, install suggestion names,
+mutations, and raw payloads are not returned.
+
 The remote-control-disable-preflight endpoint accepts no remote-control params
 and creates only a local one-time confirmation token. The matching
 `/api/remote-control-disable` route is fail-closed unless
