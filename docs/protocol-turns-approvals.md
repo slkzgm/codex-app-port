@@ -163,7 +163,8 @@ event details, paths, secrets, or raw payloads.
 Current local status: `permissionProfile/list`, `remoteControl/status/read`,
 `plugin/installed`, `externalAgentConfig/import/readHistories`,
 `hooks/list`, `account/usage/read`, `account/workspaceMessages/read`, and
-`configRequirements/read` have dedicated disabled-by-default GET routes behind
+`configRequirements/read`, and `mcpServerStatus/list` have dedicated
+disabled-by-default GET routes behind
 `CODEX_APP_PORT_ALLOW_PERMISSION_PROFILES=1`,
 `CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_STATUS=1`,
 `CODEX_APP_PORT_ALLOW_INSTALLED_PLUGINS=1`,
@@ -171,7 +172,8 @@ Current local status: `permissionProfile/list`, `remoteControl/status/read`,
 `CODEX_APP_PORT_ALLOW_HOOKS_LIST=1`,
 `CODEX_APP_PORT_ALLOW_ACCOUNT_USAGE=1`, and
 `CODEX_APP_PORT_ALLOW_ACCOUNT_WORKSPACE_MESSAGES=1`, and
-`CODEX_APP_PORT_ALLOW_CONFIG_REQUIREMENTS=1`. These surfaces return counts
+`CODEX_APP_PORT_ALLOW_CONFIG_REQUIREMENTS=1`, and
+`CODEX_APP_PORT_ALLOW_MCP_SERVER_STATUS=1`. These surfaces return counts
 plus bounded categorical totals only. They do not return permission profile
 names, profile ids, descriptions, usage values, bucket dates, workspace message
 ids, message bodies, message timestamps, policy values, domains, requirement
@@ -180,8 +182,10 @@ failure stages, hook commands, hook paths, hook keys, hook matchers, hook plugin
 ids, hook status messages, hook timeouts, hook trust hashes, plugin ids, plugin
 names, plugin paths, plugin URLs, plugin prompts, plugin descriptions, plugin
 capabilities, plugin screenshots, install suggestion names, remote-control
-status strings, server names, installation ids, environment ids, cursors, hook
-execution, config writes, import execution, filesystem access, or raw payloads.
+status strings, MCP server names, MCP tool names, MCP resource URIs, MCP
+resource-template URIs, MCP tool schemas, server names, installation ids,
+environment ids, cursors, hook execution, MCP tool invocation, MCP resource
+reads, config writes, import execution, filesystem access, or raw payloads.
 `thread/search` has a separate
 disabled-by-default
 `POST /api/thread-search` path behind `CODEX_APP_PORT_ALLOW_THREAD_SEARCH=1`;

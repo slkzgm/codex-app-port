@@ -261,6 +261,11 @@ const elements = {
   ),
   configRequirementsHooksText: document.querySelector("#config-requirements-hooks-text"),
   configRequirementsDetailsText: document.querySelector("#config-requirements-details-text"),
+  mcpServerStatusButton: document.querySelector("#mcp-server-status-button"),
+  mcpServerStatusStatus: document.querySelector("#mcp-server-status-status"),
+  mcpServerStatusCountText: document.querySelector("#mcp-server-status-count-text"),
+  mcpServerStatusToolsText: document.querySelector("#mcp-server-status-tools-text"),
+  mcpServerStatusDetailsText: document.querySelector("#mcp-server-status-details-text"),
   permissionProfilesButton: document.querySelector("#permission-profiles-button"),
   permissionProfilesStatus: document.querySelector("#permission-profiles-status"),
   permissionProfilesCountText: document.querySelector("#permission-profiles-count-text"),
@@ -1249,6 +1254,10 @@ elements.workspaceSelect.addEventListener("change", () => {
   elements.configRequirementsFeaturesText.textContent = "0";
   elements.configRequirementsHooksText.textContent = "0";
   elements.configRequirementsDetailsText.textContent = "Hidden";
+  elements.mcpServerStatusStatus.textContent = "MCP status disabled by default.";
+  elements.mcpServerStatusCountText.textContent = "0";
+  elements.mcpServerStatusToolsText.textContent = "0";
+  elements.mcpServerStatusDetailsText.textContent = "Hidden";
   elements.permissionProfilesStatus.textContent = "Profile read disabled by default.";
   elements.permissionProfilesCountText.textContent = "0";
   elements.permissionProfilesAllowedText.textContent = "0";
@@ -2252,6 +2261,10 @@ elements.configRequirementsButton.addEventListener("click", () => {
   runConfigRequirements();
 });
 
+elements.mcpServerStatusButton.addEventListener("click", () => {
+  runMcpServerStatus();
+});
+
 elements.permissionProfilesButton.addEventListener("click", () => {
   runPermissionProfiles();
 });
@@ -2775,6 +2788,16 @@ function configRequirementsEndpoint() {
   const params = new URLSearchParams();
   params.set("workspace", selectedWorkspaceId);
   return `/api/config-requirements?${params.toString()}`;
+}
+
+function mcpServerStatusEndpoint() {
+  if (!selectedWorkspaceId) {
+    return "/api/mcp-server-status";
+  }
+
+  const params = new URLSearchParams();
+  params.set("workspace", selectedWorkspaceId);
+  return `/api/mcp-server-status?${params.toString()}`;
 }
 
 function permissionProfilesEndpoint() {
@@ -4946,6 +4969,28 @@ async function runConfigRequirements() {
     renderError(error);
   } finally {
     setConfigRequirementsLoading(false);
+  }
+}
+
+async function runMcpServerStatus() {
+  setMcpServerStatusLoading(true);
+  hideError();
+
+  try {
+    const response = await fetch(mcpServerStatusEndpoint(), {
+      headers: apiHeaders(),
+      cache: "no-store",
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderMcpServerStatus(payload);
+  } catch (error) {
+    elements.mcpServerStatusStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    setMcpServerStatusLoading(false);
   }
 }
 
@@ -15706,6 +15751,37 @@ function renderConfigRequirements(payload) {
     : `${featureCount} features`;
 }
 
+function renderMcpServerStatus(payload) {
+  const settings = payload.settings ?? {};
+  const result = payload.result ?? {};
+  const blocked = settings.mcpServerStatusEnabled !== true || payload.appServer?.touched !== true;
+  const serverCount = result.serverCount ?? payload.probes?.mcpServerStatus?.serverCount ?? 0;
+  const toolCount = result.toolCount ?? payload.probes?.mcpServerStatus?.toolCount ?? 0;
+  const resourceCount =
+    result.resourceCount ?? payload.probes?.mcpServerStatus?.resourceCount ?? 0;
+  const resourceTemplateCount =
+    result.resourceTemplateCount ??
+    payload.probes?.mcpServerStatus?.resourceTemplateCount ??
+    0;
+  const status = result.status ?? (blocked ? "blocked" : "available");
+  elements.mcpServerStatusStatus.textContent = blocked ? "Read blocked" : status;
+  elements.mcpServerStatusCountText.textContent = String(serverCount);
+  elements.mcpServerStatusToolsText.textContent = String(toolCount);
+  elements.mcpServerStatusDetailsText.textContent =
+    result.namesReturned ||
+    result.toolNamesReturned ||
+    result.resourceUrisReturned ||
+    result.resourceTemplateUrisReturned ||
+    result.toolSchemasReturned ||
+    result.rawPayloadReturned ||
+    settings.rawPayloadReturned
+      ? "Returned"
+      : "Hidden";
+  elements.mcpStateText.textContent = blocked
+    ? "Blocked"
+    : `${serverCount} servers / ${resourceCount + resourceTemplateCount} resources`;
+}
+
 function renderPermissionProfiles(payload) {
   const settings = payload.settings ?? {};
   const result = payload.result ?? {};
@@ -23779,6 +23855,14 @@ function setConfigRequirementsLoading(isLoading) {
     : "Requirements Check";
   if (isLoading) {
     elements.configRequirementsStatus.textContent = "Checking";
+  }
+}
+
+function setMcpServerStatusLoading(isLoading) {
+  elements.mcpServerStatusButton.disabled = isLoading;
+  elements.mcpServerStatusButton.textContent = isLoading ? "Checking" : "MCP Status";
+  if (isLoading) {
+    elements.mcpServerStatusStatus.textContent = "Checking";
   }
 }
 

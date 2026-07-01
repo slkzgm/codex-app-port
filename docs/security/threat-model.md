@@ -65,6 +65,12 @@
   domains, hook commands, paths, requirement keys, policy snippets, cwd,
   filesystem access, config writes, and raw app-server payloads must stay
   server-side.
+- Browser-facing MCP server-status reads must be opt-in, narrow, and
+  sanitized. The dedicated `mcpServerStatus/list` bridge may report only
+  server/tool/resource/resource-template counts and documented auth-status
+  buckets; MCP server names, tool names, resource URIs, resource-template URIs,
+  tool schemas, cwd, OAuth starts, tool invocation, resource reads, filesystem
+  access, config writes, and raw app-server payloads must stay server-side.
 - Browser-facing JSON `POST` routes must have a centralized audited body
   contract before side effects. Unsupported fields must be rejected before
   probes, app-server calls, filesystem access, token consumption, or audit-log
@@ -1660,6 +1666,13 @@
   counts only; policy values, domains, hook commands, paths, requirement keys,
   policy snippets, filesystem reads or writes, config writes, cwd, and raw
   app-server payloads remain blocked.
+- `/api/mcp-server-status` may call only `mcpServerStatus/list` behind
+  `CODEX_APP_PORT_ALLOW_MCP_SERVER_STATUS=1`. It is GET-only, local-token
+  protected, requests `toolsAndAuthOnly` detail, and returns server/tool/
+  resource/resource-template counts plus documented auth-status buckets only;
+  MCP server names, tool names, resource URIs, resource-template URIs, schemas,
+  OAuth starts, tool invocation, resource reads, cwd, paths, and raw app-server
+  payloads remain blocked.
 - `/api/permission-profiles` may call only `permissionProfile/list` behind
   `CODEX_APP_PORT_ALLOW_PERMISSION_PROFILES=1`. It is GET-only, local-token
   protected, and returns profile counts plus allowed/blocked/description totals

@@ -85,6 +85,7 @@ async function main() {
   await checkAccountUsageApi();
   await checkAccountWorkspaceMessagesApi();
   await checkConfigRequirementsApi();
+  await checkMcpServerStatusApi();
   await checkPermissionProfilesApi();
   await checkRemoteControlStatusApi();
   await checkInstalledPluginsApi();
@@ -18368,6 +18369,209 @@ async function checkConfigRequirementsApi() {
     await closeServer(server);
   }
   pass("dev server config requirements exposes counts behind opt-in without returning requirement details");
+}
+
+async function checkMcpServerStatusApi() {
+  const blockedCalls = [];
+  const blockedServer = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    mcpServerStatusFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+  const blockedPort = await listenWithFallback(blockedServer, { host: "127.0.0.1", port: 0 });
+  const blockedBaseUrl = `http://127.0.0.1:${blockedPort}`;
+
+  try {
+    const token = await readUiSessionToken(blockedBaseUrl);
+    const settingsResponse = await fetch(`${blockedBaseUrl}/api/settings-integrations`, {
+      headers: apiHeaders(token),
+    });
+    if (!settingsResponse.ok) {
+      throw new Error(`settings integrations for blocked MCP status returned HTTP ${settingsResponse.status}`);
+    }
+    const settingsPayload = await settingsResponse.json();
+    if (
+      settingsPayload.surfaces?.settings?.mcpServerStatusAvailable !== false ||
+      settingsPayload.surfaces?.settings?.mcpServerStatusEnabled !== false ||
+      settingsPayload.integrationScope?.mcpServerStatusEnabled !== false
+    ) {
+      throw new Error("settings integrations did not expose the blocked MCP status gate safely");
+    }
+
+    const response = await fetch(`${blockedBaseUrl}/api/mcp-server-status`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`blocked MCP status returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (
+      payload.appServer?.touched !== false ||
+      payload.settings?.mcpServerStatusEnabled !== false ||
+      payload.result?.status !== "blocked" ||
+      payload.policy?.appServerTraffic !== false
+    ) {
+      throw new Error("blocked MCP status did not fail closed without app-server traffic");
+    }
+    if (blockedCalls.length !== 0) {
+      throw new Error("blocked MCP status unexpectedly touched app-server");
+    }
+    assertNoMarkers(JSON.stringify(payload), ["/tmp/codex-app-port-verify"]);
+  } finally {
+    await closeServer(blockedServer);
+  }
+
+  const calls = [];
+  const server = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    mcpServerStatusEnabled: true,
+    mcpServerStatusFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-07-01T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/verify-private-home",
+          userAgent: "verify-private-agent",
+        },
+        probes: {
+          mcpServerStatus: {
+            ok: true,
+            serverCount: 2,
+            authStatusCounts: {
+              oAuth: 1,
+              bearerToken: 1,
+              verifyPrivateStatus: 1,
+            },
+            toolCount: 3,
+            resourceCount: 4,
+            resourceTemplateCount: 5,
+            hasNextCursor: true,
+            returnedServerCount: 2,
+            items: [
+              {
+                name: "verify-private-mcp",
+                authStatus: "oAuth",
+                toolCount: 2,
+                returnedToolNameCount: 1,
+                toolNames: ["verify-private-tool"],
+                resourceCount: 3,
+                resourceTemplateCount: 4,
+              },
+            ],
+            namesReturned: true,
+            toolNamesReturned: true,
+            toolSchemasReturned: true,
+          },
+        },
+        rawMcp: {
+          server: "verify-private-mcp",
+          tool: "verify-private-tool",
+          uri: "file:///tmp/codex-app-port-verify/secret.txt",
+          schema: {
+            token: "verify-secret-token",
+          },
+        },
+        notifications: {},
+      };
+    },
+  });
+  const port = await listenWithFallback(server, { host: "127.0.0.1", port: 0 });
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  try {
+    const token = await readUiSessionToken(baseUrl);
+    const settingsResponse = await fetch(`${baseUrl}/api/settings-integrations`, {
+      headers: apiHeaders(token),
+    });
+    if (!settingsResponse.ok) {
+      throw new Error(`settings integrations for MCP status returned HTTP ${settingsResponse.status}`);
+    }
+    const settingsPayload = await settingsResponse.json();
+    if (
+      settingsPayload.surfaces?.settings?.mcpServerStatusAvailable !== true ||
+      settingsPayload.surfaces?.settings?.mcpServerStatusEnabled !== true ||
+      settingsPayload.integrationScope?.mcpServerStatusEnabled !== true ||
+      !settingsPayload.integrationScope?.enabledReadMethods?.includes("mcpServerStatus/list")
+    ) {
+      throw new Error("settings integrations did not expose the MCP status gate safely");
+    }
+
+    const wrongMethod = await fetch(`${baseUrl}/api/mcp-server-status`, {
+      method: "POST",
+      headers: apiHeaders(token),
+    });
+    if (wrongMethod.status !== 405) {
+      throw new Error(`MCP status POST returned HTTP ${wrongMethod.status}`);
+    }
+
+    const response = await fetch(`${baseUrl}/api/mcp-server-status`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`MCP status returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (
+      payload.appServer?.touched !== true ||
+      payload.appServer?.modelTraffic !== false ||
+      payload.settings?.mcpServerStatusEnabled !== true ||
+      payload.result?.status !== "available" ||
+      payload.result?.serverCount !== 2 ||
+      payload.result?.authStatusCounts?.oAuth !== 1 ||
+      payload.result?.authStatusCounts?.bearerToken !== 1 ||
+      payload.result?.authStatusCounts?.verifyPrivateStatus != null ||
+      payload.result?.toolCount !== 3 ||
+      payload.result?.resourceCount !== 4 ||
+      payload.result?.resourceTemplateCount !== 5 ||
+      payload.result?.hasNextCursor !== true ||
+      payload.result?.returnedServerCount !== 0 ||
+      payload.result?.namesReturned !== false ||
+      payload.result?.toolNamesReturned !== false ||
+      payload.result?.resourceUrisReturned !== false ||
+      payload.result?.resourceTemplateUrisReturned !== false ||
+      payload.result?.toolSchemasReturned !== false ||
+      payload.result?.rawPayloadReturned !== false ||
+      payload.policy?.readOnly !== true ||
+      payload.policy?.toolInvocation !== false ||
+      payload.policy?.resourceReads !== false ||
+      payload.policy?.oauthLogin !== false ||
+      payload.policy?.serverReload !== false ||
+      payload.policy?.configWrites !== false ||
+      payload.policy?.filesystemReads !== false ||
+      payload.policy?.filesystemWrites !== false ||
+      payload.policy?.rawPayloadReturned !== false
+    ) {
+      throw new Error("MCP status did not return the safe counts-only summary shape");
+    }
+    if (calls.length !== 1 || calls[0].cwd !== "/tmp/codex-app-port-verify") {
+      throw new Error("MCP status did not call the app-server read path once");
+    }
+    assertNoMarkers(JSON.stringify(payload), [
+      "/tmp/codex-app-port-verify",
+      "/tmp/verify-private-home",
+      "verify-private-agent",
+      "codexHome",
+      "userAgent",
+      "verifyPrivateStatus",
+      "verify-private-mcp",
+      "verify-private-tool",
+      "verify-secret-token",
+      "secret.txt",
+      "\"namesReturned\":true",
+      "\"toolNamesReturned\":true",
+      "\"toolSchemasReturned\":true",
+    ]);
+  } finally {
+    await closeServer(server);
+  }
+  pass("dev server MCP status exposes counts behind opt-in without returning MCP details");
 }
 
 async function checkPermissionProfilesApi() {
@@ -58142,6 +58346,11 @@ async function readUiSessionToken(baseUrl) {
     !html.includes("config-requirements-features-text") ||
     !html.includes("config-requirements-hooks-text") ||
     !html.includes("config-requirements-details-text") ||
+    !html.includes("mcp-server-status-button") ||
+    !html.includes("mcp-server-status-status") ||
+    !html.includes("mcp-server-status-count-text") ||
+    !html.includes("mcp-server-status-tools-text") ||
+    !html.includes("mcp-server-status-details-text") ||
     !html.includes("permission-profiles-button") ||
     !html.includes("permission-profiles-status") ||
     !html.includes("permission-profiles-count-text") ||
@@ -58178,6 +58387,9 @@ async function readUiSessionToken(baseUrl) {
     !appScript.includes("runConfigRequirements") ||
     !appScript.includes("renderConfigRequirements") ||
     !appScript.includes("setConfigRequirementsLoading") ||
+    !appScript.includes("runMcpServerStatus") ||
+    !appScript.includes("renderMcpServerStatus") ||
+    !appScript.includes("setMcpServerStatusLoading") ||
     !appScript.includes("runPermissionProfiles") ||
     !appScript.includes("renderPermissionProfiles") ||
     !appScript.includes("runRemoteControlStatus") ||

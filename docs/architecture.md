@@ -1570,6 +1570,14 @@ Current M1 status:
   key counts, and residency presence while omitting policy values, domains,
   hook commands, paths, requirement keys, policy snippets, config writes,
   filesystem access, cwd, and raw payloads.
+- done: dedicated `/api/mcp-server-status` read route for
+  `mcpServerStatus/list`, disabled by default behind
+  `CODEX_APP_PORT_ALLOW_MCP_SERVER_STATUS=1`, using `toolsAndAuthOnly` detail
+  and returning only server/tool/resource/resource-template counts plus
+  documented auth-status buckets while omitting server names, tool names,
+  resource URIs, resource-template URIs, tool schemas, OAuth starts, tool
+  invocation, resource reads, config writes, filesystem access, cwd, and raw
+  payloads.
 - done: second-gate integration display inventory behind
   `CODEX_APP_PORT_ALLOW_INTEGRATION_NAMES=1`, returning bounded model display
   names, collaboration-mode names, app/connector, app plugin display, MCP

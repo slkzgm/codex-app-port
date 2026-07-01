@@ -380,6 +380,11 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /config-requirements-features-text/);
     assert.match(html, /config-requirements-hooks-text/);
     assert.match(html, /config-requirements-details-text/);
+    assert.match(html, /mcp-server-status-button/);
+    assert.match(html, /mcp-server-status-status/);
+    assert.match(html, /mcp-server-status-count-text/);
+    assert.match(html, /mcp-server-status-tools-text/);
+    assert.match(html, /mcp-server-status-details-text/);
     assert.match(html, /permission-profiles-button/);
     assert.match(html, /permission-profiles-status/);
     assert.match(html, /permission-profiles-count-text/);
@@ -416,6 +421,9 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(appScript, /runConfigRequirements/);
     assert.match(appScript, /renderConfigRequirements/);
     assert.match(appScript, /setConfigRequirementsLoading/);
+    assert.match(appScript, /runMcpServerStatus/);
+    assert.match(appScript, /renderMcpServerStatus/);
+    assert.match(appScript, /setMcpServerStatusLoading/);
     assert.match(appScript, /runPermissionProfiles/);
     assert.match(appScript, /renderPermissionProfiles/);
     assert.match(appScript, /runRemoteControlStatus/);
@@ -15188,6 +15196,190 @@ test("dev server exposes config requirements only behind explicit opt-in and red
       "\"hookCommandsReturned\":true",
       "\"pathsReturned\":true",
       "\"rawPayloadReturned\":true",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    await closeServer(enabledServer.server);
+  }
+});
+
+test("dev server exposes MCP server status only behind explicit opt-in and redacts MCP details", async () => {
+  const blockedCalls = [];
+  const blockedServer = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    mcpServerStatusFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+
+  try {
+    const settingsResponse = await fetch(`${blockedServer.url}/api/settings-integrations`, {
+      headers: apiHeaders(blockedServer.server),
+    });
+    assert.equal(settingsResponse.status, 200);
+    const settingsPayload = await settingsResponse.json();
+    assert.equal(settingsPayload.surfaces.settings.mcpServerStatusAvailable, false);
+    assert.equal(settingsPayload.surfaces.settings.mcpServerStatusEnabled, false);
+    assert.equal(settingsPayload.integrationScope.mcpServerStatusEnabled, false);
+
+    const response = await fetch(`${blockedServer.url}/api/mcp-server-status`, {
+      headers: apiHeaders(blockedServer.server),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, false);
+    assert.deepEqual(payload.appServer.auditedMethods, ["mcpServerStatus/list"]);
+    assert.equal(payload.settings.mcpServerStatusEnabled, false);
+    assert.equal(payload.policy.appServerTraffic, false);
+    assert.equal(payload.result.status, "blocked");
+    assert.equal(blockedCalls.length, 0);
+    assert.equal(serialized.includes("/tmp/default-workspace"), false);
+  } finally {
+    await closeServer(blockedServer.server);
+  }
+
+  const calls = [];
+  const enabledServer = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    mcpServerStatusEnabled: true,
+    mcpServerStatusFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-07-01T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/private-home",
+          userAgent: "mock/0.0.0",
+        },
+        probes: {
+          mcpServerStatus: {
+            ok: true,
+            serverCount: 2,
+            authStatusCounts: {
+              oAuth: 1,
+              bearerToken: 1,
+              privateStatus: 1,
+            },
+            toolCount: 3,
+            resourceCount: 4,
+            resourceTemplateCount: 5,
+            hasNextCursor: true,
+            returnedServerCount: 2,
+            items: [
+              {
+                name: "private-mcp-server",
+                authStatus: "oAuth",
+                toolCount: 2,
+                returnedToolNameCount: 1,
+                toolNames: ["private-tool-name"],
+                resourceCount: 3,
+                resourceTemplateCount: 4,
+              },
+            ],
+            namesReturned: true,
+            toolNamesReturned: true,
+            nameRedactedCount: 1,
+            toolNameRedactedCount: 1,
+            toolSchemasReturned: true,
+          },
+        },
+        rawMcp: {
+          name: "private-mcp-server",
+          tool: "private-tool-name",
+          inputSchema: {
+            token: "sk-private-mcp-token",
+          },
+          resourceUri: "file:///tmp/default-workspace/secret.txt",
+          templateUri: "resource://private-template/{secret}",
+        },
+        notifications: {},
+      };
+    },
+  });
+
+  try {
+    const settingsResponse = await fetch(`${enabledServer.url}/api/settings-integrations`, {
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(settingsResponse.status, 200);
+    const settingsPayload = await settingsResponse.json();
+    assert.equal(settingsPayload.surfaces.settings.mcpServerStatusAvailable, true);
+    assert.equal(settingsPayload.surfaces.settings.mcpServerStatusEnabled, true);
+    assert.equal(settingsPayload.integrationScope.mcpServerStatusEnabled, true);
+    assert.equal(
+      settingsPayload.integrationScope.enabledReadMethods.includes("mcpServerStatus/list"),
+      true,
+    );
+
+    const methodResponse = await fetch(`${enabledServer.url}/api/mcp-server-status`, {
+      method: "POST",
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(methodResponse.status, 405);
+
+    const response = await fetch(`${enabledServer.url}/api/mcp-server-status`, {
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, true);
+    assert.equal(payload.appServer.modelTraffic, false);
+    assert.deepEqual(payload.appServer.auditedMethods, ["mcpServerStatus/list"]);
+    assert.equal(payload.settings.mcpServerStatusEnabled, true);
+    assert.equal(payload.result.status, "available");
+    assert.equal(payload.result.serverCount, 2);
+    assert.deepEqual(payload.result.authStatusCounts, {
+      oAuth: 1,
+      bearerToken: 1,
+    });
+    assert.equal(payload.result.toolCount, 3);
+    assert.equal(payload.result.resourceCount, 4);
+    assert.equal(payload.result.resourceTemplateCount, 5);
+    assert.equal(payload.result.hasNextCursor, true);
+    assert.equal(payload.result.returnedServerCount, 0);
+    assert.equal(payload.result.namesReturned, false);
+    assert.equal(payload.result.toolNamesReturned, false);
+    assert.equal(payload.result.resourceUrisReturned, false);
+    assert.equal(payload.result.resourceTemplateUrisReturned, false);
+    assert.equal(payload.result.toolSchemasReturned, false);
+    assert.equal(payload.result.rawPayloadReturned, false);
+    assert.equal(payload.probes.mcpServerStatus.returnedServerCount, 0);
+    assert.deepEqual(payload.probes.mcpServerStatus.items, []);
+    assert.equal(payload.policy.readOnly, true);
+    assert.equal(payload.policy.toolInvocation, false);
+    assert.equal(payload.policy.resourceReads, false);
+    assert.equal(payload.policy.oauthLogin, false);
+    assert.equal(payload.policy.serverReload, false);
+    assert.equal(payload.policy.configWrites, false);
+    assert.equal(payload.policy.filesystemReads, false);
+    assert.equal(payload.policy.filesystemWrites, false);
+    assert.equal(payload.policy.rawPayloadReturned, false);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].cwd, "/tmp/default-workspace");
+    for (const marker of [
+      "/tmp/default-workspace",
+      "/tmp/private-home",
+      "codexHome",
+      "userAgent",
+      "privateStatus",
+      "private-mcp-server",
+      "private-tool-name",
+      "sk-private-mcp-token",
+      "secret.txt",
+      "private-template",
+      "\"namesReturned\":true",
+      "\"toolNamesReturned\":true",
+      "\"toolSchemasReturned\":true",
     ]) {
       assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
     }

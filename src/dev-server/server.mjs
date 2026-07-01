@@ -33,6 +33,7 @@ import {
   runIntegrationsInventoryProbe,
   runLiveSessionControlProbe,
   runLoadedSessionsProbe,
+  runMcpServerStatusReadProbe,
   runMcpServerOauthLoginProbe,
   runMcpServerReloadProbe,
   runMcpToolCallProbe,
@@ -13156,6 +13157,7 @@ export function createDevServer({
   accountUsageFn = runAccountUsageReadProbe,
   accountWorkspaceMessagesFn = runAccountWorkspaceMessagesReadProbe,
   configRequirementsFn = runConfigRequirementsReadProbe,
+  mcpServerStatusFn = runMcpServerStatusReadProbe,
   permissionProfilesFn = runPermissionProfilesReadProbe,
   remoteControlStatusFn = runRemoteControlStatusReadProbe,
   installedPluginsFn = runInstalledPluginsReadProbe,
@@ -13231,6 +13233,7 @@ export function createDevServer({
   accountWorkspaceMessagesEnabled =
     process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_WORKSPACE_MESSAGES === "1",
   configRequirementsEnabled = process.env.CODEX_APP_PORT_ALLOW_CONFIG_REQUIREMENTS === "1",
+  mcpServerStatusEnabled = process.env.CODEX_APP_PORT_ALLOW_MCP_SERVER_STATUS === "1",
   permissionProfilesEnabled = process.env.CODEX_APP_PORT_ALLOW_PERMISSION_PROFILES === "1",
   remoteControlStatusEnabled =
     process.env.CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_STATUS === "1",
@@ -13392,6 +13395,7 @@ export function createDevServer({
       accountUsageFn,
       accountWorkspaceMessagesFn,
       configRequirementsFn,
+      mcpServerStatusFn,
       permissionProfilesFn,
       remoteControlStatusFn,
       installedPluginsFn,
@@ -13463,6 +13467,7 @@ export function createDevServer({
       accountUsageEnabled,
       accountWorkspaceMessagesEnabled,
       configRequirementsEnabled,
+      mcpServerStatusEnabled,
       permissionProfilesEnabled,
       remoteControlStatusEnabled,
       installedPluginsEnabled,
@@ -15003,6 +15008,48 @@ export async function handleRequest(request, response, options) {
       sendJson(response, error.statusCode ?? 502, {
         ok: false,
         error: cleanDisplayText(error.message, 200) ?? "Invalid config requirements request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/mcp-server-status") {
+    if (request.method !== "GET") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        url.searchParams.get("workspace"),
+      );
+      if (!options.mcpServerStatusEnabled) {
+        sendJson(response, 200, buildMcpServerStatusBlockedPayload({ workspace }));
+        return;
+      }
+      const payload = await options.mcpServerStatusFn({
+        codexBin: options.codexBin,
+        cwd: workspace.cwd,
+        timeoutMs: options.timeoutMs,
+      });
+      sendJson(
+        response,
+        200,
+        sanitizeMcpServerStatusPayload(payload, {
+          workspace,
+          enabled: true,
+        }),
+      );
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 502, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid MCP server status request",
       });
     }
     return;
@@ -19912,6 +19959,7 @@ export async function handleRequest(request, response, options) {
             accountUsageEnabled: options.accountUsageEnabled,
             accountWorkspaceMessagesEnabled: options.accountWorkspaceMessagesEnabled,
             configRequirementsEnabled: options.configRequirementsEnabled,
+            mcpServerStatusEnabled: options.mcpServerStatusEnabled,
             permissionProfilesEnabled: options.permissionProfilesEnabled,
             remoteControlStatusEnabled: options.remoteControlStatusEnabled,
             installedPluginsEnabled: options.installedPluginsEnabled,
@@ -19961,6 +20009,7 @@ export async function handleRequest(request, response, options) {
           accountUsageEnabled: options.accountUsageEnabled,
           accountWorkspaceMessagesEnabled: options.accountWorkspaceMessagesEnabled,
           configRequirementsEnabled: options.configRequirementsEnabled,
+          mcpServerStatusEnabled: options.mcpServerStatusEnabled,
           permissionProfilesEnabled: options.permissionProfilesEnabled,
           remoteControlStatusEnabled: options.remoteControlStatusEnabled,
           installedPluginsEnabled: options.installedPluginsEnabled,
@@ -52263,6 +52312,7 @@ export function sanitizeSettingsIntegrationsPayload(
     accountUsageEnabled = false,
     accountWorkspaceMessagesEnabled = false,
     configRequirementsEnabled = false,
+    mcpServerStatusEnabled = false,
     permissionProfilesEnabled = false,
     remoteControlStatusEnabled = false,
     installedPluginsEnabled = false,
@@ -52307,6 +52357,7 @@ export function sanitizeSettingsIntegrationsPayload(
   const usageEnabled = Boolean(accountUsageEnabled);
   const workspaceMessagesEnabled = Boolean(accountWorkspaceMessagesEnabled);
   const requirementsEnabled = Boolean(configRequirementsEnabled);
+  const mcpStatusEnabled = Boolean(mcpServerStatusEnabled);
   const profilesEnabled = Boolean(permissionProfilesEnabled);
   const remoteStatusEnabled = Boolean(remoteControlStatusEnabled);
   const installedPluginReadEnabled = Boolean(installedPluginsEnabled);
@@ -52352,6 +52403,7 @@ export function sanitizeSettingsIntegrationsPayload(
     accountUsageEnabled: usageEnabled,
     accountWorkspaceMessagesEnabled: workspaceMessagesEnabled,
     configRequirementsEnabled: requirementsEnabled,
+    mcpServerStatusEnabled: mcpStatusEnabled,
     permissionProfilesEnabled: profilesEnabled,
     remoteControlStatusEnabled: remoteStatusEnabled,
     installedPluginsEnabled: installedPluginReadEnabled,
@@ -52410,6 +52462,8 @@ export function sanitizeSettingsIntegrationsPayload(
         readOnlySummaryAvailable: true,
         requirementsAvailable: inventory.requirements.ok || requirementsEnabled,
         configRequirementsEnabled: requirementsEnabled,
+        mcpServerStatusAvailable: inventory.mcp.ok || mcpStatusEnabled,
+        mcpServerStatusEnabled: mcpStatusEnabled,
         modelListingAvailable: inventory.models.ok,
         modelProviderCapabilitiesAvailable: inventory.modelProviderCapabilities.ok,
         collaborationModeListingAvailable: inventory.collaborationModes.ok,
@@ -58751,6 +58805,167 @@ export function sanitizeConfigRequirementsPayload(
   };
 }
 
+export function buildMcpServerStatusBlockedPayload({ workspace } = {}) {
+  const mcpServerStatus = sanitizeMcpInventory(null, { namesEnabled: false });
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["mcpServerStatus/list"],
+    },
+    settings: {
+      mcpServerStatusAvailable: true,
+      mcpServerStatusEnabled: false,
+      appServerTraffic: false,
+      namesReturned: false,
+      toolNamesReturned: false,
+      resourceUrisReturned: false,
+      resourceTemplateUrisReturned: false,
+      toolSchemasReturned: false,
+      rawPayloadReturned: false,
+      reason: "mcp-server-status-requires-opt-in",
+    },
+    probes: {
+      mcpServerStatus,
+    },
+    result: {
+      status: "blocked",
+      mcpServerStatusEnabled: false,
+      appServerTraffic: false,
+      serverCount: 0,
+      authStatusCounts: {},
+      toolCount: 0,
+      resourceCount: 0,
+      resourceTemplateCount: 0,
+      hasNextCursor: false,
+      returnedServerCount: 0,
+      namesReturned: false,
+      toolNamesReturned: false,
+      resourceUrisReturned: false,
+      resourceTemplateUrisReturned: false,
+      toolSchemasReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      toolInvocation: false,
+      resourceReads: false,
+      oauthLogin: false,
+      serverReload: false,
+      configWrites: false,
+      filesystemReads: false,
+      filesystemWrites: false,
+      secretsReturned: false,
+      tokensReturned: false,
+      namesReturned: false,
+      idsReturned: false,
+      urlsReturned: false,
+      pathsReturned: false,
+      resourceUrisReturned: false,
+      resourceTemplateUrisReturned: false,
+      toolSchemasReturned: false,
+      rawPayloadReturned: false,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: true,
+      implemented: true,
+    },
+    notifications: sanitizeNotificationCounts(null),
+  };
+}
+
+export function sanitizeMcpServerStatusPayload(
+  payload,
+  { workspace = null, enabled = false } = {},
+) {
+  const mcpServerStatus = sanitizeMcpInventory(payload?.probes?.mcpServerStatus, {
+    namesEnabled: false,
+  });
+  const status = enabled ? "available" : "blocked";
+  return {
+    ok: Boolean(payload?.ok),
+    generatedAt: payload?.generatedAt ?? new Date().toISOString(),
+    transport: cleanDisplayText(payload?.transport, 80),
+    protocol: cleanDisplayText(payload?.protocol, 80),
+    initialize: sanitizeInitialize(payload?.initialize),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: Boolean(enabled),
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["mcpServerStatus/list"],
+    },
+    settings: {
+      mcpServerStatusAvailable: true,
+      mcpServerStatusEnabled: Boolean(enabled),
+      appServerTraffic: Boolean(enabled),
+      namesReturned: false,
+      toolNamesReturned: false,
+      resourceUrisReturned: false,
+      resourceTemplateUrisReturned: false,
+      toolSchemasReturned: false,
+      rawPayloadReturned: false,
+      reason: Boolean(enabled)
+        ? "mcp-server-status-counts-only"
+        : "mcp-server-status-requires-opt-in",
+    },
+    probes: {
+      mcpServerStatus,
+    },
+    result: {
+      status,
+      mcpServerStatusEnabled: Boolean(enabled),
+      appServerTraffic: Boolean(enabled),
+      serverCount: mcpServerStatus.serverCount,
+      authStatusCounts: mcpServerStatus.authStatusCounts,
+      toolCount: mcpServerStatus.toolCount,
+      resourceCount: mcpServerStatus.resourceCount,
+      resourceTemplateCount: mcpServerStatus.resourceTemplateCount,
+      hasNextCursor: mcpServerStatus.hasNextCursor,
+      returnedServerCount: 0,
+      namesReturned: false,
+      toolNamesReturned: false,
+      resourceUrisReturned: false,
+      resourceTemplateUrisReturned: false,
+      toolSchemasReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: Boolean(enabled),
+      modelTraffic: false,
+      commandTraffic: false,
+      toolInvocation: false,
+      resourceReads: false,
+      oauthLogin: false,
+      serverReload: false,
+      configWrites: false,
+      filesystemReads: false,
+      filesystemWrites: false,
+      secretsReturned: false,
+      tokensReturned: false,
+      namesReturned: false,
+      idsReturned: false,
+      urlsReturned: false,
+      pathsReturned: false,
+      resourceUrisReturned: false,
+      resourceTemplateUrisReturned: false,
+      toolSchemasReturned: false,
+      rawPayloadReturned: false,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: true,
+      implemented: true,
+    },
+    notifications: sanitizeNotificationCounts(payload?.notifications),
+  };
+}
+
 export function buildPermissionProfilesBlockedPayload({ workspace } = {}) {
   const permissionProfiles = sanitizePermissionProfilesInventory(null);
   return {
@@ -63878,6 +64093,7 @@ export function buildSettingsIntegrations({
   accountUsageEnabled = false,
   accountWorkspaceMessagesEnabled = false,
   configRequirementsEnabled = false,
+  mcpServerStatusEnabled = false,
   permissionProfilesEnabled = false,
   remoteControlStatusEnabled = false,
   installedPluginsEnabled = false,
@@ -63922,6 +64138,7 @@ export function buildSettingsIntegrations({
   const usageEnabled = Boolean(accountUsageEnabled);
   const workspaceMessagesEnabled = Boolean(accountWorkspaceMessagesEnabled);
   const requirementsEnabled = Boolean(configRequirementsEnabled);
+  const mcpStatusEnabled = Boolean(mcpServerStatusEnabled);
   const profilesEnabled = Boolean(permissionProfilesEnabled);
   const remoteStatusEnabled = Boolean(remoteControlStatusEnabled);
   const installedPluginReadEnabled = Boolean(installedPluginsEnabled);
@@ -63949,6 +64166,7 @@ export function buildSettingsIntegrations({
     enabledReadMethods: [
       "config/read",
       requirementsEnabled ? "configRequirements/read" : null,
+      mcpStatusEnabled ? "mcpServerStatus/list" : null,
       profilesEnabled ? "permissionProfile/list" : null,
       remoteStatusEnabled ? "remoteControl/status/read" : null,
       installedPluginReadEnabled ? "plugin/installed" : null,
@@ -63964,6 +64182,7 @@ export function buildSettingsIntegrations({
     accountUsageEnabled: usageEnabled,
     accountWorkspaceMessagesEnabled: workspaceMessagesEnabled,
     configRequirementsEnabled: requirementsEnabled,
+    mcpServerStatusEnabled: mcpStatusEnabled,
     permissionProfilesEnabled: profilesEnabled,
     remoteControlStatusEnabled: remoteStatusEnabled,
     installedPluginsEnabled: installedPluginReadEnabled,
@@ -64003,6 +64222,7 @@ export function buildSettingsIntegrations({
       auditedReadMethods: [
         "config/read",
         requirementsEnabled ? "configRequirements/read" : null,
+        mcpStatusEnabled ? "mcpServerStatus/list" : null,
         profilesEnabled ? "permissionProfile/list" : null,
         remoteStatusEnabled ? "remoteControl/status/read" : null,
         installedPluginReadEnabled ? "plugin/installed" : null,
@@ -64027,6 +64247,8 @@ export function buildSettingsIntegrations({
         readOnlySummaryAvailable: true,
         requirementsAvailable: requirementsEnabled,
         configRequirementsEnabled: requirementsEnabled,
+        mcpServerStatusAvailable: mcpStatusEnabled,
+        mcpServerStatusEnabled: mcpStatusEnabled,
         modelListingAvailable: false,
         modelProviderCapabilitiesAvailable: false,
         collaborationModeListingAvailable: false,
@@ -66698,6 +66920,7 @@ function buildIntegrationActionScope({
   accountUsageEnabled = false,
   accountWorkspaceMessagesEnabled = false,
   configRequirementsEnabled = false,
+  mcpServerStatusEnabled = false,
   permissionProfilesEnabled = false,
   remoteControlStatusEnabled = false,
   installedPluginsEnabled = false,
@@ -66791,6 +67014,7 @@ function buildIntegrationActionScope({
     accountUsageEnabled: Boolean(accountUsageEnabled),
     accountWorkspaceMessagesEnabled: Boolean(accountWorkspaceMessagesEnabled),
     configRequirementsEnabled: Boolean(configRequirementsEnabled),
+    mcpServerStatusEnabled: Boolean(mcpServerStatusEnabled),
     permissionProfilesEnabled: Boolean(permissionProfilesEnabled),
     remoteControlStatusEnabled: Boolean(remoteControlStatusEnabled),
     installedPluginsEnabled: Boolean(installedPluginsEnabled),

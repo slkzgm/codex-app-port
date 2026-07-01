@@ -1105,6 +1105,14 @@ Target parity with the Codex desktop workflow:
   `bearerToken`, `oAuth`, or `unknown`); arbitrary auth status values, server
   names, resource URIs, tool schemas, paths, URLs, tokens, and raw payloads
   remain hidden.
+- `mcpServerStatus/list` also has a dedicated opt-in
+  `/api/mcp-server-status` route behind
+  `CODEX_APP_PORT_ALLOW_MCP_SERVER_STATUS=1`. The dedicated route uses
+  `toolsAndAuthOnly` detail and returns only server/tool/resource/
+  resource-template counts plus documented auth-status buckets; server names,
+  tool names, resource URIs, resource-template URIs, tool schemas, OAuth starts,
+  tool invocation, resource reads, config writes, filesystem access, cwd, and
+  raw payloads remain hidden or blocked.
 - `skills/list` reports only workspace/skill/enabled/error/scope counts plus
   UI-metadata and tool-dependency presence counts. Skill paths, descriptions,
   display names, default prompts, icon paths, brand colors, dependency values,

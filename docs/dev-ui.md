@@ -1858,6 +1858,15 @@ requirement keys, policy snippets, cwd, config writes, filesystem reads, or raw
 app-server payloads. The Requirements Check control renders only sanitized
 count/detail-redaction fields.
 
+`/api/mcp-server-status` is a separate dedicated MCP status read route. It is
+disabled unless `CODEX_APP_PORT_ALLOW_MCP_SERVER_STATUS=1` is set; when enabled,
+it calls only `mcpServerStatus/list` with `toolsAndAuthOnly` detail and returns
+server/tool/resource/resource-template counts plus documented auth-status
+buckets. It never returns MCP server names, tool names, resource URIs,
+resource-template URIs, tool schemas, cwd, config writes, resource reads, tool
+invocation, OAuth starts, or raw app-server payloads. The MCP Status control
+renders only sanitized count/detail-redaction fields.
+
 Device-code account login, login cancel, account credits nudge, account reset
 credit consumption, and account logout are the only dedicated account
 auth/quota mutation routes. Their preflight endpoints do not touch app-server,

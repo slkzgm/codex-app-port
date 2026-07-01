@@ -15,6 +15,7 @@ import {
   runIntegrationsInventoryProbe,
   runMcpServerOauthLoginProbe,
   runMcpServerReloadProbe,
+  runMcpServerStatusReadProbe,
   runMcpToolCallProbe,
   runMcpResourceReadProbe,
   runPluginContentReadProbe,
@@ -2430,6 +2431,49 @@ test("runConfigRequirementsReadProbe returns requirement counts without policy v
       delete process.env.CODEX_APP_PORT_ALLOW_CONFIG_REQUIREMENTS;
     } else {
       process.env.CODEX_APP_PORT_ALLOW_CONFIG_REQUIREMENTS = previous;
+    }
+  }
+});
+
+test("runMcpServerStatusReadProbe returns MCP counts without server details", async () => {
+  const previous = process.env.CODEX_APP_PORT_ALLOW_MCP_SERVER_STATUS;
+  process.env.CODEX_APP_PORT_ALLOW_MCP_SERVER_STATUS = "1";
+  try {
+    const summary = await runMcpServerStatusReadProbe({
+      codexBin: process.execPath,
+      codexArgs: [mockServer.pathname],
+      cwd: process.cwd(),
+      timeoutMs: 1_000,
+    });
+    const status = summary.probes.mcpServerStatus;
+    const serialized = JSON.stringify(summary);
+    assert.equal(summary.ok, true);
+    assert.equal(status.ok, true);
+    assert.equal(status.serverCount, 1);
+    assert.deepEqual(status.authStatusCounts, { oAuth: 1 });
+    assert.equal(status.toolCount, 1);
+    assert.equal(status.resourceCount, 1);
+    assert.equal(status.resourceTemplateCount, 1);
+    assert.equal(status.returnedServerCount, 0);
+    assert.equal(status.namesReturned, false);
+    assert.equal(status.toolSchemasReturned, false);
+    for (const marker of [
+      "private-mcp",
+      "private_tool",
+      "inputSchema",
+      "file:///tmp/mock-workspace",
+      "secret.txt",
+      "mock-codex-home",
+      "codexHome",
+      "userAgent",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    if (previous === undefined) {
+      delete process.env.CODEX_APP_PORT_ALLOW_MCP_SERVER_STATUS;
+    } else {
+      process.env.CODEX_APP_PORT_ALLOW_MCP_SERVER_STATUS = previous;
     }
   }
 });

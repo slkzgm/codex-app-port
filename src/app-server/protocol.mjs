@@ -66,6 +66,7 @@ export const APP_SERVER_METHODS = Object.freeze({
   hooksList: "hooks/list",
   configMcpServerReload: "config/mcpServer/reload",
   mcpServerOauthLogin: "mcpServer/oauth/login",
+  mcpServerStatusList: "mcpServerStatus/list",
   mcpToolCall: "mcpServer/tool/call",
   mcpResourceRead: "mcpServer/resource/read",
   pluginInstalled: "plugin/installed",
