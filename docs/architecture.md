@@ -606,6 +606,16 @@ Current M1 status:
   forwarding, override application, config reads, transcript reads, model
   traffic, filesystem access, network access, mutations, paths, URLs, secrets,
   raw payloads, and app-server traffic blocked
+- done: read-only Codex Chronicle catalog in `/api/settings-integrations`,
+  exposing only static official Chronicle documentation keys plus local
+  boundary keys/groups/states/sources/counts/redaction flags for the current
+  research preview, macOS-only screen/memory behavior, temporary capture
+  retention, local unencrypted Markdown memories, server-side memory
+  generation, and prompt injection risk, with screen capture/content,
+  OCR/context values, local Chronicle paths, memory content, background agents,
+  screen recording, settings writes, memory generation/injection,
+  capture/memory-file reads, model traffic, filesystem access, network access,
+  mutations, paths, URLs, secrets, raw payloads, and app-server traffic blocked
 - done: read-only Codex Managed configuration catalog in
   `/api/settings-integrations`, exposing only static official Managed
   configuration documentation keys plus local boundary keys/groups/states/

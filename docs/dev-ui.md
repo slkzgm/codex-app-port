@@ -832,6 +832,20 @@ URLs, secrets, raw payloads, or app-server traffic, and it does not start
 reviewer agents, forward approvals, apply overrides, read config or session
 transcripts, change sandbox/network/writable-root/protected-path policy, create
 model traffic, access files/network, or mutate Auto-review state.
+
+The same response exposes `codexChronicle` as a static review-only catalog for
+the current official Chronicle research preview. The UI shows only catalog
+counts, entry keys, groups, state/source chips, and negative redaction chips for
+availability, plan/platform/memory settings, screen content/captures,
+window/app identity, browser/document/dashboard/PR/meeting/communication
+context, temporary capture paths, memory paths/content, generated summaries,
+prompt context, rate limits, background agents, screen recording, menu-bar
+controls, settings writes, memory generation/injection, capture reads,
+memory-file reads, model traffic, filesystem/network access, mutations, paths,
+URLs, secrets, raw payloads, and app-server traffic. It must not activate
+Chronicle, read screen or memory data, touch local Chronicle directories, start
+background agents, create model traffic, or mutate Chronicle settings.
+
 The same response exposes `codexManagedConfiguration` as a static review-only
 catalog for official Codex managed-configuration behavior. The UI shows only
 catalog counts, entry keys, groups, state/source chips, and redaction chips for

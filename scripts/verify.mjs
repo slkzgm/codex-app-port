@@ -33740,6 +33740,203 @@ function assertCodexAutoReviewCatalog(payload) {
   }
 }
 
+function expectedCodexChronicleEntries() {
+  return [
+    ["researchPreviewAvailability", "availability", "catalog-only", "official-codex-chronicle-docs"],
+    ["chatgptPlanAvailability", "availability", "catalog-only", "official-codex-chronicle-docs"],
+    ["macosAppAvailability", "availability", "catalog-only", "official-codex-chronicle-docs"],
+    ["screenRecordingAccessibilityPermissions", "setup", "catalog-only", "official-codex-chronicle-docs"],
+    ["memoriesPrerequisite", "setup", "catalog-only", "official-codex-chronicle-docs"],
+    ["personalizationSettingsToggle", "setup", "catalog-only", "official-codex-chronicle-docs"],
+    ["consentDialogFlow", "setup", "catalog-only", "official-codex-chronicle-docs"],
+    ["menuBarPauseResume", "controls", "catalog-only", "official-codex-chronicle-docs"],
+    ["disableFromSettings", "controls", "catalog-only", "official-codex-chronicle-docs"],
+    ["screenContextAugmentation", "screen-context", "catalog-only", "official-codex-chronicle-docs"],
+    ["currentWorkUnderstanding", "screen-context", "catalog-only", "official-codex-chronicle-docs"],
+    ["recentActivityRecovery", "screen-context", "catalog-only", "official-codex-chronicle-docs"],
+    ["externalContextIdentification", "screen-context", "catalog-only", "official-codex-chronicle-docs"],
+    ["backgroundSandboxedAgents", "background-agents", "catalog-only", "official-codex-chronicle-docs"],
+    ["rateLimitConsumption", "background-agents", "catalog-only", "official-codex-chronicle-docs"],
+    ["screenCaptureSensitivity", "privacy", "catalog-only", "official-codex-chronicle-docs"],
+    ["noMicrophoneOrSystemAudio", "privacy", "catalog-only", "official-codex-chronicle-docs"],
+    ["meetingConsentGuidance", "privacy", "catalog-only", "official-codex-chronicle-docs"],
+    ["sensitiveContentPauseGuidance", "privacy", "catalog-only", "official-codex-chronicle-docs"],
+    ["temporaryScreenCaptureRetention", "storage", "catalog-only", "official-codex-chronicle-docs"],
+    ["localChronicleMemoryStorage", "storage", "catalog-only", "official-codex-chronicle-docs"],
+    ["unencryptedMarkdownMemories", "storage", "catalog-only", "official-codex-chronicle-docs"],
+    ["codexMemorySummarization", "memory-generation", "catalog-only", "official-codex-chronicle-docs"],
+    ["futurePromptMemoryLoading", "memory-generation", "catalog-only", "official-codex-chronicle-docs"],
+    ["selectedFrameOcrTimingProcessing", "memory-generation", "catalog-only", "official-codex-chronicle-docs"],
+    ["serverProcessingNoScreenshotTraining", "data-sharing", "catalog-only", "official-codex-chronicle-docs"],
+    ["dataControlsModelImprovement", "data-sharing", "catalog-only", "official-codex-chronicle-docs"],
+    ["promptInjectionRisk", "safety", "catalog-only", "official-codex-chronicle-docs"],
+    ["screenCaptureBoundary", "screen-context", "blocked", "local-chronicle-boundary"],
+    ["screenRecordingDirectoryBoundary", "storage", "blocked", "local-chronicle-boundary"],
+    ["chronicleMemoryDirectoryBoundary", "storage", "blocked", "local-chronicle-boundary"],
+    ["screenContentBoundary", "privacy", "blocked", "local-chronicle-boundary"],
+    ["windowAppIdentityBoundary", "privacy", "blocked", "local-chronicle-boundary"],
+    ["meetingCommunicationBoundary", "privacy", "blocked", "local-chronicle-boundary"],
+    ["backgroundAgentBoundary", "background-agents", "blocked", "local-chronicle-boundary"],
+    ["memoryGenerationBoundary", "memory-generation", "blocked", "local-chronicle-boundary"],
+    ["memoryInjectionBoundary", "memory-generation", "blocked", "local-chronicle-boundary"],
+    ["menuBarControlBoundary", "controls", "blocked", "local-chronicle-boundary"],
+    ["settingsToggleBoundary", "controls", "blocked", "local-chronicle-boundary"],
+    ["promptInjectionReviewBoundary", "safety", "blocked", "local-chronicle-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexChronicleCatalog(payload) {
+  const catalog = payload.codexChronicle;
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-chronicle-docs");
+  assert.equal(catalog.entryCount, 40);
+  assert.equal(catalog.officialEntryCount, 28);
+  assert.equal(catalog.localBoundaryEntryCount, 12);
+  assert.equal(catalog.catalogOnlyEntryCount, 28);
+  assert.equal(catalog.blockedEntryCount, 12);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({ key, group, state, source })),
+    expectedCodexChronicleEntries(),
+  );
+
+  const entryRedactionFlags = [
+    "availabilityValueReturned",
+    "planNameReturned",
+    "platformStateReturned",
+    "memorySettingValueReturned",
+    "screenContentReturned",
+    "screenCaptureReturned",
+    "windowTitleReturned",
+    "appNameReturned",
+    "browserContextReturned",
+    "documentContextReturned",
+    "dashboardContextReturned",
+    "pullRequestContextReturned",
+    "meetingContentReturned",
+    "communicationContentReturned",
+    "temporaryCapturePathReturned",
+    "memoryPathReturned",
+    "memoryContentReturned",
+    "generatedSummaryReturned",
+    "promptContextReturned",
+    "rateLimitValueReturned",
+    "backgroundAgentStarted",
+    "screenRecordingStarted",
+    "menuBarControlTouched",
+    "settingsWritten",
+    "memoryGenerated",
+    "memoryInjected",
+    "screenCaptureRead",
+    "memoryFileRead",
+    "filesystemRead",
+    "filesystemWrite",
+    "networkAccess",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.chronicleCatalogReturned, true);
+  for (const flag of [
+    "availabilityValuesReturned",
+    "planNamesReturned",
+    "platformStatesReturned",
+    "memorySettingValuesReturned",
+    "screenContentsReturned",
+    "screenCapturesReturned",
+    "windowTitlesReturned",
+    "appNamesReturned",
+    "browserContextsReturned",
+    "documentContextsReturned",
+    "dashboardContextsReturned",
+    "pullRequestContextsReturned",
+    "meetingContentsReturned",
+    "communicationContentsReturned",
+    "temporaryCapturePathsReturned",
+    "memoryPathsReturned",
+    "memoryContentsReturned",
+    "generatedSummariesReturned",
+    "promptContextsReturned",
+    "rateLimitValuesReturned",
+    "backgroundAgentsStarted",
+    "screenRecordingsStarted",
+    "menuBarControlsTouched",
+    "settingsWritten",
+    "memoriesGenerated",
+    "memoriesInjected",
+    "screenCapturesRead",
+    "memoryFilesRead",
+    "filesystemReads",
+    "filesystemWrites",
+    "networkAccess",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexChronicleReturned", true],
+    ["codexChronicleValuesReturned", false],
+    ["codexChronicleAvailabilityValuesReturned", false],
+    ["codexChroniclePlanNamesReturned", false],
+    ["codexChroniclePlatformStatesReturned", false],
+    ["codexChronicleMemorySettingValuesReturned", false],
+    ["codexChronicleScreenContentsReturned", false],
+    ["codexChronicleScreenCapturesReturned", false],
+    ["codexChronicleWindowTitlesReturned", false],
+    ["codexChronicleAppNamesReturned", false],
+    ["codexChronicleBrowserContextsReturned", false],
+    ["codexChronicleDocumentContextsReturned", false],
+    ["codexChronicleDashboardContextsReturned", false],
+    ["codexChroniclePullRequestContextsReturned", false],
+    ["codexChronicleMeetingContentsReturned", false],
+    ["codexChronicleCommunicationContentsReturned", false],
+    ["codexChronicleTemporaryCapturePathsReturned", false],
+    ["codexChronicleMemoryPathsReturned", false],
+    ["codexChronicleMemoryContentsReturned", false],
+    ["codexChronicleGeneratedSummariesReturned", false],
+    ["codexChroniclePromptContextsReturned", false],
+    ["codexChronicleRateLimitValuesReturned", false],
+    ["codexChronicleBackgroundAgentsStarted", false],
+    ["codexChronicleScreenRecordingsStarted", false],
+    ["codexChronicleMenuBarControlsTouched", false],
+    ["codexChronicleSettingsWritten", false],
+    ["codexChronicleMemoriesGenerated", false],
+    ["codexChronicleMemoriesInjected", false],
+    ["codexChronicleScreenCapturesRead", false],
+    ["codexChronicleMemoryFilesRead", false],
+    ["codexChronicleFilesystemAccess", false],
+    ["codexChronicleNetworkAccess", false],
+    ["codexChronicleModelTraffic", false],
+    ["codexChronicleMutationsEnabled", false],
+    ["codexChroniclePathsReturned", false],
+    ["codexChronicleUrlsReturned", false],
+    ["codexChronicleSecretsReturned", false],
+    ["codexChronicleRawPayloadsReturned", false],
+    ["codexChronicleAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexGovernanceEntries() {
   return [
     ["governanceVisibilityAuditability", "overview", "catalog-only", "official-codex-governance-docs"],
@@ -38055,6 +38252,7 @@ function assertCodexAppSettingsParity(
   assertCodexAccessTokensCatalog(payload);
   assertCodexAdminSetupCatalog(payload);
   assertCodexAutoReviewCatalog(payload);
+  assertCodexChronicleCatalog(payload);
   assertCodexGovernanceCatalog(payload);
   assertCodexManagedConfigurationCatalog(payload);
   assertCodexEnvironmentVariablesCatalog(payload);

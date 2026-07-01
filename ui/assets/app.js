@@ -35,6 +35,8 @@ const elements = {
   codexAdminSetupValuesText: document.querySelector("#codex-admin-setup-values-text"),
   codexAutoReviewText: document.querySelector("#codex-auto-review-text"),
   codexAutoReviewValuesText: document.querySelector("#codex-auto-review-values-text"),
+  codexChronicleText: document.querySelector("#codex-chronicle-text"),
+  codexChronicleValuesText: document.querySelector("#codex-chronicle-values-text"),
   codexGovernanceText: document.querySelector("#codex-governance-text"),
   codexGovernanceValuesText: document.querySelector("#codex-governance-values-text"),
   codexManagedConfigurationText: document.querySelector("#codex-managed-configuration-text"),
@@ -448,6 +450,7 @@ const elements = {
   codexAccessTokensList: document.querySelector("#codex-access-tokens-list"),
   codexAdminSetupList: document.querySelector("#codex-admin-setup-list"),
   codexAutoReviewList: document.querySelector("#codex-auto-review-list"),
+  codexChronicleList: document.querySelector("#codex-chronicle-list"),
   codexGovernanceList: document.querySelector("#codex-governance-list"),
   codexManagedConfigurationList: document.querySelector("#codex-managed-configuration-list"),
   codexEnvironmentVariablesList: document.querySelector("#codex-environment-variables-list"),
@@ -10508,6 +10511,7 @@ function renderSettingsIntegrations(payload) {
   const codexAccessTokens = payload.codexAccessTokens ?? {};
   const codexAdminSetup = payload.codexAdminSetup ?? {};
   const codexAutoReview = payload.codexAutoReview ?? {};
+  const codexChronicle = payload.codexChronicle ?? {};
   const codexGovernance = payload.codexGovernance ?? {};
   const codexManagedConfiguration = payload.codexManagedConfiguration ?? {};
   const codexEnvironmentVariables = payload.codexEnvironmentVariables ?? {};
@@ -10673,6 +10677,52 @@ function renderSettingsIntegrations(payload) {
     codexAutoReview.secretsReturned ||
     codexAutoReview.rawPayloadsReturned ||
     codexAutoReview.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexChronicleText.textContent = codexChronicle.returned
+    ? `${codexChronicle.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexChronicle.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexChronicleValuesText.textContent =
+    codexChronicle.availabilityValuesReturned ||
+    codexChronicle.planNamesReturned ||
+    codexChronicle.platformStatesReturned ||
+    codexChronicle.memorySettingValuesReturned ||
+    codexChronicle.screenContentsReturned ||
+    codexChronicle.screenCapturesReturned ||
+    codexChronicle.windowTitlesReturned ||
+    codexChronicle.appNamesReturned ||
+    codexChronicle.browserContextsReturned ||
+    codexChronicle.documentContextsReturned ||
+    codexChronicle.dashboardContextsReturned ||
+    codexChronicle.pullRequestContextsReturned ||
+    codexChronicle.meetingContentsReturned ||
+    codexChronicle.communicationContentsReturned ||
+    codexChronicle.temporaryCapturePathsReturned ||
+    codexChronicle.memoryPathsReturned ||
+    codexChronicle.memoryContentsReturned ||
+    codexChronicle.generatedSummariesReturned ||
+    codexChronicle.promptContextsReturned ||
+    codexChronicle.rateLimitValuesReturned ||
+    codexChronicle.backgroundAgentsStarted ||
+    codexChronicle.screenRecordingsStarted ||
+    codexChronicle.menuBarControlsTouched ||
+    codexChronicle.settingsWritten ||
+    codexChronicle.memoriesGenerated ||
+    codexChronicle.memoriesInjected ||
+    codexChronicle.screenCapturesRead ||
+    codexChronicle.memoryFilesRead ||
+    codexChronicle.filesystemReads ||
+    codexChronicle.filesystemWrites ||
+    codexChronicle.networkAccess ||
+    codexChronicle.modelTraffic ||
+    codexChronicle.mutationEnabled ||
+    codexChronicle.pathsReturned ||
+    codexChronicle.urlsReturned ||
+    codexChronicle.secretsReturned ||
+    codexChronicle.rawPayloadsReturned ||
+    codexChronicle.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexGovernanceText.textContent = codexGovernance.returned
@@ -11835,6 +11885,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexAccessTokensCatalog(codexAccessTokens);
   renderCodexAdminSetupCatalog(codexAdminSetup);
   renderCodexAutoReviewCatalog(codexAutoReview);
+  renderCodexChronicleCatalog(codexChronicle);
   renderCodexGovernanceCatalog(codexGovernance);
   renderCodexManagedConfigurationCatalog(codexManagedConfiguration);
   renderCodexEnvironmentVariablesCatalog(codexEnvironmentVariables);
@@ -13814,6 +13865,93 @@ function renderCodexAutoReviewCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexAutoReviewList.append(row);
+  }
+}
+
+function renderCodexChronicleCatalog(summary) {
+  elements.codexChronicleList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexChronicleList.append(emptyState("No Codex Chronicle catalog returned."));
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "chronicle";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.availabilityValueReturned ? "availability returned" : "availability hidden",
+      entry.planNameReturned ? "plan names returned" : "plan names hidden",
+      entry.platformStateReturned ? "platform state returned" : "platform state hidden",
+      entry.memorySettingValueReturned ? "memory settings returned" : "memory settings hidden",
+      entry.screenContentReturned ? "screen content returned" : "screen content hidden",
+      entry.screenCaptureReturned ? "screen captures returned" : "screen captures hidden",
+      entry.windowTitleReturned ? "window titles returned" : "window titles hidden",
+      entry.appNameReturned ? "app names returned" : "app names hidden",
+      entry.browserContextReturned ? "browser context returned" : "browser context hidden",
+      entry.documentContextReturned ? "document context returned" : "document context hidden",
+      entry.dashboardContextReturned ? "dashboard context returned" : "dashboard context hidden",
+      entry.pullRequestContextReturned ? "PR context returned" : "PR context hidden",
+      entry.meetingContentReturned ? "meeting content returned" : "meeting content hidden",
+      entry.communicationContentReturned
+        ? "communication content returned"
+        : "communication content hidden",
+      entry.temporaryCapturePathReturned
+        ? "temporary capture paths returned"
+        : "temporary capture paths hidden",
+      entry.memoryPathReturned ? "memory paths returned" : "memory paths hidden",
+      entry.memoryContentReturned ? "memory content returned" : "memory content hidden",
+      entry.generatedSummaryReturned
+        ? "generated summaries returned"
+        : "generated summaries hidden",
+      entry.promptContextReturned ? "prompt context returned" : "prompt context hidden",
+      entry.rateLimitValueReturned ? "rate limits returned" : "rate limits hidden",
+      entry.backgroundAgentStarted ? "background agents started" : "background agents blocked",
+      entry.screenRecordingStarted ? "screen recording started" : "screen recording blocked",
+      entry.menuBarControlTouched ? "menu bar touched" : "menu bar untouched",
+      entry.settingsWritten ? "settings written" : "settings writes blocked",
+      entry.memoryGenerated ? "memories generated" : "memory generation blocked",
+      entry.memoryInjected ? "memories injected" : "memory injection blocked",
+      entry.screenCaptureRead ? "screen captures read" : "screen capture reads blocked",
+      entry.memoryFileRead ? "memory files read" : "memory file reads blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.modelTraffic ? "model traffic" : "model traffic blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexChronicleList.append(row);
   }
 }
 

@@ -498,6 +498,18 @@
   apply overrides, read config or session transcripts, change sandbox, network,
   writable-root, or protected-path policy, create model traffic, access files
   or network, or mutate Auto-review state. Its
+  Codex Chronicle catalog may expose only static official-documentation keys
+  plus local boundary keys, groups, states, sources, counts, and redaction
+  flags; it must not return actual availability values, plan names, platform
+  states, memory setting values, screen content, screen captures, OCR/context
+  values, window titles, app names, browser/document/dashboard/PR/meeting/
+  communication context, temporary capture paths, memory paths, memory content,
+  generated summaries, prompt context, rate limits, paths, URLs, secrets, raw
+  payloads, app-server payloads, or app-server traffic, and must not start
+  background agents or screen recording, touch menu-bar controls, write
+  settings, generate or inject memories, read screen captures or memory files,
+  create model traffic, access filesystem or network, or mutate Chronicle
+  state. Its
   Codex Managed configuration catalog may expose only static
   official-documentation keys plus local boundary keys, groups, states,
   sources, counts, and redaction flags; it must not return requirement names or

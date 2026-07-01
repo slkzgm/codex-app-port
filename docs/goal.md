@@ -174,6 +174,23 @@ Target parity with the Codex desktop workflow:
   config or session transcripts, change sandbox/network/writable-root/protected
   path policy, create model traffic, access files/network, or mutate
   Auto-review state.
+- `/api/settings-integrations` now also exposes a read-only Codex Chronicle
+  catalog aligned to the current official Chronicle guide. It returns only
+  static keys, groups, states, sources, counts, and redaction flags for the
+  research preview, Pro/macOS availability, Screen Recording and Accessibility
+  permissions, Memories prerequisites, consent/setup controls, pause/disable
+  controls, screen-context augmentation, background agents, rate-limit pressure,
+  privacy guidance, temporary capture retention, unencrypted local Markdown
+  memories, memory summarization/loading, selected frame/OCR/timing processing,
+  server-side memory generation, data-control implications, and prompt
+  injection risk. It does not return availability values, plan names, platform
+  states, memory setting values, screen content, captures, window titles, app
+  names, browser/document/dashboard/PR/meeting/communication context, capture
+  paths, memory paths/content, generated summaries, prompt context, rate-limit
+  values, paths, URLs, secrets, raw payloads, or app-server traffic, and it
+  does not start background agents, screen recording, menu-bar controls,
+  settings writes, memory generation/injection, capture reads, memory-file
+  reads, model traffic, filesystem/network access, or Chronicle mutations.
 - `/api/settings-integrations` now also exposes a read-only Codex Governance
   catalog aligned to the official enterprise governance guide. It returns only
   static keys, groups, states, sources, counts, and redaction flags for
