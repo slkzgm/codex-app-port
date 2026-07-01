@@ -812,6 +812,22 @@ messages, timeouts, trust hashes, outputs, input payloads, configs, plugin ids,
 admin requirements, feature values, paths, URLs, secrets, raw payloads,
 app-server traffic, command execution, trust writes, disable writes, trust
 bypass, config writes, filesystem access, or mutations.
+The same response exposes `codexRecordReplay` as a static review-only catalog
+for official Codex Record & Replay. The UI shows only catalog counts, entry
+keys, groups, state/source chips, and redaction chips for macOS and regional
+availability, Computer Use requirements, demonstrated workflow use cases,
+skill generation, Plugins menu start flow, recording permission, focused
+demonstration guidance, workflow inspection, replay through generated skills,
+current-environment tool reuse, sensitive-data avoidance, post-recording skill
+refinement, plugin packaging escalation, managed requirements, and local
+recording/replay boundaries. It does not show availability values, region
+eligibility, Computer Use state, recording prompts, workflow inputs, screen
+content, window content, desktop actions, recording artifacts, generated skill
+content or names, app names, plugin ids, managed requirements, permission
+states, paths, URLs, secrets, raw payloads, or app-server traffic, and it does
+not start recordings, start replay, write skills, invoke Computer Use, run
+browser or plugin actions, prompt for permissions, access files or network, or
+mutate Record & Replay state.
 The same response exposes `codexSites` as a static review-only catalog for the
 official Sites plugin. The UI shows only catalog counts, entry keys, groups,
 state/source chips, and redaction chips for hosted website, web app, and game

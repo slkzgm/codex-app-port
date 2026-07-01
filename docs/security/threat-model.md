@@ -489,6 +489,16 @@
   app-server payloads, or app-server traffic, and must not execute commands,
   trust hooks, disable hooks, bypass hook trust, write hook configs, access
   files, or mutate hook state. Its
+  Codex Record & Replay catalog may expose only static official-documentation
+  keys plus local boundary keys, groups, states, sources, counts, and
+  redaction flags; it must not return availability values, regional
+  eligibility, Computer Use state, recording prompts, workflow inputs, screen
+  content, window content, desktop actions, recording artifacts, generated
+  skills, skill content or names, app names, plugin ids, managed requirements,
+  permission states, paths, URLs, secrets, raw payloads, app-server payloads,
+  or app-server traffic, and must not start recordings, replay workflows, write
+  skills, invoke Computer Use, run browser or plugin actions, prompt for
+  permissions, access files or network, or mutate Record & Replay state. Its
   Codex Rules catalog may expose only static official-documentation keys plus
   local boundary keys, groups, states, sources, counts, and redaction flags; it
   must not return rule files, rule paths, rule content, prefix patterns,

@@ -601,6 +601,22 @@ Current M1 status:
   plugin ids, admin requirements, feature values, command execution, trust
   writes, disable writes, trust bypass, config writes, filesystem access,
   mutations, URLs, secrets, raw payloads, and app-server traffic blocked
+- done: read-only Codex Record & Replay catalog in `/api/settings-integrations`,
+  exposing only static official Record & Replay documentation keys plus local
+  boundary keys/groups/states/sources/counts/redaction flags for
+  macOS/regional availability, Computer Use requirements, demonstrated
+  workflow use cases, skill generation, Plugins menu start flow, recording
+  permission, focused demonstration guidance, workflow inspection, skill
+  replay, current-environment tool reuse, sensitive-data avoidance,
+  post-recording skill refinement, plugin packaging escalation, managed
+  requirements, and local recording/replay boundaries, with availability
+  values, region eligibility, Computer Use state, recording prompts, workflow
+  inputs, screen content, window content, desktop actions, recording artifacts,
+  generated skills, skill content/names, app names, plugin ids, managed
+  requirements, permission states, recording/replay starts, skill writes,
+  Computer Use/browser/plugin actions, permission prompts, filesystem access,
+  network access, mutations, paths, URLs, secrets, raw payloads, and
+  app-server traffic blocked
 - done: read-only Codex Rules catalog in `/api/settings-integrations`,
   exposing only static official Rules documentation keys plus local boundary
   keys/groups/states/sources/counts/redaction flags for `.rules` file

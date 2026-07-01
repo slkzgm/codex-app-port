@@ -35,6 +35,8 @@ const elements = {
   codexPluginBuildValuesText: document.querySelector("#codex-plugin-build-values-text"),
   codexHooksText: document.querySelector("#codex-hooks-text"),
   codexHooksValuesText: document.querySelector("#codex-hooks-values-text"),
+  codexRecordReplayText: document.querySelector("#codex-record-replay-text"),
+  codexRecordReplayValuesText: document.querySelector("#codex-record-replay-values-text"),
   codexSitesText: document.querySelector("#codex-sites-text"),
   codexSitesValuesText: document.querySelector("#codex-sites-values-text"),
   codexPermissionsText: document.querySelector("#codex-permissions-text"),
@@ -420,6 +422,7 @@ const elements = {
   skillsPluginsCatalogList: document.querySelector("#skills-plugins-catalog-list"),
   codexPluginBuildList: document.querySelector("#codex-plugin-build-list"),
   codexHooksList: document.querySelector("#codex-hooks-list"),
+  codexRecordReplayList: document.querySelector("#codex-record-replay-list"),
   codexSitesList: document.querySelector("#codex-sites-list"),
   codexPermissionsList: document.querySelector("#codex-permissions-list"),
   codexRulesList: document.querySelector("#codex-rules-list"),
@@ -10470,6 +10473,7 @@ function renderSettingsIntegrations(payload) {
   const skillsPluginsCatalog = payload.skillsPluginsCatalog ?? {};
   const codexPluginBuild = payload.codexPluginBuild ?? {};
   const codexHooks = payload.codexHooks ?? {};
+  const codexRecordReplay = payload.codexRecordReplay ?? {};
   const codexSites = payload.codexSites ?? {};
   const codexPermissions = payload.codexPermissions ?? {};
   const codexRules = payload.codexRules ?? {};
@@ -10616,6 +10620,46 @@ function renderSettingsIntegrations(payload) {
     codexHooks.secretsReturned ||
     codexHooks.rawPayloadsReturned ||
     codexHooks.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexRecordReplayText.textContent = codexRecordReplay.returned
+    ? `${codexRecordReplay.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexRecordReplay.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexRecordReplayValuesText.textContent =
+    codexRecordReplay.availabilityValuesReturned ||
+    codexRecordReplay.regionEligibilityReturned ||
+    codexRecordReplay.computerUseStatesReturned ||
+    codexRecordReplay.recordingPromptsReturned ||
+    codexRecordReplay.workflowInputsReturned ||
+    codexRecordReplay.screenContentReturned ||
+    codexRecordReplay.windowContentReturned ||
+    codexRecordReplay.desktopActionsReturned ||
+    codexRecordReplay.recordingArtifactsReturned ||
+    codexRecordReplay.generatedSkillsReturned ||
+    codexRecordReplay.skillContentReturned ||
+    codexRecordReplay.skillNamesReturned ||
+    codexRecordReplay.appNamesReturned ||
+    codexRecordReplay.pluginIdsReturned ||
+    codexRecordReplay.managedRequirementsReturned ||
+    codexRecordReplay.permissionStatesReturned ||
+    codexRecordReplay.recordingsStarted ||
+    codexRecordReplay.replaysStarted ||
+    codexRecordReplay.skillsWritten ||
+    codexRecordReplay.computerUseStarted ||
+    codexRecordReplay.browserActionsStarted ||
+    codexRecordReplay.pluginActionsStarted ||
+    codexRecordReplay.permissionPromptsStarted ||
+    codexRecordReplay.filesystemReads ||
+    codexRecordReplay.filesystemWrites ||
+    codexRecordReplay.networkAccess ||
+    codexRecordReplay.mutationEnabled ||
+    codexRecordReplay.pathsReturned ||
+    codexRecordReplay.urlsReturned ||
+    codexRecordReplay.secretsReturned ||
+    codexRecordReplay.rawPayloadsReturned ||
+    codexRecordReplay.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexSitesText.textContent = codexSites.returned
@@ -11347,6 +11391,7 @@ function renderSettingsIntegrations(payload) {
   renderSkillsPluginsCatalog(skillsPluginsCatalog);
   renderCodexPluginBuildCatalog(codexPluginBuild);
   renderCodexHooksCatalog(codexHooks);
+  renderCodexRecordReplayCatalog(codexRecordReplay);
   renderCodexSitesCatalog(codexSites);
   renderCodexPermissionsCatalog(codexPermissions);
   renderCodexRulesCatalog(codexRules);
@@ -13139,6 +13184,93 @@ function renderCodexHooksCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexHooksList.append(row);
+  }
+}
+
+function renderCodexRecordReplayCatalog(summary) {
+  elements.codexRecordReplayList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexRecordReplayList.append(
+      emptyState("No Codex Record & Replay catalog returned."),
+    );
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "record-replay";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.availabilityValueReturned ? "availability returned" : "availability hidden",
+      entry.regionEligibilityReturned ? "region eligibility returned" : "region hidden",
+      entry.computerUseStateReturned
+        ? "Computer Use state returned"
+        : "Computer Use state hidden",
+      entry.recordingPromptReturned ? "recording prompt returned" : "recording prompt hidden",
+      entry.workflowInputReturned ? "workflow inputs returned" : "workflow inputs hidden",
+      entry.screenContentReturned ? "screen content returned" : "screen content hidden",
+      entry.windowContentReturned ? "window content returned" : "window content hidden",
+      entry.desktopActionReturned ? "desktop actions returned" : "desktop actions hidden",
+      entry.recordingArtifactReturned
+        ? "recording artifacts returned"
+        : "recording artifacts hidden",
+      entry.generatedSkillReturned ? "generated skills returned" : "generated skills hidden",
+      entry.skillContentReturned ? "skill content returned" : "skill content hidden",
+      entry.skillNameReturned ? "skill names returned" : "skill names hidden",
+      entry.appNameReturned ? "app names returned" : "app names hidden",
+      entry.pluginIdReturned ? "plugin ids returned" : "plugin ids hidden",
+      entry.managedRequirementReturned
+        ? "managed requirements returned"
+        : "managed requirements hidden",
+      entry.permissionStateReturned
+        ? "permission states returned"
+        : "permission states hidden",
+      entry.recordingStarted ? "recording started" : "recording blocked",
+      entry.replayStarted ? "replay started" : "replay blocked",
+      entry.skillWritten ? "skill written" : "skill write blocked",
+      entry.computerUseStarted ? "Computer Use started" : "Computer Use blocked",
+      entry.browserActionStarted ? "browser actions started" : "browser actions blocked",
+      entry.pluginActionStarted ? "plugin actions started" : "plugin actions blocked",
+      entry.permissionPromptStarted
+        ? "permission prompt started"
+        : "permission prompt blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexRecordReplayList.append(row);
   }
 }
 

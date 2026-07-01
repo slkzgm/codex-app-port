@@ -35562,6 +35562,243 @@ function assertCodexHooksCatalog(payload) {
   }
 }
 
+function expectedCodexRecordReplayEntries() {
+  return [
+    ["macosAvailability", "availability", "catalog-only", "official-codex-record-replay-docs"],
+    [
+      "regionalAvailabilityLimits",
+      "availability",
+      "catalog-only",
+      "official-codex-record-replay-docs",
+    ],
+    ["computerUseRequirement", "availability", "catalog-only", "official-codex-record-replay-docs"],
+    [
+      "demonstratedWorkflowUseCase",
+      "overview",
+      "catalog-only",
+      "official-codex-record-replay-docs",
+    ],
+    [
+      "reusableSkillGeneration",
+      "skill-generation",
+      "catalog-only",
+      "official-codex-record-replay-docs",
+    ],
+    [
+      "pluginsRecordSkillEntry",
+      "start-recording",
+      "catalog-only",
+      "official-codex-record-replay-docs",
+    ],
+    [
+      "recordingPermissionPrompt",
+      "start-recording",
+      "catalog-only",
+      "official-codex-record-replay-docs",
+    ],
+    [
+      "focusedDemonstrationGuidance",
+      "recording-guidance",
+      "catalog-only",
+      "official-codex-record-replay-docs",
+    ],
+    [
+      "workflowInspectionDraft",
+      "skill-generation",
+      "catalog-only",
+      "official-codex-record-replay-docs",
+    ],
+    ["newThreadSkillReplay", "replay", "catalog-only", "official-codex-record-replay-docs"],
+    [
+      "currentEnvironmentToolReuse",
+      "replay",
+      "catalog-only",
+      "official-codex-record-replay-docs",
+    ],
+    ["sensitiveDataAvoidance", "security", "catalog-only", "official-codex-record-replay-docs"],
+    [
+      "postRecordingSkillRefinement",
+      "skill-generation",
+      "catalog-only",
+      "official-codex-record-replay-docs",
+    ],
+    [
+      "pluginPackagingEscalation",
+      "distribution",
+      "catalog-only",
+      "official-codex-record-replay-docs",
+    ],
+    [
+      "managedComputerUseRequirement",
+      "managed-policy",
+      "catalog-only",
+      "official-codex-record-replay-docs",
+    ],
+    ["recordingStartBoundary", "start-recording", "blocked", "local-record-replay-boundary"],
+    ["screenObservationBoundary", "recording-data", "blocked", "local-record-replay-boundary"],
+    ["windowContentBoundary", "recording-data", "blocked", "local-record-replay-boundary"],
+    [
+      "desktopActionCaptureBoundary",
+      "recording-data",
+      "blocked",
+      "local-record-replay-boundary",
+    ],
+    ["recordingArtifactBoundary", "recording-data", "blocked", "local-record-replay-boundary"],
+    [
+      "generatedSkillContentBoundary",
+      "skill-generation",
+      "blocked",
+      "local-record-replay-boundary",
+    ],
+    ["skillWriteBoundary", "skill-generation", "blocked", "local-record-replay-boundary"],
+    ["replayExecutionBoundary", "replay", "blocked", "local-record-replay-boundary"],
+    ["computerUseExecutionBoundary", "replay", "blocked", "local-record-replay-boundary"],
+    ["browserActionBoundary", "replay", "blocked", "local-record-replay-boundary"],
+    ["pluginActionBoundary", "replay", "blocked", "local-record-replay-boundary"],
+    ["managedRequirementReadBoundary", "managed-policy", "blocked", "local-record-replay-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexRecordReplayCatalog(payload) {
+  const catalog = payload.codexRecordReplay;
+  const expectedEntries = expectedCodexRecordReplayEntries();
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-record-replay-docs");
+  assert.equal(catalog.entryCount, 27);
+  assert.equal(catalog.officialEntryCount, 15);
+  assert.equal(catalog.localBoundaryEntryCount, 12);
+  assert.equal(catalog.catalogOnlyEntryCount, 15);
+  assert.equal(catalog.blockedEntryCount, 12);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({
+      key,
+      group,
+      state,
+      source,
+    })),
+    expectedEntries,
+  );
+
+  const entryRedactionFlags = [
+    "availabilityValueReturned",
+    "regionEligibilityReturned",
+    "computerUseStateReturned",
+    "recordingPromptReturned",
+    "workflowInputReturned",
+    "screenContentReturned",
+    "windowContentReturned",
+    "desktopActionReturned",
+    "recordingArtifactReturned",
+    "generatedSkillReturned",
+    "skillContentReturned",
+    "skillNameReturned",
+    "appNameReturned",
+    "pluginIdReturned",
+    "managedRequirementReturned",
+    "permissionStateReturned",
+    "recordingStarted",
+    "replayStarted",
+    "skillWritten",
+    "computerUseStarted",
+    "browserActionStarted",
+    "pluginActionStarted",
+    "permissionPromptStarted",
+    "filesystemRead",
+    "filesystemWrite",
+    "networkAccess",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.recordReplayCatalogReturned, true);
+  for (const flag of [
+    "availabilityValuesReturned",
+    "regionEligibilityReturned",
+    "computerUseStatesReturned",
+    "recordingPromptsReturned",
+    "workflowInputsReturned",
+    "screenContentReturned",
+    "windowContentReturned",
+    "desktopActionsReturned",
+    "recordingArtifactsReturned",
+    "generatedSkillsReturned",
+    "skillContentReturned",
+    "skillNamesReturned",
+    "appNamesReturned",
+    "pluginIdsReturned",
+    "managedRequirementsReturned",
+    "permissionStatesReturned",
+    "recordingsStarted",
+    "replaysStarted",
+    "skillsWritten",
+    "computerUseStarted",
+    "browserActionsStarted",
+    "pluginActionsStarted",
+    "permissionPromptsStarted",
+    "filesystemReads",
+    "filesystemWrites",
+    "networkAccess",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexRecordReplayReturned", true],
+    ["codexRecordReplayValuesReturned", false],
+    ["codexRecordReplayAvailabilityValuesReturned", false],
+    ["codexRecordReplayRegionEligibilityReturned", false],
+    ["codexRecordReplayComputerUseStatesReturned", false],
+    ["codexRecordReplayRecordingPromptsReturned", false],
+    ["codexRecordReplayWorkflowInputsReturned", false],
+    ["codexRecordReplayScreenContentReturned", false],
+    ["codexRecordReplayWindowContentReturned", false],
+    ["codexRecordReplayDesktopActionsReturned", false],
+    ["codexRecordReplayRecordingArtifactsReturned", false],
+    ["codexRecordReplayGeneratedSkillsReturned", false],
+    ["codexRecordReplaySkillContentReturned", false],
+    ["codexRecordReplaySkillNamesReturned", false],
+    ["codexRecordReplayAppNamesReturned", false],
+    ["codexRecordReplayPluginIdsReturned", false],
+    ["codexRecordReplayManagedRequirementsReturned", false],
+    ["codexRecordReplayPermissionStatesReturned", false],
+    ["codexRecordReplayRecordingEnabled", false],
+    ["codexRecordReplayReplayEnabled", false],
+    ["codexRecordReplaySkillWriteEnabled", false],
+    ["codexRecordReplayComputerUseEnabled", false],
+    ["codexRecordReplayBrowserActionsEnabled", false],
+    ["codexRecordReplayPluginActionsEnabled", false],
+    ["codexRecordReplayPermissionPromptsEnabled", false],
+    ["codexRecordReplayFilesystemAccess", false],
+    ["codexRecordReplayNetworkAccess", false],
+    ["codexRecordReplayMutationsEnabled", false],
+    ["codexRecordReplayPathsReturned", false],
+    ["codexRecordReplayUrlsReturned", false],
+    ["codexRecordReplaySecretsReturned", false],
+    ["codexRecordReplayRawPayloadsReturned", false],
+    ["codexRecordReplayAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexSitesEntries() {
   return [
     ["sitesPluginUseCase", "overview", "catalog-only", "official-codex-sites-docs"],
@@ -37604,6 +37841,7 @@ function assertCodexAppSettingsParity(
   assertSkillsPluginsCatalog(payload);
   assertCodexPluginBuildCatalog(payload);
   assertCodexHooksCatalog(payload);
+  assertCodexRecordReplayCatalog(payload);
   assertCodexSitesCatalog(payload);
   assertCodexPermissionsCatalog(payload);
   assertCodexRulesCatalog(payload);

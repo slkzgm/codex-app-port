@@ -200,6 +200,23 @@ Target parity with the Codex desktop workflow:
   secrets, raw payloads, or app-server traffic, and it does not execute
   commands, trust hooks, disable hooks, bypass hook trust, write hook configs,
   read/write files, or mutate hook state.
+- `/api/settings-integrations` now also exposes a read-only Codex Record &
+  Replay catalog aligned to the official Record & Replay documentation. It
+  returns only static keys, groups, states, sources, counts, and redaction
+  flags for macOS/regional availability, Computer Use requirements,
+  demonstrated workflow use cases, skill generation, Plugins menu start flow,
+  recording permission, focused demonstration guidance, workflow inspection,
+  skill replay, current-environment tool reuse, sensitive-data avoidance,
+  post-recording skill refinement, plugin packaging escalation, managed
+  requirements, and local recording/replay boundaries. It does not return
+  availability values, region eligibility, Computer Use state, recording
+  prompts, workflow inputs, screen content, window content, desktop actions,
+  recording artifacts, generated skills, skill content or names, app names,
+  plugin ids, managed requirements, permission states, paths, URLs, secrets,
+  raw payloads, or app-server traffic, and it does not start recordings,
+  replay workflows, write skills, invoke Computer Use, run browser/plugin
+  actions, start permission prompts, access files/network, or mutate Record &
+  Replay state.
 - `/api/settings-integrations` now also exposes a read-only Codex Rules catalog
   aligned to the official Rules documentation. It returns only static keys,
   groups, states, sources, counts, and redaction flags for `.rules` file
