@@ -43983,6 +43983,7 @@ function expectedCodexPluginBuildEntries() {
       "official-codex-plugin-build-docs",
     ],
     ["curatedMarketplaceList", "marketplace", "catalog-only", "official-codex-plugin-build-docs"],
+    ["marketplaceSelectableSource", "marketplace", "catalog-only", "official-codex-plugin-build-docs"],
     ["repoMarketplaceLocation", "marketplace", "catalog-only", "official-codex-plugin-build-docs"],
     [
       "personalMarketplaceLocation",
@@ -43991,6 +43992,12 @@ function expectedCodexPluginBuildEntries() {
       "official-codex-plugin-build-docs",
     ],
     ["marketplaceEntrySourcePath", "marketplace", "catalog-only", "official-codex-plugin-build-docs"],
+    [
+      "marketplaceSourcePathRelativeRoot",
+      "marketplace",
+      "catalog-only",
+      "official-codex-plugin-build-docs",
+    ],
     ["marketplaceDisplayName", "marketplace", "catalog-only", "official-codex-plugin-build-docs"],
     ["marketplaceCliAdd", "marketplace-cli", "catalog-only", "official-codex-plugin-build-docs"],
     ["marketplaceGitHubSource", "marketplace-source", "catalog-only", "official-codex-plugin-build-docs"],
@@ -43998,8 +44005,15 @@ function expectedCodexPluginBuildEntries() {
     ["marketplaceSshGitSource", "marketplace-source", "catalog-only", "official-codex-plugin-build-docs"],
     ["marketplaceLocalSource", "marketplace-source", "catalog-only", "official-codex-plugin-build-docs"],
     ["marketplaceSparseGitOnly", "marketplace-source", "catalog-only", "official-codex-plugin-build-docs"],
+    ["marketplaceRefPinning", "marketplace-source", "catalog-only", "official-codex-plugin-build-docs"],
     [
       "marketplaceCliListUpgradeRemove",
+      "marketplace-cli",
+      "catalog-only",
+      "official-codex-plugin-build-docs",
+    ],
+    [
+      "marketplaceConfiguredSnapshots",
       "marketplace-cli",
       "catalog-only",
       "official-codex-plugin-build-docs",
@@ -44007,12 +44021,18 @@ function expectedCodexPluginBuildEntries() {
     ["minimalPluginManifest", "manifest", "catalog-only", "official-codex-plugin-build-docs"],
     ["stablePluginName", "manifest", "catalog-only", "official-codex-plugin-build-docs"],
     ["pluginSkillBundle", "capabilities", "catalog-only", "official-codex-plugin-build-docs"],
+    ["pluginAppIntegrationBundle", "capabilities", "catalog-only", "official-codex-plugin-build-docs"],
     ["pluginMcpConfigExtension", "capabilities", "catalog-only", "official-codex-plugin-build-docs"],
+    ["pluginLifecycleHookBundle", "capabilities", "catalog-only", "official-codex-plugin-build-docs"],
+    ["localSkillBeforePlugin", "distribution", "catalog-only", "official-codex-plugin-build-docs"],
+    ["stablePackagePublishing", "distribution", "catalog-only", "official-codex-plugin-build-docs"],
     ["localRepoMarketplaceInstall", "local-install", "catalog-only", "official-codex-plugin-build-docs"],
     ["personalMarketplaceInstall", "local-install", "catalog-only", "official-codex-plugin-build-docs"],
     ["restartAfterPluginChanges", "local-install", "catalog-only", "official-codex-plugin-build-docs"],
     ["workspaceShareFlow", "workspace-share", "catalog-only", "official-codex-plugin-build-docs"],
+    ["workspaceGroupSharing", "workspace-share", "catalog-only", "official-codex-plugin-build-docs"],
     ["sharedWithYouDirectory", "workspace-share", "catalog-only", "official-codex-plugin-build-docs"],
+    ["workspaceOrganizationBoundary", "workspace-share", "catalog-only", "official-codex-plugin-build-docs"],
     ["pluginSharingAdminDisable", "managed-policy", "catalog-only", "official-codex-plugin-build-docs"],
     ["marketplaceVsWorkspaceSharing", "distribution", "catalog-only", "official-codex-plugin-build-docs"],
     ["pluginScaffoldBoundary", "creator", "blocked", "local-plugin-build-boundary"],
@@ -44039,10 +44059,10 @@ function assertCodexPluginBuildCatalog(payload) {
   assert.equal(catalog?.returned, true);
   assert.equal(catalog.state, "partial");
   assert.equal(catalog.officialSource, "official-codex-plugin-build-docs");
-  assert.equal(catalog.entryCount, 35);
-  assert.equal(catalog.officialEntryCount, 25);
+  assert.equal(catalog.entryCount, 45);
+  assert.equal(catalog.officialEntryCount, 35);
   assert.equal(catalog.localBoundaryEntryCount, 10);
-  assert.equal(catalog.catalogOnlyEntryCount, 25);
+  assert.equal(catalog.catalogOnlyEntryCount, 35);
   assert.equal(catalog.blockedEntryCount, 10);
   assert.equal(catalog.enabledEntryCount, 0);
   assert.deepEqual(

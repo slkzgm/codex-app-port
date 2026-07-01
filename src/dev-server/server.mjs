@@ -46598,6 +46598,12 @@ const CODEX_PLUGIN_BUILD_CATALOG = Object.freeze([
     source: "official-codex-plugin-build-docs",
   },
   {
+    key: "marketplaceSelectableSource",
+    group: "marketplace",
+    state: "catalog-only",
+    source: "official-codex-plugin-build-docs",
+  },
+  {
     key: "repoMarketplaceLocation",
     group: "marketplace",
     state: "catalog-only",
@@ -46611,6 +46617,12 @@ const CODEX_PLUGIN_BUILD_CATALOG = Object.freeze([
   },
   {
     key: "marketplaceEntrySourcePath",
+    group: "marketplace",
+    state: "catalog-only",
+    source: "official-codex-plugin-build-docs",
+  },
+  {
+    key: "marketplaceSourcePathRelativeRoot",
     group: "marketplace",
     state: "catalog-only",
     source: "official-codex-plugin-build-docs",
@@ -46658,7 +46670,19 @@ const CODEX_PLUGIN_BUILD_CATALOG = Object.freeze([
     source: "official-codex-plugin-build-docs",
   },
   {
+    key: "marketplaceRefPinning",
+    group: "marketplace-source",
+    state: "catalog-only",
+    source: "official-codex-plugin-build-docs",
+  },
+  {
     key: "marketplaceCliListUpgradeRemove",
+    group: "marketplace-cli",
+    state: "catalog-only",
+    source: "official-codex-plugin-build-docs",
+  },
+  {
+    key: "marketplaceConfiguredSnapshots",
     group: "marketplace-cli",
     state: "catalog-only",
     source: "official-codex-plugin-build-docs",
@@ -46682,8 +46706,32 @@ const CODEX_PLUGIN_BUILD_CATALOG = Object.freeze([
     source: "official-codex-plugin-build-docs",
   },
   {
+    key: "pluginAppIntegrationBundle",
+    group: "capabilities",
+    state: "catalog-only",
+    source: "official-codex-plugin-build-docs",
+  },
+  {
     key: "pluginMcpConfigExtension",
     group: "capabilities",
+    state: "catalog-only",
+    source: "official-codex-plugin-build-docs",
+  },
+  {
+    key: "pluginLifecycleHookBundle",
+    group: "capabilities",
+    state: "catalog-only",
+    source: "official-codex-plugin-build-docs",
+  },
+  {
+    key: "localSkillBeforePlugin",
+    group: "distribution",
+    state: "catalog-only",
+    source: "official-codex-plugin-build-docs",
+  },
+  {
+    key: "stablePackagePublishing",
+    group: "distribution",
     state: "catalog-only",
     source: "official-codex-plugin-build-docs",
   },
@@ -46712,7 +46760,19 @@ const CODEX_PLUGIN_BUILD_CATALOG = Object.freeze([
     source: "official-codex-plugin-build-docs",
   },
   {
+    key: "workspaceGroupSharing",
+    group: "workspace-share",
+    state: "catalog-only",
+    source: "official-codex-plugin-build-docs",
+  },
+  {
     key: "sharedWithYouDirectory",
+    group: "workspace-share",
+    state: "catalog-only",
+    source: "official-codex-plugin-build-docs",
+  },
+  {
+    key: "workspaceOrganizationBoundary",
     group: "workspace-share",
     state: "catalog-only",
     source: "official-codex-plugin-build-docs",

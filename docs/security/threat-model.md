@@ -940,7 +940,10 @@
   mutate permission state. Its
   Codex Plugin Build catalog may expose only static official-documentation keys
   plus local boundary keys, groups, states, sources, counts, and redaction
-  flags, including marketplace source classes and sparse-checkout guidance; it
+  flags, including marketplace source classes, sparse-checkout guidance, ref
+  pinning, configured marketplace snapshots, bundled app integrations/lifecycle
+  hooks, local-skill-first authoring guidance, stable package publishing,
+  workspace group sharing, and workspace/org boundaries; it
   must not return plugin manifests, plugin names, versions, descriptions, skill
   names or content, MCP configs, app integrations, marketplace files, entries,
   names, source values, paths, display names, local plugin paths, marketplace
