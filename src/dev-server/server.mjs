@@ -67682,7 +67682,9 @@ function sanitizeIntegrationsInventory(inventory, { namesEnabled = false } = {})
     collaborationModes: sanitizeCollaborationModesInventory(inventory?.collaborationModes, {
       namesEnabled,
     }),
-    permissionProfiles: sanitizePermissionProfilesInventory(inventory?.permissionProfiles),
+    permissionProfiles: sanitizePermissionProfilesInventory(inventory?.permissionProfiles, {
+      namesEnabled,
+    }),
     account: sanitizeAccountInventory(inventory?.account),
     rateLimits: sanitizeAccountRateLimitsInventory(inventory?.rateLimits),
     accountUsage: sanitizeAccountUsageInventory(inventory?.accountUsage),
@@ -67802,7 +67804,8 @@ function sanitizeCollaborationModesInventory(collaborationModes, { namesEnabled 
   };
 }
 
-function sanitizePermissionProfilesInventory(permissionProfiles) {
+function sanitizePermissionProfilesInventory(permissionProfiles, { namesEnabled = false } = {}) {
+  const items = namesEnabled ? sanitizePermissionProfileInventoryItems(permissionProfiles?.items) : [];
   return {
     ok: Boolean(permissionProfiles?.ok),
     profileCount: safeCount(permissionProfiles?.profileCount),
@@ -67810,6 +67813,10 @@ function sanitizePermissionProfilesInventory(permissionProfiles) {
     blockedCount: safeCount(permissionProfiles?.blockedCount),
     descriptionCount: safeCount(permissionProfiles?.descriptionCount),
     hasNextCursor: Boolean(permissionProfiles?.hasNextCursor),
+    returnedProfileCount: items.length,
+    items,
+    namesReturned: namesEnabled && items.some((item) => item.name),
+    nameRedactedCount: safeCount(permissionProfiles?.nameRedactedCount),
     idsReturned: false,
     descriptionsReturned: false,
     rawPayloadReturned: false,
@@ -68163,6 +68170,17 @@ function sanitizeCollaborationModeInventoryItems(items) {
     mode: sanitizeCollaborationModeKind(item?.mode),
     hasModelOverride: Boolean(item?.hasModelOverride),
     hasReasoningEffortOverride: Boolean(item?.hasReasoningEffortOverride),
+  }));
+}
+
+function sanitizePermissionProfileInventoryItems(items) {
+  if (!Array.isArray(items)) {
+    return [];
+  }
+  return items.slice(0, MAX_INTEGRATION_DISPLAY_ITEMS).map((item) => ({
+    name: sanitizeIntegrationDisplayName(item?.name),
+    allowed: Boolean(item?.allowed),
+    hasDescription: Boolean(item?.hasDescription),
   }));
 }
 

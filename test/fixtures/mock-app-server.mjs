@@ -251,12 +251,12 @@ function handle(message) {
       result: {
         data: [
           {
-            id: "private-permission-profile",
+            id: "safe-permission-profile",
             description: "private permission profile description",
             allowed: true,
           },
           {
-            id: "/tmp/mock-workspace/private-profile",
+            id: "https://example.test/private-permission-profile",
             description: null,
             allowed: false,
           },

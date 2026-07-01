@@ -174,6 +174,9 @@ test("runIntegrationsInventoryProbe returns counts without integration secrets",
     assert.equal(inventory.permissionProfiles.blockedCount, 1);
     assert.equal(inventory.permissionProfiles.descriptionCount, 1);
     assert.equal(inventory.permissionProfiles.hasNextCursor, true);
+    assert.equal(inventory.permissionProfiles.returnedProfileCount, 0);
+    assert.equal(inventory.permissionProfiles.namesReturned, false);
+    assert.deepEqual(inventory.permissionProfiles.items, []);
     assert.equal(inventory.permissionProfiles.idsReturned, false);
     assert.equal(inventory.permissionProfiles.descriptionsReturned, false);
     assert.equal(inventory.permissionProfiles.rawPayloadReturned, false);
@@ -586,8 +589,16 @@ test("runIntegrationsInventoryProbe can return opt-in display names without path
     assert.equal(inventory.collaborationModes.items[0].name, "private-mode");
     assert.equal(inventory.collaborationModes.items[0].hasModelOverride, true);
     assert.equal(inventory.collaborationModes.items[1].name, null);
+    assert.equal(inventory.permissionProfiles.namesReturned, true);
     assert.equal(inventory.permissionProfiles.idsReturned, false);
     assert.equal(inventory.permissionProfiles.descriptionsReturned, false);
+    assert.equal(inventory.permissionProfiles.rawPayloadReturned, false);
+    assert.equal(inventory.permissionProfiles.items[0].name, "safe-permission-profile");
+    assert.equal(inventory.permissionProfiles.items[0].allowed, true);
+    assert.equal(inventory.permissionProfiles.items[0].hasDescription, true);
+    assert.equal(inventory.permissionProfiles.items[1].name, null);
+    assert.equal(inventory.permissionProfiles.items[1].allowed, false);
+    assert.equal(inventory.permissionProfiles.items[1].hasDescription, false);
     assert.equal(inventory.accountUsage.usageValuesReturned, false);
     assert.equal(inventory.workspaceMessages.messageBodiesReturned, false);
     assert.equal(inventory.skills.namesReturned, true);

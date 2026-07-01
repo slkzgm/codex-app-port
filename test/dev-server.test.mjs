@@ -22167,6 +22167,16 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
               blockedCount: 1,
               descriptionCount: 1,
               hasNextCursor: true,
+              returnedProfileCount: 1,
+              items: [
+                {
+                  name: "private-permission-profile",
+                  allowed: true,
+                  hasDescription: true,
+                },
+              ],
+              namesReturned: true,
+              nameRedactedCount: 1,
               idsReturned: true,
               descriptionsReturned: true,
               rawPayloadReturned: true,
@@ -22810,6 +22820,9 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
     assert.equal(payload.inventory.permissionProfiles.blockedCount, 1);
     assert.equal(payload.inventory.permissionProfiles.descriptionCount, 1);
     assert.equal(payload.inventory.permissionProfiles.hasNextCursor, true);
+    assert.equal(payload.inventory.permissionProfiles.returnedProfileCount, 0);
+    assert.equal(payload.inventory.permissionProfiles.namesReturned, false);
+    assert.deepEqual(payload.inventory.permissionProfiles.items, []);
     assert.equal(payload.inventory.permissionProfiles.idsReturned, false);
     assert.equal(payload.inventory.permissionProfiles.descriptionsReturned, false);
     assert.equal(payload.inventory.permissionProfiles.rawPayloadReturned, false);
@@ -23118,6 +23131,32 @@ test("dev server returns integration display names only behind explicit opt-in",
               modelIdsReturned: true,
               rawPayloadReturned: true,
             },
+            permissionProfiles: {
+              ok: true,
+              profileCount: 2,
+              allowedCount: 1,
+              blockedCount: 1,
+              descriptionCount: 1,
+              hasNextCursor: true,
+              returnedProfileCount: 2,
+              items: [
+                {
+                  name: "safe-permission-profile",
+                  allowed: true,
+                  hasDescription: true,
+                },
+                {
+                  name: "https://example.test/private-permission-profile",
+                  allowed: false,
+                  hasDescription: false,
+                },
+              ],
+              namesReturned: true,
+              nameRedactedCount: 1,
+              idsReturned: true,
+              descriptionsReturned: true,
+              rawPayloadReturned: true,
+            },
             account: {
               ok: true,
               requiresOpenaiAuth: false,
@@ -23417,6 +23456,16 @@ test("dev server returns integration display names only behind explicit opt-in",
     assert.equal(payload.inventory.collaborationModes.items[0].name, "safe-mode");
     assert.equal(payload.inventory.collaborationModes.items[0].hasModelOverride, true);
     assert.equal(payload.inventory.collaborationModes.items[1].name, null);
+    assert.equal(payload.inventory.permissionProfiles.namesReturned, true);
+    assert.equal(payload.inventory.permissionProfiles.idsReturned, false);
+    assert.equal(payload.inventory.permissionProfiles.descriptionsReturned, false);
+    assert.equal(payload.inventory.permissionProfiles.rawPayloadReturned, false);
+    assert.equal(payload.inventory.permissionProfiles.items[0].name, "safe-permission-profile");
+    assert.equal(payload.inventory.permissionProfiles.items[0].allowed, true);
+    assert.equal(payload.inventory.permissionProfiles.items[0].hasDescription, true);
+    assert.equal(payload.inventory.permissionProfiles.items[1].name, null);
+    assert.equal(payload.inventory.permissionProfiles.items[1].allowed, false);
+    assert.equal(payload.inventory.permissionProfiles.items[1].hasDescription, false);
     assert.equal(payload.inventory.externalAgentConfig.namesReturned, false);
     assert.equal(payload.inventory.externalAgentConfig.pluginNamesReturned, false);
     assert.equal(payload.inventory.externalAgentConfig.pathsReturned, false);
@@ -23468,6 +23517,8 @@ test("dev server returns integration display names only behind explicit opt-in",
       "private-model-id",
       "private-model",
       "private-mode",
+      "private-permission-profile",
+      "private permission profile",
       "private-external",
       "secret-tool",
       "sk-proj-private-secret",

@@ -18776,6 +18776,30 @@ async function checkSettingsIntegrationsInventoryApi() {
               rawPayloadReturned: true,
               privateModel: "verify-private-mode-model",
             },
+            permissionProfiles: {
+              ok: true,
+              profileCount: 2,
+              allowedCount: 1,
+              blockedCount: 1,
+              descriptionCount: 1,
+              hasNextCursor: true,
+              returnedProfileCount: 1,
+              items: [
+                {
+                  name: "verify-private-permission-profile",
+                  allowed: true,
+                  hasDescription: true,
+                },
+              ],
+              namesReturned: true,
+              nameRedactedCount: 1,
+              idsReturned: true,
+              descriptionsReturned: true,
+              rawPayloadReturned: true,
+              privateProfileId: "verify-private-permission-profile",
+              privateDescription: "verify private permission profile description",
+              privateCursor: "verify-private-permission-profile-cursor",
+            },
             account: {
               ok: true,
               requiresOpenaiAuth: false,
@@ -19109,6 +19133,32 @@ async function checkSettingsIntegrationsNamesApi() {
               ],
               namesReturned: true,
               modelIdsReturned: true,
+              rawPayloadReturned: true,
+            },
+            permissionProfiles: {
+              ok: true,
+              profileCount: 2,
+              allowedCount: 1,
+              blockedCount: 1,
+              descriptionCount: 1,
+              hasNextCursor: true,
+              returnedProfileCount: 2,
+              items: [
+                {
+                  name: "verify-safe-permission-profile",
+                  allowed: true,
+                  hasDescription: true,
+                },
+                {
+                  name: "https://verify.example.test/private-permission-profile",
+                  allowed: false,
+                  hasDescription: false,
+                },
+              ],
+              namesReturned: true,
+              nameRedactedCount: 1,
+              idsReturned: true,
+              descriptionsReturned: true,
               rawPayloadReturned: true,
             },
             account: {
@@ -47826,6 +47876,8 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
     "verify-private-model-capability",
     "verify-private-collaboration-mode",
     "verify-private-mode-model",
+    "verify-private-permission-profile",
+    "verify private permission profile",
     "verify-private-app",
     "verify-private-app-id",
     "verify private app description",
@@ -47971,6 +48023,17 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
     payload.inventory?.collaborationModes?.namesReturned !== false ||
     payload.inventory?.collaborationModes?.modelIdsReturned !== false ||
     (payload.inventory?.collaborationModes?.items ?? []).length !== 0 ||
+    payload.inventory?.permissionProfiles?.profileCount !== 2 ||
+    payload.inventory?.permissionProfiles?.allowedCount !== 1 ||
+    payload.inventory?.permissionProfiles?.blockedCount !== 1 ||
+    payload.inventory?.permissionProfiles?.descriptionCount !== 1 ||
+    payload.inventory?.permissionProfiles?.hasNextCursor !== true ||
+    payload.inventory?.permissionProfiles?.returnedProfileCount !== 0 ||
+    payload.inventory?.permissionProfiles?.namesReturned !== false ||
+    (payload.inventory?.permissionProfiles?.items ?? []).length !== 0 ||
+    payload.inventory?.permissionProfiles?.idsReturned !== false ||
+    payload.inventory?.permissionProfiles?.descriptionsReturned !== false ||
+    payload.inventory?.permissionProfiles?.rawPayloadReturned !== false ||
     payload.inventory?.account?.accountType !== "chatgpt" ||
     payload.inventory?.account?.tokenReturned !== false ||
     payload.inventory?.account?.emailReturned !== false ||
@@ -48109,6 +48172,8 @@ function assertSanitizedSettingsIntegrationsNames(payload) {
     "verify-private-model-id",
     "private-model",
     "private-mode",
+    "private-permission-profile",
+    "verify private permission profile",
     "verify-private-external",
     "secret-tool",
     "sk-proj-verifysecret",
@@ -48174,6 +48239,17 @@ function assertSanitizedSettingsIntegrationsNames(payload) {
     payload.inventory?.collaborationModes?.items?.[0]?.name !== "verify-safe-mode" ||
     payload.inventory?.collaborationModes?.items?.[0]?.hasModelOverride !== true ||
     payload.inventory?.collaborationModes?.items?.[1]?.name !== null ||
+    payload.inventory?.permissionProfiles?.namesReturned !== true ||
+    payload.inventory?.permissionProfiles?.idsReturned !== false ||
+    payload.inventory?.permissionProfiles?.descriptionsReturned !== false ||
+    payload.inventory?.permissionProfiles?.rawPayloadReturned !== false ||
+    payload.inventory?.permissionProfiles?.items?.[0]?.name !==
+      "verify-safe-permission-profile" ||
+    payload.inventory?.permissionProfiles?.items?.[0]?.allowed !== true ||
+    payload.inventory?.permissionProfiles?.items?.[0]?.hasDescription !== true ||
+    payload.inventory?.permissionProfiles?.items?.[1]?.name !== null ||
+    payload.inventory?.permissionProfiles?.items?.[1]?.allowed !== false ||
+    payload.inventory?.permissionProfiles?.items?.[1]?.hasDescription !== false ||
     payload.inventory?.externalAgentConfig?.namesReturned !== false ||
     payload.inventory?.externalAgentConfig?.pluginNamesReturned !== false ||
     payload.inventory?.externalAgentConfig?.pathsReturned !== false ||

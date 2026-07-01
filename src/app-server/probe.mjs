@@ -2676,7 +2676,9 @@ export async function runIntegrationsInventoryProbe({
           collaborationModes: summarizeCollaborationModesInventory(collaborationModes, {
             includeNames,
           }),
-          permissionProfiles: summarizePermissionProfilesInventory(permissionProfiles),
+          permissionProfiles: summarizePermissionProfilesInventory(permissionProfiles, {
+            includeNames,
+          }),
           account: summarizeAccountInventory(account),
           rateLimits: summarizeAccountRateLimitsInventory(rateLimits),
           accountUsage: summarizeAccountUsageInventory(accountUsage),
@@ -6190,11 +6192,13 @@ function summarizeCollaborationModesInventory(section, { includeNames = false } 
   };
 }
 
-function summarizePermissionProfilesInventory(section) {
+function summarizePermissionProfilesInventory(section, { includeNames = false } = {}) {
   const data = section.ok && Array.isArray(section.result?.data) ? section.result.data : [];
   let allowedCount = 0;
   let blockedCount = 0;
   let descriptionCount = 0;
+  let nameRedactedCount = 0;
+  const items = [];
 
   for (const profile of data) {
     if (profile?.allowed === true) {
@@ -6205,6 +6209,17 @@ function summarizePermissionProfilesInventory(section) {
     if (firstSafeString(profile?.description)) {
       descriptionCount += 1;
     }
+    if (includeNames && items.length < DEFAULT_INTEGRATION_ITEM_LIMIT) {
+      const name = safeIntegrationDisplayName(profile?.id);
+      if (!name && typeof profile?.id === "string") {
+        nameRedactedCount += 1;
+      }
+      items.push({
+        name,
+        allowed: profile?.allowed === true,
+        hasDescription: Boolean(firstSafeString(profile?.description)),
+      });
+    }
   }
 
   return {
@@ -6214,6 +6229,10 @@ function summarizePermissionProfilesInventory(section) {
     blockedCount,
     descriptionCount,
     hasNextCursor: typeof section.result?.nextCursor === "string",
+    returnedProfileCount: items.length,
+    items,
+    namesReturned: includeNames && items.some((item) => item.name),
+    nameRedactedCount,
     idsReturned: false,
     descriptionsReturned: false,
     rawPayloadReturned: false,

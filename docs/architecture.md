@@ -1514,12 +1514,13 @@ Current M1 status:
 - done: second-gate integration display inventory behind
   `CODEX_APP_PORT_ALLOW_INTEGRATION_NAMES=1`, returning bounded model display
   names, collaboration-mode names, app/connector, app plugin display, MCP
-  server/tool, skill, plugin, installed-plugin, and safe experimental feature display names only
-  after path-like, URL-like, and token-like values are stripped, while still
-  omitting model ids/descriptions/upgrade copy/availability messages,
-  collaboration-mode model overrides, app ids/URLs/descriptions/labels/logos/
-  screenshots, MCP schemas/resource URIs, skill descriptions/paths, plugin ids/
-  paths/URLs, installed plugin ids/paths/URLs/prompts/capabilities, hook details,
+  server/tool, skill, plugin, installed-plugin, permission-profile display, and
+  safe experimental feature display names only after path-like, URL-like, and
+  token-like values are stripped, while still omitting model ids/descriptions/
+  upgrade copy/availability messages, collaboration-mode model overrides,
+  permission-profile ids/descriptions/cursors, app ids/URLs/descriptions/labels/
+  logos/screenshots, MCP schemas/resource URIs, skill descriptions/paths, plugin
+  ids/paths/URLs, installed plugin ids/paths/URLs/prompts/capabilities, hook details,
   external config descriptions/cwds/paths/names/plugin names/session titles/raw
   migration items, account emails/tokens, rate-limit details, and config
   requirement values/domains, plus experimental feature descriptions/

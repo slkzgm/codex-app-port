@@ -1814,13 +1814,15 @@ callbacks, or tool invocations are returned.
 
 When `CODEX_APP_PORT_ALLOW_INTEGRATION_NAMES=1` is also set, the inventory may
 include bounded display names for models, collaboration modes, apps/connectors,
-app plugin labels, MCP servers/tools, skills, plugins, installed plugins, and
-safe experimental feature names. This is still a read-only inventory mode:
+app plugin labels, MCP servers/tools, skills, plugins, installed plugins,
+permission-profile display names, and safe experimental feature names. This is
+still a read-only inventory mode:
 path-like, URL-like, and token-like names are redacted, and the response still
 omits account emails/tokens, model ids/descriptions/upgrade copy/availability
 messages, collaboration-mode model overrides, app ids/URLs/descriptions/labels/
-logos/screenshots, MCP schemas and resource URIs, skill descriptions/paths,
-plugin ids/paths/URLs, installed plugin ids/paths/URLs/prompts/capabilities,
+logos/screenshots, permission-profile ids/descriptions/cursors, MCP schemas and
+resource URIs, skill descriptions/paths, plugin ids/paths/URLs, installed
+plugin ids/paths/URLs/prompts/capabilities,
 hook commands/paths/keys/matchers/plugin IDs, rate-limit details, external
 config descriptions/cwds/paths/names/marketplaces/plugin names/session titles/
 raw migration items, config requirement values/domains, experimental feature
