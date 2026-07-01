@@ -3219,6 +3219,81 @@ export async function runCollaborationModesReadProbe({
   }
 }
 
+export async function runExperimentalFeaturesListReadProbe({
+  codexBin = process.env.CODEX_BIN || "codex",
+  codexArgs = ["app-server", "--listen", "stdio://"],
+  cwd = process.cwd(),
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+  onNotification,
+} = {}) {
+  if (process.env.CODEX_APP_PORT_ALLOW_EXPERIMENTAL_FEATURES_LIST !== "1") {
+    throw new Error(
+      "experimentalFeature/list requires CODEX_APP_PORT_ALLOW_EXPERIMENTAL_FEATURES_LIST=1 because it inspects experimental feature availability",
+    );
+  }
+  const notifications = [];
+  const client = new JsonlRpcClient({
+    command: codexBin,
+    args: codexArgs,
+    cwd,
+    timeoutMs,
+    onNotification(notification) {
+      notifications.push({
+        method: notification.method,
+      });
+      onNotification?.(notification);
+    },
+  });
+
+  await client.start();
+
+  try {
+    const initialize = normalizeInitializeResponse(
+      await client.request(APP_SERVER_METHODS.initialize, {
+        clientInfo: {
+          name: "codex_app_port",
+          title: "Codex App Port",
+          version: "0.1.0",
+        },
+        capabilities: {
+          experimentalApi: false,
+          requestAttestation: false,
+        },
+      }),
+    );
+
+    client.notify(APP_SERVER_METHODS.initialized);
+    const experimentalFeatures = await client.request(
+      APP_SERVER_METHODS.experimentalFeatureList,
+      {
+        cursor: null,
+        limit: 50,
+      },
+      { timeoutMs },
+    );
+
+    return {
+      ok: true,
+      generatedAt: new Date().toISOString(),
+      transport: "stdio-jsonl",
+      protocol: "json-rpc-2.0-without-jsonrpc-field",
+      initialize: summarizeInitialize(initialize),
+      probes: {
+        experimentalFeatures: summarizeExperimentalFeaturesInventory(
+          {
+            ok: true,
+            result: experimentalFeatures,
+          },
+          { includeNames: false },
+        ),
+      },
+      notifications: notificationCounts(notifications),
+    };
+  } finally {
+    await client.close();
+  }
+}
+
 export async function runPermissionProfilesReadProbe({
   codexBin = process.env.CODEX_BIN || "codex",
   codexArgs = ["app-server", "--listen", "stdio://"],

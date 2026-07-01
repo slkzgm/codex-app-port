@@ -1888,6 +1888,17 @@ settings writes, model traffic, URLs, paths, tokens, or raw app-server
 payloads. The Modes Check control renders only sanitized count/override/
 detail-redaction fields.
 
+`/api/experimental-features-list` is a separate dedicated experimental feature
+inventory read route. It is disabled unless
+`CODEX_APP_PORT_ALLOW_EXPERIMENTAL_FEATURES_LIST=1` is set; when enabled, it
+calls only `experimentalFeature/list` with `cursor:null` and `limit:50`. It
+returns only feature, enablement, default-enabled, stage, display-name,
+description, announcement, and cursor-presence counts. It never returns feature
+names, display names, descriptions, announcements, cursor values, cwd, settings
+writes, model traffic, URLs, paths, tokens, or raw app-server payloads. The
+Features Check control renders only sanitized count/enablement/detail-redaction
+fields.
+
 `/api/mcp-server-status` is a separate dedicated MCP status read route. It is
 disabled unless `CODEX_APP_PORT_ALLOW_MCP_SERVER_STATUS=1` is set; when enabled,
 it calls only `mcpServerStatus/list` with `toolsAndAuthOnly` detail and returns

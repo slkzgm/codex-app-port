@@ -687,6 +687,13 @@ it is disabled by default, may call only `collaborationMode/list` behind
 and never returns mode names, model ids, model override values, raw
 reasoning-effort values, cwd, settings writes, model traffic, URLs, paths,
 tokens, or raw payloads.
+`/api/experimental-features-list` is the stricter dedicated experimental
+feature inventory route: it is disabled by default, may call only
+`experimentalFeature/list` behind
+`CODEX_APP_PORT_ALLOW_EXPERIMENTAL_FEATURES_LIST=1` with `cursor:null` and
+`limit:50`, and never returns feature names, display names, descriptions,
+announcements, cursor values, cwd, settings writes, model traffic, URLs, paths,
+tokens, or raw payloads.
 `/api/plugins-list` is the stricter dedicated plugin catalog route: it is
 disabled by default, may call only `plugin/list` behind
 `CODEX_APP_PORT_ALLOW_PLUGINS_LIST=1`, uses only local and workspace-directory

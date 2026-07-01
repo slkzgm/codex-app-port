@@ -395,6 +395,11 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /collaboration-modes-count-text/);
     assert.match(html, /collaboration-modes-overrides-text/);
     assert.match(html, /collaboration-modes-details-text/);
+    assert.match(html, /experimental-features-list-button/);
+    assert.match(html, /experimental-features-list-status/);
+    assert.match(html, /experimental-features-list-count-text/);
+    assert.match(html, /experimental-features-list-enabled-text/);
+    assert.match(html, /experimental-features-list-details-text/);
     assert.match(html, /mcp-server-status-button/);
     assert.match(html, /mcp-server-status-status/);
     assert.match(html, /mcp-server-status-count-text/);
@@ -460,6 +465,9 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(appScript, /runCollaborationModes/);
     assert.match(appScript, /renderCollaborationModes/);
     assert.match(appScript, /setCollaborationModesLoading/);
+    assert.match(appScript, /runExperimentalFeaturesList/);
+    assert.match(appScript, /renderExperimentalFeaturesList/);
+    assert.match(appScript, /setExperimentalFeaturesListLoading/);
     assert.match(appScript, /runMcpServerStatus/);
     assert.match(appScript, /renderMcpServerStatus/);
     assert.match(appScript, /setMcpServerStatusLoading/);
@@ -15782,6 +15790,196 @@ test("dev server exposes collaboration modes only behind explicit opt-in and red
       "modes.json",
       "\"namesReturned\":true",
       "\"modelIdsReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    await closeServer(enabledServer.server);
+  }
+});
+
+test("dev server exposes experimental features only behind explicit opt-in and redacts feature details", async () => {
+  const blockedCalls = [];
+  const blockedServer = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    experimentalFeaturesListFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+
+  try {
+    const settingsResponse = await fetch(`${blockedServer.url}/api/settings-integrations`, {
+      headers: apiHeaders(blockedServer.server),
+    });
+    assert.equal(settingsResponse.status, 200);
+    const settingsPayload = await settingsResponse.json();
+    assert.equal(settingsPayload.surfaces.settings.experimentalFeatureListingAvailable, false);
+    assert.equal(settingsPayload.surfaces.settings.experimentalFeaturesListEnabled, false);
+    assert.equal(settingsPayload.integrationScope.experimentalFeaturesListEnabled, false);
+
+    const response = await fetch(`${blockedServer.url}/api/experimental-features-list`, {
+      headers: apiHeaders(blockedServer.server),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, false);
+    assert.deepEqual(payload.appServer.auditedMethods, ["experimentalFeature/list"]);
+    assert.equal(payload.settings.experimentalFeaturesListEnabled, false);
+    assert.equal(payload.policy.appServerTraffic, false);
+    assert.equal(payload.result.status, "blocked");
+    assert.equal(blockedCalls.length, 0);
+    assert.equal(serialized.includes("/tmp/default-workspace"), false);
+  } finally {
+    await closeServer(blockedServer.server);
+  }
+
+  const calls = [];
+  const enabledServer = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    experimentalFeaturesListEnabled: true,
+    experimentalFeaturesListFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-07-01T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/private-home",
+          userAgent: "mock/0.0.0",
+        },
+        probes: {
+          experimentalFeatures: {
+            ok: true,
+            featureCount: 3,
+            enabledCount: 2,
+            disabledCount: 1,
+            defaultEnabledCount: 1,
+            betaCount: 1,
+            stableCount: 1,
+            deprecatedCount: 0,
+            stageCounts: {
+              beta: 1,
+              stable: 1,
+              privateStage: 1,
+            },
+            displayNameCount: 3,
+            descriptionCount: 2,
+            announcementCount: 1,
+            hasNextCursor: true,
+            returnedFeatureCount: 2,
+            items: [
+              {
+                name: "private-experimental-feature",
+                enabled: true,
+                defaultEnabled: false,
+                stage: "privateStage",
+              },
+            ],
+            namesReturned: true,
+            descriptionsReturned: true,
+            announcementsReturned: true,
+            rawPayloadReturned: true,
+          },
+        },
+        rawFeatures: {
+          name: "private-experimental-feature",
+          displayName: "Private Experimental Feature",
+          description: "private feature description",
+          announcement: "private feature announcement",
+          nextCursor: "private-feature-cursor",
+          path: "/tmp/default-workspace/features.json",
+        },
+        notifications: {},
+      };
+    },
+  });
+
+  try {
+    const settingsResponse = await fetch(`${enabledServer.url}/api/settings-integrations`, {
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(settingsResponse.status, 200);
+    const settingsPayload = await settingsResponse.json();
+    assert.equal(settingsPayload.surfaces.settings.experimentalFeatureListingAvailable, true);
+    assert.equal(settingsPayload.surfaces.settings.experimentalFeaturesListEnabled, true);
+    assert.equal(settingsPayload.integrationScope.experimentalFeaturesListEnabled, true);
+    assert.equal(
+      settingsPayload.integrationScope.enabledReadMethods.includes("experimentalFeature/list"),
+      true,
+    );
+
+    const methodResponse = await fetch(`${enabledServer.url}/api/experimental-features-list`, {
+      method: "POST",
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(methodResponse.status, 405);
+
+    const response = await fetch(`${enabledServer.url}/api/experimental-features-list`, {
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, true);
+    assert.equal(payload.appServer.modelTraffic, false);
+    assert.deepEqual(payload.appServer.auditedMethods, ["experimentalFeature/list"]);
+    assert.equal(payload.settings.experimentalFeaturesListEnabled, true);
+    assert.equal(payload.result.status, "available");
+    assert.equal(payload.result.featureCount, 3);
+    assert.equal(payload.result.enabledCount, 2);
+    assert.equal(payload.result.disabledCount, 1);
+    assert.equal(payload.result.defaultEnabledCount, 1);
+    assert.equal(payload.result.betaCount, 1);
+    assert.equal(payload.result.stableCount, 1);
+    assert.equal(payload.result.displayNameCount, 3);
+    assert.equal(payload.result.descriptionCount, 2);
+    assert.equal(payload.result.announcementCount, 1);
+    assert.equal(payload.result.hasNextCursor, true);
+    assert.equal(payload.result.stageCounts.beta, 1);
+    assert.equal(payload.result.stageCounts.stable, 1);
+    assert.equal(payload.result.stageCounts.privateStage, undefined);
+    assert.equal(payload.result.returnedFeatureCount, 0);
+    assert.deepEqual(payload.probes.experimentalFeatures.items, []);
+    assert.equal(payload.result.namesReturned, false);
+    assert.equal(payload.result.descriptionsReturned, false);
+    assert.equal(payload.result.announcementsReturned, false);
+    assert.equal(payload.result.cursorReturned, false);
+    assert.equal(payload.result.rawPayloadReturned, false);
+    assert.equal(payload.policy.readOnly, true);
+    assert.equal(payload.policy.modelTraffic, false);
+    assert.equal(payload.policy.settingsWrites, false);
+    assert.equal(payload.policy.featureEnablementWrites, false);
+    assert.equal(payload.policy.namesReturned, false);
+    assert.equal(payload.policy.descriptionsReturned, false);
+    assert.equal(payload.policy.announcementsReturned, false);
+    assert.equal(payload.policy.cursorsReturned, false);
+    assert.equal(payload.policy.pathsReturned, false);
+    assert.equal(payload.policy.rawPayloadReturned, false);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].cwd, "/tmp/default-workspace");
+    for (const marker of [
+      "/tmp/default-workspace",
+      "/tmp/private-home",
+      "codexHome",
+      "userAgent",
+      "private-experimental-feature",
+      "Private Experimental Feature",
+      "private feature description",
+      "private feature announcement",
+      "private-feature-cursor",
+      "privateStage",
+      "features.json",
+      "\"namesReturned\":true",
+      "\"descriptionsReturned\":true",
+      "\"announcementsReturned\":true",
       "\"rawPayloadReturned\":true",
     ]) {
       assert.equal(serialized.includes(marker), false, `leaked ${marker}`);

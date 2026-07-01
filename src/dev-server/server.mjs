@@ -28,6 +28,7 @@ import {
   runConfigValueWriteProbe,
   runEnvironmentAddProbe,
   runExperimentalFeatureEnablementSetProbe,
+  runExperimentalFeaturesListReadProbe,
   runExternalAgentConfigImportHistoriesReadProbe,
   runFsDirectoryProbe,
   runHooksListReadProbe,
@@ -145,6 +146,7 @@ export const MAX_INTEGRATION_DISPLAY_ITEMS = 20;
 export const MAX_INTEGRATION_DISPLAY_NAME_CHARS = 80;
 const SAFE_REASONING_EFFORTS = ["none", "minimal", "low", "medium", "high", "xhigh", "unknown"];
 const SAFE_COLLABORATION_MODE_KINDS = ["default", "plan", "unknown"];
+const SAFE_EXPERIMENTAL_FEATURE_STAGES = ["beta", "stable", "deprecated", "removed", "unknown"];
 const THREAD_GOAL_STATUSES = new Set([
   "active",
   "paused",
@@ -13167,6 +13169,7 @@ export function createDevServer({
   modelProviderCapabilitiesFn = runModelProviderCapabilitiesReadProbe,
   collaborationModesFn = runCollaborationModesReadProbe,
   configRequirementsFn = runConfigRequirementsReadProbe,
+  experimentalFeaturesListFn = runExperimentalFeaturesListReadProbe,
   mcpServerStatusFn = runMcpServerStatusReadProbe,
   permissionProfilesFn = runPermissionProfilesReadProbe,
   remoteControlStatusFn = runRemoteControlStatusReadProbe,
@@ -13250,6 +13253,8 @@ export function createDevServer({
     process.env.CODEX_APP_PORT_ALLOW_MODEL_PROVIDER_CAPABILITIES === "1",
   collaborationModesEnabled = process.env.CODEX_APP_PORT_ALLOW_COLLABORATION_MODES === "1",
   configRequirementsEnabled = process.env.CODEX_APP_PORT_ALLOW_CONFIG_REQUIREMENTS === "1",
+  experimentalFeaturesListEnabled =
+    process.env.CODEX_APP_PORT_ALLOW_EXPERIMENTAL_FEATURES_LIST === "1",
   mcpServerStatusEnabled = process.env.CODEX_APP_PORT_ALLOW_MCP_SERVER_STATUS === "1",
   permissionProfilesEnabled = process.env.CODEX_APP_PORT_ALLOW_PERMISSION_PROFILES === "1",
   remoteControlStatusEnabled =
@@ -13418,6 +13423,7 @@ export function createDevServer({
       modelProviderCapabilitiesFn,
       collaborationModesFn,
       configRequirementsFn,
+      experimentalFeaturesListFn,
       mcpServerStatusFn,
       permissionProfilesFn,
       remoteControlStatusFn,
@@ -13496,6 +13502,7 @@ export function createDevServer({
       modelProviderCapabilitiesEnabled,
       collaborationModesEnabled,
       configRequirementsEnabled,
+      experimentalFeaturesListEnabled,
       mcpServerStatusEnabled,
       permissionProfilesEnabled,
       remoteControlStatusEnabled,
@@ -15167,6 +15174,48 @@ export async function handleRequest(request, response, options) {
       sendJson(response, error.statusCode ?? 502, {
         ok: false,
         error: cleanDisplayText(error.message, 200) ?? "Invalid collaboration modes request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/experimental-features-list") {
+    if (request.method !== "GET") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        url.searchParams.get("workspace"),
+      );
+      if (!options.experimentalFeaturesListEnabled) {
+        sendJson(response, 200, buildExperimentalFeaturesListBlockedPayload({ workspace }));
+        return;
+      }
+      const payload = await options.experimentalFeaturesListFn({
+        codexBin: options.codexBin,
+        cwd: workspace.cwd,
+        timeoutMs: options.timeoutMs,
+      });
+      sendJson(
+        response,
+        200,
+        sanitizeExperimentalFeaturesListPayload(payload, {
+          workspace,
+          enabled: true,
+        }),
+      );
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 502, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid experimental features request",
       });
     }
     return;
@@ -20247,6 +20296,7 @@ export async function handleRequest(request, response, options) {
             modelsListEnabled: options.modelsListEnabled,
             modelProviderCapabilitiesEnabled: options.modelProviderCapabilitiesEnabled,
             collaborationModesEnabled: options.collaborationModesEnabled,
+            experimentalFeaturesListEnabled: options.experimentalFeaturesListEnabled,
             configRequirementsEnabled: options.configRequirementsEnabled,
             mcpServerStatusEnabled: options.mcpServerStatusEnabled,
             permissionProfilesEnabled: options.permissionProfilesEnabled,
@@ -20303,6 +20353,7 @@ export async function handleRequest(request, response, options) {
           modelsListEnabled: options.modelsListEnabled,
           modelProviderCapabilitiesEnabled: options.modelProviderCapabilitiesEnabled,
           collaborationModesEnabled: options.collaborationModesEnabled,
+          experimentalFeaturesListEnabled: options.experimentalFeaturesListEnabled,
           configRequirementsEnabled: options.configRequirementsEnabled,
           mcpServerStatusEnabled: options.mcpServerStatusEnabled,
           permissionProfilesEnabled: options.permissionProfilesEnabled,
@@ -52612,6 +52663,7 @@ export function sanitizeSettingsIntegrationsPayload(
     modelsListEnabled = false,
     modelProviderCapabilitiesEnabled = false,
     collaborationModesEnabled = false,
+    experimentalFeaturesListEnabled = false,
     configRequirementsEnabled = false,
     mcpServerStatusEnabled = false,
     permissionProfilesEnabled = false,
@@ -52663,6 +52715,7 @@ export function sanitizeSettingsIntegrationsPayload(
   const modelsReadEnabled = Boolean(modelsListEnabled);
   const providerCapabilitiesReadEnabled = Boolean(modelProviderCapabilitiesEnabled);
   const collaborationModesReadEnabled = Boolean(collaborationModesEnabled);
+  const experimentalFeaturesReadEnabled = Boolean(experimentalFeaturesListEnabled);
   const requirementsEnabled = Boolean(configRequirementsEnabled);
   const mcpStatusEnabled = Boolean(mcpServerStatusEnabled);
   const profilesEnabled = Boolean(permissionProfilesEnabled);
@@ -52715,6 +52768,7 @@ export function sanitizeSettingsIntegrationsPayload(
     modelsListEnabled: modelsReadEnabled,
     modelProviderCapabilitiesEnabled: providerCapabilitiesReadEnabled,
     collaborationModesEnabled: collaborationModesReadEnabled,
+    experimentalFeaturesListEnabled: experimentalFeaturesReadEnabled,
     configRequirementsEnabled: requirementsEnabled,
     mcpServerStatusEnabled: mcpStatusEnabled,
     permissionProfilesEnabled: profilesEnabled,
@@ -52800,7 +52854,9 @@ export function sanitizeSettingsIntegrationsPayload(
         appListingAvailable: inventory.apps.ok || appsReadEnabled,
         appsListEnabled: appsReadEnabled,
         externalAgentConfigDetectionAvailable: inventory.externalAgentConfig.ok,
-        experimentalFeatureListingAvailable: inventory.experimentalFeatures.ok,
+        experimentalFeatureListingAvailable:
+          inventory.experimentalFeatures.ok || experimentalFeaturesReadEnabled,
+        experimentalFeaturesListEnabled: experimentalFeaturesReadEnabled,
         configBatchWriteEnabled: Boolean(configBatchWriteEnabled),
         pluginEnablementSetEnabled: Boolean(pluginEnablementSetEnabled),
         experimentalFeatureSetEnabled: Boolean(experimentalFeatureSetEnabled),
@@ -65424,6 +65480,7 @@ export function buildSettingsIntegrations({
   modelsListEnabled = false,
   modelProviderCapabilitiesEnabled = false,
   collaborationModesEnabled = false,
+  experimentalFeaturesListEnabled = false,
   configRequirementsEnabled = false,
   mcpServerStatusEnabled = false,
   permissionProfilesEnabled = false,
@@ -65475,6 +65532,7 @@ export function buildSettingsIntegrations({
   const modelsReadEnabled = Boolean(modelsListEnabled);
   const providerCapabilitiesReadEnabled = Boolean(modelProviderCapabilitiesEnabled);
   const collaborationModesReadEnabled = Boolean(collaborationModesEnabled);
+  const experimentalFeaturesReadEnabled = Boolean(experimentalFeaturesListEnabled);
   const requirementsEnabled = Boolean(configRequirementsEnabled);
   const mcpStatusEnabled = Boolean(mcpServerStatusEnabled);
   const profilesEnabled = Boolean(permissionProfilesEnabled);
@@ -65508,6 +65566,7 @@ export function buildSettingsIntegrations({
       modelsReadEnabled ? "model/list" : null,
       providerCapabilitiesReadEnabled ? "modelProvider/capabilities/read" : null,
       collaborationModesReadEnabled ? "collaborationMode/list" : null,
+      experimentalFeaturesReadEnabled ? "experimentalFeature/list" : null,
       appsReadEnabled ? "app/list" : null,
       requirementsEnabled ? "configRequirements/read" : null,
       mcpStatusEnabled ? "mcpServerStatus/list" : null,
@@ -65531,6 +65590,7 @@ export function buildSettingsIntegrations({
     modelsListEnabled: modelsReadEnabled,
     modelProviderCapabilitiesEnabled: providerCapabilitiesReadEnabled,
     collaborationModesEnabled: collaborationModesReadEnabled,
+    experimentalFeaturesListEnabled: experimentalFeaturesReadEnabled,
     configRequirementsEnabled: requirementsEnabled,
     mcpServerStatusEnabled: mcpStatusEnabled,
     permissionProfilesEnabled: profilesEnabled,
@@ -65576,6 +65636,7 @@ export function buildSettingsIntegrations({
         modelsReadEnabled ? "model/list" : null,
         providerCapabilitiesReadEnabled ? "modelProvider/capabilities/read" : null,
         collaborationModesReadEnabled ? "collaborationMode/list" : null,
+        experimentalFeaturesReadEnabled ? "experimentalFeature/list" : null,
         appsReadEnabled ? "app/list" : null,
         requirementsEnabled ? "configRequirements/read" : null,
         mcpStatusEnabled ? "mcpServerStatus/list" : null,
@@ -65624,7 +65685,8 @@ export function buildSettingsIntegrations({
         appListingAvailable: appsReadEnabled,
         appsListEnabled: appsReadEnabled,
         externalAgentConfigDetectionAvailable: false,
-        experimentalFeatureListingAvailable: false,
+        experimentalFeatureListingAvailable: experimentalFeaturesReadEnabled,
+        experimentalFeaturesListEnabled: experimentalFeaturesReadEnabled,
         remoteControlDisableEnabled: Boolean(remoteControlDisableEnabled),
         environmentAddEnabled: Boolean(environmentAddEnabled),
         configBatchWriteEnabled: Boolean(configBatchWriteEnabled),
@@ -68295,6 +68357,7 @@ function buildIntegrationActionScope({
   modelsListEnabled = false,
   modelProviderCapabilitiesEnabled = false,
   collaborationModesEnabled = false,
+  experimentalFeaturesListEnabled = false,
   configRequirementsEnabled = false,
   mcpServerStatusEnabled = false,
   permissionProfilesEnabled = false,
@@ -68395,6 +68458,7 @@ function buildIntegrationActionScope({
     modelsListEnabled: Boolean(modelsListEnabled),
     modelProviderCapabilitiesEnabled: Boolean(modelProviderCapabilitiesEnabled),
     collaborationModesEnabled: Boolean(collaborationModesEnabled),
+    experimentalFeaturesListEnabled: Boolean(experimentalFeaturesListEnabled),
     configRequirementsEnabled: Boolean(configRequirementsEnabled),
     mcpServerStatusEnabled: Boolean(mcpServerStatusEnabled),
     permissionProfilesEnabled: Boolean(permissionProfilesEnabled),
@@ -72784,6 +72848,158 @@ function sanitizeExperimentalFeaturesInventory(experimentalFeatures, { namesEnab
     descriptionsReturned: false,
     announcementsReturned: false,
     rawPayloadReturned: false,
+  };
+}
+
+export function buildExperimentalFeaturesListBlockedPayload({ workspace } = {}) {
+  const experimentalFeatures = sanitizeExperimentalFeaturesListInventory(null);
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["experimentalFeature/list"],
+    },
+    settings: {
+      experimentalFeatureListingAvailable: true,
+      experimentalFeaturesListEnabled: false,
+      appServerTraffic: false,
+      namesReturned: false,
+      descriptionsReturned: false,
+      announcementsReturned: false,
+      cursorReturned: false,
+      rawPayloadReturned: false,
+      reason: "experimental-features-list-requires-opt-in",
+    },
+    probes: {
+      experimentalFeatures,
+    },
+    result: experimentalFeaturesListResult(experimentalFeatures, {
+      enabled: false,
+      status: "blocked",
+    }),
+    policy: experimentalFeaturesListPolicy({ appServerTraffic: false }),
+    notifications: sanitizeNotificationCounts(null),
+  };
+}
+
+export function sanitizeExperimentalFeaturesListPayload(
+  payload,
+  { workspace = null, enabled = false } = {},
+) {
+  const experimentalFeatures = sanitizeExperimentalFeaturesListInventory(
+    payload?.probes?.experimentalFeatures,
+  );
+  const status = enabled ? "available" : "blocked";
+  return {
+    ok: Boolean(payload?.ok),
+    generatedAt: payload?.generatedAt ?? new Date().toISOString(),
+    transport: cleanDisplayText(payload?.transport, 80),
+    protocol: cleanDisplayText(payload?.protocol, 80),
+    initialize: sanitizeInitialize(payload?.initialize),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: Boolean(enabled),
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["experimentalFeature/list"],
+    },
+    settings: {
+      experimentalFeatureListingAvailable: true,
+      experimentalFeaturesListEnabled: Boolean(enabled),
+      appServerTraffic: Boolean(enabled),
+      namesReturned: false,
+      descriptionsReturned: false,
+      announcementsReturned: false,
+      cursorReturned: false,
+      rawPayloadReturned: false,
+      reason: Boolean(enabled)
+        ? "experimental-features-list-counts-only"
+        : "experimental-features-list-requires-opt-in",
+    },
+    probes: {
+      experimentalFeatures,
+    },
+    result: experimentalFeaturesListResult(experimentalFeatures, {
+      enabled: Boolean(enabled),
+      status,
+    }),
+    policy: experimentalFeaturesListPolicy({ appServerTraffic: Boolean(enabled) }),
+    notifications: sanitizeNotificationCounts(payload?.notifications),
+  };
+}
+
+function sanitizeExperimentalFeaturesListInventory(experimentalFeatures) {
+  const sanitized = sanitizeExperimentalFeaturesInventory(experimentalFeatures, {
+    namesEnabled: false,
+  });
+  return {
+    ...sanitized,
+    stageCounts: sanitizeAllowedCountMap(sanitized.stageCounts, SAFE_EXPERIMENTAL_FEATURE_STAGES),
+    returnedFeatureCount: 0,
+    items: [],
+    namesReturned: false,
+    descriptionsReturned: false,
+    announcementsReturned: false,
+    cursorReturned: false,
+    rawPayloadReturned: false,
+  };
+}
+
+function experimentalFeaturesListResult(experimentalFeatures, { enabled, status }) {
+  return {
+    status,
+    experimentalFeaturesListEnabled: Boolean(enabled),
+    appServerTraffic: Boolean(enabled),
+    featureCount: experimentalFeatures.featureCount,
+    enabledCount: experimentalFeatures.enabledCount,
+    disabledCount: experimentalFeatures.disabledCount,
+    defaultEnabledCount: experimentalFeatures.defaultEnabledCount,
+    betaCount: experimentalFeatures.betaCount,
+    stableCount: experimentalFeatures.stableCount,
+    deprecatedCount: experimentalFeatures.deprecatedCount,
+    stageCounts: experimentalFeatures.stageCounts,
+    displayNameCount: experimentalFeatures.displayNameCount,
+    descriptionCount: experimentalFeatures.descriptionCount,
+    announcementCount: experimentalFeatures.announcementCount,
+    hasNextCursor: experimentalFeatures.hasNextCursor,
+    returnedFeatureCount: 0,
+    namesReturned: false,
+    descriptionsReturned: false,
+    announcementsReturned: false,
+    cursorReturned: false,
+    rawPayloadReturned: false,
+  };
+}
+
+function experimentalFeaturesListPolicy({ appServerTraffic }) {
+  return {
+    readOnly: true,
+    appServerTraffic: Boolean(appServerTraffic),
+    modelTraffic: false,
+    commandTraffic: false,
+    settingsWrites: false,
+    configWrites: false,
+    featureEnablementWrites: false,
+    authCallbacks: false,
+    authMutations: false,
+    toolInvocation: false,
+    installsEnabled: false,
+    secretsReturned: false,
+    tokensReturned: false,
+    namesReturned: false,
+    descriptionsReturned: false,
+    announcementsReturned: false,
+    cursorsReturned: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    rawPayloadReturned: false,
+    requiresExplicitEnablement: true,
+    browserMethodCallsAccepted: true,
+    implemented: true,
   };
 }
 

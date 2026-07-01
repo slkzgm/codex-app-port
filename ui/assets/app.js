@@ -288,6 +288,17 @@ const elements = {
     "#collaboration-modes-overrides-text",
   ),
   collaborationModesDetailsText: document.querySelector("#collaboration-modes-details-text"),
+  experimentalFeaturesListButton: document.querySelector("#experimental-features-list-button"),
+  experimentalFeaturesListStatus: document.querySelector("#experimental-features-list-status"),
+  experimentalFeaturesListCountText: document.querySelector(
+    "#experimental-features-list-count-text",
+  ),
+  experimentalFeaturesListEnabledText: document.querySelector(
+    "#experimental-features-list-enabled-text",
+  ),
+  experimentalFeaturesListDetailsText: document.querySelector(
+    "#experimental-features-list-details-text",
+  ),
   mcpServerStatusButton: document.querySelector("#mcp-server-status-button"),
   mcpServerStatusStatus: document.querySelector("#mcp-server-status-status"),
   mcpServerStatusCountText: document.querySelector("#mcp-server-status-count-text"),
@@ -1309,6 +1320,10 @@ elements.workspaceSelect.addEventListener("change", () => {
   elements.collaborationModesCountText.textContent = "0";
   elements.collaborationModesOverridesText.textContent = "0 / 0";
   elements.collaborationModesDetailsText.textContent = "Hidden";
+  elements.experimentalFeaturesListStatus.textContent = "Feature read disabled by default.";
+  elements.experimentalFeaturesListCountText.textContent = "0";
+  elements.experimentalFeaturesListEnabledText.textContent = "0 / 0";
+  elements.experimentalFeaturesListDetailsText.textContent = "Hidden";
   elements.mcpServerStatusStatus.textContent = "MCP status disabled by default.";
   elements.mcpServerStatusCountText.textContent = "0";
   elements.mcpServerStatusToolsText.textContent = "0";
@@ -2340,6 +2355,10 @@ elements.collaborationModesButton.addEventListener("click", () => {
   runCollaborationModes();
 });
 
+elements.experimentalFeaturesListButton.addEventListener("click", () => {
+  runExperimentalFeaturesList();
+});
+
 elements.mcpServerStatusButton.addEventListener("click", () => {
   runMcpServerStatus();
 });
@@ -2909,6 +2928,16 @@ function collaborationModesEndpoint() {
   const params = new URLSearchParams();
   params.set("workspace", selectedWorkspaceId);
   return `/api/collaboration-modes?${params.toString()}`;
+}
+
+function experimentalFeaturesListEndpoint() {
+  if (!selectedWorkspaceId) {
+    return "/api/experimental-features-list";
+  }
+
+  const params = new URLSearchParams();
+  params.set("workspace", selectedWorkspaceId);
+  return `/api/experimental-features-list?${params.toString()}`;
 }
 
 function mcpServerStatusEndpoint() {
@@ -5208,6 +5237,28 @@ async function runCollaborationModes() {
     renderError(error);
   } finally {
     setCollaborationModesLoading(false);
+  }
+}
+
+async function runExperimentalFeaturesList() {
+  setExperimentalFeaturesListLoading(true);
+  hideError();
+
+  try {
+    const response = await fetch(experimentalFeaturesListEndpoint(), {
+      headers: apiHeaders(),
+      cache: "no-store",
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderExperimentalFeaturesList(payload);
+  } catch (error) {
+    elements.experimentalFeaturesListStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    setExperimentalFeaturesListLoading(false);
   }
 }
 
@@ -16152,6 +16203,32 @@ function renderCollaborationModes(payload) {
   elements.collaborationModesStateText.textContent = blocked ? "Blocked" : `${modeCount} modes`;
 }
 
+function renderExperimentalFeaturesList(payload) {
+  const settings = payload.settings ?? {};
+  const result = payload.result ?? {};
+  const blocked =
+    settings.experimentalFeaturesListEnabled !== true || payload.appServer?.touched !== true;
+  const featureCount =
+    result.featureCount ?? payload.probes?.experimentalFeatures?.featureCount ?? 0;
+  const enabledCount =
+    result.enabledCount ?? payload.probes?.experimentalFeatures?.enabledCount ?? 0;
+  const disabledCount =
+    result.disabledCount ?? payload.probes?.experimentalFeatures?.disabledCount ?? 0;
+  const status = result.status ?? (blocked ? "blocked" : "available");
+  elements.experimentalFeaturesListStatus.textContent = blocked ? "Read blocked" : status;
+  elements.experimentalFeaturesListCountText.textContent = String(featureCount);
+  elements.experimentalFeaturesListEnabledText.textContent = `${enabledCount} / ${disabledCount}`;
+  elements.experimentalFeaturesListDetailsText.textContent =
+    result.namesReturned ||
+    result.descriptionsReturned ||
+    result.announcementsReturned ||
+    result.cursorReturned ||
+    result.rawPayloadReturned ||
+    settings.rawPayloadReturned
+      ? "Returned"
+      : "Hidden";
+}
+
 function renderMcpServerStatus(payload) {
   const settings = payload.settings ?? {};
   const result = payload.result ?? {};
@@ -24382,6 +24459,14 @@ function setCollaborationModesLoading(isLoading) {
   elements.collaborationModesButton.textContent = isLoading ? "Checking" : "Modes Check";
   if (isLoading) {
     elements.collaborationModesStatus.textContent = "Checking";
+  }
+}
+
+function setExperimentalFeaturesListLoading(isLoading) {
+  elements.experimentalFeaturesListButton.disabled = isLoading;
+  elements.experimentalFeaturesListButton.textContent = isLoading ? "Checking" : "Features Check";
+  if (isLoading) {
+    elements.experimentalFeaturesListStatus.textContent = "Checking";
   }
 }
 

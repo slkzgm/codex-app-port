@@ -1124,6 +1124,14 @@ Target parity with the Codex desktop workflow:
   reasoning-effort counts; mode names, model ids, model override values, raw
   reasoning-effort values, model traffic, settings writes, cwd, paths, URLs,
   tokens, and raw payloads remain hidden or blocked.
+- `experimentalFeature/list` has both an opt-in counts-only inventory path and
+  a dedicated opt-in `/api/experimental-features-list` route behind
+  `CODEX_APP_PORT_ALLOW_EXPERIMENTAL_FEATURES_LIST=1`. The dedicated route
+  sends only `cursor:null` and `limit:50`, and returns feature, enablement,
+  default-enabled, stage, display-name, description, announcement, and
+  cursor-presence counts; feature names, display names, descriptions,
+  announcements, cursor values, model traffic, settings writes, cwd, paths,
+  URLs, tokens, and raw payloads remain hidden or blocked.
 - `mcpServerStatus/list` reports only server/tool/resource/resource-template
   counts and documented auth-status buckets (`unsupported`, `notLoggedIn`,
   `bearerToken`, `oAuth`, or `unknown`); arbitrary auth status values, server

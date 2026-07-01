@@ -1609,6 +1609,14 @@ Current M1 status:
   counts while omitting mode names, model ids, model override values, raw
   reasoning-effort values, cwd, model traffic, settings writes, URLs, paths,
   tokens, and raw payloads.
+- done: dedicated `/api/experimental-features-list` read route for
+  `experimentalFeature/list`, disabled by default behind
+  `CODEX_APP_PORT_ALLOW_EXPERIMENTAL_FEATURES_LIST=1`, calling with
+  `cursor:null` and `limit:50`, and returning only feature, enablement,
+  default-enabled, stage, display-name, description, announcement, and
+  cursor-presence counts while omitting feature names, display names,
+  descriptions, announcements, cursor values, cwd, model traffic, settings
+  writes, URLs, paths, tokens, and raw payloads.
 - done: dedicated `/api/mcp-server-status` read route for
   `mcpServerStatus/list`, disabled by default behind
   `CODEX_APP_PORT_ALLOW_MCP_SERVER_STATUS=1`, using `toolsAndAuthOnly` detail

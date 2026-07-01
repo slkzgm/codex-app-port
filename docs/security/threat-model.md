@@ -1694,6 +1694,13 @@
   model-override, and reasoning-effort counts; mode names, model ids, model
   override values, raw reasoning-effort values, cwd, model traffic, settings
   writes, URLs, paths, tokens, and raw app-server payloads remain blocked.
+- `/api/experimental-features-list` may call only `experimentalFeature/list`
+  behind `CODEX_APP_PORT_ALLOW_EXPERIMENTAL_FEATURES_LIST=1`. It is GET-only,
+  local-token protected, sends only `cursor:null` and `limit:50`, and returns
+  feature, enablement, default-enabled, stage, display-name, description,
+  announcement, and cursor-presence counts only; feature names, display names,
+  descriptions, announcements, cursor values, cwd, model traffic, settings
+  writes, URLs, paths, tokens, and raw app-server payloads remain blocked.
 - `/api/mcp-server-status` may call only `mcpServerStatus/list` behind
   `CODEX_APP_PORT_ALLOW_MCP_SERVER_STATUS=1`. It is GET-only, local-token
   protected, requests `toolsAndAuthOnly` detail, and returns server/tool/

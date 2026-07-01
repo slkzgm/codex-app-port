@@ -12,6 +12,7 @@ import {
   runConfigValueWriteProbe,
   runEnvironmentAddProbe,
   runExperimentalFeatureEnablementSetProbe,
+  runExperimentalFeaturesListReadProbe,
   runAppsListReadProbe,
   runHooksListReadProbe,
   runIntegrationsInventoryProbe,
@@ -2763,6 +2764,59 @@ test("runCollaborationModesReadProbe returns mode counts without names or model 
       delete process.env.CODEX_APP_PORT_ALLOW_COLLABORATION_MODES;
     } else {
       process.env.CODEX_APP_PORT_ALLOW_COLLABORATION_MODES = previous;
+    }
+  }
+});
+
+test("runExperimentalFeaturesListReadProbe returns feature counts without names or descriptions", async () => {
+  const previous = process.env.CODEX_APP_PORT_ALLOW_EXPERIMENTAL_FEATURES_LIST;
+  process.env.CODEX_APP_PORT_ALLOW_EXPERIMENTAL_FEATURES_LIST = "1";
+  try {
+    const summary = await runExperimentalFeaturesListReadProbe({
+      codexBin: process.execPath,
+      codexArgs: [mockServer.pathname],
+      cwd: process.cwd(),
+      timeoutMs: 1_000,
+    });
+    const features = summary.probes.experimentalFeatures;
+    const serialized = JSON.stringify(summary);
+    assert.equal(summary.ok, true);
+    assert.equal(features.ok, true);
+    assert.equal(features.featureCount, 2);
+    assert.equal(features.enabledCount, 1);
+    assert.equal(features.disabledCount, 1);
+    assert.equal(features.defaultEnabledCount, 1);
+    assert.equal(features.betaCount, 1);
+    assert.equal(features.stableCount, 1);
+    assert.equal(features.displayNameCount, 2);
+    assert.equal(features.descriptionCount, 1);
+    assert.equal(features.announcementCount, 1);
+    assert.equal(features.hasNextCursor, true);
+    assert.equal(features.returnedFeatureCount, 0);
+    assert.deepEqual(features.items, []);
+    assert.equal(features.namesReturned, false);
+    assert.equal(features.descriptionsReturned, false);
+    assert.equal(features.announcementsReturned, false);
+    assert.equal(features.rawPayloadReturned, false);
+    for (const marker of [
+      "private-experimental-feature",
+      "private-stable-feature",
+      "Private Experimental Feature",
+      "private feature description",
+      "private announcement",
+      "private-feature-cursor",
+      "codexHome",
+      "userAgent",
+      "\"namesReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    if (previous === undefined) {
+      delete process.env.CODEX_APP_PORT_ALLOW_EXPERIMENTAL_FEATURES_LIST;
+    } else {
+      process.env.CODEX_APP_PORT_ALLOW_EXPERIMENTAL_FEATURES_LIST = previous;
     }
   }
 });

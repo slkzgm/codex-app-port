@@ -88,6 +88,7 @@ async function main() {
   await checkModelsListApi();
   await checkModelProviderCapabilitiesApi();
   await checkCollaborationModesApi();
+  await checkExperimentalFeaturesListApi();
   await checkMcpServerStatusApi();
   await checkPermissionProfilesApi();
   await checkAppsListApi();
@@ -19004,6 +19005,218 @@ async function checkCollaborationModesApi() {
     await closeServer(server);
   }
   pass("dev server collaboration modes exposes counts behind opt-in without returning mode details");
+}
+
+async function checkExperimentalFeaturesListApi() {
+  const blockedCalls = [];
+  const blockedServer = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    experimentalFeaturesListFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+  const blockedPort = await listenWithFallback(blockedServer, { host: "127.0.0.1", port: 0 });
+  const blockedBaseUrl = `http://127.0.0.1:${blockedPort}`;
+
+  try {
+    const token = await readUiSessionToken(blockedBaseUrl);
+    const settingsResponse = await fetch(`${blockedBaseUrl}/api/settings-integrations`, {
+      headers: apiHeaders(token),
+    });
+    if (!settingsResponse.ok) {
+      throw new Error(
+        `settings integrations for blocked experimental features returned HTTP ${settingsResponse.status}`,
+      );
+    }
+    const settingsPayload = await settingsResponse.json();
+    if (
+      settingsPayload.surfaces?.settings?.experimentalFeatureListingAvailable !== false ||
+      settingsPayload.surfaces?.settings?.experimentalFeaturesListEnabled !== false ||
+      settingsPayload.integrationScope?.experimentalFeaturesListEnabled !== false
+    ) {
+      throw new Error("settings integrations did not expose the blocked experimental features gate safely");
+    }
+
+    const response = await fetch(`${blockedBaseUrl}/api/experimental-features-list`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`blocked experimental features returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (
+      payload.appServer?.touched !== false ||
+      payload.settings?.experimentalFeaturesListEnabled !== false ||
+      payload.result?.status !== "blocked" ||
+      payload.policy?.appServerTraffic !== false
+    ) {
+      throw new Error("blocked experimental features did not fail closed without app-server traffic");
+    }
+    if (blockedCalls.length !== 0) {
+      throw new Error("blocked experimental features unexpectedly touched app-server");
+    }
+    assertNoMarkers(JSON.stringify(payload), ["/tmp/codex-app-port-verify"]);
+  } finally {
+    await closeServer(blockedServer);
+  }
+
+  const calls = [];
+  const server = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    experimentalFeaturesListEnabled: true,
+    experimentalFeaturesListFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-07-01T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/verify-private-home",
+          userAgent: "verify-private-agent",
+        },
+        probes: {
+          experimentalFeatures: {
+            ok: true,
+            featureCount: 3,
+            enabledCount: 2,
+            disabledCount: 1,
+            defaultEnabledCount: 1,
+            betaCount: 1,
+            stableCount: 1,
+            deprecatedCount: 0,
+            stageCounts: {
+              beta: 1,
+              stable: 1,
+              verifyPrivateStage: 1,
+            },
+            displayNameCount: 3,
+            descriptionCount: 2,
+            announcementCount: 1,
+            hasNextCursor: true,
+            returnedFeatureCount: 2,
+            items: [
+              {
+                name: "verify-private-experimental-feature",
+                enabled: true,
+                defaultEnabled: false,
+                stage: "verifyPrivateStage",
+              },
+            ],
+            namesReturned: true,
+            descriptionsReturned: true,
+            announcementsReturned: true,
+            rawPayloadReturned: true,
+          },
+        },
+        rawFeatures: {
+          name: "verify-private-experimental-feature",
+          displayName: "Verify Private Experimental Feature",
+          description: "verify private feature description",
+          announcement: "verify private feature announcement",
+          nextCursor: "verify-private-feature-cursor",
+          path: "/tmp/codex-app-port-verify/features.json",
+        },
+        notifications: {},
+      };
+    },
+  });
+  const port = await listenWithFallback(server, { host: "127.0.0.1", port: 0 });
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  try {
+    const token = await readUiSessionToken(baseUrl);
+    const settingsResponse = await fetch(`${baseUrl}/api/settings-integrations`, {
+      headers: apiHeaders(token),
+    });
+    if (!settingsResponse.ok) {
+      throw new Error(
+        `settings integrations for experimental features returned HTTP ${settingsResponse.status}`,
+      );
+    }
+    const settingsPayload = await settingsResponse.json();
+    if (
+      settingsPayload.surfaces?.settings?.experimentalFeatureListingAvailable !== true ||
+      settingsPayload.surfaces?.settings?.experimentalFeaturesListEnabled !== true ||
+      settingsPayload.integrationScope?.experimentalFeaturesListEnabled !== true ||
+      !settingsPayload.integrationScope?.enabledReadMethods?.includes("experimentalFeature/list")
+    ) {
+      throw new Error("settings integrations did not expose the experimental features gate safely");
+    }
+
+    const wrongMethod = await fetch(`${baseUrl}/api/experimental-features-list`, {
+      method: "POST",
+      headers: apiHeaders(token),
+    });
+    if (wrongMethod.status !== 405) {
+      throw new Error(`experimental features POST returned HTTP ${wrongMethod.status}`);
+    }
+
+    const response = await fetch(`${baseUrl}/api/experimental-features-list`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`experimental features returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (
+      payload.appServer?.touched !== true ||
+      payload.appServer?.modelTraffic !== false ||
+      payload.settings?.experimentalFeaturesListEnabled !== true ||
+      payload.result?.status !== "available" ||
+      payload.result?.featureCount !== 3 ||
+      payload.result?.enabledCount !== 2 ||
+      payload.result?.disabledCount !== 1 ||
+      payload.result?.stageCounts?.beta !== 1 ||
+      payload.result?.stageCounts?.stable !== 1 ||
+      payload.result?.stageCounts?.verifyPrivateStage != null ||
+      payload.result?.returnedFeatureCount !== 0 ||
+      payload.result?.namesReturned !== false ||
+      payload.result?.descriptionsReturned !== false ||
+      payload.result?.announcementsReturned !== false ||
+      payload.result?.cursorReturned !== false ||
+      payload.result?.rawPayloadReturned !== false ||
+      payload.policy?.readOnly !== true ||
+      payload.policy?.modelTraffic !== false ||
+      payload.policy?.settingsWrites !== false ||
+      payload.policy?.featureEnablementWrites !== false ||
+      payload.policy?.namesReturned !== false ||
+      payload.policy?.descriptionsReturned !== false ||
+      payload.policy?.announcementsReturned !== false ||
+      payload.policy?.cursorsReturned !== false ||
+      payload.policy?.pathsReturned !== false ||
+      payload.policy?.rawPayloadReturned !== false
+    ) {
+      throw new Error("experimental features did not return the safe counts-only summary shape");
+    }
+    if (calls.length !== 1 || calls[0].cwd !== "/tmp/codex-app-port-verify") {
+      throw new Error("experimental features did not call the app-server read path once");
+    }
+    assertNoMarkers(JSON.stringify(payload), [
+      "/tmp/codex-app-port-verify",
+      "/tmp/verify-private-home",
+      "verify-private-agent",
+      "codexHome",
+      "userAgent",
+      "verify-private-experimental-feature",
+      "Verify Private Experimental Feature",
+      "verify private feature description",
+      "verify private feature announcement",
+      "verify-private-feature-cursor",
+      "verifyPrivateStage",
+      "features.json",
+      "\"namesReturned\":true",
+      "\"descriptionsReturned\":true",
+      "\"announcementsReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]);
+  } finally {
+    await closeServer(server);
+  }
+  pass("dev server experimental features exposes counts behind opt-in without returning feature details");
 }
 
 async function checkMcpServerStatusApi() {
@@ -59723,6 +59936,16 @@ async function readUiSessionToken(baseUrl) {
     !html.includes("model-provider-capabilities-count-text") ||
     !html.includes("model-provider-capabilities-enabled-text") ||
     !html.includes("model-provider-capabilities-details-text") ||
+    !html.includes("collaboration-modes-button") ||
+    !html.includes("collaboration-modes-status") ||
+    !html.includes("collaboration-modes-count-text") ||
+    !html.includes("collaboration-modes-overrides-text") ||
+    !html.includes("collaboration-modes-details-text") ||
+    !html.includes("experimental-features-list-button") ||
+    !html.includes("experimental-features-list-status") ||
+    !html.includes("experimental-features-list-count-text") ||
+    !html.includes("experimental-features-list-enabled-text") ||
+    !html.includes("experimental-features-list-details-text") ||
     !html.includes("mcp-server-status-button") ||
     !html.includes("mcp-server-status-status") ||
     !html.includes("mcp-server-status-count-text") ||
@@ -59785,6 +60008,12 @@ async function readUiSessionToken(baseUrl) {
     !appScript.includes("runModelProviderCapabilities") ||
     !appScript.includes("renderModelProviderCapabilities") ||
     !appScript.includes("setModelProviderCapabilitiesLoading") ||
+    !appScript.includes("runCollaborationModes") ||
+    !appScript.includes("renderCollaborationModes") ||
+    !appScript.includes("setCollaborationModesLoading") ||
+    !appScript.includes("runExperimentalFeaturesList") ||
+    !appScript.includes("renderExperimentalFeaturesList") ||
+    !appScript.includes("setExperimentalFeaturesListLoading") ||
     !appScript.includes("runMcpServerStatus") ||
     !appScript.includes("renderMcpServerStatus") ||
     !appScript.includes("setMcpServerStatusLoading") ||
