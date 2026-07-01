@@ -1102,6 +1102,25 @@ shell completions, start app-server, launch installers, start/list cloud tasks,
 mutate sessions, apply diffs, mutate MCP/plugins, access files/network, create
 model traffic, or mutate state.
 
+The same response exposes `codexCliFeatures` as a static review-only catalog
+for official Codex CLI feature behavior. The UI shows only catalog counts, entry
+keys, groups, state/source chips, and redaction chips for interactive TUI
+behavior, composer ergonomics, resume flows, remote TUI concepts, model and
+feature-flag concepts, subagents, image input/generation, themes, local review
+presets, web search, quick prompt runs, shell completions, approval modes, exec
+automation, cloud task triage, slash-command workflows, prompt editor behavior,
+and MCP integration. It must not show command names/text, slash commands,
+prompts, drafts, transcripts, session IDs, remote URLs, auth tokens, model
+names, feature flags, image paths/content, generated images, theme names/files,
+review diffs, web-search queries/results, cloud task/environment IDs, shell
+completion output, MCP server names, config values, cwd, output text, paths,
+URLs, secrets, raw payloads, or app-server traffic, and it must not invoke
+Codex, start processes, open composers/editors, resume sessions, connect
+remotes, write feature flags, start subagents, attach/generate images, write
+themes, start reviews, run web search or shell completions, change approval
+modes, run exec/cloud tasks, start MCP servers, access files/network, create
+model traffic, or mutate state.
+
 The same response exposes `codexAgentInternetAccess` as a static review-only
 catalog for official Codex agent internet access behavior. The UI shows only
 catalog counts, entry keys, groups, state/source chips, and redaction chips for

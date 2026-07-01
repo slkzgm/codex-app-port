@@ -478,6 +478,25 @@ Target parity with the Codex desktop workflow:
   processes, generate shell completions, start app-server, launch installers,
   start/list cloud tasks, mutate sessions, apply diffs, mutate MCP/plugins,
   access files/network, create model traffic, or mutate state.
+- `/api/settings-integrations` now also exposes a read-only Codex CLI features
+  catalog aligned to the official CLI features guide. It returns only static
+  keys, groups, states, sources, counts, and redaction flags for interactive
+  TUI behavior, composer ergonomics, resume flows, remote TUI concepts, model
+  and feature-flag concepts, subagents, image input/generation, themes, local
+  review presets, web search, quick prompt runs, shell completions, approval
+  modes, exec automation, cloud task triage, slash-command workflows, prompt
+  editor behavior, and MCP integration. It does not return command names,
+  command text, slash commands, prompts, drafts, transcripts, session IDs,
+  remote URLs, auth tokens, model names, feature flags, image paths or content,
+  generated images, theme names/files, review diffs, web-search queries or
+  results, cloud task or environment IDs, shell completion output, MCP server
+  names, config values, cwd, output text, paths, URLs, secrets, raw payloads,
+  or app-server traffic, and it does not invoke Codex, start processes, open
+  composers/editors, resume sessions, connect remotes, write feature flags,
+  start subagents, attach/generate images, write themes, start reviews, run web
+  search or shell completions, change approval modes, run exec/cloud tasks,
+  start MCP servers, access files/network, create model traffic, or mutate
+  state.
 - `/api/settings-integrations` now also exposes a read-only Codex agent
   internet access catalog aligned to the official Agent internet access guide.
   It returns only static keys, groups, states, sources, counts, and redaction

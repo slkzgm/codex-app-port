@@ -698,6 +698,19 @@
   generate shell completions, start app-server, launch installers, start or list
   cloud tasks, mutate sessions, apply diffs, mutate MCP/plugins, access
   filesystem or network, create model traffic, or mutate CLI state. Its Codex
+  CLI features catalog may expose only static official-documentation keys plus
+  local boundary keys, groups, states, sources, counts, and redaction flags; it
+  must not return command names or text, slash commands, prompts, drafts,
+  transcripts, session IDs, remote URLs, auth tokens, model names, feature
+  flags, image paths or content, generated images, theme names or files, review
+  diffs, web-search queries or results, cloud task or environment IDs, shell
+  completion output, MCP server names, config values, cwd, output text, paths,
+  URLs, secrets, raw payloads, app-server payloads, or app-server traffic, and
+  must not invoke Codex, start processes, open composers or editors, resume
+  sessions, connect remotes, write feature flags, start subagents, attach or
+  generate images, write themes, start reviews, run web search or shell
+  completions, change approval modes, run exec/cloud tasks, start MCP servers,
+  access filesystem or network, create model traffic, or mutate CLI state. Its Codex
   agent internet access catalog
   may expose only static official-documentation keys plus local boundary keys,
   groups, states, sources, counts, and redaction flags; it must not return

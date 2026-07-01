@@ -870,6 +870,24 @@ Current M1 status:
   starts/lists, session mutations, diff application, MCP/plugin mutations,
   filesystem access, network access, model traffic, mutations, paths, URLs,
   secrets, raw payloads, and app-server traffic blocked
+- done: read-only Codex CLI features catalog in `/api/settings-integrations`,
+  exposing only static official CLI features guide keys plus local boundary
+  keys/groups/states/sources/counts/redaction flags for interactive TUI
+  behavior, composer ergonomics, resume flows, remote TUI concepts, model and
+  feature-flag concepts, subagents, image input/generation, themes, local review
+  presets, web search, quick prompt runs, shell completions, approval modes,
+  exec automation, cloud task triage, slash-command workflows, prompt editor
+  behavior, and MCP integration, with command names/text, slash commands,
+  prompts, drafts, transcripts, session IDs, remote URLs, auth tokens, model
+  names, feature flags, image paths/content, generated images, theme names/files,
+  review diffs, web-search queries/results, cloud task/environment IDs, shell
+  completion output, MCP server names, config values, cwd, output text, CLI
+  invocation, process starts, composer/editor opens, session resume, remote
+  connections, feature-flag writes, subagent starts, image attachment/generation,
+  theme writes, review starts, web search, shell completion generation, approval
+  mode changes, exec/cloud task runs, MCP server starts, filesystem access,
+  network access, model traffic, mutations, paths, URLs, secrets, raw payloads,
+  and app-server traffic blocked
 - done: read-only Codex agent internet access catalog in
   `/api/settings-integrations`, exposing only static official Agent internet
   access guide keys plus local boundary keys/groups/states/sources/counts/

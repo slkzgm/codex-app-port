@@ -81,6 +81,8 @@ const elements = {
   codexCliCommandReferenceValuesText: document.querySelector(
     "#codex-cli-command-reference-values-text",
   ),
+  codexCliFeaturesText: document.querySelector("#codex-cli-features-text"),
+  codexCliFeaturesValuesText: document.querySelector("#codex-cli-features-values-text"),
   codexAgentInternetAccessText: document.querySelector("#codex-agent-internet-access-text"),
   codexAgentInternetAccessValuesText: document.querySelector(
     "#codex-agent-internet-access-values-text",
@@ -520,6 +522,7 @@ const elements = {
   codexNonInteractiveList: document.querySelector("#codex-noninteractive-list"),
   codexAgentsSdkList: document.querySelector("#codex-agents-sdk-list"),
   codexCliCommandReferenceList: document.querySelector("#codex-cli-command-reference-list"),
+  codexCliFeaturesList: document.querySelector("#codex-cli-features-list"),
   codexAgentInternetAccessList: document.querySelector("#codex-agent-internet-access-list"),
   codexCloudEnvironmentsList: document.querySelector("#codex-cloud-environments-list"),
   codexGovernanceList: document.querySelector("#codex-governance-list"),
@@ -10600,6 +10603,7 @@ function renderSettingsIntegrations(payload) {
   const codexNonInteractive = payload.codexNonInteractive ?? {};
   const codexAgentsSdk = payload.codexAgentsSdk ?? {};
   const codexCliCommandReference = payload.codexCliCommandReference ?? {};
+  const codexCliFeatures = payload.codexCliFeatures ?? {};
   const codexAgentInternetAccess = payload.codexAgentInternetAccess ?? {};
   const codexCloudEnvironments = payload.codexCloudEnvironments ?? {};
   const codexGovernance = payload.codexGovernance ?? {};
@@ -11600,6 +11604,69 @@ function renderSettingsIntegrations(payload) {
     codexCliCommandReference.secretsReturned ||
     codexCliCommandReference.rawPayloadsReturned ||
     codexCliCommandReference.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexCliFeaturesText.textContent = codexCliFeatures.returned
+    ? `${codexCliFeatures.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexCliFeatures.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexCliFeaturesValuesText.textContent =
+    codexCliFeatures.commandNamesReturned ||
+    codexCliFeatures.commandTextsReturned ||
+    codexCliFeatures.slashCommandsReturned ||
+    codexCliFeatures.promptTextsReturned ||
+    codexCliFeatures.draftTextsReturned ||
+    codexCliFeatures.transcriptContentsReturned ||
+    codexCliFeatures.sessionIdsReturned ||
+    codexCliFeatures.remoteUrlsReturned ||
+    codexCliFeatures.remoteAuthTokensReturned ||
+    codexCliFeatures.modelNamesReturned ||
+    codexCliFeatures.featureFlagsReturned ||
+    codexCliFeatures.imagePathsReturned ||
+    codexCliFeatures.imageContentsReturned ||
+    codexCliFeatures.generatedImagesReturned ||
+    codexCliFeatures.themeNamesReturned ||
+    codexCliFeatures.themeFilesReturned ||
+    codexCliFeatures.reviewDiffsReturned ||
+    codexCliFeatures.webSearchQueriesReturned ||
+    codexCliFeatures.webSearchResultsReturned ||
+    codexCliFeatures.cloudTaskIdsReturned ||
+    codexCliFeatures.cloudEnvironmentIdsReturned ||
+    codexCliFeatures.shellCompletionOutputsReturned ||
+    codexCliFeatures.mcpServerNamesReturned ||
+    codexCliFeatures.configValuesReturned ||
+    codexCliFeatures.cwdsReturned ||
+    codexCliFeatures.outputTextsReturned ||
+    codexCliFeatures.cliInvocationEnabled ||
+    codexCliFeatures.processStartEnabled ||
+    codexCliFeatures.composerOpenEnabled ||
+    codexCliFeatures.sessionResumeEnabled ||
+    codexCliFeatures.remoteConnectionEnabled ||
+    codexCliFeatures.featureFlagWritesEnabled ||
+    codexCliFeatures.subagentStartEnabled ||
+    codexCliFeatures.imageAttachmentEnabled ||
+    codexCliFeatures.imageGenerationEnabled ||
+    codexCliFeatures.themeWritesEnabled ||
+    codexCliFeatures.reviewStartEnabled ||
+    codexCliFeatures.webSearchEnabled ||
+    codexCliFeatures.shellCompletionGenerationEnabled ||
+    codexCliFeatures.approvalModeChangeEnabled ||
+    codexCliFeatures.execRunEnabled ||
+    codexCliFeatures.cloudTaskStartEnabled ||
+    codexCliFeatures.cloudTaskListEnabled ||
+    codexCliFeatures.promptEditorOpenEnabled ||
+    codexCliFeatures.mcpServerStartEnabled ||
+    codexCliFeatures.filesystemReads ||
+    codexCliFeatures.filesystemWrites ||
+    codexCliFeatures.networkAccess ||
+    codexCliFeatures.modelTraffic ||
+    codexCliFeatures.mutationEnabled ||
+    codexCliFeatures.pathsReturned ||
+    codexCliFeatures.urlsReturned ||
+    codexCliFeatures.secretsReturned ||
+    codexCliFeatures.rawPayloadsReturned ||
+    codexCliFeatures.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexAgentInternetAccessText.textContent = codexAgentInternetAccess.returned
@@ -12864,6 +12931,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexNonInteractiveCatalog(codexNonInteractive);
   renderCodexAgentsSdkCatalog(codexAgentsSdk);
   renderCodexCliCommandReferenceCatalog(codexCliCommandReference);
+  renderCodexCliFeaturesCatalog(codexCliFeatures);
   renderCodexAgentInternetAccessCatalog(codexAgentInternetAccess);
   renderCodexCloudEnvironmentsCatalog(codexCloudEnvironments);
   renderCodexGovernanceCatalog(codexGovernance);
@@ -16439,6 +16507,118 @@ function renderCodexCliCommandReferenceCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexCliCommandReferenceList.append(row);
+  }
+}
+
+function renderCodexCliFeaturesCatalog(summary) {
+  elements.codexCliFeaturesList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexCliFeaturesList.append(emptyState("No Codex CLI features catalog returned."));
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "cli";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.commandNameReturned ? "command names returned" : "command names hidden",
+      entry.commandTextReturned ? "command text returned" : "command text hidden",
+      entry.slashCommandReturned ? "slash commands returned" : "slash commands hidden",
+      entry.promptTextReturned ? "prompt text returned" : "prompt text hidden",
+      entry.draftTextReturned ? "draft text returned" : "draft text hidden",
+      entry.transcriptContentReturned ? "transcripts returned" : "transcripts hidden",
+      entry.sessionIdReturned ? "session IDs returned" : "session IDs hidden",
+      entry.remoteUrlReturned ? "remote URLs returned" : "remote URLs hidden",
+      entry.remoteAuthTokenReturned
+        ? "remote auth tokens returned"
+        : "remote auth tokens hidden",
+      entry.modelNameReturned ? "model names returned" : "model names hidden",
+      entry.featureFlagReturned ? "feature flags returned" : "feature flags hidden",
+      entry.imagePathReturned ? "image paths returned" : "image paths hidden",
+      entry.imageContentReturned ? "image content returned" : "image content hidden",
+      entry.generatedImageReturned ? "generated images returned" : "generated images hidden",
+      entry.themeNameReturned ? "theme names returned" : "theme names hidden",
+      entry.themeFileReturned ? "theme files returned" : "theme files hidden",
+      entry.reviewDiffReturned ? "review diffs returned" : "review diffs hidden",
+      entry.webSearchQueryReturned
+        ? "web search queries returned"
+        : "web search queries hidden",
+      entry.webSearchResultsReturned
+        ? "web search results returned"
+        : "web search results hidden",
+      entry.cloudTaskIdReturned ? "cloud task IDs returned" : "cloud task IDs hidden",
+      entry.cloudEnvironmentIdReturned
+        ? "cloud environment IDs returned"
+        : "cloud environment IDs hidden",
+      entry.shellCompletionOutputReturned
+        ? "shell completion output returned"
+        : "shell completion output hidden",
+      entry.mcpServerNameReturned ? "MCP server names returned" : "MCP server names hidden",
+      entry.configValueReturned ? "config values returned" : "config values hidden",
+      entry.cwdReturned ? "cwd returned" : "cwd hidden",
+      entry.outputTextReturned ? "output text returned" : "output text hidden",
+      entry.cliInvoked ? "CLI invoked" : "CLI invocation blocked",
+      entry.processStarted ? "process started" : "process starts blocked",
+      entry.composerOpened ? "composer opened" : "composer opens blocked",
+      entry.sessionResumed ? "sessions resumed" : "session resume blocked",
+      entry.remoteConnected ? "remote connected" : "remote connections blocked",
+      entry.featureFlagsWritten ? "feature flags written" : "feature flag writes blocked",
+      entry.subagentsStarted ? "subagents started" : "subagent starts blocked",
+      entry.imagesAttached ? "images attached" : "image attachment blocked",
+      entry.imagesGenerated ? "images generated" : "image generation blocked",
+      entry.themesWritten ? "themes written" : "theme writes blocked",
+      entry.reviewsStarted ? "reviews started" : "review starts blocked",
+      entry.webSearchStarted ? "web search started" : "web search blocked",
+      entry.shellCompletionGenerated
+        ? "shell completion generated"
+        : "shell completion generation blocked",
+      entry.approvalModeChanged
+        ? "approval mode changed"
+        : "approval mode changes blocked",
+      entry.execRunStarted ? "exec run started" : "exec runs blocked",
+      entry.cloudTaskStarted ? "cloud task started" : "cloud tasks blocked",
+      entry.cloudTaskListed ? "cloud tasks listed" : "cloud task listing blocked",
+      entry.promptEditorOpened ? "prompt editor opened" : "prompt editor blocked",
+      entry.mcpServersStarted ? "MCP servers started" : "MCP server starts blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem written" : "filesystem writes blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.modelTraffic ? "model traffic" : "model traffic blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexCliFeaturesList.append(row);
   }
 }
 
