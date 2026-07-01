@@ -463,6 +463,21 @@ Target parity with the Codex desktop workflow:
   forward approvals, install dependencies, execute scripts, run agents, start
   handoffs, create traces, write artifacts, access files/network, create model
   traffic, or mutate state.
+- `/api/settings-integrations` now also exposes a read-only Codex CLI command
+  reference catalog aligned to the official CLI command reference. It returns
+  only static keys, groups, states, sources, counts, and redaction flags for
+  documented global flag categories, command categories, command details, remote
+  connection concepts, app-server transport concepts, desktop launch behavior,
+  debug flows, cloud task CLI concepts, archive/delete safety, and shell
+  completion generation. It does not return exact command names, flag names,
+  option values, prompts, config keys or values, profile names, model names,
+  sandbox policies, remote URLs, auth tokens, workspace or image paths, session
+  IDs, cloud task or environment IDs, completion output, stdout, JSON payloads,
+  diagnostic reports, transport values, installer URLs, paths, URLs, secrets,
+  raw payloads, or app-server traffic, and it does not invoke Codex, start
+  processes, generate shell completions, start app-server, launch installers,
+  start/list cloud tasks, mutate sessions, apply diffs, mutate MCP/plugins,
+  access files/network, create model traffic, or mutate state.
 - `/api/settings-integrations` now also exposes a read-only Codex agent
   internet access catalog aligned to the official Agent internet access guide.
   It returns only static keys, groups, states, sources, counts, and redaction

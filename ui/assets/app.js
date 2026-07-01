@@ -77,6 +77,10 @@ const elements = {
   codexNonInteractiveValuesText: document.querySelector("#codex-noninteractive-values-text"),
   codexAgentsSdkText: document.querySelector("#codex-agents-sdk-text"),
   codexAgentsSdkValuesText: document.querySelector("#codex-agents-sdk-values-text"),
+  codexCliCommandReferenceText: document.querySelector("#codex-cli-command-reference-text"),
+  codexCliCommandReferenceValuesText: document.querySelector(
+    "#codex-cli-command-reference-values-text",
+  ),
   codexAgentInternetAccessText: document.querySelector("#codex-agent-internet-access-text"),
   codexAgentInternetAccessValuesText: document.querySelector(
     "#codex-agent-internet-access-values-text",
@@ -515,6 +519,7 @@ const elements = {
   codexSdkList: document.querySelector("#codex-sdk-list"),
   codexNonInteractiveList: document.querySelector("#codex-noninteractive-list"),
   codexAgentsSdkList: document.querySelector("#codex-agents-sdk-list"),
+  codexCliCommandReferenceList: document.querySelector("#codex-cli-command-reference-list"),
   codexAgentInternetAccessList: document.querySelector("#codex-agent-internet-access-list"),
   codexCloudEnvironmentsList: document.querySelector("#codex-cloud-environments-list"),
   codexGovernanceList: document.querySelector("#codex-governance-list"),
@@ -10594,6 +10599,7 @@ function renderSettingsIntegrations(payload) {
   const codexSdk = payload.codexSdk ?? {};
   const codexNonInteractive = payload.codexNonInteractive ?? {};
   const codexAgentsSdk = payload.codexAgentsSdk ?? {};
+  const codexCliCommandReference = payload.codexCliCommandReference ?? {};
   const codexAgentInternetAccess = payload.codexAgentInternetAccess ?? {};
   const codexCloudEnvironments = payload.codexCloudEnvironments ?? {};
   const codexGovernance = payload.codexGovernance ?? {};
@@ -11544,6 +11550,56 @@ function renderSettingsIntegrations(payload) {
     codexAgentsSdk.secretsReturned ||
     codexAgentsSdk.rawPayloadsReturned ||
     codexAgentsSdk.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexCliCommandReferenceText.textContent = codexCliCommandReference.returned
+    ? `${codexCliCommandReference.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexCliCommandReference.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexCliCommandReferenceValuesText.textContent =
+    codexCliCommandReference.commandNamesReturned ||
+    codexCliCommandReference.flagNamesReturned ||
+    codexCliCommandReference.optionValuesReturned ||
+    codexCliCommandReference.promptTextsReturned ||
+    codexCliCommandReference.configKeysReturned ||
+    codexCliCommandReference.configValuesReturned ||
+    codexCliCommandReference.profileNamesReturned ||
+    codexCliCommandReference.modelNamesReturned ||
+    codexCliCommandReference.sandboxPoliciesReturned ||
+    codexCliCommandReference.remoteUrlsReturned ||
+    codexCliCommandReference.remoteAuthTokensReturned ||
+    codexCliCommandReference.workspacePathsReturned ||
+    codexCliCommandReference.imagePathsReturned ||
+    codexCliCommandReference.sessionIdsReturned ||
+    codexCliCommandReference.cloudTaskIdsReturned ||
+    codexCliCommandReference.cloudEnvironmentIdsReturned ||
+    codexCliCommandReference.completionOutputsReturned ||
+    codexCliCommandReference.stdoutContentsReturned ||
+    codexCliCommandReference.jsonPayloadsReturned ||
+    codexCliCommandReference.diagnosticReportsReturned ||
+    codexCliCommandReference.transportValuesReturned ||
+    codexCliCommandReference.installerUrlsReturned ||
+    codexCliCommandReference.cliInvocationEnabled ||
+    codexCliCommandReference.processStartEnabled ||
+    codexCliCommandReference.shellCompletionGenerationEnabled ||
+    codexCliCommandReference.appServerStartEnabled ||
+    codexCliCommandReference.desktopInstallerStartEnabled ||
+    codexCliCommandReference.cloudTaskStartEnabled ||
+    codexCliCommandReference.cloudTaskListEnabled ||
+    codexCliCommandReference.sessionMutationEnabled ||
+    codexCliCommandReference.diffApplyEnabled ||
+    codexCliCommandReference.mcpPluginMutationEnabled ||
+    codexCliCommandReference.filesystemReads ||
+    codexCliCommandReference.filesystemWrites ||
+    codexCliCommandReference.networkAccess ||
+    codexCliCommandReference.modelTraffic ||
+    codexCliCommandReference.mutationEnabled ||
+    codexCliCommandReference.pathsReturned ||
+    codexCliCommandReference.urlsReturned ||
+    codexCliCommandReference.secretsReturned ||
+    codexCliCommandReference.rawPayloadsReturned ||
+    codexCliCommandReference.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexAgentInternetAccessText.textContent = codexAgentInternetAccess.returned
@@ -12807,6 +12863,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexSdkCatalog(codexSdk);
   renderCodexNonInteractiveCatalog(codexNonInteractive);
   renderCodexAgentsSdkCatalog(codexAgentsSdk);
+  renderCodexCliCommandReferenceCatalog(codexCliCommandReference);
   renderCodexAgentInternetAccessCatalog(codexAgentInternetAccess);
   renderCodexCloudEnvironmentsCatalog(codexCloudEnvironments);
   renderCodexGovernanceCatalog(codexGovernance);
@@ -16283,6 +16340,105 @@ function renderCodexAgentsSdkCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexAgentsSdkList.append(row);
+  }
+}
+
+function renderCodexCliCommandReferenceCatalog(summary) {
+  elements.codexCliCommandReferenceList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexCliCommandReferenceList.append(
+      emptyState("No Codex CLI command reference catalog returned."),
+    );
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "cli";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.commandNameReturned ? "command names returned" : "command names hidden",
+      entry.flagNameReturned ? "flag names returned" : "flag names hidden",
+      entry.optionValueReturned ? "option values returned" : "option values hidden",
+      entry.promptTextReturned ? "prompt text returned" : "prompt text hidden",
+      entry.configKeyReturned ? "config keys returned" : "config keys hidden",
+      entry.configValueReturned ? "config values returned" : "config values hidden",
+      entry.profileNameReturned ? "profile names returned" : "profile names hidden",
+      entry.modelNameReturned ? "model names returned" : "model names hidden",
+      entry.sandboxPolicyReturned ? "sandbox policies returned" : "sandbox policies hidden",
+      entry.remoteUrlReturned ? "remote URLs returned" : "remote URLs hidden",
+      entry.remoteAuthTokenReturned
+        ? "remote auth tokens returned"
+        : "remote auth tokens hidden",
+      entry.workspacePathReturned ? "workspace paths returned" : "workspace paths hidden",
+      entry.imagePathReturned ? "image paths returned" : "image paths hidden",
+      entry.sessionIdReturned ? "session IDs returned" : "session IDs hidden",
+      entry.cloudTaskIdReturned ? "cloud task IDs returned" : "cloud task IDs hidden",
+      entry.cloudEnvironmentIdReturned
+        ? "cloud environment IDs returned"
+        : "cloud environment IDs hidden",
+      entry.completionOutputReturned
+        ? "completion output returned"
+        : "completion output hidden",
+      entry.stdoutContentReturned ? "stdout content returned" : "stdout content hidden",
+      entry.jsonPayloadReturned ? "JSON payloads returned" : "JSON payloads hidden",
+      entry.diagnosticReportReturned
+        ? "diagnostic reports returned"
+        : "diagnostic reports hidden",
+      entry.transportValueReturned ? "transport values returned" : "transport values hidden",
+      entry.installerUrlReturned ? "installer URLs returned" : "installer URLs hidden",
+      entry.cliInvoked ? "CLI invoked" : "CLI invocation blocked",
+      entry.processStarted ? "process started" : "process starts blocked",
+      entry.shellCompletionGenerated
+        ? "shell completion generated"
+        : "shell completion generation blocked",
+      entry.appServerStarted ? "app-server started" : "app-server starts blocked",
+      entry.desktopInstallerStarted
+        ? "desktop installer started"
+        : "desktop installer blocked",
+      entry.cloudTaskStarted ? "cloud task started" : "cloud tasks blocked",
+      entry.cloudTaskListed ? "cloud tasks listed" : "cloud task listing blocked",
+      entry.sessionMutated ? "sessions mutated" : "session mutations blocked",
+      entry.diffApplied ? "diff applied" : "diff apply blocked",
+      entry.mcpPluginMutated ? "MCP/plugin mutated" : "MCP/plugin mutations blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem written" : "filesystem writes blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.modelTraffic ? "model traffic" : "model traffic blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexCliCommandReferenceList.append(row);
   }
 }
 

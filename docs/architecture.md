@@ -855,6 +855,21 @@ Current M1 status:
   forwarding, dependency installs, script execution, agent runs, handoffs, trace
   creation, artifact writes, filesystem access, network access, model traffic,
   mutations, paths, URLs, secrets, raw payloads, and app-server traffic blocked
+- done: read-only Codex CLI command reference catalog in
+  `/api/settings-integrations`, exposing only static official CLI command
+  reference keys plus local boundary keys/groups/states/sources/counts/
+  redaction flags for global flag categories, command categories, command
+  details, remote connection concepts, app-server transport concepts, desktop
+  launch behavior, debug flows, cloud task CLI concepts, archive/delete safety,
+  and shell completion generation, with exact command names, flag names, option
+  values, prompts, config keys/values, profile names, model names, sandbox
+  policies, remote URLs, auth tokens, workspace/image paths, session IDs, cloud
+  task/environment IDs, completion output, stdout, JSON payloads, diagnostics,
+  transport values, installer URLs, CLI invocation, process starts, shell
+  completion generation, app-server starts, desktop installer starts, cloud task
+  starts/lists, session mutations, diff application, MCP/plugin mutations,
+  filesystem access, network access, model traffic, mutations, paths, URLs,
+  secrets, raw payloads, and app-server traffic blocked
 - done: read-only Codex agent internet access catalog in
   `/api/settings-integrations`, exposing only static official Agent internet
   access guide keys plus local boundary keys/groups/states/sources/counts/

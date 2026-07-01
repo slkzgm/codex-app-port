@@ -1086,6 +1086,22 @@ forward approvals, install dependencies, execute scripts, run agents, start
 handoffs, create traces, write artifacts, access files/network, create model
 traffic, or mutate state.
 
+The same response exposes `codexCliCommandReference` as a static review-only
+catalog for official Codex CLI command reference behavior. The UI shows only
+catalog counts, entry keys, groups, state/source chips, and redaction chips for
+global flag categories, command categories, command details, remote connection
+concepts, app-server transport concepts, desktop launch behavior, debug flows,
+cloud task CLI concepts, archive/delete safety, and shell completion
+generation. It must not show exact command names, flag names, option values,
+prompt text, config keys or values, profile names, model names, sandbox
+policies, remote URLs, auth tokens, workspace or image paths, session IDs, cloud
+task or environment IDs, completion output, stdout, JSON payloads, diagnostic
+reports, transport values, installer URLs, paths, URLs, secrets, raw payloads,
+or app-server traffic, and it must not invoke Codex, start processes, generate
+shell completions, start app-server, launch installers, start/list cloud tasks,
+mutate sessions, apply diffs, mutate MCP/plugins, access files/network, create
+model traffic, or mutate state.
+
 The same response exposes `codexAgentInternetAccess` as a static review-only
 catalog for official Codex agent internet access behavior. The UI shows only
 catalog counts, entry keys, groups, state/source chips, and redaction chips for

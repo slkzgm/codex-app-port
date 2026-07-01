@@ -686,7 +686,19 @@
   start MCP servers or inspectors, list/call tools, continue sessions, forward
   approvals, install dependencies, execute scripts, run agents, start handoffs,
   create traces, write artifacts, access filesystem or network, create model
-  traffic, or mutate Agents SDK state. Its Codex agent internet access catalog
+  traffic, or mutate Agents SDK state. Its Codex CLI command reference catalog
+  may expose only static official-documentation keys plus local boundary keys,
+  groups, states, sources, counts, and redaction flags; it must not return exact
+  command names, flag names, option values, prompt text, config keys or values,
+  profile names, model names, sandbox policies, remote URLs, auth tokens,
+  workspace or image paths, session IDs, cloud task or environment IDs,
+  completion output, stdout, JSON payloads, diagnostic reports, transport
+  values, installer URLs, paths, URLs, secrets, raw payloads, app-server
+  payloads, or app-server traffic, and must not invoke Codex, start processes,
+  generate shell completions, start app-server, launch installers, start or list
+  cloud tasks, mutate sessions, apply diffs, mutate MCP/plugins, access
+  filesystem or network, create model traffic, or mutate CLI state. Its Codex
+  agent internet access catalog
   may expose only static official-documentation keys plus local boundary keys,
   groups, states, sources, counts, and redaction flags; it must not return
   environment names, domain allowlists, preset domain values, HTTP method
