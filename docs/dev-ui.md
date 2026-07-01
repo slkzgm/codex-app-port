@@ -771,6 +771,22 @@ environment variables, bearer-token environment variables, OAuth URLs or
 tokens, `config.toml` content or paths, tool names, tool allowlists, server
 instructions, plugin ids, setting values, config writes, mutations, paths,
 URLs, raw payloads, and app-server traffic remain blocked.
+The same response exposes `codexAuthentication` as a static review-only catalog
+for official Authentication and sessions behavior. The UI shows only catalog
+counts, entry keys, groups, state/source chips, and redaction chips for
+ChatGPT/API-key sign-in, cloud requirements, CLI/IDE support, data-policy
+implications, browser login, stdin token login, API-key automation guidance,
+enterprise access-token use cases, MFA/SSO guidance, login caching and refresh,
+credential storage, managed login restrictions, diagnostics, custom CA bundles,
+headless/device-code/fallback/callback-forwarding flows, provider auth modes,
+and CI/CD auth references. It does not show account or workspace identifiers,
+access tokens, API keys, device codes, verification URLs, OAuth callbacks, auth
+caches or files, credential-store state, login logs, CA paths, MFA/SSO state,
+managed restriction values, provider credentials or env vars, billing or
+entitlement values, auth commands, auth URLs, credential/config/env values,
+paths, URLs, secrets, raw payloads, or app-server traffic, and it does not start
+login/logout, read auth storage, read credential stores/logs, access
+files/network, create model traffic, or mutate auth state.
 The same response exposes `codexAccessTokens` as a static review-only catalog
 for official Codex Access token behavior. The UI shows only catalog counts,
 entry keys, groups, state/source chips, and redaction chips for workspace

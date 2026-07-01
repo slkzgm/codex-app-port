@@ -127,6 +127,17 @@ Target parity with the Codex desktop workflow:
   `config.toml` content or paths, tool names, tool allowlists, server
   instructions, plugin ids, setting values, config writes, mutations, paths,
   URLs, secrets, raw payloads, and app-server traffic remain blocked.
+- `/api/settings-integrations` now also exposes a read-only Codex
+  Authentication catalog aligned to the official Authentication and sessions
+  documentation. It returns only static keys, groups, states, sources, counts,
+  and redaction flags for sign-in methods, session and credential-storage
+  guidance, headless/device-code flows, provider auth modes, MFA/SSO, custom CA
+  bundles, and CI/CD references; account/workspace ids, tokens, API keys,
+  device codes, verification URLs, OAuth callbacks, auth caches/files,
+  credential-store state, logs, CA paths, provider envs, billing/entitlement
+  values, commands, URLs, paths, secrets, raw payloads, app-server traffic, auth
+  reads, login/logout, network/filesystem access, model traffic, and mutations
+  remain blocked.
 - `/api/settings-integrations` now also exposes a read-only Codex Access tokens
   catalog aligned to the official access-token documentation. It returns only
   static keys, groups, states, sources, counts, and redaction flags for

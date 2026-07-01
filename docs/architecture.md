@@ -548,6 +548,17 @@ Current M1 status:
   MCP server names, hook commands, share links/principals, setting values,
   installs, uninstalls, writes, mutations, external code, paths, URLs, secrets,
   raw payloads, and app-server traffic blocked
+- done: read-only Codex Authentication catalog in `/api/settings-integrations`,
+  exposing only static official Authentication and sessions documentation keys
+  plus local auth boundary keys, groups, state/source labels, counts, and
+  redaction flags. Account/workspace identifiers, access tokens, API keys,
+  device codes, verification URLs, OAuth callbacks, auth caches/files,
+  credential stores, login logs, CA paths, MFA/SSO state, managed restriction
+  values, provider credentials/envs, billing or entitlement values, auth
+  commands/URLs/files, credential/config/env values, paths, URLs, secrets, raw
+  payloads, app-server traffic, login/logout, auth storage reads, credential
+  store reads, log reads, filesystem/network access, model traffic, and auth
+  mutations remain blocked.
 - done: read-only Codex Access tokens catalog in `/api/settings-integrations`,
   exposing only static official Access tokens documentation keys plus local
   boundary keys/groups/states/sources/counts/redaction flags for ChatGPT

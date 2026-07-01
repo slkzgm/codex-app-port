@@ -454,7 +454,17 @@
   CLI directory browsing, marketplace sharing, install/auth timing,
   new-thread usage, direct-task and `@` invocation, bundled skills/apps/MCP
   setup, external app data terms, uninstall semantics, disable config, and
-  plugin guide references. Its
+  plugin guide references. Its Codex Authentication catalog may expose only
+  static official-documentation keys plus local boundary keys, groups, states,
+  sources, counts, and redaction flags; it must not return account or workspace
+  identifiers, access tokens, API keys, device codes, verification URLs, OAuth
+  callbacks, auth caches or files, credential-store state, login logs, CA
+  paths, MFA/SSO state, managed restriction values, provider credentials or
+  env vars, billing or entitlement values, auth commands, auth URLs,
+  credential/config/env values, paths, URLs, secrets, raw payloads,
+  app-server payloads, or app-server traffic, and must not start login/logout,
+  read auth storage, read credential stores or logs, access files or network,
+  create model traffic, or mutate auth state. Its
   Codex Access tokens catalog may expose only static official-documentation
   keys plus local boundary keys, groups, states, sources, counts, and redaction
   flags; it must not return token names, token values, prefixes, hashes, user

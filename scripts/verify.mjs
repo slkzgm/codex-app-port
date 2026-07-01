@@ -33091,6 +33091,227 @@ function assertSettingsServerBoundaries(payload) {
   }
 }
 
+function expectedCodexAuthenticationEntries() {
+  return [
+    ["openAiAuthenticationMethods", "methods", "catalog-only", "official-codex-auth-docs"],
+    ["chatgptSubscriptionAccess", "methods", "catalog-only", "official-codex-auth-docs"],
+    ["apiKeyUsageBasedAccess", "methods", "catalog-only", "official-codex-auth-docs"],
+    ["cloudChatgptRequirement", "cloud", "catalog-only", "official-codex-auth-docs"],
+    ["cliIdeDualAuthSupport", "surfaces", "catalog-only", "official-codex-auth-docs"],
+    ["workspacePolicyImplications", "policy", "catalog-only", "official-codex-auth-docs"],
+    ["chatgptBrowserLogin", "chatgpt-login", "catalog-only", "official-codex-auth-docs"],
+    ["stdinAccessTokenLogin", "chatgpt-login", "catalog-only", "official-codex-auth-docs"],
+    ["apiKeyDashboardSource", "api-key", "catalog-only", "official-codex-auth-docs"],
+    ["apiKeyFeatureLimitations", "api-key", "catalog-only", "official-codex-auth-docs"],
+    ["apiKeyAutomationGuidance", "api-key", "catalog-only", "official-codex-auth-docs"],
+    ["enterpriseAccessTokenUseCase", "access-tokens", "catalog-only", "official-codex-auth-docs"],
+    ["cloudMfaRequirement", "security", "catalog-only", "official-codex-auth-docs"],
+    ["socialLoginMfaGuidance", "security", "catalog-only", "official-codex-auth-docs"],
+    ["ssoMfaGuidance", "security", "catalog-only", "official-codex-auth-docs"],
+    ["loginCaching", "sessions", "catalog-only", "official-codex-auth-docs"],
+    ["credentialStorageModes", "credential-storage", "catalog-only", "official-codex-auth-docs"],
+    ["managedLoginRestrictions", "managed-auth", "catalog-only", "official-codex-auth-docs"],
+    ["loginDiagnostics", "diagnostics", "catalog-only", "official-codex-auth-docs"],
+    ["customCaBundles", "networking", "catalog-only", "official-codex-auth-docs"],
+    ["headlessLoginProblem", "headless", "catalog-only", "official-codex-auth-docs"],
+    ["deviceCodeAuthentication", "headless", "catalog-only", "official-codex-auth-docs"],
+    ["localAuthCacheFallback", "headless", "catalog-only", "official-codex-auth-docs"],
+    ["sshCallbackForwarding", "headless", "catalog-only", "official-codex-auth-docs"],
+    ["providerOpenAiAuthentication", "providers", "catalog-only", "official-codex-auth-docs"],
+    ["providerEnvironmentAuthentication", "providers", "catalog-only", "official-codex-auth-docs"],
+    ["providerNoAuthentication", "providers", "catalog-only", "official-codex-auth-docs"],
+    ["ciCdAuthReference", "automation", "catalog-only", "official-codex-auth-docs"],
+    ["credentialStoreConfiguration", "credential-storage", "catalog-only", "official-codex-auth-docs"],
+    ["authRefreshBehavior", "sessions", "catalog-only", "official-codex-auth-docs"],
+    ["authDataHandlingBoundary", "policy", "catalog-only", "official-codex-auth-docs"],
+    ["accountIdentifierBoundary", "identity", "blocked", "local-authentication-boundary"],
+    ["workspaceIdentifierBoundary", "identity", "blocked", "local-authentication-boundary"],
+    ["accessTokenBoundary", "tokens", "blocked", "local-authentication-boundary"],
+    ["apiKeyBoundary", "tokens", "blocked", "local-authentication-boundary"],
+    ["deviceCodeBoundary", "device-code", "blocked", "local-authentication-boundary"],
+    ["verificationUrlBoundary", "device-code", "blocked", "local-authentication-boundary"],
+    ["oauthCallbackBoundary", "oauth", "blocked", "local-authentication-boundary"],
+    ["authCacheBoundary", "credential-storage", "blocked", "local-authentication-boundary"],
+    ["credentialStoreBoundary", "credential-storage", "blocked", "local-authentication-boundary"],
+    ["loginLogBoundary", "diagnostics", "blocked", "local-authentication-boundary"],
+    ["caBundleBoundary", "networking", "blocked", "local-authentication-boundary"],
+    ["mfaStateBoundary", "security", "blocked", "local-authentication-boundary"],
+    ["ssoStateBoundary", "security", "blocked", "local-authentication-boundary"],
+    ["managedRestrictionBoundary", "managed-auth", "blocked", "local-authentication-boundary"],
+    ["providerCredentialBoundary", "providers", "blocked", "local-authentication-boundary"],
+    ["providerEnvBoundary", "providers", "blocked", "local-authentication-boundary"],
+    ["billingUsageBoundary", "api-key", "blocked", "local-authentication-boundary"],
+    ["cloudEntitlementBoundary", "cloud", "blocked", "local-authentication-boundary"],
+    ["loginFlowBoundary", "runtime", "blocked", "local-authentication-boundary"],
+    ["authMutationBoundary", "runtime", "blocked", "local-authentication-boundary"],
+    ["filesystemNetworkBoundary", "runtime", "blocked", "local-authentication-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexAuthenticationCatalog(payload) {
+  const catalog = payload.codexAuthentication;
+  const expectedEntries = expectedCodexAuthenticationEntries();
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-auth-docs");
+  assert.equal(catalog.entryCount, 52);
+  assert.equal(catalog.officialEntryCount, 31);
+  assert.equal(catalog.localBoundaryEntryCount, 21);
+  assert.equal(catalog.catalogOnlyEntryCount, 31);
+  assert.equal(catalog.blockedEntryCount, 21);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({
+      key,
+      group,
+      state,
+      source,
+    })),
+    expectedEntries,
+  );
+
+  const entryRedactionFlags = [
+    "accountIdentifierReturned",
+    "workspaceIdentifierReturned",
+    "accessTokenReturned",
+    "apiKeyReturned",
+    "deviceCodeReturned",
+    "verificationUrlReturned",
+    "oauthCallbackReturned",
+    "authCacheReturned",
+    "credentialStoreReturned",
+    "loginLogReturned",
+    "caBundleReturned",
+    "mfaStateReturned",
+    "ssoStateReturned",
+    "managedRestrictionReturned",
+    "providerCredentialReturned",
+    "providerEnvReturned",
+    "billingUsageReturned",
+    "cloudEntitlementReturned",
+    "authCommandReturned",
+    "authUrlReturned",
+    "authFileReturned",
+    "credentialValueReturned",
+    "configValueReturned",
+    "environmentValueReturned",
+    "loginFlowStarted",
+    "logoutStarted",
+    "authMutation",
+    "authStorageRead",
+    "credentialStoreRead",
+    "loginLogRead",
+    "filesystemRead",
+    "filesystemWrite",
+    "networkAccess",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.authenticationCatalogReturned, true);
+  for (const flag of [
+    "accountIdentifiersReturned",
+    "workspaceIdentifiersReturned",
+    "accessTokensReturned",
+    "apiKeysReturned",
+    "deviceCodesReturned",
+    "verificationUrlsReturned",
+    "oauthCallbacksReturned",
+    "authCachesReturned",
+    "credentialStoresReturned",
+    "loginLogsReturned",
+    "caBundlesReturned",
+    "mfaStatesReturned",
+    "ssoStatesReturned",
+    "managedRestrictionsReturned",
+    "providerCredentialsReturned",
+    "providerEnvsReturned",
+    "billingUsageReturned",
+    "cloudEntitlementsReturned",
+    "authCommandsReturned",
+    "authUrlsReturned",
+    "authFilesReturned",
+    "credentialValuesReturned",
+    "configValuesReturned",
+    "environmentValuesReturned",
+    "loginFlowsStarted",
+    "logoutsStarted",
+    "authMutations",
+    "authStorageReads",
+    "credentialStoreReads",
+    "loginLogReads",
+    "filesystemReads",
+    "filesystemWrites",
+    "networkAccess",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexAuthenticationReturned", true],
+    ["codexAuthenticationValuesReturned", false],
+    ["codexAuthenticationAccountIdentifiersReturned", false],
+    ["codexAuthenticationWorkspaceIdentifiersReturned", false],
+    ["codexAuthenticationAccessTokensReturned", false],
+    ["codexAuthenticationApiKeysReturned", false],
+    ["codexAuthenticationDeviceCodesReturned", false],
+    ["codexAuthenticationVerificationUrlsReturned", false],
+    ["codexAuthenticationOauthCallbacksReturned", false],
+    ["codexAuthenticationAuthCachesReturned", false],
+    ["codexAuthenticationCredentialStoresReturned", false],
+    ["codexAuthenticationLoginLogsReturned", false],
+    ["codexAuthenticationCaBundlesReturned", false],
+    ["codexAuthenticationMfaStatesReturned", false],
+    ["codexAuthenticationSsoStatesReturned", false],
+    ["codexAuthenticationManagedRestrictionsReturned", false],
+    ["codexAuthenticationProviderCredentialsReturned", false],
+    ["codexAuthenticationProviderEnvsReturned", false],
+    ["codexAuthenticationBillingUsageReturned", false],
+    ["codexAuthenticationCloudEntitlementsReturned", false],
+    ["codexAuthenticationAuthCommandsReturned", false],
+    ["codexAuthenticationAuthUrlsReturned", false],
+    ["codexAuthenticationAuthFilesReturned", false],
+    ["codexAuthenticationCredentialValuesReturned", false],
+    ["codexAuthenticationConfigValuesReturned", false],
+    ["codexAuthenticationEnvironmentValuesReturned", false],
+    ["codexAuthenticationLoginFlowStartEnabled", false],
+    ["codexAuthenticationLogoutEnabled", false],
+    ["codexAuthenticationAuthMutationsEnabled", false],
+    ["codexAuthenticationAuthStorageReadEnabled", false],
+    ["codexAuthenticationCredentialStoreReadEnabled", false],
+    ["codexAuthenticationLoginLogReadEnabled", false],
+    ["codexAuthenticationFilesystemAccess", false],
+    ["codexAuthenticationNetworkAccess", false],
+    ["codexAuthenticationModelTraffic", false],
+    ["codexAuthenticationMutationsEnabled", false],
+    ["codexAuthenticationPathsReturned", false],
+    ["codexAuthenticationUrlsReturned", false],
+    ["codexAuthenticationSecretsReturned", false],
+    ["codexAuthenticationRawPayloadsReturned", false],
+    ["codexAuthenticationAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexAccessTokensEntries() {
   return [
     ["codexAccessTokenUseCase", "overview", "catalog-only", "official-codex-access-tokens-docs"],
@@ -44408,6 +44629,7 @@ function assertCodexAppSettingsParity(
   ) {
     throw new Error("Codex app settings parity section mapping changed unexpectedly");
   }
+  assertCodexAuthenticationCatalog(payload);
   assertCodexAccessTokensCatalog(payload);
   assertCodexAdminSetupCatalog(payload);
   assertCodexAutoReviewCatalog(payload);

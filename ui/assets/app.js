@@ -29,6 +29,8 @@ const elements = {
   appGitValuesText: document.querySelector("#app-git-values-text"),
   appIntegrationsMcpText: document.querySelector("#app-integrations-mcp-text"),
   appIntegrationsMcpValuesText: document.querySelector("#app-integrations-mcp-values-text"),
+  codexAuthenticationText: document.querySelector("#codex-authentication-text"),
+  codexAuthenticationValuesText: document.querySelector("#codex-authentication-values-text"),
   codexAccessTokensText: document.querySelector("#codex-access-tokens-text"),
   codexAccessTokensValuesText: document.querySelector("#codex-access-tokens-values-text"),
   codexAdminSetupText: document.querySelector("#codex-admin-setup-text"),
@@ -527,6 +529,7 @@ const elements = {
   appPetsList: document.querySelector("#app-pets-list"),
   appGitList: document.querySelector("#app-git-list"),
   appIntegrationsMcpList: document.querySelector("#app-integrations-mcp-list"),
+  codexAuthenticationList: document.querySelector("#codex-authentication-list"),
   codexAccessTokensList: document.querySelector("#codex-access-tokens-list"),
   codexAdminSetupList: document.querySelector("#codex-admin-setup-list"),
   codexAutoReviewList: document.querySelector("#codex-auto-review-list"),
@@ -10620,6 +10623,7 @@ function renderSettingsIntegrations(payload) {
   const integrationScope = payload.integrationScope ?? {};
   const integrationLifecycle = payload.integrationLifecycle ?? {};
   const codexAppSettings = payload.codexAppSettings ?? {};
+  const codexAuthentication = payload.codexAuthentication ?? {};
   const codexAccessTokens = payload.codexAccessTokens ?? {};
   const codexAdminSetup = payload.codexAdminSetup ?? {};
   const codexAutoReview = payload.codexAutoReview ?? {};
@@ -10685,6 +10689,54 @@ function renderSettingsIntegrations(payload) {
     : "Blocked";
   elements.appSettingsValuesText.textContent =
     codexAppSettings.localSettingValuesReturned || codexAppSettings.settingValuesReturned
+      ? "Returned"
+      : "Hidden";
+  elements.codexAuthenticationText.textContent = codexAuthentication.returned
+    ? `${codexAuthentication.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexAuthentication.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexAuthenticationValuesText.textContent =
+    codexAuthentication.accountIdentifiersReturned ||
+    codexAuthentication.workspaceIdentifiersReturned ||
+    codexAuthentication.accessTokensReturned ||
+    codexAuthentication.apiKeysReturned ||
+    codexAuthentication.deviceCodesReturned ||
+    codexAuthentication.verificationUrlsReturned ||
+    codexAuthentication.oauthCallbacksReturned ||
+    codexAuthentication.authCachesReturned ||
+    codexAuthentication.credentialStoresReturned ||
+    codexAuthentication.loginLogsReturned ||
+    codexAuthentication.caBundlesReturned ||
+    codexAuthentication.mfaStatesReturned ||
+    codexAuthentication.ssoStatesReturned ||
+    codexAuthentication.managedRestrictionsReturned ||
+    codexAuthentication.providerCredentialsReturned ||
+    codexAuthentication.providerEnvsReturned ||
+    codexAuthentication.billingUsageReturned ||
+    codexAuthentication.cloudEntitlementsReturned ||
+    codexAuthentication.authCommandsReturned ||
+    codexAuthentication.authUrlsReturned ||
+    codexAuthentication.authFilesReturned ||
+    codexAuthentication.credentialValuesReturned ||
+    codexAuthentication.configValuesReturned ||
+    codexAuthentication.environmentValuesReturned ||
+    codexAuthentication.loginFlowsStarted ||
+    codexAuthentication.logoutsStarted ||
+    codexAuthentication.authMutations ||
+    codexAuthentication.authStorageReads ||
+    codexAuthentication.credentialStoreReads ||
+    codexAuthentication.loginLogReads ||
+    codexAuthentication.filesystemReads ||
+    codexAuthentication.filesystemWrites ||
+    codexAuthentication.networkAccess ||
+    codexAuthentication.modelTraffic ||
+    codexAuthentication.mutationEnabled ||
+    codexAuthentication.pathsReturned ||
+    codexAuthentication.urlsReturned ||
+    codexAuthentication.secretsReturned ||
+    codexAuthentication.rawPayloadsReturned ||
+    codexAuthentication.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexAccessTokensText.textContent = codexAccessTokens.returned
@@ -13416,6 +13468,7 @@ function renderSettingsIntegrations(payload) {
   renderIntegrationConfirmationHistory(payload.preflightConfirmationHistory);
   renderIntegrationDetails(inventory);
   renderCodexAppSettingsParity(codexAppSettings);
+  renderCodexAuthenticationCatalog(codexAuthentication);
   renderCodexAccessTokensCatalog(codexAccessTokens);
   renderCodexAdminSetupCatalog(codexAdminSetup);
   renderCodexAutoReviewCatalog(codexAutoReview);
@@ -14992,6 +15045,97 @@ function remoteControlStatusText(remoteControlStatus) {
     })
     .filter(Boolean);
   return parts.length > 0 ? parts.join(" / ") : "0 statuses";
+}
+
+function renderCodexAuthenticationCatalog(summary) {
+  elements.codexAuthenticationList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexAuthenticationList.append(
+      emptyState("No Codex authentication catalog returned."),
+    );
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "authentication";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.accountIdentifierReturned ? "account IDs returned" : "account IDs hidden",
+      entry.workspaceIdentifierReturned ? "workspace IDs returned" : "workspace IDs hidden",
+      entry.accessTokenReturned ? "access tokens returned" : "access tokens hidden",
+      entry.apiKeyReturned ? "API keys returned" : "API keys hidden",
+      entry.deviceCodeReturned ? "device codes returned" : "device codes hidden",
+      entry.verificationUrlReturned ? "verification URLs returned" : "verification URLs hidden",
+      entry.oauthCallbackReturned ? "OAuth callbacks returned" : "OAuth callbacks hidden",
+      entry.authCacheReturned ? "auth caches returned" : "auth caches hidden",
+      entry.credentialStoreReturned ? "credential stores returned" : "credential stores hidden",
+      entry.loginLogReturned ? "login logs returned" : "login logs hidden",
+      entry.caBundleReturned ? "CA bundles returned" : "CA bundles hidden",
+      entry.mfaStateReturned ? "MFA state returned" : "MFA state hidden",
+      entry.ssoStateReturned ? "SSO state returned" : "SSO state hidden",
+      entry.managedRestrictionReturned
+        ? "managed restrictions returned"
+        : "managed restrictions hidden",
+      entry.providerCredentialReturned
+        ? "provider credentials returned"
+        : "provider credentials hidden",
+      entry.providerEnvReturned ? "provider env returned" : "provider env hidden",
+      entry.billingUsageReturned ? "billing usage returned" : "billing usage hidden",
+      entry.cloudEntitlementReturned
+        ? "cloud entitlements returned"
+        : "cloud entitlements hidden",
+      entry.authCommandReturned ? "auth commands returned" : "auth commands hidden",
+      entry.authUrlReturned ? "auth URLs returned" : "auth URLs hidden",
+      entry.authFileReturned ? "auth files returned" : "auth files hidden",
+      entry.credentialValueReturned ? "credential values returned" : "credential values hidden",
+      entry.configValueReturned ? "config values returned" : "config values hidden",
+      entry.environmentValueReturned ? "environment values returned" : "environment values hidden",
+      entry.loginFlowStarted ? "login flow started" : "login flow blocked",
+      entry.logoutStarted ? "logout started" : "logout blocked",
+      entry.authMutation ? "auth mutation" : "auth mutations blocked",
+      entry.authStorageRead ? "auth storage read" : "auth storage reads blocked",
+      entry.credentialStoreRead ? "credential store read" : "credential store reads blocked",
+      entry.loginLogRead ? "login log read" : "login log reads blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.modelTraffic ? "model traffic" : "model traffic blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexAuthenticationList.append(row);
+  }
 }
 
 function renderCodexAccessTokensCatalog(summary) {
