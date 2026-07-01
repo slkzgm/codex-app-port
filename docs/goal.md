@@ -50,7 +50,9 @@ Target parity with the Codex desktop workflow:
 - The stable npm `@openai/codex` latest dist-tag is `0.142.5`; the available
   `0.143.0-alpha.32` alpha dist-tag was not executed or used as a baseline.
 - The OpenAI `openai/codex` HEAD checked for source drift is
-  `d059658ad1920bdb36e98798f44009a5f4c51735`.
+  `042e61726d28d79cad6f307b2f3ab085861c2212`; the delta from the prior
+  audited HEAD touched only `codex-rs/exec-server` WebSocket liveness files and
+  did not modify `codex-rs/app-server` or `codex-rs/app-server-protocol`.
 - The local official `codex-cli 0.142.5` app-server schema snapshot contains
   335 JSON Schema files, up from the prior `0.130.0` snapshot of 286.
 - The local schema was regenerated into a temporary directory and still
@@ -1100,6 +1102,14 @@ Target parity with the Codex desktop workflow:
   residency presence; policy values, domains, hook commands, paths, requirement
   keys, policy snippets, config writes, filesystem access, cwd, and raw
   payloads remain hidden or blocked.
+- `model/list` has both an opt-in counts-only inventory path and a dedicated
+  opt-in `/api/models-list` route behind
+  `CODEX_APP_PORT_ALLOW_MODELS_LIST=1`. The dedicated route calls only
+  `model/list` with `cursor:null`, `includeHidden:false`, and `limit:50`, and
+  returns only model/default/hidden/visible/input/personality/service-tier/
+  reasoning-option and metadata-presence counts; model ids, names,
+  descriptions, upgrade copy, availability messages, cursors, model traffic,
+  settings writes, cwd, paths, URLs, and raw payloads remain hidden or blocked.
 - `mcpServerStatus/list` reports only server/tool/resource/resource-template
   counts and documented auth-status buckets (`unsupported`, `notLoggedIn`,
   `bearerToken`, `oAuth`, or `unknown`); arbitrary auth status values, server

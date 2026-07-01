@@ -26,11 +26,17 @@ No real turn was started during this audit.
 Official source refresh:
 
 - OpenAI `openai/codex` HEAD:
-  `d059658ad1920bdb36e98798f44009a5f4c51735`
+  `042e61726d28d79cad6f307b2f3ab085861c2212`
 - stable npm `@openai/codex` latest: `0.142.5`
 - alpha npm dist-tag observed: `0.143.0-alpha.32`
 - local stable schema regeneration check: 335 JSON Schema files, matching the
   committed `codex-cli 0.142.5` manifest
+
+The delta from the prior audited HEAD
+`d059658ad1920bdb36e98798f44009a5f4c51735` touched only
+`codex-rs/exec-server` WebSocket liveness files. It did not modify
+`codex-rs/app-server` or `codex-rs/app-server-protocol`, so the stable
+app-server schema baseline and browser-route blocklist do not change.
 
 The HEAD source contains app-server protocol methods that are not present in
 the stable local schema:
@@ -663,6 +669,12 @@ by default, may call only `app/list` behind `CODEX_APP_PORT_ALLOW_APPS_LIST=1`,
 and never returns app names, ids, plugin display names, descriptions, labels,
 logos, URLs, screenshots, cwd, filesystem access, installs, auth-linking
 actions, or raw payloads.
+`/api/models-list` is the stricter dedicated model picker metadata route: it is
+disabled by default, may call only `model/list` behind
+`CODEX_APP_PORT_ALLOW_MODELS_LIST=1` with `cursor:null`,
+`includeHidden:false`, and `limit:50`, and never returns model ids, names,
+descriptions, upgrade copy, availability messages, cursors, cwd, settings
+writes, model traffic, URLs, paths, or raw payloads.
 `/api/plugins-list` is the stricter dedicated plugin catalog route: it is
 disabled by default, may call only `plugin/list` behind
 `CODEX_APP_PORT_ALLOW_PLUGINS_LIST=1`, uses only local and workspace-directory

@@ -1673,6 +1673,13 @@
   counts only; policy values, domains, hook commands, paths, requirement keys,
   policy snippets, filesystem reads or writes, config writes, cwd, and raw
   app-server payloads remain blocked.
+- `/api/models-list` may call only `model/list` behind
+  `CODEX_APP_PORT_ALLOW_MODELS_LIST=1`. It is GET-only, local-token protected,
+  sends only `cursor:null`, `includeHidden:false`, and `limit:50`, and returns
+  model/default/hidden/visible/input/personality/service-tier/reasoning-option
+  and metadata-presence counts only; model ids, names, descriptions, upgrade
+  copy, availability messages, cursors, cwd, model traffic, settings writes,
+  URLs, paths, and raw app-server payloads remain blocked.
 - `/api/mcp-server-status` may call only `mcpServerStatus/list` behind
   `CODEX_APP_PORT_ALLOW_MCP_SERVER_STATUS=1`. It is GET-only, local-token
   protected, requests `toolsAndAuthOnly` detail, and returns server/tool/

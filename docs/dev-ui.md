@@ -1858,6 +1858,16 @@ requirement keys, policy snippets, cwd, config writes, filesystem reads, or raw
 app-server payloads. The Requirements Check control renders only sanitized
 count/detail-redaction fields.
 
+`/api/models-list` is a separate dedicated model picker metadata read route. It
+is disabled unless `CODEX_APP_PORT_ALLOW_MODELS_LIST=1` is set; when enabled,
+it calls only `model/list` with `cursor:null`, `includeHidden:false`, and
+`limit:50`. It returns only model/default/hidden/visible/input/personality/
+service-tier/reasoning-option and metadata-presence counts. It never returns
+model ids, names, descriptions, upgrade copy, availability messages, cursors,
+cwd, settings writes, model traffic, URLs, paths, or raw app-server payloads.
+The Models Check control renders only sanitized count/input/detail-redaction
+fields.
+
 `/api/mcp-server-status` is a separate dedicated MCP status read route. It is
 disabled unless `CODEX_APP_PORT_ALLOW_MCP_SERVER_STATUS=1` is set; when enabled,
 it calls only `mcpServerStatus/list` with `toolsAndAuthOnly` detail and returns
@@ -3271,9 +3281,10 @@ opt-in worktree create/remove and does not return full paths, stdout, stderr,
 or argv, that
 `/api/settings-integrations` remains
 blocked without app-server traffic by default, that its opt-in inventory is
-counts-only for config requirements, account, app/connectors, external config
-migration candidates, rate-limit buckets, MCP, skills, plugins, installed
-plugins, experimental features, and hooks, that its server-request and
+counts-only for config requirements, model picker metadata, account,
+app/connectors, external config migration candidates, rate-limit buckets, MCP,
+skills, plugins, installed plugins, experimental features, and hooks, that its
+server-request and
 server-notification boundaries
 remain fail-closed and payload-free,
 that successful account login cancel and account logout actions are tracked only

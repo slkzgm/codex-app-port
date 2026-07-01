@@ -380,6 +380,11 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /config-requirements-features-text/);
     assert.match(html, /config-requirements-hooks-text/);
     assert.match(html, /config-requirements-details-text/);
+    assert.match(html, /models-list-button/);
+    assert.match(html, /models-list-status/);
+    assert.match(html, /models-list-count-text/);
+    assert.match(html, /models-list-inputs-text/);
+    assert.match(html, /models-list-details-text/);
     assert.match(html, /mcp-server-status-button/);
     assert.match(html, /mcp-server-status-status/);
     assert.match(html, /mcp-server-status-count-text/);
@@ -436,6 +441,9 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(appScript, /runConfigRequirements/);
     assert.match(appScript, /renderConfigRequirements/);
     assert.match(appScript, /setConfigRequirementsLoading/);
+    assert.match(appScript, /runModelsList/);
+    assert.match(appScript, /renderModelsList/);
+    assert.match(appScript, /setModelsListLoading/);
     assert.match(appScript, /runMcpServerStatus/);
     assert.match(appScript, /renderMcpServerStatus/);
     assert.match(appScript, /setMcpServerStatusLoading/);
@@ -15219,6 +15227,221 @@ test("dev server exposes config requirements only behind explicit opt-in and red
       "\"domainsReturned\":true",
       "\"hookCommandsReturned\":true",
       "\"pathsReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    await closeServer(enabledServer.server);
+  }
+});
+
+test("dev server exposes models list only behind explicit opt-in and redacts model details", async () => {
+  const blockedCalls = [];
+  const blockedServer = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    modelsListFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+
+  try {
+    const settingsResponse = await fetch(`${blockedServer.url}/api/settings-integrations`, {
+      headers: apiHeaders(blockedServer.server),
+    });
+    assert.equal(settingsResponse.status, 200);
+    const settingsPayload = await settingsResponse.json();
+    assert.equal(settingsPayload.surfaces.settings.modelListingAvailable, false);
+    assert.equal(settingsPayload.surfaces.settings.modelsListEnabled, false);
+    assert.equal(settingsPayload.integrationScope.modelsListEnabled, false);
+
+    const response = await fetch(`${blockedServer.url}/api/models-list`, {
+      headers: apiHeaders(blockedServer.server),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, false);
+    assert.deepEqual(payload.appServer.auditedMethods, ["model/list"]);
+    assert.equal(payload.settings.modelsListEnabled, false);
+    assert.equal(payload.policy.appServerTraffic, false);
+    assert.equal(payload.result.status, "blocked");
+    assert.equal(blockedCalls.length, 0);
+    assert.equal(serialized.includes("/tmp/default-workspace"), false);
+  } finally {
+    await closeServer(blockedServer.server);
+  }
+
+  const calls = [];
+  const enabledServer = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    modelsListEnabled: true,
+    modelsListFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-07-01T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/private-home",
+          userAgent: "mock/0.0.0",
+        },
+        probes: {
+          models: {
+            ok: true,
+            modelCount: 2,
+            defaultCount: 1,
+            hiddenCount: 1,
+            visibleCount: 1,
+            textInputCount: 2,
+            imageInputCount: 1,
+            personalityCount: 1,
+            upgradeCount: 1,
+            upgradeInfoCount: 1,
+            availabilityNuxCount: 1,
+            serviceTierCount: 2,
+            additionalSpeedTierCount: 1,
+            reasoningEffortOptionCount: 3,
+            descriptionCount: 2,
+            displayNameCount: 2,
+            defaultReasoningEffortCounts: {
+              low: 1,
+              medium: 1,
+              privateEffort: 1,
+            },
+            hasNextCursor: true,
+            returnedModelCount: 2,
+            items: [
+              {
+                name: "private model display",
+                hidden: false,
+                default: true,
+                textInput: true,
+                imageInput: true,
+              },
+            ],
+            namesReturned: true,
+            nameRedactedCount: 1,
+            modelIdsReturned: true,
+            descriptionsReturned: true,
+            upgradeCopyReturned: true,
+            availabilityMessagesReturned: true,
+            rawPayloadReturned: true,
+          },
+        },
+        rawModels: {
+          models: [
+            {
+              id: "private-model-id",
+              name: "private model display",
+              description: "private model description",
+              upgrade: {
+                model: "private-upgrade-model",
+                message: "private upgrade copy",
+              },
+              availability: {
+                nux: "private availability message",
+              },
+            },
+          ],
+          nextCursor: "private-model-cursor",
+        },
+        notifications: {},
+      };
+    },
+  });
+
+  try {
+    const settingsResponse = await fetch(`${enabledServer.url}/api/settings-integrations`, {
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(settingsResponse.status, 200);
+    const settingsPayload = await settingsResponse.json();
+    assert.equal(settingsPayload.surfaces.settings.modelListingAvailable, true);
+    assert.equal(settingsPayload.surfaces.settings.modelsListEnabled, true);
+    assert.equal(settingsPayload.integrationScope.modelsListEnabled, true);
+    assert.equal(settingsPayload.integrationScope.enabledReadMethods.includes("model/list"), true);
+
+    const methodResponse = await fetch(`${enabledServer.url}/api/models-list`, {
+      method: "POST",
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(methodResponse.status, 405);
+
+    const response = await fetch(`${enabledServer.url}/api/models-list`, {
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, true);
+    assert.equal(payload.appServer.modelTraffic, false);
+    assert.deepEqual(payload.appServer.auditedMethods, ["model/list"]);
+    assert.equal(payload.settings.modelsListEnabled, true);
+    assert.equal(payload.result.status, "available");
+    assert.equal(payload.result.modelCount, 2);
+    assert.equal(payload.result.defaultCount, 1);
+    assert.equal(payload.result.hiddenCount, 1);
+    assert.equal(payload.result.visibleCount, 1);
+    assert.equal(payload.result.textInputCount, 2);
+    assert.equal(payload.result.imageInputCount, 1);
+    assert.equal(payload.result.personalityCount, 1);
+    assert.equal(payload.result.upgradeCount, 1);
+    assert.equal(payload.result.upgradeInfoCount, 1);
+    assert.equal(payload.result.availabilityNuxCount, 1);
+    assert.equal(payload.result.serviceTierCount, 2);
+    assert.equal(payload.result.additionalSpeedTierCount, 1);
+    assert.equal(payload.result.reasoningEffortOptionCount, 3);
+    assert.equal(payload.result.descriptionCount, 2);
+    assert.equal(payload.result.displayNameCount, 2);
+    assert.equal(payload.result.defaultReasoningEffortCounts.low, 1);
+    assert.equal(payload.result.defaultReasoningEffortCounts.medium, 1);
+    assert.equal(payload.result.defaultReasoningEffortCounts.privateEffort, undefined);
+    assert.equal(payload.result.hasNextCursor, true);
+    assert.equal(payload.result.returnedModelCount, 0);
+    assert.deepEqual(payload.probes.models.items, []);
+    assert.equal(payload.result.namesReturned, false);
+    assert.equal(payload.result.modelIdsReturned, false);
+    assert.equal(payload.result.descriptionsReturned, false);
+    assert.equal(payload.result.upgradeCopyReturned, false);
+    assert.equal(payload.result.availabilityMessagesReturned, false);
+    assert.equal(payload.result.cursorsReturned, false);
+    assert.equal(payload.result.rawPayloadReturned, false);
+    assert.equal(payload.policy.readOnly, true);
+    assert.equal(payload.policy.modelTraffic, false);
+    assert.equal(payload.policy.modelIdsReturned, false);
+    assert.equal(payload.policy.namesReturned, false);
+    assert.equal(payload.policy.descriptionsReturned, false);
+    assert.equal(payload.policy.upgradeCopyReturned, false);
+    assert.equal(payload.policy.availabilityMessagesReturned, false);
+    assert.equal(payload.policy.cursorsReturned, false);
+    assert.equal(payload.policy.rawPayloadReturned, false);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].cwd, "/tmp/default-workspace");
+    for (const marker of [
+      "/tmp/default-workspace",
+      "/tmp/private-home",
+      "codexHome",
+      "userAgent",
+      "private-model-id",
+      "private model display",
+      "private model description",
+      "private-upgrade-model",
+      "private upgrade copy",
+      "private availability message",
+      "private-model-cursor",
+      "privateEffort",
+      "\"namesReturned\":true",
+      "\"modelIdsReturned\":true",
+      "\"descriptionsReturned\":true",
+      "\"upgradeCopyReturned\":true",
+      "\"availabilityMessagesReturned\":true",
       "\"rawPayloadReturned\":true",
     ]) {
       assert.equal(serialized.includes(marker), false, `leaked ${marker}`);

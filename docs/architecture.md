@@ -26,11 +26,14 @@ requires explicit auth if exposed beyond loopback.
 The app-server schema snapshot was regenerated from local `codex-cli 0.142.5`
 after confirming npm `@openai/codex` latest had moved to `0.142.5` and
 checking OpenAI `openai/codex` HEAD
-`d059658ad1920bdb36e98798f44009a5f4c51735`. The snapshot still contains 335
-JSON Schema files. `environment/info` and `thread/items/list` remain present
-only in the OpenAI HEAD source and absent from the stable generated schema, so
-they stay blocked until a stable schema exposes them and a dedicated browser
-route audit exists.
+`042e61726d28d79cad6f307b2f3ab085861c2212`. The snapshot still contains 335
+JSON Schema files. The source delta from the prior audited HEAD
+`d059658ad1920bdb36e98798f44009a5f4c51735` touched only `codex-rs/exec-server`
+WebSocket liveness files and did not modify `codex-rs/app-server` or
+`codex-rs/app-server-protocol`. `environment/info` and `thread/items/list`
+remain present only in the OpenAI HEAD source and absent from the stable
+generated schema, so they stay blocked until a stable schema exposes them and a
+dedicated browser route audit exists.
 
 ## 2026-06-29 Upstream Recalibration
 
@@ -1586,6 +1589,13 @@ Current M1 status:
   key counts, and residency presence while omitting policy values, domains,
   hook commands, paths, requirement keys, policy snippets, config writes,
   filesystem access, cwd, and raw payloads.
+- done: dedicated `/api/models-list` read route for `model/list`, disabled by
+  default behind `CODEX_APP_PORT_ALLOW_MODELS_LIST=1`, calling only
+  `model/list` with `cursor:null`, `includeHidden:false`, and `limit:50`, and
+  returning only model/default/hidden/visible/input/personality/service-tier/
+  reasoning-option and metadata-presence counts while omitting model ids, names,
+  descriptions, upgrade copy, availability messages, cursors, cwd, model
+  traffic, settings writes, URLs, paths, and raw payloads.
 - done: dedicated `/api/mcp-server-status` read route for
   `mcpServerStatus/list`, disabled by default behind
   `CODEX_APP_PORT_ALLOW_MCP_SERVER_STATUS=1`, using `toolsAndAuthOnly` detail

@@ -85,6 +85,7 @@ async function main() {
   await checkAccountUsageApi();
   await checkAccountWorkspaceMessagesApi();
   await checkConfigRequirementsApi();
+  await checkModelsListApi();
   await checkMcpServerStatusApi();
   await checkPermissionProfilesApi();
   await checkAppsListApi();
@@ -18372,6 +18373,248 @@ async function checkConfigRequirementsApi() {
     await closeServer(server);
   }
   pass("dev server config requirements exposes counts behind opt-in without returning requirement details");
+}
+
+async function checkModelsListApi() {
+  const blockedCalls = [];
+  const blockedServer = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    modelsListFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+  const blockedPort = await listenWithFallback(blockedServer, { host: "127.0.0.1", port: 0 });
+  const blockedBaseUrl = `http://127.0.0.1:${blockedPort}`;
+
+  try {
+    const token = await readUiSessionToken(blockedBaseUrl);
+    const settingsResponse = await fetch(`${blockedBaseUrl}/api/settings-integrations`, {
+      headers: apiHeaders(token),
+    });
+    if (!settingsResponse.ok) {
+      throw new Error(`settings integrations for blocked models list returned HTTP ${settingsResponse.status}`);
+    }
+    const settingsPayload = await settingsResponse.json();
+    if (
+      settingsPayload.surfaces?.settings?.modelListingAvailable !== false ||
+      settingsPayload.surfaces?.settings?.modelsListEnabled !== false ||
+      settingsPayload.integrationScope?.modelsListEnabled !== false
+    ) {
+      throw new Error("settings integrations did not expose the blocked models list gate safely");
+    }
+
+    const response = await fetch(`${blockedBaseUrl}/api/models-list`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`blocked models list returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (
+      payload.appServer?.touched !== false ||
+      payload.settings?.modelsListEnabled !== false ||
+      payload.result?.status !== "blocked" ||
+      payload.policy?.appServerTraffic !== false
+    ) {
+      throw new Error("blocked models list did not fail closed without app-server traffic");
+    }
+    if (blockedCalls.length !== 0) {
+      throw new Error("blocked models list unexpectedly touched app-server");
+    }
+    assertNoMarkers(JSON.stringify(payload), ["/tmp/codex-app-port-verify"]);
+  } finally {
+    await closeServer(blockedServer);
+  }
+
+  const calls = [];
+  const server = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    modelsListEnabled: true,
+    modelsListFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-07-01T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/verify-private-home",
+          userAgent: "verify-private-agent",
+        },
+        probes: {
+          models: {
+            ok: true,
+            modelCount: 2,
+            defaultCount: 1,
+            hiddenCount: 1,
+            visibleCount: 1,
+            textInputCount: 2,
+            imageInputCount: 1,
+            personalityCount: 1,
+            upgradeCount: 1,
+            upgradeInfoCount: 1,
+            availabilityNuxCount: 1,
+            serviceTierCount: 2,
+            additionalSpeedTierCount: 1,
+            reasoningEffortOptionCount: 3,
+            descriptionCount: 2,
+            displayNameCount: 2,
+            defaultReasoningEffortCounts: {
+              low: 1,
+              medium: 1,
+              verifyPrivateEffort: 1,
+            },
+            hasNextCursor: true,
+            returnedModelCount: 2,
+            items: [
+              {
+                name: "verify private model",
+                hidden: false,
+                default: true,
+                textInput: true,
+                imageInput: true,
+              },
+            ],
+            namesReturned: true,
+            modelIdsReturned: true,
+            descriptionsReturned: true,
+            upgradeCopyReturned: true,
+            availabilityMessagesReturned: true,
+            rawPayloadReturned: true,
+          },
+        },
+        rawModels: {
+          models: [
+            {
+              id: "verify-private-model-id",
+              name: "verify private model",
+              description: "verify private model description",
+              upgrade: {
+                model: "verify-private-upgrade-model",
+                message: "verify private upgrade copy",
+              },
+              availability: {
+                nux: "verify private availability message",
+              },
+            },
+          ],
+          nextCursor: "verify-private-model-cursor",
+        },
+        notifications: {},
+      };
+    },
+  });
+  const port = await listenWithFallback(server, { host: "127.0.0.1", port: 0 });
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  try {
+    const token = await readUiSessionToken(baseUrl);
+    const settingsResponse = await fetch(`${baseUrl}/api/settings-integrations`, {
+      headers: apiHeaders(token),
+    });
+    if (!settingsResponse.ok) {
+      throw new Error(`settings integrations for models list returned HTTP ${settingsResponse.status}`);
+    }
+    const settingsPayload = await settingsResponse.json();
+    if (
+      settingsPayload.surfaces?.settings?.modelListingAvailable !== true ||
+      settingsPayload.surfaces?.settings?.modelsListEnabled !== true ||
+      settingsPayload.integrationScope?.modelsListEnabled !== true ||
+      !settingsPayload.integrationScope?.enabledReadMethods?.includes("model/list")
+    ) {
+      throw new Error("settings integrations did not expose the models list gate safely");
+    }
+
+    const wrongMethod = await fetch(`${baseUrl}/api/models-list`, {
+      method: "POST",
+      headers: apiHeaders(token),
+    });
+    if (wrongMethod.status !== 405) {
+      throw new Error(`models list POST returned HTTP ${wrongMethod.status}`);
+    }
+
+    const response = await fetch(`${baseUrl}/api/models-list`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`models list returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (
+      payload.appServer?.touched !== true ||
+      payload.appServer?.modelTraffic !== false ||
+      payload.settings?.modelsListEnabled !== true ||
+      payload.result?.status !== "available" ||
+      payload.result?.modelCount !== 2 ||
+      payload.result?.defaultCount !== 1 ||
+      payload.result?.hiddenCount !== 1 ||
+      payload.result?.visibleCount !== 1 ||
+      payload.result?.textInputCount !== 2 ||
+      payload.result?.imageInputCount !== 1 ||
+      payload.result?.personalityCount !== 1 ||
+      payload.result?.upgradeCount !== 1 ||
+      payload.result?.upgradeInfoCount !== 1 ||
+      payload.result?.availabilityNuxCount !== 1 ||
+      payload.result?.serviceTierCount !== 2 ||
+      payload.result?.additionalSpeedTierCount !== 1 ||
+      payload.result?.reasoningEffortOptionCount !== 3 ||
+      payload.result?.descriptionCount !== 2 ||
+      payload.result?.displayNameCount !== 2 ||
+      payload.result?.defaultReasoningEffortCounts?.low !== 1 ||
+      payload.result?.defaultReasoningEffortCounts?.medium !== 1 ||
+      payload.result?.defaultReasoningEffortCounts?.verifyPrivateEffort != null ||
+      payload.result?.hasNextCursor !== true ||
+      payload.result?.returnedModelCount !== 0 ||
+      payload.result?.namesReturned !== false ||
+      payload.result?.modelIdsReturned !== false ||
+      payload.result?.descriptionsReturned !== false ||
+      payload.result?.upgradeCopyReturned !== false ||
+      payload.result?.availabilityMessagesReturned !== false ||
+      payload.result?.cursorsReturned !== false ||
+      payload.result?.rawPayloadReturned !== false ||
+      payload.policy?.readOnly !== true ||
+      payload.policy?.modelTraffic !== false ||
+      payload.policy?.modelIdsReturned !== false ||
+      payload.policy?.namesReturned !== false ||
+      payload.policy?.descriptionsReturned !== false ||
+      payload.policy?.upgradeCopyReturned !== false ||
+      payload.policy?.availabilityMessagesReturned !== false ||
+      payload.policy?.cursorsReturned !== false ||
+      payload.policy?.rawPayloadReturned !== false
+    ) {
+      throw new Error("models list did not return the safe counts-only summary shape");
+    }
+    if (calls.length !== 1 || calls[0].cwd !== "/tmp/codex-app-port-verify") {
+      throw new Error("models list did not call the app-server read path once");
+    }
+    assertNoMarkers(JSON.stringify(payload), [
+      "/tmp/codex-app-port-verify",
+      "/tmp/verify-private-home",
+      "verify-private-agent",
+      "codexHome",
+      "userAgent",
+      "verify-private-model-id",
+      "verify private model",
+      "verify private model description",
+      "verify-private-upgrade-model",
+      "verify private upgrade copy",
+      "verify private availability message",
+      "verify-private-model-cursor",
+      "verifyPrivateEffort",
+      "\"namesReturned\":true",
+      "\"modelIdsReturned\":true",
+      "\"descriptionsReturned\":true",
+      "\"upgradeCopyReturned\":true",
+      "\"availabilityMessagesReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]);
+  } finally {
+    await closeServer(server);
+  }
+  pass("dev server models list exposes counts behind opt-in without returning model details");
 }
 
 async function checkMcpServerStatusApi() {
@@ -59081,6 +59324,11 @@ async function readUiSessionToken(baseUrl) {
     !html.includes("config-requirements-features-text") ||
     !html.includes("config-requirements-hooks-text") ||
     !html.includes("config-requirements-details-text") ||
+    !html.includes("models-list-button") ||
+    !html.includes("models-list-status") ||
+    !html.includes("models-list-count-text") ||
+    !html.includes("models-list-inputs-text") ||
+    !html.includes("models-list-details-text") ||
     !html.includes("mcp-server-status-button") ||
     !html.includes("mcp-server-status-status") ||
     !html.includes("mcp-server-status-count-text") ||
@@ -59137,6 +59385,9 @@ async function readUiSessionToken(baseUrl) {
     !appScript.includes("runConfigRequirements") ||
     !appScript.includes("renderConfigRequirements") ||
     !appScript.includes("setConfigRequirementsLoading") ||
+    !appScript.includes("runModelsList") ||
+    !appScript.includes("renderModelsList") ||
+    !appScript.includes("setModelsListLoading") ||
     !appScript.includes("runMcpServerStatus") ||
     !appScript.includes("renderMcpServerStatus") ||
     !appScript.includes("setMcpServerStatusLoading") ||

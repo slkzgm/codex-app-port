@@ -5,7 +5,7 @@ export const OFFICIAL_CODEX_SOURCE_AUDIT = Object.freeze({
   stableSchemaCount: 335,
   stableDistTag: "latest",
   alphaDistTag: "0.143.0-alpha.32",
-  openaiCodexHead: "d059658ad1920bdb36e98798f44009a5f4c51735",
+  openaiCodexHead: "042e61726d28d79cad6f307b2f3ab085861c2212",
   localSchemaStatus: "matches-stable-cli",
 });
 

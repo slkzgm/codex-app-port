@@ -17,6 +17,7 @@ import {
   runMcpServerOauthLoginProbe,
   runMcpServerReloadProbe,
   runMcpServerStatusReadProbe,
+  runModelsListReadProbe,
   runMcpToolCallProbe,
   runMcpResourceReadProbe,
   runPluginContentReadProbe,
@@ -2610,6 +2611,72 @@ test("runAppsListReadProbe returns app counts without app details", async () => 
       delete process.env.CODEX_APP_PORT_ALLOW_APPS_LIST;
     } else {
       process.env.CODEX_APP_PORT_ALLOW_APPS_LIST = previous;
+    }
+  }
+});
+
+test("runModelsListReadProbe returns model counts without model details", async () => {
+  const previous = process.env.CODEX_APP_PORT_ALLOW_MODELS_LIST;
+  process.env.CODEX_APP_PORT_ALLOW_MODELS_LIST = "1";
+  try {
+    const summary = await runModelsListReadProbe({
+      codexBin: process.execPath,
+      codexArgs: [mockServer.pathname],
+      cwd: process.cwd(),
+      timeoutMs: 1_000,
+    });
+    const models = summary.probes.models;
+    const serialized = JSON.stringify(summary);
+    assert.equal(summary.ok, true);
+    assert.equal(models.ok, true);
+    assert.equal(models.modelCount, 2);
+    assert.equal(models.defaultCount, 1);
+    assert.equal(models.hiddenCount, 1);
+    assert.equal(models.visibleCount, 1);
+    assert.equal(models.textInputCount, 2);
+    assert.equal(models.imageInputCount, 1);
+    assert.equal(models.personalityCount, 1);
+    assert.equal(models.upgradeInfoCount, 1);
+    assert.equal(models.availabilityNuxCount, 1);
+    assert.equal(models.serviceTierCount, 1);
+    assert.equal(models.reasoningEffortOptionCount, 1);
+    assert.equal(models.descriptionCount, 2);
+    assert.equal(models.displayNameCount, 2);
+    assert.equal(models.hasNextCursor, true);
+    assert.equal(models.returnedModelCount, 0);
+    assert.equal(models.namesReturned, false);
+    assert.equal(models.modelIdsReturned, false);
+    assert.equal(models.descriptionsReturned, false);
+    assert.equal(models.upgradeCopyReturned, false);
+    assert.equal(models.availabilityMessagesReturned, false);
+    assert.equal(models.rawPayloadReturned, false);
+    for (const marker of [
+      "private-model-id",
+      "private-model",
+      "private-model-display",
+      "private model description",
+      "private reasoning description",
+      "private-tier-id",
+      "private tier",
+      "private tier description",
+      "private availability message",
+      "private-upgrade-model",
+      "private upgrade copy",
+      "private-hidden-model-id",
+      "private-hidden-model",
+      "private hidden model description",
+      "private-model-cursor",
+      "/tmp/mock-workspace",
+      "codexHome",
+      "userAgent",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    if (previous === undefined) {
+      delete process.env.CODEX_APP_PORT_ALLOW_MODELS_LIST;
+    } else {
+      process.env.CODEX_APP_PORT_ALLOW_MODELS_LIST = previous;
     }
   }
 });

@@ -35,6 +35,7 @@ import {
   runLiveSessionControlProbe,
   runLoadedSessionsProbe,
   runMcpServerStatusReadProbe,
+  runModelsListReadProbe,
   runMcpServerOauthLoginProbe,
   runMcpServerReloadProbe,
   runMcpToolCallProbe,
@@ -13160,6 +13161,7 @@ export function createDevServer({
   accountUsageFn = runAccountUsageReadProbe,
   accountWorkspaceMessagesFn = runAccountWorkspaceMessagesReadProbe,
   appsListFn = runAppsListReadProbe,
+  modelsListFn = runModelsListReadProbe,
   configRequirementsFn = runConfigRequirementsReadProbe,
   mcpServerStatusFn = runMcpServerStatusReadProbe,
   permissionProfilesFn = runPermissionProfilesReadProbe,
@@ -13239,6 +13241,7 @@ export function createDevServer({
   accountWorkspaceMessagesEnabled =
     process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_WORKSPACE_MESSAGES === "1",
   appsListEnabled = process.env.CODEX_APP_PORT_ALLOW_APPS_LIST === "1",
+  modelsListEnabled = process.env.CODEX_APP_PORT_ALLOW_MODELS_LIST === "1",
   configRequirementsEnabled = process.env.CODEX_APP_PORT_ALLOW_CONFIG_REQUIREMENTS === "1",
   mcpServerStatusEnabled = process.env.CODEX_APP_PORT_ALLOW_MCP_SERVER_STATUS === "1",
   permissionProfilesEnabled = process.env.CODEX_APP_PORT_ALLOW_PERMISSION_PROFILES === "1",
@@ -13404,6 +13407,7 @@ export function createDevServer({
       accountUsageFn,
       accountWorkspaceMessagesFn,
       appsListFn,
+      modelsListFn,
       configRequirementsFn,
       mcpServerStatusFn,
       permissionProfilesFn,
@@ -13479,6 +13483,7 @@ export function createDevServer({
       accountUsageEnabled,
       accountWorkspaceMessagesEnabled,
       appsListEnabled,
+      modelsListEnabled,
       configRequirementsEnabled,
       mcpServerStatusEnabled,
       permissionProfilesEnabled,
@@ -15023,6 +15028,48 @@ export async function handleRequest(request, response, options) {
       sendJson(response, error.statusCode ?? 502, {
         ok: false,
         error: cleanDisplayText(error.message, 200) ?? "Invalid config requirements request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/models-list") {
+    if (request.method !== "GET") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        url.searchParams.get("workspace"),
+      );
+      if (!options.modelsListEnabled) {
+        sendJson(response, 200, buildModelsListBlockedPayload({ workspace }));
+        return;
+      }
+      const payload = await options.modelsListFn({
+        codexBin: options.codexBin,
+        cwd: workspace.cwd,
+        timeoutMs: options.timeoutMs,
+      });
+      sendJson(
+        response,
+        200,
+        sanitizeModelsListPayload(payload, {
+          workspace,
+          enabled: true,
+        }),
+      );
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 502, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid models list request",
       });
     }
     return;
@@ -20100,6 +20147,7 @@ export async function handleRequest(request, response, options) {
             accountUsageEnabled: options.accountUsageEnabled,
             accountWorkspaceMessagesEnabled: options.accountWorkspaceMessagesEnabled,
             appsListEnabled: options.appsListEnabled,
+            modelsListEnabled: options.modelsListEnabled,
             configRequirementsEnabled: options.configRequirementsEnabled,
             mcpServerStatusEnabled: options.mcpServerStatusEnabled,
             permissionProfilesEnabled: options.permissionProfilesEnabled,
@@ -20153,6 +20201,7 @@ export async function handleRequest(request, response, options) {
           accountUsageEnabled: options.accountUsageEnabled,
           accountWorkspaceMessagesEnabled: options.accountWorkspaceMessagesEnabled,
           appsListEnabled: options.appsListEnabled,
+          modelsListEnabled: options.modelsListEnabled,
           configRequirementsEnabled: options.configRequirementsEnabled,
           mcpServerStatusEnabled: options.mcpServerStatusEnabled,
           permissionProfilesEnabled: options.permissionProfilesEnabled,
@@ -52459,6 +52508,7 @@ export function sanitizeSettingsIntegrationsPayload(
     accountUsageEnabled = false,
     accountWorkspaceMessagesEnabled = false,
     appsListEnabled = false,
+    modelsListEnabled = false,
     configRequirementsEnabled = false,
     mcpServerStatusEnabled = false,
     permissionProfilesEnabled = false,
@@ -52507,6 +52557,7 @@ export function sanitizeSettingsIntegrationsPayload(
   const usageEnabled = Boolean(accountUsageEnabled);
   const workspaceMessagesEnabled = Boolean(accountWorkspaceMessagesEnabled);
   const appsReadEnabled = Boolean(appsListEnabled);
+  const modelsReadEnabled = Boolean(modelsListEnabled);
   const requirementsEnabled = Boolean(configRequirementsEnabled);
   const mcpStatusEnabled = Boolean(mcpServerStatusEnabled);
   const profilesEnabled = Boolean(permissionProfilesEnabled);
@@ -52556,6 +52607,7 @@ export function sanitizeSettingsIntegrationsPayload(
     accountUsageEnabled: usageEnabled,
     accountWorkspaceMessagesEnabled: workspaceMessagesEnabled,
     appsListEnabled: appsReadEnabled,
+    modelsListEnabled: modelsReadEnabled,
     configRequirementsEnabled: requirementsEnabled,
     mcpServerStatusEnabled: mcpStatusEnabled,
     permissionProfilesEnabled: profilesEnabled,
@@ -52620,7 +52672,8 @@ export function sanitizeSettingsIntegrationsPayload(
         configRequirementsEnabled: requirementsEnabled,
         mcpServerStatusAvailable: inventory.mcp.ok || mcpStatusEnabled,
         mcpServerStatusEnabled: mcpStatusEnabled,
-        modelListingAvailable: inventory.models.ok,
+        modelListingAvailable: inventory.models.ok || modelsReadEnabled,
+        modelsListEnabled: modelsReadEnabled,
         modelProviderCapabilitiesAvailable: inventory.modelProviderCapabilities.ok,
         collaborationModeListingAvailable: inventory.collaborationModes.ok,
         permissionProfileListingAvailable: inventory.permissionProfiles.ok || profilesEnabled,
@@ -52662,7 +52715,9 @@ export function sanitizeSettingsIntegrationsPayload(
                 ? "remote-control-disable-opt-in-only"
                 : environmentAddEnabled
                   ? "environment-add-opt-in-only"
-                : "counts-only-inventory",
+                : modelsReadEnabled
+                  ? "models-list-counts-only"
+                  : "counts-only-inventory",
       },
       auth: {
         state:
@@ -58884,6 +58939,167 @@ export function buildConfigRequirementsBlockedPayload({ workspace } = {}) {
   };
 }
 
+export function buildModelsListBlockedPayload({ workspace } = {}) {
+  const models = sanitizeModelsInventory(null, { namesEnabled: false });
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["model/list"],
+    },
+    settings: {
+      modelListingAvailable: true,
+      modelsListEnabled: false,
+      appServerTraffic: false,
+      namesReturned: false,
+      modelIdsReturned: false,
+      descriptionsReturned: false,
+      upgradeCopyReturned: false,
+      availabilityMessagesReturned: false,
+      cursorsReturned: false,
+      rawPayloadReturned: false,
+      reason: "models-list-requires-opt-in",
+    },
+    probes: {
+      models,
+    },
+    result: {
+      status: "blocked",
+      modelsListEnabled: false,
+      appServerTraffic: false,
+      modelCount: 0,
+      defaultCount: 0,
+      hiddenCount: 0,
+      visibleCount: 0,
+      textInputCount: 0,
+      imageInputCount: 0,
+      personalityCount: 0,
+      upgradeCount: 0,
+      upgradeInfoCount: 0,
+      availabilityNuxCount: 0,
+      serviceTierCount: 0,
+      additionalSpeedTierCount: 0,
+      reasoningEffortOptionCount: 0,
+      descriptionCount: 0,
+      displayNameCount: 0,
+      defaultReasoningEffortCounts: {},
+      hasNextCursor: false,
+      returnedModelCount: 0,
+      namesReturned: false,
+      modelIdsReturned: false,
+      descriptionsReturned: false,
+      upgradeCopyReturned: false,
+      availabilityMessagesReturned: false,
+      cursorsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: modelsListPolicy({ appServerTraffic: false }),
+    notifications: sanitizeNotificationCounts(null),
+  };
+}
+
+export function sanitizeModelsListPayload(
+  payload,
+  { workspace = null, enabled = false } = {},
+) {
+  const models = sanitizeModelsInventory(payload?.probes?.models, { namesEnabled: false });
+  const status = enabled ? "available" : "blocked";
+  return {
+    ok: Boolean(payload?.ok),
+    generatedAt: payload?.generatedAt ?? new Date().toISOString(),
+    transport: cleanDisplayText(payload?.transport, 80),
+    protocol: cleanDisplayText(payload?.protocol, 80),
+    initialize: sanitizeInitialize(payload?.initialize),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: Boolean(enabled),
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["model/list"],
+    },
+    settings: {
+      modelListingAvailable: true,
+      modelsListEnabled: Boolean(enabled),
+      appServerTraffic: Boolean(enabled),
+      namesReturned: false,
+      modelIdsReturned: false,
+      descriptionsReturned: false,
+      upgradeCopyReturned: false,
+      availabilityMessagesReturned: false,
+      cursorsReturned: false,
+      rawPayloadReturned: false,
+      reason: Boolean(enabled) ? "models-list-counts-only" : "models-list-requires-opt-in",
+    },
+    probes: {
+      models,
+    },
+    result: {
+      status,
+      modelsListEnabled: Boolean(enabled),
+      appServerTraffic: Boolean(enabled),
+      modelCount: models.modelCount,
+      defaultCount: models.defaultCount,
+      hiddenCount: models.hiddenCount,
+      visibleCount: models.visibleCount,
+      textInputCount: models.textInputCount,
+      imageInputCount: models.imageInputCount,
+      personalityCount: models.personalityCount,
+      upgradeCount: models.upgradeCount,
+      upgradeInfoCount: models.upgradeInfoCount,
+      availabilityNuxCount: models.availabilityNuxCount,
+      serviceTierCount: models.serviceTierCount,
+      additionalSpeedTierCount: models.additionalSpeedTierCount,
+      reasoningEffortOptionCount: models.reasoningEffortOptionCount,
+      descriptionCount: models.descriptionCount,
+      displayNameCount: models.displayNameCount,
+      defaultReasoningEffortCounts: models.defaultReasoningEffortCounts,
+      hasNextCursor: models.hasNextCursor,
+      returnedModelCount: models.returnedModelCount,
+      namesReturned: false,
+      modelIdsReturned: false,
+      descriptionsReturned: false,
+      upgradeCopyReturned: false,
+      availabilityMessagesReturned: false,
+      cursorsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: modelsListPolicy({ appServerTraffic: Boolean(enabled) }),
+    notifications: sanitizeNotificationCounts(payload?.notifications),
+  };
+}
+
+function modelsListPolicy({ appServerTraffic }) {
+  return {
+    readOnly: true,
+    appServerTraffic: Boolean(appServerTraffic),
+    modelTraffic: false,
+    commandTraffic: false,
+    settingsWrites: false,
+    authCallbacks: false,
+    authMutations: false,
+    toolInvocation: false,
+    installsEnabled: false,
+    secretsReturned: false,
+    tokensReturned: false,
+    namesReturned: false,
+    modelIdsReturned: false,
+    descriptionsReturned: false,
+    upgradeCopyReturned: false,
+    availabilityMessagesReturned: false,
+    cursorsReturned: false,
+    urlsReturned: false,
+    pathsReturned: false,
+    rawPayloadReturned: false,
+    requiresExplicitEnablement: true,
+    browserMethodCallsAccepted: true,
+    implemented: true,
+  };
+}
+
 export function buildAppsListBlockedPayload({ workspace } = {}) {
   const apps = sanitizeAppsInventory(null, { namesEnabled: false });
   return {
@@ -64841,6 +65057,7 @@ export function buildSettingsIntegrations({
   accountUsageEnabled = false,
   accountWorkspaceMessagesEnabled = false,
   appsListEnabled = false,
+  modelsListEnabled = false,
   configRequirementsEnabled = false,
   mcpServerStatusEnabled = false,
   permissionProfilesEnabled = false,
@@ -64889,6 +65106,7 @@ export function buildSettingsIntegrations({
   const usageEnabled = Boolean(accountUsageEnabled);
   const workspaceMessagesEnabled = Boolean(accountWorkspaceMessagesEnabled);
   const appsReadEnabled = Boolean(appsListEnabled);
+  const modelsReadEnabled = Boolean(modelsListEnabled);
   const requirementsEnabled = Boolean(configRequirementsEnabled);
   const mcpStatusEnabled = Boolean(mcpServerStatusEnabled);
   const profilesEnabled = Boolean(permissionProfilesEnabled);
@@ -64919,6 +65137,7 @@ export function buildSettingsIntegrations({
   const integrationScope = buildIntegrationActionScope({
     enabledReadMethods: [
       "config/read",
+      modelsReadEnabled ? "model/list" : null,
       appsReadEnabled ? "app/list" : null,
       requirementsEnabled ? "configRequirements/read" : null,
       mcpStatusEnabled ? "mcpServerStatus/list" : null,
@@ -64939,6 +65158,7 @@ export function buildSettingsIntegrations({
     accountUsageEnabled: usageEnabled,
     accountWorkspaceMessagesEnabled: workspaceMessagesEnabled,
     appsListEnabled: appsReadEnabled,
+    modelsListEnabled: modelsReadEnabled,
     configRequirementsEnabled: requirementsEnabled,
     mcpServerStatusEnabled: mcpStatusEnabled,
     permissionProfilesEnabled: profilesEnabled,
@@ -64981,6 +65201,7 @@ export function buildSettingsIntegrations({
       modelTraffic: false,
       auditedReadMethods: [
         "config/read",
+        modelsReadEnabled ? "model/list" : null,
         appsReadEnabled ? "app/list" : null,
         requirementsEnabled ? "configRequirements/read" : null,
         mcpStatusEnabled ? "mcpServerStatus/list" : null,
@@ -65012,7 +65233,8 @@ export function buildSettingsIntegrations({
         configRequirementsEnabled: requirementsEnabled,
         mcpServerStatusAvailable: mcpStatusEnabled,
         mcpServerStatusEnabled: mcpStatusEnabled,
-        modelListingAvailable: false,
+        modelListingAvailable: modelsReadEnabled,
+        modelsListEnabled: modelsReadEnabled,
         modelProviderCapabilitiesAvailable: false,
         collaborationModeListingAvailable: false,
         permissionProfileListingAvailable: profilesEnabled,
@@ -67694,6 +67916,7 @@ function buildIntegrationActionScope({
   accountUsageEnabled = false,
   accountWorkspaceMessagesEnabled = false,
   appsListEnabled = false,
+  modelsListEnabled = false,
   configRequirementsEnabled = false,
   mcpServerStatusEnabled = false,
   permissionProfilesEnabled = false,
@@ -67791,6 +68014,7 @@ function buildIntegrationActionScope({
     accountUsageEnabled: Boolean(accountUsageEnabled),
     accountWorkspaceMessagesEnabled: Boolean(accountWorkspaceMessagesEnabled),
     appsListEnabled: Boolean(appsListEnabled),
+    modelsListEnabled: Boolean(modelsListEnabled),
     configRequirementsEnabled: Boolean(configRequirementsEnabled),
     mcpServerStatusEnabled: Boolean(mcpServerStatusEnabled),
     permissionProfilesEnabled: Boolean(permissionProfilesEnabled),

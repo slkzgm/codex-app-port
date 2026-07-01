@@ -261,6 +261,11 @@ const elements = {
   ),
   configRequirementsHooksText: document.querySelector("#config-requirements-hooks-text"),
   configRequirementsDetailsText: document.querySelector("#config-requirements-details-text"),
+  modelsListButton: document.querySelector("#models-list-button"),
+  modelsListStatus: document.querySelector("#models-list-status"),
+  modelsListCountText: document.querySelector("#models-list-count-text"),
+  modelsListInputsText: document.querySelector("#models-list-inputs-text"),
+  modelsListDetailsText: document.querySelector("#models-list-details-text"),
   mcpServerStatusButton: document.querySelector("#mcp-server-status-button"),
   mcpServerStatusStatus: document.querySelector("#mcp-server-status-status"),
   mcpServerStatusCountText: document.querySelector("#mcp-server-status-count-text"),
@@ -1269,6 +1274,10 @@ elements.workspaceSelect.addEventListener("change", () => {
   elements.configRequirementsFeaturesText.textContent = "0";
   elements.configRequirementsHooksText.textContent = "0";
   elements.configRequirementsDetailsText.textContent = "Hidden";
+  elements.modelsListStatus.textContent = "Model list disabled by default.";
+  elements.modelsListCountText.textContent = "0";
+  elements.modelsListInputsText.textContent = "0 / 0";
+  elements.modelsListDetailsText.textContent = "Hidden";
   elements.mcpServerStatusStatus.textContent = "MCP status disabled by default.";
   elements.mcpServerStatusCountText.textContent = "0";
   elements.mcpServerStatusToolsText.textContent = "0";
@@ -2288,6 +2297,10 @@ elements.configRequirementsButton.addEventListener("click", () => {
   runConfigRequirements();
 });
 
+elements.modelsListButton.addEventListener("click", () => {
+  runModelsList();
+});
+
 elements.mcpServerStatusButton.addEventListener("click", () => {
   runMcpServerStatus();
 });
@@ -2827,6 +2840,16 @@ function configRequirementsEndpoint() {
   const params = new URLSearchParams();
   params.set("workspace", selectedWorkspaceId);
   return `/api/config-requirements?${params.toString()}`;
+}
+
+function modelsListEndpoint() {
+  if (!selectedWorkspaceId) {
+    return "/api/models-list";
+  }
+
+  const params = new URLSearchParams();
+  params.set("workspace", selectedWorkspaceId);
+  return `/api/models-list?${params.toString()}`;
 }
 
 function mcpServerStatusEndpoint() {
@@ -5060,6 +5083,28 @@ async function runMcpServerStatus() {
     renderError(error);
   } finally {
     setMcpServerStatusLoading(false);
+  }
+}
+
+async function runModelsList() {
+  setModelsListLoading(true);
+  hideError();
+
+  try {
+    const response = await fetch(modelsListEndpoint(), {
+      headers: apiHeaders(),
+      cache: "no-store",
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderModelsList(payload);
+  } catch (error) {
+    elements.modelsListStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    setModelsListLoading(false);
   }
 }
 
@@ -14145,8 +14190,10 @@ function renderSettingsIntegrations(payload) {
   elements.requirementsStateText.textContent = settings.requirementsAvailable
     ? `${inventory.requirements?.featureRequirementCount ?? 0} features`
     : "Blocked";
-  elements.modelInventoryStateText.textContent = settings.modelListingAvailable
+  elements.modelInventoryStateText.textContent = inventory.models?.ok
     ? `${inventory.models?.modelCount ?? 0} models`
+    : settings.modelsListEnabled
+      ? "Read gate"
     : "Blocked";
   elements.modelCapabilitiesStateText.textContent = settings.modelProviderCapabilitiesAvailable
     ? `${inventory.modelProviderCapabilities?.enabledCapabilityCount ?? 0} enabled`
@@ -15905,6 +15952,31 @@ function renderConfigRequirements(payload) {
   elements.requirementsStateText.textContent = blocked
     ? "Blocked"
     : `${featureCount} features`;
+}
+
+function renderModelsList(payload) {
+  const settings = payload.settings ?? {};
+  const result = payload.result ?? {};
+  const blocked = settings.modelsListEnabled !== true || payload.appServer?.touched !== true;
+  const modelCount = result.modelCount ?? payload.probes?.models?.modelCount ?? 0;
+  const textInputCount = result.textInputCount ?? payload.probes?.models?.textInputCount ?? 0;
+  const imageInputCount = result.imageInputCount ?? payload.probes?.models?.imageInputCount ?? 0;
+  const status = result.status ?? (blocked ? "blocked" : "available");
+  elements.modelsListStatus.textContent = blocked ? "Read blocked" : status;
+  elements.modelsListCountText.textContent = String(modelCount);
+  elements.modelsListInputsText.textContent = `${textInputCount} / ${imageInputCount}`;
+  elements.modelsListDetailsText.textContent =
+    result.namesReturned ||
+    result.modelIdsReturned ||
+    result.descriptionsReturned ||
+    result.upgradeCopyReturned ||
+    result.availabilityMessagesReturned ||
+    result.cursorsReturned ||
+    result.rawPayloadReturned ||
+    settings.rawPayloadReturned
+      ? "Returned"
+      : "Hidden";
+  elements.modelInventoryStateText.textContent = blocked ? "Blocked" : `${modelCount} models`;
 }
 
 function renderMcpServerStatus(payload) {
@@ -24111,6 +24183,14 @@ function setConfigRequirementsLoading(isLoading) {
     : "Requirements Check";
   if (isLoading) {
     elements.configRequirementsStatus.textContent = "Checking";
+  }
+}
+
+function setModelsListLoading(isLoading) {
+  elements.modelsListButton.disabled = isLoading;
+  elements.modelsListButton.textContent = isLoading ? "Checking" : "Models Check";
+  if (isLoading) {
+    elements.modelsListStatus.textContent = "Checking";
   }
 }
 
