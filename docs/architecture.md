@@ -868,6 +868,22 @@ Current M1 status:
   work-log review side effects, config writes, filesystem access, network
   access, model traffic, mutations, paths, URLs, secrets, raw payloads, and
   app-server traffic blocked
+- done: read-only Codex Cloud environments catalog in
+  `/api/settings-integrations`, exposing only static official Cloud
+  environments guide keys plus local boundary keys/groups/states/sources/
+  counts/redaction flags for cloud task lifecycle, container checkout, setup
+  and maintenance phases, default image, package-version pinning, environment
+  variables, secrets, automatic/manual setup, container caching, setup/agent
+  internet policy, and network proxy concepts, with environment names, settings
+  URLs, repository names, branches, SHAs, setup/maintenance script content,
+  package manager values, runtime versions, variable values, secret values,
+  image references, command text, diffs, PR URLs, cache state, proxy values,
+  task output, cloud task starts, container creation, repository checkout,
+  setup/maintenance execution, dependency installs, package pinning, variable
+  application, secret decryption, cache resets, PR/follow-up actions, proxy
+  configuration, agent commands, filesystem access, network access, model
+  traffic, mutations, paths, URLs, secrets, raw payloads, and app-server traffic
+  blocked
 - done: read-only Codex Environment variables catalog in
   `/api/settings-integrations`, exposing only static official Environment
   variables documentation keys plus local boundary keys/groups/states/sources/

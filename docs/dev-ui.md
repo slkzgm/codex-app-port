@@ -1099,6 +1099,23 @@ enable agent internet, apply domain or method allowlists, enable unrestricted
 internet, run setup scripts, start network probes, review work logs, write
 config, access files/network, create model traffic, or mutate state.
 
+The same response exposes `codexCloudEnvironments` as a static review-only
+catalog for official Codex Cloud environments behavior. The UI shows only
+catalog counts, entry keys, groups, state/source chips, and redaction chips for
+cloud task lifecycle, container checkout, setup and maintenance phases, default
+image, package-version pinning, environment variable and secret behavior,
+automatic/manual setup, cache behavior, setup/agent internet policy, and
+network proxy concepts. It must not show environment names, settings URLs,
+repository names, branches, SHAs, setup or maintenance script content, package
+manager values, runtime versions, environment variable values, secret values,
+image references, command text, diffs, PR URLs, cache state, proxy values, task
+output, paths, URLs, secrets, raw payloads, or app-server traffic, and it must
+not start cloud tasks, create containers, check out repositories, run setup or
+maintenance scripts, install dependencies, pin package versions, apply
+variables, decrypt secrets, reset caches, open PRs, ask follow-ups, configure
+proxies, run agent commands, access files/network, create model traffic, or
+mutate state.
+
 The same response exposes `codexManagedConfiguration` as a static review-only
 catalog for official Codex managed-configuration behavior. The UI shows only
 catalog counts, entry keys, groups, state/source chips, and redaction chips for

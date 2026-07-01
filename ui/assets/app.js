@@ -81,6 +81,10 @@ const elements = {
   codexAgentInternetAccessValuesText: document.querySelector(
     "#codex-agent-internet-access-values-text",
   ),
+  codexCloudEnvironmentsText: document.querySelector("#codex-cloud-environments-text"),
+  codexCloudEnvironmentsValuesText: document.querySelector(
+    "#codex-cloud-environments-values-text",
+  ),
   codexGovernanceText: document.querySelector("#codex-governance-text"),
   codexGovernanceValuesText: document.querySelector("#codex-governance-values-text"),
   codexManagedConfigurationText: document.querySelector("#codex-managed-configuration-text"),
@@ -512,6 +516,7 @@ const elements = {
   codexNonInteractiveList: document.querySelector("#codex-noninteractive-list"),
   codexAgentsSdkList: document.querySelector("#codex-agents-sdk-list"),
   codexAgentInternetAccessList: document.querySelector("#codex-agent-internet-access-list"),
+  codexCloudEnvironmentsList: document.querySelector("#codex-cloud-environments-list"),
   codexGovernanceList: document.querySelector("#codex-governance-list"),
   codexManagedConfigurationList: document.querySelector("#codex-managed-configuration-list"),
   codexEnvironmentVariablesList: document.querySelector("#codex-environment-variables-list"),
@@ -10590,6 +10595,7 @@ function renderSettingsIntegrations(payload) {
   const codexNonInteractive = payload.codexNonInteractive ?? {};
   const codexAgentsSdk = payload.codexAgentsSdk ?? {};
   const codexAgentInternetAccess = payload.codexAgentInternetAccess ?? {};
+  const codexCloudEnvironments = payload.codexCloudEnvironments ?? {};
   const codexGovernance = payload.codexGovernance ?? {};
   const codexManagedConfiguration = payload.codexManagedConfiguration ?? {};
   const codexEnvironmentVariables = payload.codexEnvironmentVariables ?? {};
@@ -11573,6 +11579,55 @@ function renderSettingsIntegrations(payload) {
     codexAgentInternetAccess.secretsReturned ||
     codexAgentInternetAccess.rawPayloadsReturned ||
     codexAgentInternetAccess.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexCloudEnvironmentsText.textContent = codexCloudEnvironments.returned
+    ? `${codexCloudEnvironments.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexCloudEnvironments.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexCloudEnvironmentsValuesText.textContent =
+    codexCloudEnvironments.environmentNamesReturned ||
+    codexCloudEnvironments.settingsUrlsReturned ||
+    codexCloudEnvironments.repositoryNamesReturned ||
+    codexCloudEnvironments.branchOrShaValuesReturned ||
+    codexCloudEnvironments.setupScriptContentsReturned ||
+    codexCloudEnvironments.maintenanceScriptContentsReturned ||
+    codexCloudEnvironments.packageManagerValuesReturned ||
+    codexCloudEnvironments.runtimeVersionValuesReturned ||
+    codexCloudEnvironments.environmentVariableValuesReturned ||
+    codexCloudEnvironments.secretValuesReturned ||
+    codexCloudEnvironments.imageReferencesReturned ||
+    codexCloudEnvironments.commandTextsReturned ||
+    codexCloudEnvironments.diffContentsReturned ||
+    codexCloudEnvironments.pullRequestUrlsReturned ||
+    codexCloudEnvironments.cacheStatesReturned ||
+    codexCloudEnvironments.proxyValuesReturned ||
+    codexCloudEnvironments.taskOutputsReturned ||
+    codexCloudEnvironments.cloudTasksStarted ||
+    codexCloudEnvironments.containersCreated ||
+    codexCloudEnvironments.repositoriesCheckedOut ||
+    codexCloudEnvironments.setupScriptsExecuted ||
+    codexCloudEnvironments.maintenanceScriptsExecuted ||
+    codexCloudEnvironments.dependenciesInstalled ||
+    codexCloudEnvironments.packageVersionsPinned ||
+    codexCloudEnvironments.environmentVariablesApplied ||
+    codexCloudEnvironments.secretsDecrypted ||
+    codexCloudEnvironments.cacheResets ||
+    codexCloudEnvironments.pullRequestsOpened ||
+    codexCloudEnvironments.followupsStarted ||
+    codexCloudEnvironments.networkProxiesConfigured ||
+    codexCloudEnvironments.agentCommandsRun ||
+    codexCloudEnvironments.filesystemReads ||
+    codexCloudEnvironments.filesystemWrites ||
+    codexCloudEnvironments.networkAccess ||
+    codexCloudEnvironments.modelTraffic ||
+    codexCloudEnvironments.mutationEnabled ||
+    codexCloudEnvironments.pathsReturned ||
+    codexCloudEnvironments.urlsReturned ||
+    codexCloudEnvironments.secretsReturned ||
+    codexCloudEnvironments.rawPayloadsReturned ||
+    codexCloudEnvironments.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexGovernanceText.textContent = codexGovernance.returned
@@ -12753,6 +12808,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexNonInteractiveCatalog(codexNonInteractive);
   renderCodexAgentsSdkCatalog(codexAgentsSdk);
   renderCodexAgentInternetAccessCatalog(codexAgentInternetAccess);
+  renderCodexCloudEnvironmentsCatalog(codexCloudEnvironments);
   renderCodexGovernanceCatalog(codexGovernance);
   renderCodexManagedConfigurationCatalog(codexManagedConfiguration);
   renderCodexEnvironmentVariablesCatalog(codexEnvironmentVariables);
@@ -16315,6 +16371,108 @@ function renderCodexAgentInternetAccessCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexAgentInternetAccessList.append(row);
+  }
+}
+
+function renderCodexCloudEnvironmentsCatalog(summary) {
+  elements.codexCloudEnvironmentsList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexCloudEnvironmentsList.append(
+      emptyState("No Codex cloud environments catalog returned."),
+    );
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "cloud";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.environmentNameReturned
+        ? "environment names returned"
+        : "environment names hidden",
+      entry.settingsUrlReturned ? "settings URLs returned" : "settings URLs hidden",
+      entry.repositoryNameReturned ? "repository names returned" : "repository names hidden",
+      entry.branchOrShaReturned ? "branch/SHA values returned" : "branch/SHA values hidden",
+      entry.setupScriptContentReturned
+        ? "setup script content returned"
+        : "setup script content hidden",
+      entry.maintenanceScriptContentReturned
+        ? "maintenance script content returned"
+        : "maintenance script content hidden",
+      entry.packageManagerValueReturned
+        ? "package manager values returned"
+        : "package manager values hidden",
+      entry.runtimeVersionValueReturned
+        ? "runtime version values returned"
+        : "runtime version values hidden",
+      entry.environmentVariableValueReturned
+        ? "environment variable values returned"
+        : "environment variable values hidden",
+      entry.secretValueReturned ? "secret values returned" : "secret values hidden",
+      entry.imageReferenceReturned ? "image references returned" : "image references hidden",
+      entry.commandTextReturned ? "command text returned" : "command text hidden",
+      entry.diffContentReturned ? "diff content returned" : "diff content hidden",
+      entry.pullRequestUrlReturned ? "PR URLs returned" : "PR URLs hidden",
+      entry.cacheStateReturned ? "cache state returned" : "cache state hidden",
+      entry.proxyValueReturned ? "proxy values returned" : "proxy values hidden",
+      entry.taskOutputReturned ? "task output returned" : "task output hidden",
+      entry.cloudTaskStarted ? "cloud task started" : "cloud tasks blocked",
+      entry.containerCreated ? "container created" : "container creation blocked",
+      entry.repositoryCheckedOut ? "repository checked out" : "repository checkout blocked",
+      entry.setupScriptExecuted ? "setup script executed" : "setup script execution blocked",
+      entry.maintenanceScriptExecuted
+        ? "maintenance script executed"
+        : "maintenance script execution blocked",
+      entry.dependenciesInstalled ? "dependencies installed" : "dependency installs blocked",
+      entry.packageVersionsPinned ? "package versions pinned" : "package pinning blocked",
+      entry.environmentVariablesApplied
+        ? "environment variables applied"
+        : "environment variable application blocked",
+      entry.secretsDecrypted ? "secrets decrypted" : "secret decryption blocked",
+      entry.cacheReset ? "cache reset" : "cache reset blocked",
+      entry.pullRequestOpened ? "PR opened" : "PR creation blocked",
+      entry.followupStarted ? "follow-up started" : "follow-ups blocked",
+      entry.networkProxyConfigured ? "network proxy configured" : "network proxy blocked",
+      entry.agentCommandsRun ? "agent commands run" : "agent commands blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem written" : "filesystem writes blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.modelTraffic ? "model traffic" : "model traffic blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexCloudEnvironmentsList.append(row);
   }
 }
 

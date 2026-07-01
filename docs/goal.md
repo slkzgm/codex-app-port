@@ -475,6 +475,22 @@ Target parity with the Codex desktop workflow:
   traffic, and it does not enable agent internet, apply domain or method
   allowlists, run setup scripts, start network probes, review work logs, write
   config, create model traffic, access files/network, or mutate state.
+- `/api/settings-integrations` now also exposes a read-only Codex Cloud
+  environments catalog aligned to the official Cloud environments guide. It
+  returns only static keys, groups, states, sources, counts, and redaction flags
+  for cloud task lifecycle, container checkout, setup and maintenance phases,
+  default image, package-version pinning, environment variable and secret
+  behavior, automatic/manual setup, cache behavior, setup/agent internet
+  policy, and network proxy concepts. It does not return environment names,
+  settings URLs, repository names, branches, SHAs, setup or maintenance script
+  content, package manager values, runtime versions, environment variable
+  values, secret values, image references, command text, diffs, PR URLs, cache
+  state, proxy values, task output, paths, URLs, secrets, raw payloads, or
+  app-server traffic, and it does not start cloud tasks, create containers,
+  check out repositories, run setup or maintenance scripts, install
+  dependencies, pin package versions, apply variables, decrypt secrets, reset
+  caches, open PRs, ask follow-ups, configure proxies, run agent commands,
+  access files/network, create model traffic, or mutate state.
 - `/api/settings-integrations` now also exposes a read-only Codex Managed
   configuration catalog aligned to the official managed-configuration guide. It
   returns only static keys, groups, states, sources, counts, and redaction flags

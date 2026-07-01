@@ -39112,6 +39112,245 @@ function assertCodexAgentInternetAccessCatalog(payload) {
   }
 }
 
+function expectedCodexCloudEnvironmentsEntries() {
+  return [
+    ["cloudEnvironmentPurpose", "overview", "catalog-only", "official-codex-cloud-environments-docs"],
+    [
+      "settingsEnvironmentManagement",
+      "settings",
+      "catalog-only",
+      "official-codex-cloud-environments-docs",
+    ],
+    [
+      "cloudTaskContainerCheckout",
+      "task-lifecycle",
+      "catalog-only",
+      "official-codex-cloud-environments-docs",
+    ],
+    ["setupScriptPhase", "setup", "catalog-only", "official-codex-cloud-environments-docs"],
+    ["maintenanceScriptPhase", "setup", "catalog-only", "official-codex-cloud-environments-docs"],
+    ["internetSettingsApplication", "network", "catalog-only", "official-codex-cloud-environments-docs"],
+    ["agentCommandLoop", "agent-phase", "catalog-only", "official-codex-cloud-environments-docs"],
+    ["agentsMdCommandDiscovery", "agent-phase", "catalog-only", "official-codex-cloud-environments-docs"],
+    ["finalAnswerDiffReview", "review", "catalog-only", "official-codex-cloud-environments-docs"],
+    ["pullRequestFollowup", "review", "catalog-only", "official-codex-cloud-environments-docs"],
+    ["defaultUniversalImage", "container-image", "catalog-only", "official-codex-cloud-environments-docs"],
+    ["packageVersionPinning", "runtime-pinning", "catalog-only", "official-codex-cloud-environments-docs"],
+    [
+      "localUniversalImageReference",
+      "container-image",
+      "catalog-only",
+      "official-codex-cloud-environments-docs",
+    ],
+    [
+      "setupScriptAdditionalPackages",
+      "setup",
+      "catalog-only",
+      "official-codex-cloud-environments-docs",
+    ],
+    ["environmentVariablesFullTask", "variables", "catalog-only", "official-codex-cloud-environments-docs"],
+    ["secretsSetupOnly", "secrets", "catalog-only", "official-codex-cloud-environments-docs"],
+    ["automaticDependencySetup", "setup", "catalog-only", "official-codex-cloud-environments-docs"],
+    ["customSetupScript", "setup", "catalog-only", "official-codex-cloud-environments-docs"],
+    ["setupSessionPersistenceBoundary", "setup", "catalog-only", "official-codex-cloud-environments-docs"],
+    ["containerCacheDuration", "cache", "catalog-only", "official-codex-cloud-environments-docs"],
+    [
+      "cachedEnvironmentDefaultBranch",
+      "cache",
+      "catalog-only",
+      "official-codex-cloud-environments-docs",
+    ],
+    ["cachedResumeTaskBranch", "cache", "catalog-only", "official-codex-cloud-environments-docs"],
+    ["cacheInvalidationRules", "cache", "catalog-only", "official-codex-cloud-environments-docs"],
+    ["resetCacheControl", "cache", "catalog-only", "official-codex-cloud-environments-docs"],
+    ["sharedWorkspaceCaches", "cache", "catalog-only", "official-codex-cloud-environments-docs"],
+    ["setupPhaseInternetAccess", "network", "catalog-only", "official-codex-cloud-environments-docs"],
+    ["agentPhaseInternetDefaultOff", "network", "catalog-only", "official-codex-cloud-environments-docs"],
+    ["networkProxyBoundary", "network", "catalog-only", "official-codex-cloud-environments-docs"],
+    ["environmentSettingsOpenBoundary", "settings", "blocked", "local-cloud-environments-boundary"],
+    ["cloudTaskStartBoundary", "task-lifecycle", "blocked", "local-cloud-environments-boundary"],
+    ["containerCreateBoundary", "container", "blocked", "local-cloud-environments-boundary"],
+    ["repoCheckoutBoundary", "repository", "blocked", "local-cloud-environments-boundary"],
+    ["branchShaValueBoundary", "repository", "blocked", "local-cloud-environments-boundary"],
+    ["setupScriptContentBoundary", "setup", "blocked", "local-cloud-environments-boundary"],
+    ["maintenanceScriptContentBoundary", "setup", "blocked", "local-cloud-environments-boundary"],
+    ["packageManagerValueBoundary", "setup", "blocked", "local-cloud-environments-boundary"],
+    ["runtimeVersionValueBoundary", "runtime-pinning", "blocked", "local-cloud-environments-boundary"],
+    ["environmentVariableValueBoundary", "variables", "blocked", "local-cloud-environments-boundary"],
+    ["secretValueBoundary", "secrets", "blocked", "local-cloud-environments-boundary"],
+    ["universalImagePullBoundary", "container-image", "blocked", "local-cloud-environments-boundary"],
+    ["cacheResetBoundary", "cache", "blocked", "local-cloud-environments-boundary"],
+    ["pullRequestCreateBoundary", "review", "blocked", "local-cloud-environments-boundary"],
+    ["followupQuestionBoundary", "review", "blocked", "local-cloud-environments-boundary"],
+    ["networkProxyValueBoundary", "network", "blocked", "local-cloud-environments-boundary"],
+    ["containerCacheMutationBoundary", "cache", "blocked", "local-cloud-environments-boundary"],
+    ["agentCommandBoundary", "agent-phase", "blocked", "local-cloud-environments-boundary"],
+    ["diffContentBoundary", "review", "blocked", "local-cloud-environments-boundary"],
+    ["appServerTrafficBoundary", "transport", "blocked", "local-cloud-environments-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexCloudEnvironmentsCatalog(payload) {
+  const catalog = payload.codexCloudEnvironments;
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-cloud-environments-docs");
+  assert.equal(catalog.entryCount, 48);
+  assert.equal(catalog.officialEntryCount, 28);
+  assert.equal(catalog.localBoundaryEntryCount, 20);
+  assert.equal(catalog.catalogOnlyEntryCount, 28);
+  assert.equal(catalog.blockedEntryCount, 20);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({ key, group, state, source })),
+    expectedCodexCloudEnvironmentsEntries(),
+  );
+
+  const entryRedactionFlags = [
+    "environmentNameReturned",
+    "settingsUrlReturned",
+    "repositoryNameReturned",
+    "branchOrShaReturned",
+    "setupScriptContentReturned",
+    "maintenanceScriptContentReturned",
+    "packageManagerValueReturned",
+    "runtimeVersionValueReturned",
+    "environmentVariableValueReturned",
+    "secretValueReturned",
+    "imageReferenceReturned",
+    "commandTextReturned",
+    "diffContentReturned",
+    "pullRequestUrlReturned",
+    "cacheStateReturned",
+    "proxyValueReturned",
+    "taskOutputReturned",
+    "cloudTaskStarted",
+    "containerCreated",
+    "repositoryCheckedOut",
+    "setupScriptExecuted",
+    "maintenanceScriptExecuted",
+    "dependenciesInstalled",
+    "packageVersionsPinned",
+    "environmentVariablesApplied",
+    "secretsDecrypted",
+    "cacheReset",
+    "pullRequestOpened",
+    "followupStarted",
+    "networkProxyConfigured",
+    "agentCommandsRun",
+    "filesystemRead",
+    "filesystemWrite",
+    "networkAccess",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.cloudEnvironmentsCatalogReturned, true);
+  for (const flag of [
+    "environmentNamesReturned",
+    "settingsUrlsReturned",
+    "repositoryNamesReturned",
+    "branchOrShaValuesReturned",
+    "setupScriptContentsReturned",
+    "maintenanceScriptContentsReturned",
+    "packageManagerValuesReturned",
+    "runtimeVersionValuesReturned",
+    "environmentVariableValuesReturned",
+    "secretValuesReturned",
+    "imageReferencesReturned",
+    "commandTextsReturned",
+    "diffContentsReturned",
+    "pullRequestUrlsReturned",
+    "cacheStatesReturned",
+    "proxyValuesReturned",
+    "taskOutputsReturned",
+    "cloudTasksStarted",
+    "containersCreated",
+    "repositoriesCheckedOut",
+    "setupScriptsExecuted",
+    "maintenanceScriptsExecuted",
+    "dependenciesInstalled",
+    "packageVersionsPinned",
+    "environmentVariablesApplied",
+    "secretsDecrypted",
+    "cacheResets",
+    "pullRequestsOpened",
+    "followupsStarted",
+    "networkProxiesConfigured",
+    "agentCommandsRun",
+    "filesystemReads",
+    "filesystemWrites",
+    "networkAccess",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexCloudEnvironmentsReturned", true],
+    ["codexCloudEnvironmentsValuesReturned", false],
+    ["codexCloudEnvironmentsEnvironmentNamesReturned", false],
+    ["codexCloudEnvironmentsSettingsUrlsReturned", false],
+    ["codexCloudEnvironmentsRepositoryNamesReturned", false],
+    ["codexCloudEnvironmentsBranchOrShaValuesReturned", false],
+    ["codexCloudEnvironmentsSetupScriptContentsReturned", false],
+    ["codexCloudEnvironmentsMaintenanceScriptContentsReturned", false],
+    ["codexCloudEnvironmentsPackageManagerValuesReturned", false],
+    ["codexCloudEnvironmentsRuntimeVersionValuesReturned", false],
+    ["codexCloudEnvironmentsEnvironmentVariableValuesReturned", false],
+    ["codexCloudEnvironmentsSecretValuesReturned", false],
+    ["codexCloudEnvironmentsImageReferencesReturned", false],
+    ["codexCloudEnvironmentsCommandTextsReturned", false],
+    ["codexCloudEnvironmentsDiffContentsReturned", false],
+    ["codexCloudEnvironmentsPullRequestUrlsReturned", false],
+    ["codexCloudEnvironmentsCacheStatesReturned", false],
+    ["codexCloudEnvironmentsProxyValuesReturned", false],
+    ["codexCloudEnvironmentsTaskOutputsReturned", false],
+    ["codexCloudEnvironmentsCloudTaskStartEnabled", false],
+    ["codexCloudEnvironmentsContainerCreateEnabled", false],
+    ["codexCloudEnvironmentsRepositoryCheckoutEnabled", false],
+    ["codexCloudEnvironmentsSetupScriptExecutionEnabled", false],
+    ["codexCloudEnvironmentsMaintenanceScriptExecutionEnabled", false],
+    ["codexCloudEnvironmentsDependencyInstallEnabled", false],
+    ["codexCloudEnvironmentsPackageVersionPinningEnabled", false],
+    ["codexCloudEnvironmentsVariableApplyEnabled", false],
+    ["codexCloudEnvironmentsSecretDecryptEnabled", false],
+    ["codexCloudEnvironmentsCacheResetEnabled", false],
+    ["codexCloudEnvironmentsPullRequestOpenEnabled", false],
+    ["codexCloudEnvironmentsFollowupStartEnabled", false],
+    ["codexCloudEnvironmentsNetworkProxyConfigEnabled", false],
+    ["codexCloudEnvironmentsAgentCommandRunEnabled", false],
+    ["codexCloudEnvironmentsFilesystemAccess", false],
+    ["codexCloudEnvironmentsNetworkAccess", false],
+    ["codexCloudEnvironmentsModelTraffic", false],
+    ["codexCloudEnvironmentsMutationsEnabled", false],
+    ["codexCloudEnvironmentsPathsReturned", false],
+    ["codexCloudEnvironmentsUrlsReturned", false],
+    ["codexCloudEnvironmentsSecretsReturned", false],
+    ["codexCloudEnvironmentsRawPayloadsReturned", false],
+    ["codexCloudEnvironmentsAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexGovernanceEntries() {
   return [
     ["governanceVisibilityAuditability", "overview", "catalog-only", "official-codex-governance-docs"],
@@ -43474,6 +43713,7 @@ function assertCodexAppSettingsParity(
   assertCodexNonInteractiveCatalog(payload);
   assertCodexAgentsSdkCatalog(payload);
   assertCodexAgentInternetAccessCatalog(payload);
+  assertCodexCloudEnvironmentsCatalog(payload);
   assertCodexGovernanceCatalog(payload);
   assertCodexManagedConfigurationCatalog(payload);
   assertCodexEnvironmentVariablesCatalog(payload);

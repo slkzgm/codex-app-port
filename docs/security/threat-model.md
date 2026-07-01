@@ -695,7 +695,19 @@
   app-server traffic, and must not enable agent internet, apply domain or
   method allowlists, enable unrestricted internet, run setup scripts, start
   network probes, review work logs, write config, access filesystem or network,
-  create model traffic, or mutate agent internet access state. Its
+  create model traffic, or mutate agent internet access state. Its Codex Cloud
+  environments catalog may expose only static official-documentation keys plus
+  local boundary keys, groups, states, sources, counts, and redaction flags; it
+  must not return environment names, settings URLs, repository names, branches,
+  SHAs, setup or maintenance script content, package manager values, runtime
+  versions, environment variable values, secret values, image references,
+  command text, diffs, PR URLs, cache state, proxy values, task output, paths,
+  URLs, secrets, raw payloads, app-server payloads, or app-server traffic, and
+  must not start cloud tasks, create containers, check out repositories, run
+  setup or maintenance scripts, install dependencies, pin package versions,
+  apply variables, decrypt secrets, reset caches, open PRs, ask follow-ups,
+  configure proxies, run agent commands, access filesystem or network, create
+  model traffic, or mutate Cloud environment state. Its
   Codex Environment variables catalog may expose only static
   official-documentation keys plus local boundary keys, groups, states,
   sources, counts, and redaction flags; it must not read `process.env`, return
