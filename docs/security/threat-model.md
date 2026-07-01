@@ -1645,9 +1645,14 @@
   paths, hook keys, hook matchers, hook plugin IDs, account emails/tokens,
   rate-limit plan types, limit ids/names, balances, used percentages, reset
   times, MCP schemas/resource URIs, skill descriptions/paths, plugin
-  ids/paths/URLs, or experimental feature descriptions/announcements/raw payloads.
-  External agent config import
-  must remain a blocked mutation.
+  ids/paths/URLs, or experimental feature descriptions/announcements/raw
+  payloads. External agent config import must remain a blocked mutation.
+- `/api/permission-profiles` may call only `permissionProfile/list` behind
+  `CODEX_APP_PORT_ALLOW_PERMISSION_PROFILES=1`. It is GET-only, local-token
+  protected, and returns profile counts plus allowed/blocked/description totals
+  only; profile names, ids, descriptions, cursors, cwd, paths, permission rules,
+  filesystem/network grants, config values, and raw app-server payloads remain
+  blocked.
 - Browser-facing action preflights may issue short-lived process-local tokens
   for future mutation gates. The registry may store only token metadata and a
   non-returned hash of the intent; it must not store or return raw prompts,

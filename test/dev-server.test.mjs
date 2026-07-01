@@ -375,6 +375,11 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /account-workspace-messages-count-text/);
     assert.match(html, /account-workspace-messages-types-text/);
     assert.match(html, /account-workspace-messages-details-text/);
+    assert.match(html, /permission-profiles-button/);
+    assert.match(html, /permission-profiles-status/);
+    assert.match(html, /permission-profiles-count-text/);
+    assert.match(html, /permission-profiles-allowed-text/);
+    assert.match(html, /permission-profiles-details-text/);
     assert.match(appScript, /runAccountRead/);
     assert.match(appScript, /renderAccountRead/);
     assert.match(appScript, /runAccountRateLimits/);
@@ -383,6 +388,8 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(appScript, /renderAccountUsage/);
     assert.match(appScript, /runAccountWorkspaceMessages/);
     assert.match(appScript, /renderAccountWorkspaceMessages/);
+    assert.match(appScript, /runPermissionProfiles/);
+    assert.match(appScript, /renderPermissionProfiles/);
     assert.match(html, /account-login-preflight-button/);
     assert.match(html, /account-login-button/);
     assert.match(html, /thread-delete-preflight-button/);
@@ -14961,6 +14968,172 @@ test("dev server exposes account workspace messages only behind explicit opt-in 
       "\"messageIdsReturned\":true",
       "\"messageBodiesReturned\":true",
       "\"timestampsReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    await closeServer(enabledServer.server);
+  }
+});
+
+test("dev server exposes permission profiles only behind explicit opt-in and redacts profile details", async () => {
+  const blockedCalls = [];
+  const blockedServer = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    permissionProfilesFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+
+  try {
+    const settingsResponse = await fetch(`${blockedServer.url}/api/settings-integrations`, {
+      headers: apiHeaders(blockedServer.server),
+    });
+    assert.equal(settingsResponse.status, 200);
+    const settingsPayload = await settingsResponse.json();
+    assert.equal(settingsPayload.surfaces.settings.permissionProfileListingAvailable, false);
+    assert.equal(settingsPayload.surfaces.settings.permissionProfilesEnabled, false);
+    assert.equal(settingsPayload.integrationScope.permissionProfilesEnabled, false);
+
+    const blockedResponse = await fetch(`${blockedServer.url}/api/permission-profiles`, {
+      headers: apiHeaders(blockedServer.server),
+    });
+    assert.equal(blockedResponse.status, 200);
+    const blockedPayload = await blockedResponse.json();
+    const blockedSerialized = JSON.stringify(blockedPayload);
+    assert.equal(blockedPayload.ok, true);
+    assert.equal(blockedPayload.appServer.touched, false);
+    assert.equal(blockedPayload.settings.permissionProfilesEnabled, false);
+    assert.equal(blockedPayload.policy.appServerTraffic, false);
+    assert.equal(blockedPayload.result.status, "blocked");
+    assert.equal(blockedCalls.length, 0);
+    assert.equal(blockedSerialized.includes("/tmp/default-workspace"), false);
+  } finally {
+    await closeServer(blockedServer.server);
+  }
+
+  const calls = [];
+  const enabledServer = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    permissionProfilesEnabled: true,
+    permissionProfilesFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-07-01T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/private-home",
+          userAgent: "mock/0.0.0",
+        },
+        probes: {
+          permissionProfiles: {
+            ok: true,
+            profileCount: 2,
+            allowedCount: 1,
+            blockedCount: 1,
+            descriptionCount: 1,
+            hasNextCursor: true,
+            returnedProfileCount: 2,
+            items: [
+              {
+                name: "safe-permission-profile",
+                allowed: true,
+                hasDescription: true,
+              },
+              {
+                name: "private-permission-profile",
+                allowed: false,
+                hasDescription: false,
+              },
+            ],
+            namesReturned: true,
+            nameRedactedCount: 1,
+            idsReturned: true,
+            descriptionsReturned: true,
+            rawPayloadReturned: true,
+          },
+        },
+        rawPermissionProfiles: {
+          id: "private-permission-profile",
+          description: "private profile description",
+          nextCursor: "private-permission-profile-cursor",
+        },
+        notifications: {},
+      };
+    },
+  });
+
+  try {
+    const settingsResponse = await fetch(`${enabledServer.url}/api/settings-integrations`, {
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(settingsResponse.status, 200);
+    const settingsPayload = await settingsResponse.json();
+    assert.equal(settingsPayload.surfaces.settings.permissionProfileListingAvailable, true);
+    assert.equal(settingsPayload.surfaces.settings.permissionProfilesEnabled, true);
+    assert.equal(settingsPayload.integrationScope.permissionProfilesEnabled, true);
+    assert.equal(
+      settingsPayload.integrationScope.enabledReadMethods.includes("permissionProfile/list"),
+      true,
+    );
+
+    const methodResponse = await fetch(`${enabledServer.url}/api/permission-profiles`, {
+      method: "POST",
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(methodResponse.status, 405);
+
+    const response = await fetch(`${enabledServer.url}/api/permission-profiles`, {
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, true);
+    assert.equal(payload.appServer.modelTraffic, false);
+    assert.deepEqual(payload.appServer.auditedMethods, ["permissionProfile/list"]);
+    assert.equal(payload.settings.permissionProfilesEnabled, true);
+    assert.equal(payload.result.status, "available");
+    assert.equal(payload.result.profileCount, 2);
+    assert.equal(payload.result.allowedCount, 1);
+    assert.equal(payload.result.blockedCount, 1);
+    assert.equal(payload.result.descriptionCount, 1);
+    assert.equal(payload.result.hasNextCursor, true);
+    assert.equal(payload.result.returnedProfileCount, 0);
+    assert.equal(payload.result.namesReturned, false);
+    assert.equal(payload.result.idsReturned, false);
+    assert.equal(payload.result.descriptionsReturned, false);
+    assert.equal(payload.result.rawPayloadReturned, false);
+    assert.equal(payload.probes.permissionProfiles.returnedProfileCount, 0);
+    assert.deepEqual(payload.probes.permissionProfiles.items, []);
+    assert.equal(payload.policy.readOnly, true);
+    assert.equal(payload.policy.settingsWrites, false);
+    assert.equal(payload.policy.namesReturned, false);
+    assert.equal(payload.policy.idsReturned, false);
+    assert.equal(payload.policy.descriptionsReturned, false);
+    assert.equal(payload.policy.cursorsReturned, false);
+    assert.equal(payload.policy.rawPayloadReturned, false);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].cwd, "/tmp/default-workspace");
+    for (const marker of [
+      "/tmp/default-workspace",
+      "/tmp/private-home",
+      "codexHome",
+      "userAgent",
+      "safe-permission-profile",
+      "private-permission-profile",
+      "private profile description",
+      "private-permission-profile-cursor",
+      "\"namesReturned\":true",
+      "\"idsReturned\":true",
+      "\"descriptionsReturned\":true",
       "\"rawPayloadReturned\":true",
     ]) {
       assert.equal(serialized.includes(marker), false, `leaked ${marker}`);

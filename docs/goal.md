@@ -1077,11 +1077,14 @@ Target parity with the Codex desktop workflow:
   archived thread lists, dates, project context, thread names, ids, content,
   unarchive execution, paths, URLs, secrets, raw payloads, mutations, and
   app-server traffic remain blocked.
-- `permissionProfile/list` has an opt-in, counts-only inventory path by default;
-  it returns profile counts and allowed/blocked totals only. With
-  `CODEX_APP_PORT_ALLOW_INTEGRATION_NAMES=1`, it may also return bounded safe
-  profile display names; raw profile ids, descriptions, cursors, and payloads
-  remain hidden.
+- `permissionProfile/list` has both a dedicated opt-in
+  `/api/permission-profiles` route behind
+  `CODEX_APP_PORT_ALLOW_PERMISSION_PROFILES=1` and an opt-in, counts-only
+  inventory path. The dedicated route returns profile counts and
+  allowed/blocked/description totals only; raw profile ids, names, descriptions,
+  cursors, cwd, paths, and payloads remain hidden. With
+  `CODEX_APP_PORT_ALLOW_INTEGRATION_NAMES=1`, the inventory path may also
+  return bounded safe profile display names after redaction.
 - `account/usage/read` has both a dedicated opt-in `/api/account-usage` route
   and an opt-in counts-only inventory path; both omit token usage values, bucket
   dates, account identifiers, paths, and raw payloads.

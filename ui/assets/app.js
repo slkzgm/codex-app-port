@@ -254,6 +254,11 @@ const elements = {
   accountWorkspaceMessagesDetailsText: document.querySelector(
     "#account-workspace-messages-details-text",
   ),
+  permissionProfilesButton: document.querySelector("#permission-profiles-button"),
+  permissionProfilesStatus: document.querySelector("#permission-profiles-status"),
+  permissionProfilesCountText: document.querySelector("#permission-profiles-count-text"),
+  permissionProfilesAllowedText: document.querySelector("#permission-profiles-allowed-text"),
+  permissionProfilesDetailsText: document.querySelector("#permission-profiles-details-text"),
   accountLoginPreflightButton: document.querySelector("#account-login-preflight-button"),
   accountLoginButton: document.querySelector("#account-login-button"),
   accountLoginStatus: document.querySelector("#account-login-status"),
@@ -1201,6 +1206,10 @@ elements.workspaceSelect.addEventListener("change", () => {
   elements.accountWorkspaceMessagesCountText.textContent = "0";
   elements.accountWorkspaceMessagesTypesText.textContent = "0";
   elements.accountWorkspaceMessagesDetailsText.textContent = "Hidden";
+  elements.permissionProfilesStatus.textContent = "Profile read disabled by default.";
+  elements.permissionProfilesCountText.textContent = "0";
+  elements.permissionProfilesAllowedText.textContent = "0";
+  elements.permissionProfilesDetailsText.textContent = "Hidden";
   lastApprovalPayload = null;
   lastApprovalQueue = [];
   approvalQueueFilter = "all";
@@ -2179,6 +2188,10 @@ elements.accountWorkspaceMessagesButton.addEventListener("click", () => {
   runAccountWorkspaceMessages();
 });
 
+elements.permissionProfilesButton.addEventListener("click", () => {
+  runPermissionProfiles();
+});
+
 elements.accountLoginPreflightButton.addEventListener("click", () => {
   runAccountLoginPreflight();
 });
@@ -2672,6 +2685,16 @@ function accountWorkspaceMessagesEndpoint() {
   const params = new URLSearchParams();
   params.set("workspace", selectedWorkspaceId);
   return `/api/account-workspace-messages?${params.toString()}`;
+}
+
+function permissionProfilesEndpoint() {
+  if (!selectedWorkspaceId) {
+    return "/api/permission-profiles";
+  }
+
+  const params = new URLSearchParams();
+  params.set("workspace", selectedWorkspaceId);
+  return `/api/permission-profiles?${params.toString()}`;
 }
 
 function accountLoginPreflightEndpoint() {
@@ -4771,6 +4794,28 @@ async function runAccountWorkspaceMessages() {
     renderError(error);
   } finally {
     setAccountWorkspaceMessagesLoading(false);
+  }
+}
+
+async function runPermissionProfiles() {
+  setPermissionProfilesLoading(true);
+  hideError();
+
+  try {
+    const response = await fetch(permissionProfilesEndpoint(), {
+      headers: apiHeaders(),
+      cache: "no-store",
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderPermissionProfiles(payload);
+  } catch (error) {
+    elements.permissionProfilesStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    setPermissionProfilesLoading(false);
   }
 }
 
@@ -13692,6 +13737,22 @@ function renderSettingsIntegrations(payload) {
   elements.permissionProfilesStateText.textContent = settings.permissionProfileListingAvailable
     ? `${inventory.permissionProfiles?.profileCount ?? 0} profiles`
     : "Blocked";
+  elements.permissionProfilesStatus.textContent = settings.permissionProfilesEnabled
+    ? "Profile read enabled"
+    : "Profile read disabled";
+  elements.permissionProfilesCountText.textContent = String(
+    inventory.permissionProfiles?.profileCount ?? 0,
+  );
+  elements.permissionProfilesAllowedText.textContent = String(
+    inventory.permissionProfiles?.allowedCount ?? 0,
+  );
+  elements.permissionProfilesDetailsText.textContent =
+    inventory.permissionProfiles?.namesReturned ||
+    inventory.permissionProfiles?.idsReturned ||
+    inventory.permissionProfiles?.descriptionsReturned ||
+    inventory.permissionProfiles?.rawPayloadReturned
+      ? "Returned"
+      : "Hidden";
   elements.remoteControlStateText.textContent = settings.remoteControlStatusAvailable
     ? remoteControlStatusText(inventory.remoteControlStatus)
     : "Blocked";
@@ -15344,6 +15405,30 @@ function renderAccountWorkspaceMessages(payload) {
       ? "Returned"
       : "Hidden";
   elements.workspaceMessagesStateText.textContent = blocked ? "Blocked" : `${messageCount} messages`;
+}
+
+function renderPermissionProfiles(payload) {
+  const settings = payload.settings ?? {};
+  const result = payload.result ?? {};
+  const blocked = settings.permissionProfilesEnabled !== true || payload.appServer?.touched !== true;
+  const profileCount = result.profileCount ?? payload.probes?.permissionProfiles?.profileCount ?? 0;
+  const allowedCount = result.allowedCount ?? payload.probes?.permissionProfiles?.allowedCount ?? 0;
+  const blockedCount = result.blockedCount ?? payload.probes?.permissionProfiles?.blockedCount ?? 0;
+  const status = result.status ?? (blocked ? "blocked" : "available");
+  elements.permissionProfilesStatus.textContent = blocked ? "Read blocked" : status;
+  elements.permissionProfilesCountText.textContent = String(profileCount);
+  elements.permissionProfilesAllowedText.textContent = String(allowedCount);
+  elements.permissionProfilesDetailsText.textContent =
+    result.namesReturned ||
+    result.idsReturned ||
+    result.descriptionsReturned ||
+    result.rawPayloadReturned ||
+    settings.rawPayloadReturned
+      ? "Returned"
+      : "Hidden";
+  elements.permissionProfilesStateText.textContent = blocked
+    ? "Blocked"
+    : `${profileCount} profiles / ${blockedCount} blocked`;
 }
 
 function renderAccountLoginPreflight(payload) {
@@ -23259,6 +23344,14 @@ function setAccountWorkspaceMessagesLoading(isLoading) {
   elements.accountWorkspaceMessagesButton.textContent = isLoading ? "Checking" : "Messages Check";
   if (isLoading) {
     elements.accountWorkspaceMessagesStatus.textContent = "Checking";
+  }
+}
+
+function setPermissionProfilesLoading(isLoading) {
+  elements.permissionProfilesButton.disabled = isLoading;
+  elements.permissionProfilesButton.textContent = isLoading ? "Checking" : "Profiles Check";
+  if (isLoading) {
+    elements.permissionProfilesStatus.textContent = "Checking";
   }
 }
 

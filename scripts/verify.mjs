@@ -84,6 +84,7 @@ async function main() {
   await checkAccountRateLimitsApi();
   await checkAccountUsageApi();
   await checkAccountWorkspaceMessagesApi();
+  await checkPermissionProfilesApi();
   await checkAccountLoginApi();
   await checkAccountLoginCancelApi();
   await checkAccountCreditsNudgeApi();
@@ -18161,6 +18162,197 @@ async function checkAccountWorkspaceMessagesApi() {
     await closeServer(server);
   }
   pass("dev server workspace messages exposes counts behind opt-in without returning messages");
+}
+
+async function checkPermissionProfilesApi() {
+  const blockedCalls = [];
+  const blockedServer = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    permissionProfilesFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+  const blockedPort = await listenWithFallback(blockedServer, { host: "127.0.0.1", port: 0 });
+  const blockedBaseUrl = `http://127.0.0.1:${blockedPort}`;
+
+  try {
+    const token = await readUiSessionToken(blockedBaseUrl);
+    const settingsResponse = await fetch(`${blockedBaseUrl}/api/settings-integrations`, {
+      headers: apiHeaders(token),
+    });
+    if (!settingsResponse.ok) {
+      throw new Error(`settings integrations for blocked permission profiles returned HTTP ${settingsResponse.status}`);
+    }
+    const settingsPayload = await settingsResponse.json();
+    if (
+      settingsPayload.surfaces?.settings?.permissionProfileListingAvailable !== false ||
+      settingsPayload.surfaces?.settings?.permissionProfilesEnabled !== false ||
+      settingsPayload.integrationScope?.permissionProfilesEnabled !== false
+    ) {
+      throw new Error("settings integrations did not expose the blocked permission profiles gate safely");
+    }
+
+    const response = await fetch(`${blockedBaseUrl}/api/permission-profiles`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`blocked permission profiles returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (
+      payload.appServer?.touched !== false ||
+      payload.settings?.permissionProfilesEnabled !== false ||
+      payload.result?.status !== "blocked" ||
+      payload.policy?.appServerTraffic !== false
+    ) {
+      throw new Error("blocked permission profiles did not fail closed without app-server traffic");
+    }
+    if (blockedCalls.length !== 0) {
+      throw new Error("blocked permission profiles unexpectedly touched app-server");
+    }
+    assertNoMarkers(JSON.stringify(payload), ["/tmp/codex-app-port-verify"]);
+  } finally {
+    await closeServer(blockedServer);
+  }
+
+  const calls = [];
+  const server = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    permissionProfilesEnabled: true,
+    permissionProfilesFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-07-01T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/verify-private-home",
+          userAgent: "verify-private-agent",
+        },
+        probes: {
+          permissionProfiles: {
+            ok: true,
+            profileCount: 2,
+            allowedCount: 1,
+            blockedCount: 1,
+            descriptionCount: 1,
+            hasNextCursor: true,
+            returnedProfileCount: 2,
+            items: [
+              {
+                name: "safe-permission-profile",
+                allowed: true,
+                hasDescription: true,
+              },
+              {
+                name: "private-permission-profile",
+                allowed: false,
+                hasDescription: false,
+              },
+            ],
+            namesReturned: true,
+            nameRedactedCount: 1,
+            idsReturned: true,
+            descriptionsReturned: true,
+            rawPayloadReturned: true,
+          },
+        },
+        rawPermissionProfiles: {
+          id: "private-permission-profile",
+          description: "private profile description",
+          nextCursor: "private-permission-profile-cursor",
+        },
+        notifications: {},
+      };
+    },
+  });
+  const port = await listenWithFallback(server, { host: "127.0.0.1", port: 0 });
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  try {
+    const token = await readUiSessionToken(baseUrl);
+    const settingsResponse = await fetch(`${baseUrl}/api/settings-integrations`, {
+      headers: apiHeaders(token),
+    });
+    if (!settingsResponse.ok) {
+      throw new Error(`settings integrations for permission profiles returned HTTP ${settingsResponse.status}`);
+    }
+    const settingsPayload = await settingsResponse.json();
+    if (
+      settingsPayload.surfaces?.settings?.permissionProfileListingAvailable !== true ||
+      settingsPayload.surfaces?.settings?.permissionProfilesEnabled !== true ||
+      settingsPayload.integrationScope?.permissionProfilesEnabled !== true ||
+      !settingsPayload.integrationScope?.enabledReadMethods?.includes("permissionProfile/list")
+    ) {
+      throw new Error("settings integrations did not expose the permission profiles gate safely");
+    }
+
+    const wrongMethod = await fetch(`${baseUrl}/api/permission-profiles`, {
+      method: "POST",
+      headers: apiHeaders(token),
+    });
+    if (wrongMethod.status !== 405) {
+      throw new Error(`permission profiles POST returned HTTP ${wrongMethod.status}`);
+    }
+
+    const response = await fetch(`${baseUrl}/api/permission-profiles`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`permission profiles returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (
+      payload.appServer?.touched !== true ||
+      payload.appServer?.modelTraffic !== false ||
+      payload.settings?.permissionProfilesEnabled !== true ||
+      payload.result?.status !== "available" ||
+      payload.result?.profileCount !== 2 ||
+      payload.result?.allowedCount !== 1 ||
+      payload.result?.blockedCount !== 1 ||
+      payload.result?.descriptionCount !== 1 ||
+      payload.result?.hasNextCursor !== true ||
+      payload.result?.returnedProfileCount !== 0 ||
+      payload.result?.namesReturned !== false ||
+      payload.result?.idsReturned !== false ||
+      payload.result?.descriptionsReturned !== false ||
+      payload.result?.rawPayloadReturned !== false ||
+      payload.policy?.readOnly !== true ||
+      payload.policy?.settingsWrites !== false ||
+      payload.policy?.namesReturned !== false ||
+      payload.policy?.idsReturned !== false ||
+      payload.policy?.descriptionsReturned !== false ||
+      payload.policy?.cursorsReturned !== false ||
+      payload.policy?.rawPayloadReturned !== false
+    ) {
+      throw new Error("permission profiles did not return the safe counts-only summary shape");
+    }
+    if (calls.length !== 1 || calls[0].cwd !== "/tmp/codex-app-port-verify") {
+      throw new Error("permission profiles did not call the app-server read path once");
+    }
+    assertNoMarkers(JSON.stringify(payload), [
+      "/tmp/codex-app-port-verify",
+      "/tmp/verify-private-home",
+      "verify-private-agent",
+      "codexHome",
+      "userAgent",
+      "safe-permission-profile",
+      "private-permission-profile",
+      "private profile description",
+      "private-permission-profile-cursor",
+      "\"namesReturned\":true",
+      "\"idsReturned\":true",
+      "\"descriptionsReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]);
+  } finally {
+    await closeServer(server);
+  }
+  pass("dev server permission profiles exposes counts behind opt-in without returning profile details");
 }
 
 async function checkAccountLoginApi() {
@@ -56854,6 +57046,11 @@ async function readUiSessionToken(baseUrl) {
     !html.includes("account-workspace-messages-count-text") ||
     !html.includes("account-workspace-messages-types-text") ||
     !html.includes("account-workspace-messages-details-text") ||
+    !html.includes("permission-profiles-button") ||
+    !html.includes("permission-profiles-status") ||
+    !html.includes("permission-profiles-count-text") ||
+    !html.includes("permission-profiles-allowed-text") ||
+    !html.includes("permission-profiles-details-text") ||
     !appScript.includes("runAccountRead") ||
     !appScript.includes("renderAccountRead") ||
     !appScript.includes("runAccountRateLimits") ||
@@ -56862,6 +57059,8 @@ async function readUiSessionToken(baseUrl) {
     !appScript.includes("renderAccountUsage") ||
     !appScript.includes("runAccountWorkspaceMessages") ||
     !appScript.includes("renderAccountWorkspaceMessages") ||
+    !appScript.includes("runPermissionProfiles") ||
+    !appScript.includes("renderPermissionProfiles") ||
     !html.includes("account-login-button") ||
     !html.includes("account-login-cancel-button") ||
     !html.includes("account-reset-credit-button") ||

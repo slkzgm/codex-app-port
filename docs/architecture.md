@@ -1577,6 +1577,11 @@ Current M1 status:
   migration items, account emails/tokens, rate-limit details, and config
   requirement values/domains, plus experimental feature descriptions/
   announcements
+- done: dedicated `/api/permission-profiles` read route for
+  `permissionProfile/list`, disabled by default behind
+  `CODEX_APP_PORT_ALLOW_PERMISSION_PROFILES=1`, returning only profile counts
+  and allowed/blocked/description totals with profile names, ids, descriptions,
+  cursors, cwd, paths, rules, config values, and raw payloads omitted.
 - done: MCP tool-call preflight with server/tool/argument count metadata only,
   no names returned, no argument echo, no schemas, no resource content, no tool
   invocation, no app-server traffic, and a local preflight token for mutation

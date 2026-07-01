@@ -1921,6 +1921,14 @@ only; skill display names, descriptions, default prompts, icon paths, brand
 colors, dependency values, dependency commands, and dependency URLs remain
 redacted.
 
+`/api/permission-profiles` is a dedicated disabled-by-default GET route for
+`permissionProfile/list`. It requires
+`CODEX_APP_PORT_ALLOW_PERMISSION_PROFILES=1`, accepts only the local session
+token and workspace selector, calls the app server with `cursor:null`, current
+workspace `cwd`, and `limit:50`, and returns only profile counts plus
+allowed/blocked/description totals. Profile names, ids, descriptions, cursors,
+cwd, paths, and raw payloads are never returned by this dedicated route.
+
 When `CODEX_APP_PORT_ALLOW_INTEGRATION_NAMES=1` is also set, the inventory may
 include bounded display names for models, collaboration modes, apps/connectors,
 app plugin labels, MCP servers/tools, skills, plugins, installed plugins,

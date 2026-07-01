@@ -38,6 +38,7 @@ import {
   runPluginReadProbe,
   runPluginShareCheckoutProbe,
   runPluginUninstallProbe,
+  runPermissionProfilesReadProbe,
   runRemoteControlClientRevokeProbe,
   runRemoteControlClientsListProbe,
   runProcessSpawnProbe,
@@ -13109,6 +13110,7 @@ export function createDevServer({
   accountRateLimitsFn = runAccountRateLimitsReadProbe,
   accountUsageFn = runAccountUsageReadProbe,
   accountWorkspaceMessagesFn = runAccountWorkspaceMessagesReadProbe,
+  permissionProfilesFn = runPermissionProfilesReadProbe,
   accountLoginCancelFn = runAccountLoginCancelProbe,
   accountLoginStartFn = runAccountLoginStartProbe,
   accountCreditsNudgeFn = runAccountCreditsNudgeProbe,
@@ -13178,6 +13180,7 @@ export function createDevServer({
   accountUsageEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_USAGE === "1",
   accountWorkspaceMessagesEnabled =
     process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_WORKSPACE_MESSAGES === "1",
+  permissionProfilesEnabled = process.env.CODEX_APP_PORT_ALLOW_PERMISSION_PROFILES === "1",
   accountLoginCancelEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN_CANCEL === "1",
   accountLoginEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN === "1",
   accountCreditsNudgeEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_CREDITS_NUDGE === "1",
@@ -13331,6 +13334,7 @@ export function createDevServer({
       accountRateLimitsFn,
       accountUsageFn,
       accountWorkspaceMessagesFn,
+      permissionProfilesFn,
       accountLoginCancelFn,
       accountLoginStartFn,
       accountCreditsNudgeFn,
@@ -13396,6 +13400,7 @@ export function createDevServer({
       accountRateLimitsEnabled,
       accountUsageEnabled,
       accountWorkspaceMessagesEnabled,
+      permissionProfilesEnabled,
       accountLoginCancelEnabled,
       accountLoginEnabled,
       accountCreditsNudgeEnabled,
@@ -14889,6 +14894,48 @@ export async function handleRequest(request, response, options) {
       sendJson(response, error.statusCode ?? 502, {
         ok: false,
         error: cleanDisplayText(error.message, 200) ?? "Invalid account workspace messages request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/permission-profiles") {
+    if (request.method !== "GET") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        url.searchParams.get("workspace"),
+      );
+      if (!options.permissionProfilesEnabled) {
+        sendJson(response, 200, buildPermissionProfilesBlockedPayload({ workspace }));
+        return;
+      }
+      const payload = await options.permissionProfilesFn({
+        codexBin: options.codexBin,
+        cwd: workspace.cwd,
+        timeoutMs: options.timeoutMs,
+      });
+      sendJson(
+        response,
+        200,
+        sanitizePermissionProfilesPayload(payload, {
+          workspace,
+          enabled: true,
+        }),
+      );
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 502, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid permission profiles request",
       });
     }
     return;
@@ -19586,6 +19633,7 @@ export async function handleRequest(request, response, options) {
             accountRateLimitsEnabled: options.accountRateLimitsEnabled,
             accountUsageEnabled: options.accountUsageEnabled,
             accountWorkspaceMessagesEnabled: options.accountWorkspaceMessagesEnabled,
+            permissionProfilesEnabled: options.permissionProfilesEnabled,
             accountLoginCancelEnabled: options.accountLoginCancelEnabled,
             accountLoginEnabled: options.accountLoginEnabled,
             accountCreditsNudgeEnabled: options.accountCreditsNudgeEnabled,
@@ -19628,6 +19676,7 @@ export async function handleRequest(request, response, options) {
           accountRateLimitsEnabled: options.accountRateLimitsEnabled,
           accountUsageEnabled: options.accountUsageEnabled,
           accountWorkspaceMessagesEnabled: options.accountWorkspaceMessagesEnabled,
+          permissionProfilesEnabled: options.permissionProfilesEnabled,
           accountLoginCancelEnabled: options.accountLoginCancelEnabled,
           accountLoginEnabled: options.accountLoginEnabled,
           accountCreditsNudgeEnabled: options.accountCreditsNudgeEnabled,
@@ -51924,6 +51973,7 @@ export function sanitizeSettingsIntegrationsPayload(
     accountRateLimitsEnabled = false,
     accountUsageEnabled = false,
     accountWorkspaceMessagesEnabled = false,
+    permissionProfilesEnabled = false,
     accountLoginCancelEnabled = false,
     accountLoginEnabled = false,
     accountCreditsNudgeEnabled = false,
@@ -51962,6 +52012,7 @@ export function sanitizeSettingsIntegrationsPayload(
   const rateLimitsEnabled = Boolean(accountRateLimitsEnabled);
   const usageEnabled = Boolean(accountUsageEnabled);
   const workspaceMessagesEnabled = Boolean(accountWorkspaceMessagesEnabled);
+  const profilesEnabled = Boolean(permissionProfilesEnabled);
   const loginEnabled = Boolean(accountLoginEnabled);
   const loginCancelEnabled = Boolean(accountLoginCancelEnabled);
   const creditsNudgeEnabled = Boolean(accountCreditsNudgeEnabled);
@@ -51988,6 +52039,7 @@ export function sanitizeSettingsIntegrationsPayload(
       inventory.apps.pluginDisplayNamesReturned ||
       inventory.models.namesReturned ||
       inventory.collaborationModes.namesReturned ||
+      inventory.permissionProfiles.namesReturned ||
       inventory.mcp.namesReturned ||
       inventory.mcp.toolNamesReturned ||
       inventory.skills.namesReturned ||
@@ -52000,6 +52052,7 @@ export function sanitizeSettingsIntegrationsPayload(
     accountRateLimitsEnabled: rateLimitsEnabled,
     accountUsageEnabled: usageEnabled,
     accountWorkspaceMessagesEnabled: workspaceMessagesEnabled,
+    permissionProfilesEnabled: profilesEnabled,
     accountLoginCancelEnabled: loginCancelEnabled,
     accountLoginEnabled: loginEnabled,
     accountCreditsNudgeEnabled: creditsNudgeEnabled,
@@ -52055,7 +52108,8 @@ export function sanitizeSettingsIntegrationsPayload(
         modelListingAvailable: inventory.models.ok,
         modelProviderCapabilitiesAvailable: inventory.modelProviderCapabilities.ok,
         collaborationModeListingAvailable: inventory.collaborationModes.ok,
-        permissionProfileListingAvailable: inventory.permissionProfiles.ok,
+        permissionProfileListingAvailable: inventory.permissionProfiles.ok || profilesEnabled,
+        permissionProfilesEnabled: profilesEnabled,
         remoteControlStatusAvailable: inventory.remoteControlStatus.ok,
         remoteControlDisableEnabled: Boolean(remoteControlDisableEnabled),
         environmentAddEnabled: Boolean(environmentAddEnabled),
@@ -58214,6 +58268,155 @@ export function sanitizeAccountWorkspaceMessagesPayload(
   };
 }
 
+export function buildPermissionProfilesBlockedPayload({ workspace } = {}) {
+  const permissionProfiles = sanitizePermissionProfilesInventory(null);
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["permissionProfile/list"],
+    },
+    settings: {
+      permissionProfilesAvailable: true,
+      permissionProfilesEnabled: false,
+      appServerTraffic: false,
+      namesReturned: false,
+      idsReturned: false,
+      descriptionsReturned: false,
+      rawPayloadReturned: false,
+      reason: "permission-profiles-requires-opt-in",
+    },
+    probes: {
+      permissionProfiles,
+    },
+    result: {
+      status: "blocked",
+      permissionProfilesEnabled: false,
+      appServerTraffic: false,
+      profileCount: 0,
+      allowedCount: 0,
+      blockedCount: 0,
+      descriptionCount: 0,
+      hasNextCursor: false,
+      returnedProfileCount: 0,
+      namesReturned: false,
+      idsReturned: false,
+      descriptionsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      settingsWrites: false,
+      authCallbacks: false,
+      authMutations: false,
+      toolInvocation: false,
+      installsEnabled: false,
+      secretsReturned: false,
+      tokensReturned: false,
+      accountIdentifiersReturned: false,
+      authUrlsReturned: false,
+      urlsReturned: false,
+      pathsReturned: false,
+      namesReturned: false,
+      idsReturned: false,
+      descriptionsReturned: false,
+      cursorsReturned: false,
+      rawPayloadReturned: false,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: true,
+      implemented: true,
+    },
+    notifications: sanitizeNotificationCounts(null),
+  };
+}
+
+export function sanitizePermissionProfilesPayload(
+  payload,
+  { workspace = null, enabled = false } = {},
+) {
+  const permissionProfiles = sanitizePermissionProfilesInventory(
+    payload?.probes?.permissionProfiles,
+  );
+  const status = enabled ? "available" : "blocked";
+  return {
+    ok: Boolean(payload?.ok),
+    generatedAt: payload?.generatedAt ?? new Date().toISOString(),
+    transport: cleanDisplayText(payload?.transport, 80),
+    protocol: cleanDisplayText(payload?.protocol, 80),
+    initialize: sanitizeInitialize(payload?.initialize),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: Boolean(enabled),
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["permissionProfile/list"],
+    },
+    settings: {
+      permissionProfilesAvailable: true,
+      permissionProfilesEnabled: Boolean(enabled),
+      appServerTraffic: Boolean(enabled),
+      namesReturned: false,
+      idsReturned: false,
+      descriptionsReturned: false,
+      rawPayloadReturned: false,
+      reason: Boolean(enabled)
+        ? "permission-profiles-counts-only"
+        : "permission-profiles-requires-opt-in",
+    },
+    probes: {
+      permissionProfiles,
+    },
+    result: {
+      status,
+      permissionProfilesEnabled: Boolean(enabled),
+      appServerTraffic: Boolean(enabled),
+      profileCount: permissionProfiles.profileCount,
+      allowedCount: permissionProfiles.allowedCount,
+      blockedCount: permissionProfiles.blockedCount,
+      descriptionCount: permissionProfiles.descriptionCount,
+      hasNextCursor: permissionProfiles.hasNextCursor,
+      returnedProfileCount: 0,
+      namesReturned: false,
+      idsReturned: false,
+      descriptionsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: Boolean(enabled),
+      modelTraffic: false,
+      commandTraffic: false,
+      settingsWrites: false,
+      authCallbacks: false,
+      authMutations: false,
+      toolInvocation: false,
+      installsEnabled: false,
+      secretsReturned: false,
+      tokensReturned: false,
+      accountIdentifiersReturned: false,
+      authUrlsReturned: false,
+      urlsReturned: false,
+      pathsReturned: false,
+      namesReturned: false,
+      idsReturned: false,
+      descriptionsReturned: false,
+      cursorsReturned: false,
+      rawPayloadReturned: false,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: true,
+      implemented: true,
+    },
+    notifications: sanitizeNotificationCounts(payload?.notifications),
+  };
+}
+
 export function buildAccountLoginCancelPreflight(
   body,
   { workspace, accountLoginCancelEnabled = false, accountLoginFlowRegistry = null } = {},
@@ -62446,6 +62649,7 @@ export function buildSettingsIntegrations({
   accountRateLimitsEnabled = false,
   accountUsageEnabled = false,
   accountWorkspaceMessagesEnabled = false,
+  permissionProfilesEnabled = false,
   accountLoginCancelEnabled = false,
   accountLoginEnabled = false,
   accountCreditsNudgeEnabled = false,
@@ -62484,6 +62688,7 @@ export function buildSettingsIntegrations({
   const rateLimitsEnabled = Boolean(accountRateLimitsEnabled);
   const usageEnabled = Boolean(accountUsageEnabled);
   const workspaceMessagesEnabled = Boolean(accountWorkspaceMessagesEnabled);
+  const profilesEnabled = Boolean(permissionProfilesEnabled);
   const loginCancelEnabled = Boolean(accountLoginCancelEnabled);
   const loginEnabled = Boolean(accountLoginEnabled);
   const creditsNudgeEnabled = Boolean(accountCreditsNudgeEnabled);
@@ -62505,6 +62710,7 @@ export function buildSettingsIntegrations({
   const integrationScope = buildIntegrationActionScope({
     enabledReadMethods: [
       "config/read",
+      profilesEnabled ? "permissionProfile/list" : null,
       readEnabled ? "account/read" : null,
       rateLimitsEnabled ? "account/rateLimits/read" : null,
       usageEnabled ? "account/usage/read" : null,
@@ -62514,6 +62720,7 @@ export function buildSettingsIntegrations({
     accountRateLimitsEnabled: rateLimitsEnabled,
     accountUsageEnabled: usageEnabled,
     accountWorkspaceMessagesEnabled: workspaceMessagesEnabled,
+    permissionProfilesEnabled: profilesEnabled,
     accountLoginCancelEnabled: loginCancelEnabled,
     accountLoginEnabled: loginEnabled,
     accountCreditsNudgeEnabled: creditsNudgeEnabled,
@@ -62547,6 +62754,7 @@ export function buildSettingsIntegrations({
       modelTraffic: false,
       auditedReadMethods: [
         "config/read",
+        profilesEnabled ? "permissionProfile/list" : null,
         readEnabled ? "account/read" : null,
         rateLimitsEnabled ? "account/rateLimits/read" : null,
         usageEnabled ? "account/usage/read" : null,
@@ -62568,6 +62776,8 @@ export function buildSettingsIntegrations({
         modelListingAvailable: false,
         modelProviderCapabilitiesAvailable: false,
         collaborationModeListingAvailable: false,
+        permissionProfileListingAvailable: profilesEnabled,
+        permissionProfilesEnabled: profilesEnabled,
         hookListingAvailable: false,
         appListingAvailable: false,
         externalAgentConfigDetectionAvailable: false,
@@ -65226,6 +65436,7 @@ function buildIntegrationActionScope({
   accountRateLimitsEnabled = false,
   accountUsageEnabled = false,
   accountWorkspaceMessagesEnabled = false,
+  permissionProfilesEnabled = false,
   accountLoginCancelEnabled = false,
   accountLoginEnabled = false,
   accountCreditsNudgeEnabled = false,
@@ -65313,6 +65524,7 @@ function buildIntegrationActionScope({
     accountRateLimitsEnabled: Boolean(accountRateLimitsEnabled),
     accountUsageEnabled: Boolean(accountUsageEnabled),
     accountWorkspaceMessagesEnabled: Boolean(accountWorkspaceMessagesEnabled),
+    permissionProfilesEnabled: Boolean(permissionProfilesEnabled),
     accountLoginEnabled: Boolean(accountLoginEnabled),
     authDeviceCodeLoginEnabled: Boolean(accountLoginEnabled),
     accountLoginCancelEnabled: Boolean(accountLoginCancelEnabled),
