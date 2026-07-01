@@ -812,6 +812,18 @@ messages, timeouts, trust hashes, outputs, input payloads, configs, plugin ids,
 admin requirements, feature values, paths, URLs, secrets, raw payloads,
 app-server traffic, command execution, trust writes, disable writes, trust
 bypass, config writes, filesystem access, or mutations.
+The same response exposes `codexImportToCodex` as a static review-only catalog
+for official Import to Codex behavior. The UI shows only catalog counts, entry
+keys, groups, state/source chips, and redaction chips for the documented import
+flow, supported item classes, finish-setup follow-up, post-import review
+guidance, and local import boundaries. It does not show source agent names,
+instruction files, `settings.json`, skill or plugin names, project folders,
+session titles, MCP server names, hook commands, slash-command prompts,
+subagent names, auth details, environment variables, prompt templates,
+import-history details, raw migration items, paths, URLs, secrets, raw payloads,
+or app-server traffic, and it does not detect setup, start imports, write
+config/`AGENTS.md`/skills/plugins/MCP/hooks/threads/projects, start auth flows,
+show runtime status cards, access files, or mutate import state.
 The same response exposes `codexRecordReplay` as a static review-only catalog
 for official Codex Record & Replay. The UI shows only catalog counts, entry
 keys, groups, state/source chips, and redaction chips for macOS and regional

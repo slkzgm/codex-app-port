@@ -36368,6 +36368,207 @@ function assertCodexSubagentsCatalog(payload) {
   }
 }
 
+function expectedCodexImportToCodexEntries() {
+  return [
+    ["importFlowPurpose", "overview", "catalog-only", "official-codex-import-docs"],
+    ["existingSetupPreserved", "overview", "catalog-only", "official-codex-import-docs"],
+    ["settingsGeneralEntryPoint", "start-import", "catalog-only", "official-codex-import-docs"],
+    ["sourceAgentSelection", "start-import", "catalog-only", "official-codex-import-docs"],
+    ["selectEverythingOrCustomize", "selection", "catalog-only", "official-codex-import-docs"],
+    ["customizedItemConfirmation", "selection", "catalog-only", "official-codex-import-docs"],
+    ["postImportProjectThreadOpen", "after-import", "catalog-only", "official-codex-import-docs"],
+    ["userLevelSetupDiscovery", "discovery", "catalog-only", "official-codex-import-docs"],
+    ["projectLevelSetupDiscovery", "discovery", "catalog-only", "official-codex-import-docs"],
+    ["supportedSetupDetection", "workflow", "catalog-only", "official-codex-import-docs"],
+    ["selectedItemImport", "workflow", "catalog-only", "official-codex-import-docs"],
+    ["pluginConnectionSetupCheck", "workflow", "catalog-only", "official-codex-import-docs"],
+    ["followUpStatusCard", "finish-setup", "catalog-only", "official-codex-import-docs"],
+    ["finishSetupPrompts", "finish-setup", "catalog-only", "official-codex-import-docs"],
+    ["instructionFilesToAgentsMd", "importable-items", "catalog-only", "official-codex-import-docs"],
+    ["settingsJsonToConfigToml", "importable-items", "catalog-only", "official-codex-import-docs"],
+    ["skillsToCodexSkills", "importable-items", "catalog-only", "official-codex-import-docs"],
+    ["pluginsToCodexPlugins", "importable-items", "catalog-only", "official-codex-import-docs"],
+    ["projectFoldersToProjects", "importable-items", "catalog-only", "official-codex-import-docs"],
+    ["recentSessionsToThreads", "importable-items", "catalog-only", "official-codex-import-docs"],
+    ["mcpConfigToCodexMcp", "importable-items", "catalog-only", "official-codex-import-docs"],
+    ["hooksToCodexHooks", "importable-items", "catalog-only", "official-codex-import-docs"],
+    ["slashCommandsToSkills", "importable-items", "catalog-only", "official-codex-import-docs"],
+    ["subagentsToCodexAgents", "importable-items", "catalog-only", "official-codex-import-docs"],
+    ["reviewToolRestrictionsPermissions", "review", "catalog-only", "official-codex-import-docs"],
+    ["reviewMcpAuthHeadersEnvTransport", "review", "catalog-only", "official-codex-import-docs"],
+    ["reviewHookBehavior", "review", "catalog-only", "official-codex-import-docs"],
+    ["reviewPluginMarketplaceFollowUp", "review", "catalog-only", "official-codex-import-docs"],
+    ["reviewPromptTemplatePlaceholders", "review", "catalog-only", "official-codex-import-docs"],
+    ["quickstartAfterImport", "after-import", "catalog-only", "official-codex-import-docs"],
+    ["sourceAgentDetectionBoundary", "discovery", "blocked", "local-import-boundary"],
+    ["userSetupFileReadBoundary", "discovery", "blocked", "local-import-boundary"],
+    ["projectSetupFileReadBoundary", "discovery", "blocked", "local-import-boundary"],
+    ["importExecutionBoundary", "workflow", "blocked", "local-import-boundary"],
+    ["configWriteBoundary", "writes", "blocked", "local-import-boundary"],
+    ["agentsMdWriteBoundary", "writes", "blocked", "local-import-boundary"],
+    ["skillPluginMaterializationBoundary", "writes", "blocked", "local-import-boundary"],
+    ["mcpConfigWriteBoundary", "writes", "blocked", "local-import-boundary"],
+    ["hookWriteBoundary", "writes", "blocked", "local-import-boundary"],
+    ["threadImportBoundary", "writes", "blocked", "local-import-boundary"],
+    ["projectRegistrationBoundary", "writes", "blocked", "local-import-boundary"],
+    ["authFollowUpBoundary", "finish-setup", "blocked", "local-import-boundary"],
+    ["statusCardRuntimeBoundary", "finish-setup", "blocked", "local-import-boundary"],
+    ["importHistoryDetailBoundary", "after-import", "blocked", "local-import-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexImportToCodexCatalog(payload) {
+  const catalog = payload.codexImportToCodex;
+  const expectedEntries = expectedCodexImportToCodexEntries();
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-import-docs");
+  assert.equal(catalog.entryCount, 44);
+  assert.equal(catalog.officialEntryCount, 30);
+  assert.equal(catalog.localBoundaryEntryCount, 14);
+  assert.equal(catalog.catalogOnlyEntryCount, 30);
+  assert.equal(catalog.blockedEntryCount, 14);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({
+      key,
+      group,
+      state,
+      source,
+    })),
+    expectedEntries,
+  );
+
+  const entryRedactionFlags = [
+    "sourceAgentReturned",
+    "instructionFileReturned",
+    "settingsJsonReturned",
+    "skillNameReturned",
+    "pluginNameReturned",
+    "projectFolderReturned",
+    "sessionTitleReturned",
+    "mcpServerNameReturned",
+    "hookCommandReturned",
+    "slashCommandPromptReturned",
+    "subagentNameReturned",
+    "authDetailReturned",
+    "environmentVariableReturned",
+    "promptTemplateReturned",
+    "importHistoryDetailReturned",
+    "rawMigrationItemReturned",
+    "importStarted",
+    "setupDetected",
+    "configWritten",
+    "agentsMdWritten",
+    "skillsWritten",
+    "pluginsWritten",
+    "mcpConfigWritten",
+    "hooksWritten",
+    "threadsImported",
+    "projectsRegistered",
+    "authFlowStarted",
+    "statusCardShown",
+    "filesystemRead",
+    "filesystemWrite",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.importCatalogReturned, true);
+  for (const flag of [
+    "sourceAgentsReturned",
+    "instructionFilesReturned",
+    "settingsJsonReturned",
+    "skillNamesReturned",
+    "pluginNamesReturned",
+    "projectFoldersReturned",
+    "sessionTitlesReturned",
+    "mcpServerNamesReturned",
+    "hookCommandsReturned",
+    "slashCommandPromptsReturned",
+    "subagentNamesReturned",
+    "authDetailsReturned",
+    "environmentVariablesReturned",
+    "promptTemplatesReturned",
+    "importHistoryDetailsReturned",
+    "rawMigrationItemsReturned",
+    "importsStarted",
+    "setupDetected",
+    "configsWritten",
+    "agentsMdWritten",
+    "skillsWritten",
+    "pluginsWritten",
+    "mcpConfigsWritten",
+    "hooksWritten",
+    "threadsImported",
+    "projectsRegistered",
+    "authFlowsStarted",
+    "statusCardsShown",
+    "filesystemReads",
+    "filesystemWrites",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexImportToCodexReturned", true],
+    ["codexImportToCodexValuesReturned", false],
+    ["codexImportToCodexSourceAgentsReturned", false],
+    ["codexImportToCodexInstructionFilesReturned", false],
+    ["codexImportToCodexSettingsJsonReturned", false],
+    ["codexImportToCodexSkillNamesReturned", false],
+    ["codexImportToCodexPluginNamesReturned", false],
+    ["codexImportToCodexProjectFoldersReturned", false],
+    ["codexImportToCodexSessionTitlesReturned", false],
+    ["codexImportToCodexMcpServerNamesReturned", false],
+    ["codexImportToCodexHookCommandsReturned", false],
+    ["codexImportToCodexSlashCommandPromptsReturned", false],
+    ["codexImportToCodexSubagentNamesReturned", false],
+    ["codexImportToCodexAuthDetailsReturned", false],
+    ["codexImportToCodexEnvironmentVariablesReturned", false],
+    ["codexImportToCodexPromptTemplatesReturned", false],
+    ["codexImportToCodexImportHistoryDetailsReturned", false],
+    ["codexImportToCodexRawMigrationItemsReturned", false],
+    ["codexImportToCodexStartEnabled", false],
+    ["codexImportToCodexDetectionEnabled", false],
+    ["codexImportToCodexConfigWriteEnabled", false],
+    ["codexImportToCodexAgentsMdWriteEnabled", false],
+    ["codexImportToCodexSkillsWriteEnabled", false],
+    ["codexImportToCodexPluginsWriteEnabled", false],
+    ["codexImportToCodexMcpConfigWriteEnabled", false],
+    ["codexImportToCodexHookWriteEnabled", false],
+    ["codexImportToCodexThreadImportEnabled", false],
+    ["codexImportToCodexProjectRegistrationEnabled", false],
+    ["codexImportToCodexAuthFlowEnabled", false],
+    ["codexImportToCodexStatusCardEnabled", false],
+    ["codexImportToCodexFilesystemAccess", false],
+    ["codexImportToCodexMutationsEnabled", false],
+    ["codexImportToCodexPathsReturned", false],
+    ["codexImportToCodexUrlsReturned", false],
+    ["codexImportToCodexSecretsReturned", false],
+    ["codexImportToCodexRawPayloadsReturned", false],
+    ["codexImportToCodexAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexSitesEntries() {
   return [
     ["sitesPluginUseCase", "overview", "catalog-only", "official-codex-sites-docs"],
@@ -38410,6 +38611,7 @@ function assertCodexAppSettingsParity(
   assertSkillsPluginsCatalog(payload);
   assertCodexPluginBuildCatalog(payload);
   assertCodexHooksCatalog(payload);
+  assertCodexImportToCodexCatalog(payload);
   assertCodexRecordReplayCatalog(payload);
   assertCodexRemoteConnectionsCatalog(payload);
   assertCodexSubagentsCatalog(payload);

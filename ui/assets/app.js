@@ -35,6 +35,10 @@ const elements = {
   codexPluginBuildValuesText: document.querySelector("#codex-plugin-build-values-text"),
   codexHooksText: document.querySelector("#codex-hooks-text"),
   codexHooksValuesText: document.querySelector("#codex-hooks-values-text"),
+  codexImportToCodexText: document.querySelector("#codex-import-to-codex-text"),
+  codexImportToCodexValuesText: document.querySelector(
+    "#codex-import-to-codex-values-text",
+  ),
   codexRecordReplayText: document.querySelector("#codex-record-replay-text"),
   codexRecordReplayValuesText: document.querySelector("#codex-record-replay-values-text"),
   codexRemoteConnectionsText: document.querySelector("#codex-remote-connections-text"),
@@ -428,6 +432,7 @@ const elements = {
   skillsPluginsCatalogList: document.querySelector("#skills-plugins-catalog-list"),
   codexPluginBuildList: document.querySelector("#codex-plugin-build-list"),
   codexHooksList: document.querySelector("#codex-hooks-list"),
+  codexImportToCodexList: document.querySelector("#codex-import-to-codex-list"),
   codexRecordReplayList: document.querySelector("#codex-record-replay-list"),
   codexRemoteConnectionsList: document.querySelector("#codex-remote-connections-list"),
   codexSubagentsList: document.querySelector("#codex-subagents-list"),
@@ -10481,6 +10486,7 @@ function renderSettingsIntegrations(payload) {
   const skillsPluginsCatalog = payload.skillsPluginsCatalog ?? {};
   const codexPluginBuild = payload.codexPluginBuild ?? {};
   const codexHooks = payload.codexHooks ?? {};
+  const codexImportToCodex = payload.codexImportToCodex ?? {};
   const codexRecordReplay = payload.codexRecordReplay ?? {};
   const codexRemoteConnections = payload.codexRemoteConnections ?? {};
   const codexSubagents = payload.codexSubagents ?? {};
@@ -10630,6 +10636,50 @@ function renderSettingsIntegrations(payload) {
     codexHooks.secretsReturned ||
     codexHooks.rawPayloadsReturned ||
     codexHooks.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexImportToCodexText.textContent = codexImportToCodex.returned
+    ? `${codexImportToCodex.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexImportToCodex.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexImportToCodexValuesText.textContent =
+    codexImportToCodex.sourceAgentsReturned ||
+    codexImportToCodex.instructionFilesReturned ||
+    codexImportToCodex.settingsJsonReturned ||
+    codexImportToCodex.skillNamesReturned ||
+    codexImportToCodex.pluginNamesReturned ||
+    codexImportToCodex.projectFoldersReturned ||
+    codexImportToCodex.sessionTitlesReturned ||
+    codexImportToCodex.mcpServerNamesReturned ||
+    codexImportToCodex.hookCommandsReturned ||
+    codexImportToCodex.slashCommandPromptsReturned ||
+    codexImportToCodex.subagentNamesReturned ||
+    codexImportToCodex.authDetailsReturned ||
+    codexImportToCodex.environmentVariablesReturned ||
+    codexImportToCodex.promptTemplatesReturned ||
+    codexImportToCodex.importHistoryDetailsReturned ||
+    codexImportToCodex.rawMigrationItemsReturned ||
+    codexImportToCodex.importsStarted ||
+    codexImportToCodex.setupDetected ||
+    codexImportToCodex.configsWritten ||
+    codexImportToCodex.agentsMdWritten ||
+    codexImportToCodex.skillsWritten ||
+    codexImportToCodex.pluginsWritten ||
+    codexImportToCodex.mcpConfigsWritten ||
+    codexImportToCodex.hooksWritten ||
+    codexImportToCodex.threadsImported ||
+    codexImportToCodex.projectsRegistered ||
+    codexImportToCodex.authFlowsStarted ||
+    codexImportToCodex.statusCardsShown ||
+    codexImportToCodex.filesystemReads ||
+    codexImportToCodex.filesystemWrites ||
+    codexImportToCodex.mutationEnabled ||
+    codexImportToCodex.pathsReturned ||
+    codexImportToCodex.urlsReturned ||
+    codexImportToCodex.secretsReturned ||
+    codexImportToCodex.rawPayloadsReturned ||
+    codexImportToCodex.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexRecordReplayText.textContent = codexRecordReplay.returned
@@ -11497,6 +11547,7 @@ function renderSettingsIntegrations(payload) {
   renderSkillsPluginsCatalog(skillsPluginsCatalog);
   renderCodexPluginBuildCatalog(codexPluginBuild);
   renderCodexHooksCatalog(codexHooks);
+  renderCodexImportToCodexCatalog(codexImportToCodex);
   renderCodexRecordReplayCatalog(codexRecordReplay);
   renderCodexRemoteConnectionsCatalog(codexRemoteConnections);
   renderCodexSubagentsCatalog(codexSubagents);
@@ -13292,6 +13343,97 @@ function renderCodexHooksCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexHooksList.append(row);
+  }
+}
+
+function renderCodexImportToCodexCatalog(summary) {
+  elements.codexImportToCodexList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexImportToCodexList.append(
+      emptyState("No Codex Import catalog returned."),
+    );
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "import";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.sourceAgentReturned ? "source agents returned" : "source agents hidden",
+      entry.instructionFileReturned
+        ? "instruction files returned"
+        : "instruction files hidden",
+      entry.settingsJsonReturned ? "settings JSON returned" : "settings JSON hidden",
+      entry.skillNameReturned ? "skill names returned" : "skill names hidden",
+      entry.pluginNameReturned ? "plugin names returned" : "plugin names hidden",
+      entry.projectFolderReturned ? "project folders returned" : "project folders hidden",
+      entry.sessionTitleReturned ? "session titles returned" : "session titles hidden",
+      entry.mcpServerNameReturned ? "MCP server names returned" : "MCP server names hidden",
+      entry.hookCommandReturned ? "hook commands returned" : "hook commands hidden",
+      entry.slashCommandPromptReturned
+        ? "slash command prompts returned"
+        : "slash command prompts hidden",
+      entry.subagentNameReturned ? "subagent names returned" : "subagent names hidden",
+      entry.authDetailReturned ? "auth details returned" : "auth details hidden",
+      entry.environmentVariableReturned
+        ? "environment variables returned"
+        : "environment variables hidden",
+      entry.promptTemplateReturned ? "prompt templates returned" : "prompt templates hidden",
+      entry.importHistoryDetailReturned
+        ? "import history details returned"
+        : "import history details hidden",
+      entry.rawMigrationItemReturned
+        ? "raw migration items returned"
+        : "raw migration items hidden",
+      entry.importStarted ? "import started" : "import execution blocked",
+      entry.setupDetected ? "setup detected" : "setup detection blocked",
+      entry.configWritten ? "config written" : "config writes blocked",
+      entry.agentsMdWritten ? "AGENTS.md written" : "AGENTS.md writes blocked",
+      entry.skillsWritten ? "skills written" : "skill writes blocked",
+      entry.pluginsWritten ? "plugins written" : "plugin writes blocked",
+      entry.mcpConfigWritten ? "MCP config written" : "MCP config writes blocked",
+      entry.hooksWritten ? "hooks written" : "hook writes blocked",
+      entry.threadsImported ? "threads imported" : "thread import blocked",
+      entry.projectsRegistered ? "projects registered" : "project registration blocked",
+      entry.authFlowStarted ? "auth flow started" : "auth follow-up blocked",
+      entry.statusCardShown ? "status card shown" : "status card runtime blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexImportToCodexList.append(row);
   }
 }
 

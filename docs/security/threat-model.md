@@ -489,6 +489,17 @@
   app-server payloads, or app-server traffic, and must not execute commands,
   trust hooks, disable hooks, bypass hook trust, write hook configs, access
   files, or mutate hook state. Its
+  Import to Codex catalog may expose only static official-documentation keys
+  plus local boundary keys, groups, states, sources, counts, and redaction
+  flags; it must not return source agent names, instruction files, settings
+  JSON, skill or plugin names, project folders, session titles, MCP server
+  names, hook commands, slash-command prompts, subagent names, auth details,
+  environment variables, prompt templates, import-history details, raw
+  migration items, paths, URLs, secrets, raw payloads, app-server payloads, or
+  app-server traffic, and must not detect setup, start imports, write config,
+  AGENTS.md, skills, plugins, MCP config, hooks, threads, or projects, start
+  auth flows, show runtime status cards, access files, or mutate import state.
+  Its
   Codex Record & Replay catalog may expose only static official-documentation
   keys plus local boundary keys, groups, states, sources, counts, and
   redaction flags; it must not return availability values, regional

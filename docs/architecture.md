@@ -601,6 +601,18 @@ Current M1 status:
   plugin ids, admin requirements, feature values, command execution, trust
   writes, disable writes, trust bypass, config writes, filesystem access,
   mutations, URLs, secrets, raw payloads, and app-server traffic blocked
+- done: read-only Import to Codex catalog in `/api/settings-integrations`,
+  exposing only static official import documentation keys plus local boundary
+  keys/groups/states/sources/counts/redaction flags for the import flow,
+  supported items, finish-setup follow-up, post-import review guidance, and
+  local import boundaries, with source agent names, instruction files,
+  settings JSON, skill/plugin names, project folders, session titles, MCP
+  server names, hook commands, slash-command prompts, subagent names, auth
+  details, environment variables, prompt templates, import-history details,
+  raw migration items, setup detection, import execution, config/AGENTS.md/
+  skill/plugin/MCP/hook/thread/project writes, auth flows, status-card
+  runtime, filesystem access, mutations, paths, URLs, secrets, raw payloads,
+  and app-server traffic blocked
 - done: read-only Codex Record & Replay catalog in `/api/settings-integrations`,
   exposing only static official Record & Replay documentation keys plus local
   boundary keys/groups/states/sources/counts/redaction flags for

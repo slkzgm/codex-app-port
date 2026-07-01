@@ -200,6 +200,18 @@ Target parity with the Codex desktop workflow:
   secrets, raw payloads, or app-server traffic, and it does not execute
   commands, trust hooks, disable hooks, bypass hook trust, write hook configs,
   read/write files, or mutate hook state.
+- `/api/settings-integrations` now also exposes a read-only Import to Codex
+  catalog aligned to the official import documentation. It returns only static
+  keys, groups, states, sources, counts, and redaction flags for the import
+  flow, supported items, finish-setup follow-up, post-import review guidance,
+  and local import boundaries. It does not return source agent names,
+  instruction files, `settings.json`, skill or plugin names, project folders,
+  session titles, MCP server names, hook commands, slash-command prompts,
+  subagent names, auth details, environment variables, prompt templates,
+  import-history details, raw migration items, paths, URLs, secrets, raw
+  payloads, or app-server traffic, and it does not detect setup, start imports,
+  write config/`AGENTS.md`/skills/plugins/MCP/hooks/threads/projects, start
+  auth flows, show runtime status cards, access files, or mutate import state.
 - `/api/settings-integrations` now also exposes a read-only Codex Record &
   Replay catalog aligned to the official Record & Replay documentation. It
   returns only static keys, groups, states, sources, counts, and redaction
