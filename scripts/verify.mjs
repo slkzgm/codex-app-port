@@ -33838,6 +33838,179 @@ function assertCodexPermissionsCatalog(payload) {
   }
 }
 
+function expectedCodexRulesEntries() {
+  return [
+    ["rulesExperimentalStatus", "overview", "catalog-only", "official-codex-rules-docs"],
+    ["rulesFileLocation", "rules-files", "catalog-only", "official-codex-rules-docs"],
+    ["rulesActiveConfigLayerScan", "rules-files", "catalog-only", "official-codex-rules-docs"],
+    ["rulesProjectTrustBoundary", "rules-files", "catalog-only", "official-codex-rules-docs"],
+    ["prefixRuleShape", "prefix-rules", "catalog-only", "official-codex-rules-docs"],
+    ["prefixRulePattern", "prefix-rules", "catalog-only", "official-codex-rules-docs"],
+    ["prefixRuleDecisionModes", "prefix-rules", "catalog-only", "official-codex-rules-docs"],
+    ["prefixRuleExamples", "prefix-rules", "catalog-only", "official-codex-rules-docs"],
+    ["userAllowListWrites", "smart-approvals", "catalog-only", "official-codex-rules-docs"],
+    [
+      "smartApprovalPrefixRuleSuggestions",
+      "smart-approvals",
+      "catalog-only",
+      "official-codex-rules-docs",
+    ],
+    ["adminRequirementsRules", "managed-policy", "catalog-only", "official-codex-rules-docs"],
+    ["commandPrefixMatching", "command-evaluation", "catalog-only", "official-codex-rules-docs"],
+    [
+      "shellWrapperSafeSplitting",
+      "command-evaluation",
+      "catalog-only",
+      "official-codex-rules-docs",
+    ],
+    [
+      "shellWrapperConservativeFallback",
+      "command-evaluation",
+      "catalog-only",
+      "official-codex-rules-docs",
+    ],
+    ["execpolicyCheck", "testing", "catalog-only", "official-codex-rules-docs"],
+    ["starlarkRuleLanguage", "language", "catalog-only", "official-codex-rules-docs"],
+    ["rulesFileReadBoundary", "rules-files", "blocked", "local-rules-boundary"],
+    ["rulesFileWriteBoundary", "rules-files", "blocked", "local-rules-boundary"],
+    ["prefixRuleReadBoundary", "prefix-rules", "blocked", "local-rules-boundary"],
+    ["prefixRuleWriteBoundary", "prefix-rules", "blocked", "local-rules-boundary"],
+    ["commandPolicyReadBoundary", "command-evaluation", "blocked", "local-rules-boundary"],
+    ["commandPolicyWriteBoundary", "command-evaluation", "blocked", "local-rules-boundary"],
+    ["execpolicyCheckBoundary", "testing", "blocked", "local-rules-boundary"],
+    ["smartApprovalWriteBoundary", "smart-approvals", "blocked", "local-rules-boundary"],
+    ["adminRequirementReadBoundary", "managed-policy", "blocked", "local-rules-boundary"],
+    ["shellScriptEvaluationBoundary", "command-evaluation", "blocked", "local-rules-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexRulesCatalog(payload) {
+  const catalog = payload.codexRules;
+  const expectedEntries = expectedCodexRulesEntries();
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-rules-docs");
+  assert.equal(catalog.entryCount, 26);
+  assert.equal(catalog.officialEntryCount, 16);
+  assert.equal(catalog.localBoundaryEntryCount, 10);
+  assert.equal(catalog.catalogOnlyEntryCount, 16);
+  assert.equal(catalog.blockedEntryCount, 10);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({
+      key,
+      group,
+      state,
+      source,
+    })),
+    expectedEntries,
+  );
+
+  const entryRedactionFlags = [
+    "ruleFileReturned",
+    "rulePathReturned",
+    "ruleContentReturned",
+    "prefixPatternReturned",
+    "decisionReturned",
+    "justificationReturned",
+    "matchExampleReturned",
+    "configLayerReturned",
+    "adminRequirementReturned",
+    "commandTextReturned",
+    "shellScriptReturned",
+    "execpolicyResultReturned",
+    "starlarkContentReturned",
+    "ruleFileWritten",
+    "prefixRuleWritten",
+    "commandPolicyWritten",
+    "smartApprovalRuleWritten",
+    "execpolicyCheckExecuted",
+    "shellScriptParsed",
+    "commandExecuted",
+    "filesystemRead",
+    "filesystemWrite",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.rulesCatalogReturned, true);
+  for (const flag of [
+    "ruleFilesReturned",
+    "rulePathsReturned",
+    "ruleContentReturned",
+    "prefixPatternsReturned",
+    "decisionsReturned",
+    "justificationsReturned",
+    "matchExamplesReturned",
+    "configLayersReturned",
+    "adminRequirementsReturned",
+    "commandTextReturned",
+    "shellScriptsReturned",
+    "execpolicyResultsReturned",
+    "starlarkContentReturned",
+    "ruleFilesWritten",
+    "prefixRulesWritten",
+    "commandPoliciesWritten",
+    "smartApprovalRulesWritten",
+    "execpolicyChecksExecuted",
+    "shellScriptsParsed",
+    "commandsExecuted",
+    "filesystemReads",
+    "filesystemWrites",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexRulesReturned", true],
+    ["codexRulesValuesReturned", false],
+    ["codexRulesFilesReturned", false],
+    ["codexRulesPathsReturned", false],
+    ["codexRulesContentReturned", false],
+    ["codexRulesPrefixPatternsReturned", false],
+    ["codexRulesDecisionsReturned", false],
+    ["codexRulesJustificationsReturned", false],
+    ["codexRulesMatchExamplesReturned", false],
+    ["codexRulesConfigLayersReturned", false],
+    ["codexRulesAdminRequirementsReturned", false],
+    ["codexRulesCommandTextReturned", false],
+    ["codexRulesShellScriptsReturned", false],
+    ["codexRulesExecpolicyResultsReturned", false],
+    ["codexRulesStarlarkContentReturned", false],
+    ["codexRulesFileWriteEnabled", false],
+    ["codexRulesPrefixRuleWriteEnabled", false],
+    ["codexRulesCommandPolicyWriteEnabled", false],
+    ["codexRulesSmartApprovalWriteEnabled", false],
+    ["codexRulesExecpolicyCheckEnabled", false],
+    ["codexRulesShellParsingEnabled", false],
+    ["codexRulesCommandExecutionEnabled", false],
+    ["codexRulesFilesystemAccess", false],
+    ["codexRulesMutationsEnabled", false],
+    ["codexRulesUrlsReturned", false],
+    ["codexRulesSecretsReturned", false],
+    ["codexRulesRawPayloadsReturned", false],
+    ["codexRulesAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedAutomationsCatalogEntries() {
   return [
     {
@@ -35204,6 +35377,7 @@ function assertCodexAppSettingsParity(
   assertSkillsPluginsCatalog(payload);
   assertCodexSitesCatalog(payload);
   assertCodexPermissionsCatalog(payload);
+  assertCodexRulesCatalog(payload);
   assertAutomationsCatalog(payload);
   assertCodexAppCommandsCatalog(payload);
   assertCodexChromeExtensionCatalog(payload);

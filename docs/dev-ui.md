@@ -811,6 +811,20 @@ proxy URLs, local/private policy values, Unix socket paths, sandbox modes,
 managed requirements, `config.toml`, platform paths, setting values, profile or
 rule writes, glob/workspace-root expansion, sandbox migration, network access,
 filesystem access, mutations, secrets, raw payloads, or app-server traffic.
+The same response exposes `codexRules` as a static review-only catalog for
+official Codex Rules. The UI shows only catalog counts, entry keys, groups,
+state/source chips, and redaction chips for `.rules` file locations, active
+config-layer scanning, project trust boundaries, `prefix_rule`
+shape/pattern/decision/example concepts, user allow-list writes, Smart approval
+suggestions, admin-enforced requirements, command prefix matching,
+shell-wrapper splitting/fallback behavior, `execpolicy` testing, and Starlark
+syntax. It does not show rule files, rule paths, rule content, prefix patterns,
+decision values, justifications, match examples, config layers, admin
+requirements, command text, shell scripts, execpolicy results, Starlark
+content, rule writes, prefix-rule writes, command-policy writes,
+smart-approval rule writes, execpolicy execution, shell parsing, command
+execution, filesystem access, mutations, paths, URLs, secrets, raw payloads, or
+app-server traffic.
 The same response exposes `automationsCatalog` as a static review-only
 Automations catalog. The UI shows only catalog counts, keys, groups,
 state/source chips, and redaction chips for official automation pane, Triage,

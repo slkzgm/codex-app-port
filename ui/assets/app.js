@@ -35,6 +35,8 @@ const elements = {
   codexSitesValuesText: document.querySelector("#codex-sites-values-text"),
   codexPermissionsText: document.querySelector("#codex-permissions-text"),
   codexPermissionsValuesText: document.querySelector("#codex-permissions-values-text"),
+  codexRulesText: document.querySelector("#codex-rules-text"),
+  codexRulesValuesText: document.querySelector("#codex-rules-values-text"),
   automationsCatalogText: document.querySelector("#automations-catalog-text"),
   automationsCatalogValuesText: document.querySelector("#automations-catalog-values-text"),
   codexAppCommandsText: document.querySelector("#codex-app-commands-text"),
@@ -414,6 +416,7 @@ const elements = {
   skillsPluginsCatalogList: document.querySelector("#skills-plugins-catalog-list"),
   codexSitesList: document.querySelector("#codex-sites-list"),
   codexPermissionsList: document.querySelector("#codex-permissions-list"),
+  codexRulesList: document.querySelector("#codex-rules-list"),
   automationsCatalogList: document.querySelector("#automations-catalog-list"),
   codexAppCommandsList: document.querySelector("#codex-app-commands-list"),
   codexChromeExtensionList: document.querySelector("#codex-chrome-extension-list"),
@@ -10461,6 +10464,7 @@ function renderSettingsIntegrations(payload) {
   const skillsPluginsCatalog = payload.skillsPluginsCatalog ?? {};
   const codexSites = payload.codexSites ?? {};
   const codexPermissions = payload.codexPermissions ?? {};
+  const codexRules = payload.codexRules ?? {};
   const automationsCatalog = payload.automationsCatalog ?? {};
   const codexAppCommands = payload.codexAppCommands ?? {};
   const codexChromeExtension = payload.codexChromeExtension ?? {};
@@ -10620,6 +10624,42 @@ function renderSettingsIntegrations(payload) {
     codexPermissions.secretsReturned ||
     codexPermissions.rawPayloadsReturned ||
     codexPermissions.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexRulesText.textContent = codexRules.returned
+    ? `${codexRules.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexRules.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexRulesValuesText.textContent =
+    codexRules.ruleFilesReturned ||
+    codexRules.rulePathsReturned ||
+    codexRules.ruleContentReturned ||
+    codexRules.prefixPatternsReturned ||
+    codexRules.decisionsReturned ||
+    codexRules.justificationsReturned ||
+    codexRules.matchExamplesReturned ||
+    codexRules.configLayersReturned ||
+    codexRules.adminRequirementsReturned ||
+    codexRules.commandTextReturned ||
+    codexRules.shellScriptsReturned ||
+    codexRules.execpolicyResultsReturned ||
+    codexRules.starlarkContentReturned ||
+    codexRules.ruleFilesWritten ||
+    codexRules.prefixRulesWritten ||
+    codexRules.commandPoliciesWritten ||
+    codexRules.smartApprovalRulesWritten ||
+    codexRules.execpolicyChecksExecuted ||
+    codexRules.shellScriptsParsed ||
+    codexRules.commandsExecuted ||
+    codexRules.filesystemReads ||
+    codexRules.filesystemWrites ||
+    codexRules.mutationEnabled ||
+    codexRules.pathsReturned ||
+    codexRules.urlsReturned ||
+    codexRules.secretsReturned ||
+    codexRules.rawPayloadsReturned ||
+    codexRules.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.automationsCatalogText.textContent = automationsCatalog.returned
@@ -11221,6 +11261,7 @@ function renderSettingsIntegrations(payload) {
   renderSkillsPluginsCatalog(skillsPluginsCatalog);
   renderCodexSitesCatalog(codexSites);
   renderCodexPermissionsCatalog(codexPermissions);
+  renderCodexRulesCatalog(codexRules);
   renderAutomationsCatalog(automationsCatalog);
   renderCodexAppCommandsCatalog(codexAppCommands);
   renderCodexChromeExtensionCatalog(codexChromeExtension);
@@ -13014,6 +13055,83 @@ function renderCodexPermissionsCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexPermissionsList.append(row);
+  }
+}
+
+function renderCodexRulesCatalog(summary) {
+  elements.codexRulesList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexRulesList.append(emptyState("No Codex Rules catalog returned."));
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "rules";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.ruleFileReturned ? "rule files returned" : "rule files hidden",
+      entry.rulePathReturned ? "rule paths returned" : "rule paths hidden",
+      entry.ruleContentReturned ? "rule content returned" : "rule content hidden",
+      entry.prefixPatternReturned ? "prefix patterns returned" : "prefix patterns hidden",
+      entry.decisionReturned ? "decisions returned" : "decisions hidden",
+      entry.justificationReturned ? "justifications returned" : "justifications hidden",
+      entry.matchExampleReturned ? "match examples returned" : "match examples hidden",
+      entry.configLayerReturned ? "config layers returned" : "config layers hidden",
+      entry.adminRequirementReturned
+        ? "admin requirements returned"
+        : "admin requirements hidden",
+      entry.commandTextReturned ? "command text returned" : "command text hidden",
+      entry.shellScriptReturned ? "shell scripts returned" : "shell scripts hidden",
+      entry.execpolicyResultReturned
+        ? "execpolicy results returned"
+        : "execpolicy results hidden",
+      entry.starlarkContentReturned ? "Starlark content returned" : "Starlark content hidden",
+      entry.ruleFileWritten ? "rule file written" : "rule file write blocked",
+      entry.prefixRuleWritten ? "prefix rule written" : "prefix rule write blocked",
+      entry.commandPolicyWritten ? "command policy written" : "command policy write blocked",
+      entry.smartApprovalRuleWritten
+        ? "smart approval rule written"
+        : "smart approval write blocked",
+      entry.execpolicyCheckExecuted ? "execpolicy check executed" : "execpolicy check blocked",
+      entry.shellScriptParsed ? "shell scripts parsed" : "shell parsing blocked",
+      entry.commandExecuted ? "command executed" : "command execution blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexRulesList.append(row);
   }
 }
 

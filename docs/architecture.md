@@ -573,6 +573,20 @@ Current M1 status:
   values, profile/rule writes, glob/workspace-root expansion, sandbox
   migration, network access, filesystem access, mutations, secrets, raw
   payloads, and app-server traffic blocked
+- done: read-only Codex Rules catalog in `/api/settings-integrations`,
+  exposing only static official Rules documentation keys plus local boundary
+  keys/groups/states/sources/counts/redaction flags for `.rules` file
+  locations, active config-layer scanning, project trust boundaries,
+  `prefix_rule` shape/pattern/decision/example concepts, user allow-list
+  writes, Smart approval suggestions, admin-enforced requirements, command
+  prefix matching, shell-wrapper splitting/fallback behavior, `execpolicy`
+  testing, and Starlark syntax, with rule files, rule paths/content, prefix
+  patterns, decisions, justifications, match examples, config layers, admin
+  requirements, command text, shell scripts, execpolicy results, Starlark
+  content, rule writes, prefix-rule writes, command-policy writes,
+  smart-approval rule writes, execpolicy execution, shell parsing, command
+  execution, filesystem access, mutations, paths, URLs, secrets, raw payloads,
+  and app-server traffic blocked
 - done: read-only Automations catalog in `/api/settings-integrations`,
   exposing only static official Automations documentation keys plus local
   boundary keys/groups/states/sources/counts/redaction flags for the

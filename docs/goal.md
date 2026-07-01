@@ -170,6 +170,20 @@ Target parity with the Codex desktop workflow:
   paths, setting values, secrets, raw payloads, or app-server traffic, and it
   does not write profiles/rules, expand globs/workspace roots, migrate
   sandbox settings, access network, read/write files, or mutate permissions.
+- `/api/settings-integrations` now also exposes a read-only Codex Rules catalog
+  aligned to the official Rules documentation. It returns only static keys,
+  groups, states, sources, counts, and redaction flags for `.rules` file
+  locations, active config-layer scanning, project trust boundaries,
+  `prefix_rule` shape/pattern/decision/example concepts, user allow-list
+  writes, Smart approval suggestions, admin-enforced requirements, command
+  prefix matching, shell-wrapper splitting/fallback behavior, `execpolicy`
+  testing, and Starlark syntax. It does not return rule files, rule paths,
+  rule content, prefix patterns, decision values, justifications, match
+  examples, config layers, admin requirements, command text, shell scripts,
+  execpolicy results, Starlark content, paths, URLs, secrets, raw payloads, or
+  app-server traffic, and it does not write rule files, write prefix rules,
+  write command policies, create Smart approval rules, run execpolicy checks,
+  parse shell scripts, execute commands, read/write files, or mutate rules.
 - `/api/settings-integrations` now also exposes a read-only Automations catalog
   aligned to the official Codex app Automations documentation. It returns only
   static keys, groups, states, sources, counts, and redaction flags for the

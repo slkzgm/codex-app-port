@@ -471,6 +471,15 @@
   traffic, and must not write profiles or rules, expand globs or workspace
   roots, migrate sandbox settings, access network, read or write files, or
   mutate permission state. Its
+  Codex Rules catalog may expose only static official-documentation keys plus
+  local boundary keys, groups, states, sources, counts, and redaction flags; it
+  must not return rule files, rule paths, rule content, prefix patterns,
+  decision values, justifications, match examples, config layers, admin
+  requirements, command text, shell scripts, execpolicy results, Starlark
+  content, paths, URLs, secrets, raw payloads, app-server payloads, or
+  app-server traffic, and must not write rule files, write prefix rules, write
+  command policies, create Smart approval rules, run execpolicy checks, parse
+  shell scripts, execute commands, access files, or mutate rules state. Its
   Automations catalog may expose only static official-documentation keys plus
   local boundary keys, groups, states, sources, counts, and redaction flags; it
   must not return automation names, run ids, run results, triage items,
