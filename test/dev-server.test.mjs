@@ -42844,6 +42844,54 @@ function expectedSkillsPluginsCatalogEntries(scope = {}) {
       source: "official-codex-plugins-docs",
     },
     {
+      key: "pluginDirectoryCuratedOpenAi",
+      group: "plugin-directory",
+      state: "catalog-only",
+      source: "official-codex-plugins-docs",
+    },
+    {
+      key: "pluginDirectorySharedWithYou",
+      group: "plugin-directory",
+      state: "catalog-only",
+      source: "official-codex-plugins-docs",
+    },
+    {
+      key: "pluginDirectoryCreatedByYou",
+      group: "plugin-directory",
+      state: "catalog-only",
+      source: "official-codex-plugins-docs",
+    },
+    {
+      key: "pluginExampleVulnerabilityScanWorkflow",
+      group: "plugin-examples",
+      state: "catalog-only",
+      source: "official-codex-plugins-docs",
+    },
+    {
+      key: "pluginExampleMailWorkflow",
+      group: "plugin-examples",
+      state: "catalog-only",
+      source: "official-codex-plugins-docs",
+    },
+    {
+      key: "pluginExampleWorkspaceDriveWorkflow",
+      group: "plugin-examples",
+      state: "catalog-only",
+      source: "official-codex-plugins-docs",
+    },
+    {
+      key: "pluginExampleTeamChatWorkflow",
+      group: "plugin-examples",
+      state: "catalog-only",
+      source: "official-codex-plugins-docs",
+    },
+    {
+      key: "pluginExampleHostedWebAppWorkflow",
+      group: "plugin-examples",
+      state: "catalog-only",
+      source: "official-codex-plugins-docs",
+    },
+    {
       key: "pluginAppDirectoryCategories",
       group: "plugin-directory",
       state: "catalog-only",
@@ -43020,8 +43068,8 @@ function assertSkillsPluginsCatalog(payload) {
   const countState = (state) => expectedEntries.filter((entry) => entry.state === state).length;
   assert.equal(catalog?.returned, true);
   assert.equal(catalog.state, "partial");
-  assert.equal(catalog.settingCount, 46);
-  assert.equal(catalog.officialSettingCount, 36);
+  assert.equal(catalog.settingCount, 54);
+  assert.equal(catalog.officialSettingCount, 44);
   assert.equal(catalog.localBoundarySettingCount, 10);
   assert.equal(catalog.catalogOnlySettingCount, countState("catalog-only"));
   assert.equal(catalog.preflightOnlySettingCount, countState("preflight-only"));

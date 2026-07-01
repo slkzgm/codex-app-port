@@ -740,9 +740,10 @@ Target parity with the Codex desktop workflow:
   invocation, description matching, creator/manual authoring, scope locations
   and precedence, symlink support, plugin distribution, curated installation,
   skill enablement config, optional skill app metadata, skill best practices,
-  plugin overview, app and CLI directory browsing, marketplace sharing,
-  install/auth timing, new-thread usage, direct-task and `@` invocation flows,
-  bundled skills/apps/MCP setup,
+  plugin overview, app and CLI directory browsing, curated/shared/created
+  directory categories, marketplace sharing, documented plugin workflow
+  examples, install/auth timing, new-thread usage, direct-task and `@`
+  invocation flows, bundled skills/apps/MCP setup,
   external app data terms, uninstall semantics, plugin disable config, plugin
   guide references, and local install/share/marketplace/preflight plus opt-in
   read/uninstall/enablement/share-checkout/skills-config boundaries. It does

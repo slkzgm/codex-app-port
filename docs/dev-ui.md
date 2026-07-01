@@ -1362,7 +1362,8 @@ counts, setting keys, groups, state/source chips, and redaction chips for
 official Skills runtime, context-budget, invocation, authoring,
 discovery/precedence, symlink, distribution, installation, config, metadata,
 and best-practice surfaces, official Plugin overview, app and CLI directory,
-marketplace sharing, install/auth timing, usage, permission/data-sharing,
+curated/shared/created directory categories, marketplace sharing, documented
+plugin workflow examples, install/auth timing, usage, permission/data-sharing,
 uninstall/disable, and guide-reference surfaces, plus
 local preflight boundaries for plugin install/share/marketplace/read/content/
 uninstall/enablement/share checkout and skills config/extra-roots writes. It
