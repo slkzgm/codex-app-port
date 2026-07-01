@@ -420,6 +420,19 @@ Target parity with the Codex desktop workflow:
   secrets, raw payloads, or app-server traffic, and it does not read prompt
   directories, read/write/delete prompt files, expand prompts, execute slash
   commands, access files, create model traffic, or mutate Custom Prompts state.
+- `/api/settings-integrations` now also exposes a read-only Codex
+  Customization catalog aligned to the official Customization guide. It returns
+  only static keys, groups, states, sources, counts, and redaction flags for
+  AGENTS guidance, Memories, Skills, MCP, Subagents, plugin distribution, scope
+  precedence, feedback-loop, automation-drift, MCP capability, and build-order
+  concepts. It does not return guidance files, global or repo guidance, memory
+  content, skill names/content/scripts, plugin names, MCP server/tool/resource/
+  prompt data, subagent names, automation names, workflow instructions, local
+  paths, file contents, config values, external system identifiers, URLs,
+  secrets, raw payloads, or app-server traffic, and it does not read/write
+  files, call MCP tools, read MCP resources, load MCP prompts, load skills,
+  install plugins, start subagents or automations, create model traffic, or
+  mutate customization state.
 - `/api/settings-integrations` now also exposes a read-only Codex GitHub Action
   catalog aligned to the official GitHub Action guide. It returns only static
   keys, groups, states, sources, counts, and redaction flags for CI workflow

@@ -41,6 +41,8 @@ const elements = {
   codexMemoriesValuesText: document.querySelector("#codex-memories-values-text"),
   codexCustomPromptsText: document.querySelector("#codex-custom-prompts-text"),
   codexCustomPromptsValuesText: document.querySelector("#codex-custom-prompts-values-text"),
+  codexCustomizationText: document.querySelector("#codex-customization-text"),
+  codexCustomizationValuesText: document.querySelector("#codex-customization-values-text"),
   codexSecurityText: document.querySelector("#codex-security-text"),
   codexSecurityValuesText: document.querySelector("#codex-security-values-text"),
   codexOpenSourceText: document.querySelector("#codex-open-source-text"),
@@ -519,6 +521,7 @@ const elements = {
   codexChronicleList: document.querySelector("#codex-chronicle-list"),
   codexMemoriesList: document.querySelector("#codex-memories-list"),
   codexCustomPromptsList: document.querySelector("#codex-custom-prompts-list"),
+  codexCustomizationList: document.querySelector("#codex-customization-list"),
   codexSecurityList: document.querySelector("#codex-security-list"),
   codexOpenSourceList: document.querySelector("#codex-open-source-list"),
   codexWindowsPlatformList: document.querySelector("#codex-windows-platform-list"),
@@ -10605,6 +10608,7 @@ function renderSettingsIntegrations(payload) {
   const codexChronicle = payload.codexChronicle ?? {};
   const codexMemories = payload.codexMemories ?? {};
   const codexCustomPrompts = payload.codexCustomPrompts ?? {};
+  const codexCustomization = payload.codexCustomization ?? {};
   const codexSecurity = payload.codexSecurity ?? {};
   const codexOpenSource = payload.codexOpenSource ?? {};
   const codexWindowsPlatform = payload.codexWindowsPlatform ?? {};
@@ -10908,6 +10912,49 @@ function renderSettingsIntegrations(payload) {
     codexCustomPrompts.secretsReturned ||
     codexCustomPrompts.rawPayloadsReturned ||
     codexCustomPrompts.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexCustomizationText.textContent = codexCustomization.returned
+    ? `${codexCustomization.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexCustomization.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexCustomizationValuesText.textContent =
+    codexCustomization.guidanceFilesReturned ||
+    codexCustomization.globalGuidanceReturned ||
+    codexCustomization.repoGuidanceReturned ||
+    codexCustomization.memoryContentsReturned ||
+    codexCustomization.skillNamesReturned ||
+    codexCustomization.skillContentsReturned ||
+    codexCustomization.skillScriptsReturned ||
+    codexCustomization.pluginNamesReturned ||
+    codexCustomization.mcpServerNamesReturned ||
+    codexCustomization.mcpToolNamesReturned ||
+    codexCustomization.mcpResourcesReturned ||
+    codexCustomization.mcpPromptsReturned ||
+    codexCustomization.subagentNamesReturned ||
+    codexCustomization.automationNamesReturned ||
+    codexCustomization.workflowInstructionsReturned ||
+    codexCustomization.localPathsReturned ||
+    codexCustomization.fileContentsReturned ||
+    codexCustomization.configValuesReturned ||
+    codexCustomization.externalSystemsReturned ||
+    codexCustomization.filesystemReads ||
+    codexCustomization.filesystemWrites ||
+    codexCustomization.mcpToolsCalled ||
+    codexCustomization.mcpResourcesRead ||
+    codexCustomization.mcpPromptsLoaded ||
+    codexCustomization.skillsLoaded ||
+    codexCustomization.pluginsInstalled ||
+    codexCustomization.subagentsStarted ||
+    codexCustomization.automationsStarted ||
+    codexCustomization.modelTraffic ||
+    codexCustomization.mutationEnabled ||
+    codexCustomization.pathsReturned ||
+    codexCustomization.urlsReturned ||
+    codexCustomization.secretsReturned ||
+    codexCustomization.rawPayloadsReturned ||
+    codexCustomization.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexSecurityText.textContent = codexSecurity.returned
@@ -13167,6 +13214,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexChronicleCatalog(codexChronicle);
   renderCodexMemoriesCatalog(codexMemories);
   renderCodexCustomPromptsCatalog(codexCustomPrompts);
+  renderCodexCustomizationCatalog(codexCustomization);
   renderCodexSecurityCatalog(codexSecurity);
   renderCodexOpenSourceCatalog(codexOpenSource);
   renderCodexWindowsPlatformCatalog(codexWindowsPlatform);
@@ -15397,6 +15445,86 @@ function renderCodexCustomPromptsCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexCustomPromptsList.append(row);
+  }
+}
+
+function renderCodexCustomizationCatalog(summary) {
+  elements.codexCustomizationList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexCustomizationList.append(emptyState("No Codex Customization catalog returned."));
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "customization";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.guidanceFileReturned ? "guidance files returned" : "guidance files hidden",
+      entry.globalGuidanceReturned ? "global guidance returned" : "global guidance hidden",
+      entry.repoGuidanceReturned ? "repo guidance returned" : "repo guidance hidden",
+      entry.memoryContentReturned ? "memory content returned" : "memory content hidden",
+      entry.skillNameReturned ? "skill names returned" : "skill names hidden",
+      entry.skillContentReturned ? "skill content returned" : "skill content hidden",
+      entry.skillScriptReturned ? "skill scripts returned" : "skill scripts hidden",
+      entry.pluginNameReturned ? "plugin names returned" : "plugin names hidden",
+      entry.mcpServerNameReturned ? "MCP server names returned" : "MCP server names hidden",
+      entry.mcpToolNameReturned ? "MCP tool names returned" : "MCP tool names hidden",
+      entry.mcpResourceReturned ? "MCP resources returned" : "MCP resources hidden",
+      entry.mcpPromptReturned ? "MCP prompts returned" : "MCP prompts hidden",
+      entry.subagentNameReturned ? "subagent names returned" : "subagent names hidden",
+      entry.automationNameReturned ? "automation names returned" : "automation names hidden",
+      entry.workflowInstructionReturned
+        ? "workflow instructions returned"
+        : "workflow instructions hidden",
+      entry.localPathReturned ? "local paths returned" : "local paths hidden",
+      entry.fileContentReturned ? "file contents returned" : "file contents hidden",
+      entry.configValueReturned ? "config values returned" : "config values hidden",
+      entry.externalSystemReturned ? "external systems returned" : "external systems hidden",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      entry.mcpToolCalled ? "MCP tools called" : "MCP tool calls blocked",
+      entry.mcpResourceRead ? "MCP resources read" : "MCP resource reads blocked",
+      entry.mcpPromptLoaded ? "MCP prompts loaded" : "MCP prompt loading blocked",
+      entry.skillLoaded ? "skills loaded" : "skill loading blocked",
+      entry.pluginInstalled ? "plugins installed" : "plugin installs blocked",
+      entry.subagentStarted ? "subagents started" : "subagent starts blocked",
+      entry.automationStarted ? "automations started" : "automation starts blocked",
+      entry.modelTraffic ? "model traffic" : "model traffic blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexCustomizationList.append(row);
   }
 }
 

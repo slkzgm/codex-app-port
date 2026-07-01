@@ -817,6 +817,18 @@ Current M1 status:
   reads/writes/deletes, prompt expansion, slash execution, filesystem access,
   model traffic, mutations, paths, URLs, secrets, raw payloads, and app-server
   traffic blocked
+- done: read-only Codex Customization catalog in `/api/settings-integrations`,
+  exposing only static official Customization documentation keys plus local
+  boundary keys/groups/states/sources/counts/redaction flags for AGENTS
+  guidance, Memories, Skills, MCP, Subagents, plugin distribution, scope
+  precedence, feedback-loop, automation-drift, MCP capability, and build-order
+  concepts, with guidance files, global/repo guidance, memory content, skill
+  names/content/scripts, plugin names, MCP server/tool/resource/prompt data,
+  subagent names, automation names, workflow instructions, local paths, file
+  contents, config values, external system identifiers, file reads/writes, MCP
+  tool calls, MCP resource reads, MCP prompt loading, skill loading, plugin
+  installs, subagent/automation starts, model traffic, mutations, URLs, secrets,
+  raw payloads, and app-server traffic blocked
 - done: read-only Codex GitHub Action catalog in `/api/settings-integrations`,
   exposing only static official GitHub Action documentation keys plus local
   boundary keys/groups/states/sources/counts/redaction flags for CI workflows,

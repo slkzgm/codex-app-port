@@ -34236,6 +34236,190 @@ function assertCodexCustomPromptsCatalog(payload) {
   }
 }
 
+function expectedCodexCustomizationEntries() {
+  return [
+    ["customizationLayerStack", "overview", "catalog-only", "official-codex-customization-docs"],
+    ["projectGuidanceLayer", "agents-guidance", "catalog-only", "official-codex-customization-docs"],
+    ["memoriesContextLayer", "memories", "catalog-only", "official-codex-customization-docs"],
+    ["skillsWorkflowLayer", "skills", "catalog-only", "official-codex-customization-docs"],
+    ["mcpExternalToolsLayer", "mcp", "catalog-only", "official-codex-customization-docs"],
+    ["subagentsDelegationLayer", "subagents", "catalog-only", "official-codex-customization-docs"],
+    ["complementarySurfaceModel", "surface-selection", "catalog-only", "official-codex-customization-docs"],
+    ["agentsGuidanceUseCases", "agents-guidance", "catalog-only", "official-codex-customization-docs"],
+    ["agentsGuidanceFeedbackLoop", "agents-guidance", "catalog-only", "official-codex-customization-docs"],
+    ["agentsGuidanceUpdateTriggers", "agents-guidance", "catalog-only", "official-codex-customization-docs"],
+    ["agentsGuidancePullRequestDelegation", "agents-guidance", "catalog-only", "official-codex-customization-docs"],
+    ["agentsGuidanceAutomationDrift", "agents-guidance", "catalog-only", "official-codex-customization-docs"],
+    ["agentsGuidanceScopePrecedence", "agents-guidance", "catalog-only", "official-codex-customization-docs"],
+    ["globalAndRepoCustomizationScopes", "scope", "catalog-only", "official-codex-customization-docs"],
+    ["skillsReusableWorkflowGuidance", "skills", "catalog-only", "official-codex-customization-docs"],
+    ["skillsProgressiveDisclosureGuidance", "skills", "catalog-only", "official-codex-customization-docs"],
+    ["skillsPluginDistributionPath", "plugins", "catalog-only", "official-codex-customization-docs"],
+    ["mcpHostClientServerModel", "mcp", "catalog-only", "official-codex-customization-docs"],
+    ["mcpCapabilitySeparation", "mcp", "catalog-only", "official-codex-customization-docs"],
+    ["skillsMcpPairingGuidance", "mcp", "catalog-only", "official-codex-customization-docs"],
+    ["subagentSpecializationGuidance", "subagents", "catalog-only", "official-codex-customization-docs"],
+    ["customizationBuildOrder", "implementation-order", "catalog-only", "official-codex-customization-docs"],
+    ["agentsGuidanceFileBoundary", "agents-guidance", "blocked", "local-customization-boundary"],
+    ["globalGuidanceBoundary", "agents-guidance", "blocked", "local-customization-boundary"],
+    ["repoGuidanceBoundary", "agents-guidance", "blocked", "local-customization-boundary"],
+    ["memoryContentBoundary", "memories", "blocked", "local-customization-boundary"],
+    ["skillContentBoundary", "skills", "blocked", "local-customization-boundary"],
+    ["skillScriptBoundary", "skills", "blocked", "local-customization-boundary"],
+    ["pluginInstallBoundary", "plugins", "blocked", "local-customization-boundary"],
+    ["mcpConfigurationBoundary", "mcp", "blocked", "local-customization-boundary"],
+    ["mcpToolBoundary", "mcp", "blocked", "local-customization-boundary"],
+    ["mcpResourceBoundary", "mcp", "blocked", "local-customization-boundary"],
+    ["mcpPromptBoundary", "mcp", "blocked", "local-customization-boundary"],
+    ["subagentConfigurationBoundary", "subagents", "blocked", "local-customization-boundary"],
+    ["automationCreationBoundary", "automations", "blocked", "local-customization-boundary"],
+    ["filesystemBoundary", "filesystem", "blocked", "local-customization-boundary"],
+    ["modelTrafficBoundary", "model", "blocked", "local-customization-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexCustomizationCatalog(payload) {
+  const catalog = payload.codexCustomization;
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-customization-docs");
+  assert.equal(catalog.entryCount, 37);
+  assert.equal(catalog.officialEntryCount, 22);
+  assert.equal(catalog.localBoundaryEntryCount, 15);
+  assert.equal(catalog.catalogOnlyEntryCount, 22);
+  assert.equal(catalog.blockedEntryCount, 15);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({ key, group, state, source })),
+    expectedCodexCustomizationEntries(),
+  );
+
+  const entryRedactionFlags = [
+    "guidanceFileReturned",
+    "globalGuidanceReturned",
+    "repoGuidanceReturned",
+    "memoryContentReturned",
+    "skillNameReturned",
+    "skillContentReturned",
+    "skillScriptReturned",
+    "pluginNameReturned",
+    "mcpServerNameReturned",
+    "mcpToolNameReturned",
+    "mcpResourceReturned",
+    "mcpPromptReturned",
+    "subagentNameReturned",
+    "automationNameReturned",
+    "workflowInstructionReturned",
+    "localPathReturned",
+    "fileContentReturned",
+    "configValueReturned",
+    "externalSystemReturned",
+    "filesystemRead",
+    "filesystemWrite",
+    "mcpToolCalled",
+    "mcpResourceRead",
+    "mcpPromptLoaded",
+    "skillLoaded",
+    "pluginInstalled",
+    "subagentStarted",
+    "automationStarted",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.customizationCatalogReturned, true);
+  for (const flag of [
+    "guidanceFilesReturned",
+    "globalGuidanceReturned",
+    "repoGuidanceReturned",
+    "memoryContentsReturned",
+    "skillNamesReturned",
+    "skillContentsReturned",
+    "skillScriptsReturned",
+    "pluginNamesReturned",
+    "mcpServerNamesReturned",
+    "mcpToolNamesReturned",
+    "mcpResourcesReturned",
+    "mcpPromptsReturned",
+    "subagentNamesReturned",
+    "automationNamesReturned",
+    "workflowInstructionsReturned",
+    "localPathsReturned",
+    "fileContentsReturned",
+    "configValuesReturned",
+    "externalSystemsReturned",
+    "filesystemReads",
+    "filesystemWrites",
+    "mcpToolsCalled",
+    "mcpResourcesRead",
+    "mcpPromptsLoaded",
+    "skillsLoaded",
+    "pluginsInstalled",
+    "subagentsStarted",
+    "automationsStarted",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexCustomizationReturned", true],
+    ["codexCustomizationValuesReturned", false],
+    ["codexCustomizationGuidanceFilesReturned", false],
+    ["codexCustomizationGlobalGuidanceReturned", false],
+    ["codexCustomizationRepoGuidanceReturned", false],
+    ["codexCustomizationMemoryContentsReturned", false],
+    ["codexCustomizationSkillNamesReturned", false],
+    ["codexCustomizationSkillContentsReturned", false],
+    ["codexCustomizationSkillScriptsReturned", false],
+    ["codexCustomizationPluginNamesReturned", false],
+    ["codexCustomizationMcpServerNamesReturned", false],
+    ["codexCustomizationMcpToolNamesReturned", false],
+    ["codexCustomizationMcpResourcesReturned", false],
+    ["codexCustomizationMcpPromptsReturned", false],
+    ["codexCustomizationSubagentNamesReturned", false],
+    ["codexCustomizationAutomationNamesReturned", false],
+    ["codexCustomizationWorkflowInstructionsReturned", false],
+    ["codexCustomizationLocalPathsReturned", false],
+    ["codexCustomizationFileContentsReturned", false],
+    ["codexCustomizationConfigValuesReturned", false],
+    ["codexCustomizationExternalSystemsReturned", false],
+    ["codexCustomizationFilesystemAccess", false],
+    ["codexCustomizationMcpToolCallsEnabled", false],
+    ["codexCustomizationMcpResourceReadsEnabled", false],
+    ["codexCustomizationMcpPromptLoadsEnabled", false],
+    ["codexCustomizationSkillLoadingEnabled", false],
+    ["codexCustomizationPluginInstallEnabled", false],
+    ["codexCustomizationSubagentStartEnabled", false],
+    ["codexCustomizationAutomationStartEnabled", false],
+    ["codexCustomizationModelTraffic", false],
+    ["codexCustomizationMutationsEnabled", false],
+    ["codexCustomizationUrlsReturned", false],
+    ["codexCustomizationSecretsReturned", false],
+    ["codexCustomizationRawPayloadsReturned", false],
+    ["codexCustomizationAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexSecurityEntries() {
   return [
     ["securityPluginOverview", "plugin-overview", "catalog-only", "official-codex-security-docs"],
@@ -43342,6 +43526,7 @@ function assertCodexAppSettingsParity(
   assertCodexChronicleCatalog(payload);
   assertCodexMemoriesCatalog(payload);
   assertCodexCustomPromptsCatalog(payload);
+  assertCodexCustomizationCatalog(payload);
   assertCodexSecurityCatalog(payload);
   assertCodexOpenSourceCatalog(payload);
   assertCodexWindowsPlatformCatalog(payload);

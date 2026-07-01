@@ -598,6 +598,16 @@
   directories, read/write/delete prompt files, expand prompts, execute slash
   commands, access filesystem, create model traffic, or mutate Custom Prompts
   state. Its
+  Codex Customization catalog may expose only static official-documentation
+  keys plus local boundary keys, groups, states, sources, counts, and redaction
+  flags; it must not return guidance files, global or repo guidance, memory
+  content, skill names/content/scripts, plugin names, MCP server/tool/resource/
+  prompt data, subagent names, automation names, workflow instructions, local
+  paths, file contents, config values, external system identifiers, URLs,
+  secrets, raw payloads, app-server payloads, or app-server traffic, and must
+  not read/write files, call MCP tools, read MCP resources, load MCP prompts,
+  load skills, install plugins, start subagents or automations, create model
+  traffic, or mutate customization state. Its
   Codex Security catalog may expose only static official-documentation keys
   plus local boundary keys, groups, states, sources, counts, and redaction
   flags; it must not return plugin install state, scan prompts, setup
@@ -711,7 +721,17 @@
   text, paths, URLs, secrets, raw payloads, app-server payloads, or app-server
   traffic, and must not read prompt directories, read/write/delete prompt
   files, expand prompts, execute slash commands, access filesystem, create model
-  traffic, or mutate Custom Prompts state. Its Codex CLI command reference catalog
+  traffic, or mutate Custom Prompts state. Its Codex Customization catalog may
+  expose only static official-documentation keys plus local boundary keys,
+  groups, states, sources, counts, and redaction flags; it must not return
+  guidance files, global or repo guidance, memory content, skill names/content/
+  scripts, plugin names, MCP server/tool/resource/prompt data, subagent names,
+  automation names, workflow instructions, local paths, file contents, config
+  values, external system identifiers, URLs, secrets, raw payloads, app-server
+  payloads, or app-server traffic, and must not read/write files, call MCP
+  tools, read MCP resources, load MCP prompts, load skills, install plugins,
+  start subagents or automations, create model traffic, or mutate customization
+  state. Its Codex CLI command reference catalog
   may expose only static official-documentation keys plus local boundary keys,
   groups, states, sources, counts, and redaction flags; it must not return exact
   command names, flag names, option values, prompt text, config keys or values,

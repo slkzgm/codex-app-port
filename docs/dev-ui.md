@@ -875,6 +875,19 @@ app-server traffic, and it must not read prompt directories, read/write/delete
 prompt files, expand prompts, execute slash commands, access files, create
 model traffic, or mutate Custom Prompts state.
 
+The same response exposes `codexCustomization` as a static review-only catalog
+for the official Customization guide. The UI shows only catalog counts, entry
+keys, groups, state/source chips, and negative redaction chips for AGENTS
+guidance, Memories, Skills, MCP, Subagents, plugin distribution, scope
+precedence, feedback-loop, automation-drift, MCP capability, and build-order
+concepts. It must not show guidance files, global or repo guidance, memory
+content, skill names/content/scripts, plugin names, MCP server/tool/resource/
+prompt data, subagent names, automation names, workflow instructions, local
+paths, file contents, config values, external system identifiers, URLs, secrets,
+raw payloads, or app-server traffic, and it must not read/write files, call MCP
+tools, read MCP resources, load MCP prompts, load skills, install plugins, start
+subagents or automations, create model traffic, or mutate customization state.
+
 The same response exposes `codexSecurity` as a static review-only catalog for
 official Codex Security behavior. The UI shows only catalog counts, entry keys,
 groups, state/source chips, and negative redaction chips for local plugin
