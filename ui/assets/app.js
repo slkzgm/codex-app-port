@@ -37,6 +37,8 @@ const elements = {
   codexAutoReviewValuesText: document.querySelector("#codex-auto-review-values-text"),
   codexChronicleText: document.querySelector("#codex-chronicle-text"),
   codexChronicleValuesText: document.querySelector("#codex-chronicle-values-text"),
+  codexMemoriesText: document.querySelector("#codex-memories-text"),
+  codexMemoriesValuesText: document.querySelector("#codex-memories-values-text"),
   codexSecurityText: document.querySelector("#codex-security-text"),
   codexSecurityValuesText: document.querySelector("#codex-security-values-text"),
   codexOpenSourceText: document.querySelector("#codex-open-source-text"),
@@ -513,6 +515,7 @@ const elements = {
   codexAdminSetupList: document.querySelector("#codex-admin-setup-list"),
   codexAutoReviewList: document.querySelector("#codex-auto-review-list"),
   codexChronicleList: document.querySelector("#codex-chronicle-list"),
+  codexMemoriesList: document.querySelector("#codex-memories-list"),
   codexSecurityList: document.querySelector("#codex-security-list"),
   codexOpenSourceList: document.querySelector("#codex-open-source-list"),
   codexWindowsPlatformList: document.querySelector("#codex-windows-platform-list"),
@@ -10597,6 +10600,7 @@ function renderSettingsIntegrations(payload) {
   const codexAdminSetup = payload.codexAdminSetup ?? {};
   const codexAutoReview = payload.codexAutoReview ?? {};
   const codexChronicle = payload.codexChronicle ?? {};
+  const codexMemories = payload.codexMemories ?? {};
   const codexSecurity = payload.codexSecurity ?? {};
   const codexOpenSource = payload.codexOpenSource ?? {};
   const codexWindowsPlatform = payload.codexWindowsPlatform ?? {};
@@ -10831,6 +10835,42 @@ function renderSettingsIntegrations(payload) {
     codexChronicle.secretsReturned ||
     codexChronicle.rawPayloadsReturned ||
     codexChronicle.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexMemoriesText.textContent = codexMemories.returned
+    ? `${codexMemories.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexMemories.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexMemoriesValuesText.textContent =
+    codexMemories.settingValuesReturned ||
+    codexMemories.configValuesReturned ||
+    codexMemories.configPathsReturned ||
+    codexMemories.memoryFilesReturned ||
+    codexMemories.memoryContentsReturned ||
+    codexMemories.memoryPathsReturned ||
+    codexMemories.threadIdsReturned ||
+    codexMemories.threadContentsReturned ||
+    codexMemories.rateLimitValuesReturned ||
+    codexMemories.modelNamesReturned ||
+    codexMemories.generatedSummariesReturned ||
+    codexMemories.promptContextsReturned ||
+    codexMemories.secretValuesReturned ||
+    codexMemories.configReads ||
+    codexMemories.configWrites ||
+    codexMemories.memoryFileReads ||
+    codexMemories.memoriesGenerated ||
+    codexMemories.memoriesInjected ||
+    codexMemories.filesystemReads ||
+    codexMemories.filesystemWrites ||
+    codexMemories.networkAccess ||
+    codexMemories.modelTraffic ||
+    codexMemories.mutationEnabled ||
+    codexMemories.pathsReturned ||
+    codexMemories.urlsReturned ||
+    codexMemories.secretsReturned ||
+    codexMemories.rawPayloadsReturned ||
+    codexMemories.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexSecurityText.textContent = codexSecurity.returned
@@ -13088,6 +13128,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexAdminSetupCatalog(codexAdminSetup);
   renderCodexAutoReviewCatalog(codexAutoReview);
   renderCodexChronicleCatalog(codexChronicle);
+  renderCodexMemoriesCatalog(codexMemories);
   renderCodexSecurityCatalog(codexSecurity);
   renderCodexOpenSourceCatalog(codexOpenSource);
   renderCodexWindowsPlatformCatalog(codexWindowsPlatform);
@@ -15177,6 +15218,77 @@ function renderCodexChronicleCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexChronicleList.append(row);
+  }
+}
+
+function renderCodexMemoriesCatalog(summary) {
+  elements.codexMemoriesList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexMemoriesList.append(emptyState("No Codex Memories catalog returned."));
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "memories";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.settingValueReturned ? "settings returned" : "settings hidden",
+      entry.configValueReturned ? "config returned" : "config hidden",
+      entry.configPathReturned ? "config paths returned" : "config paths hidden",
+      entry.memoryFileReturned ? "memory files returned" : "memory files hidden",
+      entry.memoryContentReturned ? "memory content returned" : "memory content hidden",
+      entry.memoryPathReturned ? "memory paths returned" : "memory paths hidden",
+      entry.threadIdReturned ? "thread ids returned" : "thread ids hidden",
+      entry.threadContentReturned ? "thread content returned" : "thread content hidden",
+      entry.rateLimitValueReturned ? "rate limits returned" : "rate limits hidden",
+      entry.modelNameReturned ? "model names returned" : "model names hidden",
+      entry.generatedSummaryReturned ? "summaries returned" : "summaries hidden",
+      entry.promptContextReturned ? "prompt context returned" : "prompt context hidden",
+      entry.secretValueReturned ? "secret values returned" : "secret values hidden",
+      entry.configRead ? "config read" : "config reads blocked",
+      entry.configWritten ? "config written" : "config writes blocked",
+      entry.memoryFileRead ? "memory files read" : "memory file reads blocked",
+      entry.memoryGenerated ? "memories generated" : "memory generation blocked",
+      entry.memoryInjected ? "memories injected" : "memory injection blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.modelTraffic ? "model traffic" : "model traffic blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexMemoriesList.append(row);
   }
 }
 

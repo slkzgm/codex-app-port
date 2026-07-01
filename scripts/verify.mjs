@@ -33937,6 +33937,160 @@ function assertCodexChronicleCatalog(payload) {
   }
 }
 
+function expectedCodexMemoriesEntries() {
+  return [
+    ["defaultOffState", "availability", "catalog-only", "official-codex-memories-docs"],
+    ["regionalConsentRequirement", "availability", "catalog-only", "official-codex-memories-docs"],
+    ["stablePreferenceRecall", "purpose", "catalog-only", "official-codex-memories-docs"],
+    ["teamGuidanceBoundary", "guidance", "catalog-only", "official-codex-memories-docs"],
+    ["chronicleContextLink", "chronicle", "catalog-only", "official-codex-memories-docs"],
+    ["appSettingsEnablement", "enablement", "catalog-only", "official-codex-memories-docs"],
+    ["configFeatureFlagSetup", "enablement", "catalog-only", "official-codex-memories-docs"],
+    ["eligiblePriorThreadInputs", "generation", "catalog-only", "official-codex-memories-docs"],
+    ["backgroundGeneration", "generation", "catalog-only", "official-codex-memories-docs"],
+    ["idleDelaySemantics", "generation", "catalog-only", "official-codex-memories-docs"],
+    ["rateLimitThresholdSkip", "generation", "catalog-only", "official-codex-memories-docs"],
+    ["localMemoryStorage", "storage", "catalog-only", "official-codex-memories-docs"],
+    ["generatedStateReview", "storage", "catalog-only", "official-codex-memories-docs"],
+    ["perThreadMemoryControl", "thread-controls", "catalog-only", "official-codex-memories-docs"],
+    ["globalUseGenerationControls", "configuration", "catalog-only", "official-codex-memories-docs"],
+    ["externalContextDisableControl", "configuration", "catalog-only", "official-codex-memories-docs"],
+    ["extractionConsolidationModelControls", "configuration", "catalog-only", "official-codex-memories-docs"],
+    ["secretReviewGuidance", "safety", "catalog-only", "official-codex-memories-docs"],
+    ["settingValueBoundary", "settings", "blocked", "local-memories-boundary"],
+    ["configContentBoundary", "configuration", "blocked", "local-memories-boundary"],
+    ["memoryFileBoundary", "storage", "blocked", "local-memories-boundary"],
+    ["memoryContentBoundary", "storage", "blocked", "local-memories-boundary"],
+    ["memoryPathBoundary", "storage", "blocked", "local-memories-boundary"],
+    ["threadChoiceBoundary", "thread-controls", "blocked", "local-memories-boundary"],
+    ["rateLimitBoundary", "generation", "blocked", "local-memories-boundary"],
+    ["modelOverrideBoundary", "configuration", "blocked", "local-memories-boundary"],
+    ["memoryGenerationBoundary", "generation", "blocked", "local-memories-boundary"],
+    ["memoryInjectionBoundary", "runtime", "blocked", "local-memories-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexMemoriesCatalog(payload) {
+  const catalog = payload.codexMemories;
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-memories-docs");
+  assert.equal(catalog.entryCount, 28);
+  assert.equal(catalog.officialEntryCount, 18);
+  assert.equal(catalog.localBoundaryEntryCount, 10);
+  assert.equal(catalog.catalogOnlyEntryCount, 18);
+  assert.equal(catalog.blockedEntryCount, 10);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({ key, group, state, source })),
+    expectedCodexMemoriesEntries(),
+  );
+
+  const entryRedactionFlags = [
+    "settingValueReturned",
+    "configValueReturned",
+    "configPathReturned",
+    "memoryFileReturned",
+    "memoryContentReturned",
+    "memoryPathReturned",
+    "threadIdReturned",
+    "threadContentReturned",
+    "rateLimitValueReturned",
+    "modelNameReturned",
+    "generatedSummaryReturned",
+    "promptContextReturned",
+    "secretValueReturned",
+    "configRead",
+    "configWritten",
+    "memoryFileRead",
+    "memoryGenerated",
+    "memoryInjected",
+    "filesystemRead",
+    "filesystemWrite",
+    "networkAccess",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.memoriesCatalogReturned, true);
+  for (const flag of [
+    "settingValuesReturned",
+    "configValuesReturned",
+    "configPathsReturned",
+    "memoryFilesReturned",
+    "memoryContentsReturned",
+    "memoryPathsReturned",
+    "threadIdsReturned",
+    "threadContentsReturned",
+    "rateLimitValuesReturned",
+    "modelNamesReturned",
+    "generatedSummariesReturned",
+    "promptContextsReturned",
+    "secretValuesReturned",
+    "configReads",
+    "configWrites",
+    "memoryFileReads",
+    "memoriesGenerated",
+    "memoriesInjected",
+    "filesystemReads",
+    "filesystemWrites",
+    "networkAccess",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexMemoriesReturned", true],
+    ["codexMemoriesValuesReturned", false],
+    ["codexMemoriesSettingValuesReturned", false],
+    ["codexMemoriesConfigValuesReturned", false],
+    ["codexMemoriesConfigPathsReturned", false],
+    ["codexMemoriesFilesReturned", false],
+    ["codexMemoriesContentsReturned", false],
+    ["codexMemoriesPathsReturned", false],
+    ["codexMemoriesThreadIdsReturned", false],
+    ["codexMemoriesThreadContentsReturned", false],
+    ["codexMemoriesRateLimitValuesReturned", false],
+    ["codexMemoriesModelNamesReturned", false],
+    ["codexMemoriesGeneratedSummariesReturned", false],
+    ["codexMemoriesPromptContextsReturned", false],
+    ["codexMemoriesSecretValuesReturned", false],
+    ["codexMemoriesConfigReadEnabled", false],
+    ["codexMemoriesConfigWriteEnabled", false],
+    ["codexMemoriesFileReadEnabled", false],
+    ["codexMemoriesGenerationEnabled", false],
+    ["codexMemoriesInjectionEnabled", false],
+    ["codexMemoriesFilesystemAccess", false],
+    ["codexMemoriesNetworkAccess", false],
+    ["codexMemoriesModelTraffic", false],
+    ["codexMemoriesMutationsEnabled", false],
+    ["codexMemoriesUrlsReturned", false],
+    ["codexMemoriesSecretsReturned", false],
+    ["codexMemoriesRawPayloadsReturned", false],
+    ["codexMemoriesAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexSecurityEntries() {
   return [
     ["securityPluginOverview", "plugin-overview", "catalog-only", "official-codex-security-docs"],
@@ -43041,6 +43195,7 @@ function assertCodexAppSettingsParity(
   assertCodexAdminSetupCatalog(payload);
   assertCodexAutoReviewCatalog(payload);
   assertCodexChronicleCatalog(payload);
+  assertCodexMemoriesCatalog(payload);
   assertCodexSecurityCatalog(payload);
   assertCodexOpenSourceCatalog(payload);
   assertCodexWindowsPlatformCatalog(payload);

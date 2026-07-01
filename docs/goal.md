@@ -393,6 +393,20 @@ Target parity with the Codex desktop workflow:
   reads, plugin access, or model traffic, write attachments/session files/
   settings, create/update threads, prompt permissions, open settings, access
   files/network, or mutate state.
+- `/api/settings-integrations` now also exposes a read-only Codex Memories
+  catalog aligned to the official Memories guide. It returns only static keys,
+  groups, states, sources, counts, and redaction flags for default-disabled
+  state, regional consent requirements, stable preference recall, team guidance
+  boundaries, Chronicle linkage, app/config enablement, eligible prior-thread
+  inputs, background generation, idle-delay and rate-limit gating, local memory
+  storage, generated-state review, per-thread controls, global use/generation
+  controls, external-context exclusion, model override controls, and secret
+  review guidance. It does not return setting values, config values or paths,
+  memory files or contents, memory paths, thread ids or contents, rate-limit
+  values, model names, generated summaries, prompt context, secret values,
+  paths, URLs, secrets, raw payloads, or app-server traffic, and it does not
+  read/write config, read memory files, generate or inject memories, access
+  files/network, create model traffic, or mutate Memories state.
 - `/api/settings-integrations` now also exposes a read-only Codex GitHub Action
   catalog aligned to the official GitHub Action guide. It returns only static
   keys, groups, states, sources, counts, and redaction flags for CI workflow

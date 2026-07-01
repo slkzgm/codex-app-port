@@ -686,7 +686,15 @@
   start MCP servers or inspectors, list/call tools, continue sessions, forward
   approvals, install dependencies, execute scripts, run agents, start handoffs,
   create traces, write artifacts, access filesystem or network, create model
-  traffic, or mutate Agents SDK state. Its Codex CLI command reference catalog
+  traffic, or mutate Agents SDK state. Its Codex Memories catalog may expose
+  only static official-documentation keys plus local boundary keys, groups,
+  states, sources, counts, and redaction flags; it must not return setting
+  values, config values or paths, memory files or contents, memory paths, thread
+  ids or contents, rate-limit values, model names, generated summaries, prompt
+  context, secret values, paths, URLs, secrets, raw payloads, app-server
+  payloads, or app-server traffic, and must not read/write config, read memory
+  files, generate or inject memories, access filesystem or network, create model
+  traffic, or mutate Memories state. Its Codex CLI command reference catalog
   may expose only static official-documentation keys plus local boundary keys,
   groups, states, sources, counts, and redaction flags; it must not return exact
   command names, flag names, option values, prompt text, config keys or values,

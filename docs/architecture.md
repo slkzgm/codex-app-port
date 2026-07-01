@@ -790,6 +790,20 @@ Current M1 status:
   activity, attachment/session/settings writes, thread creation or updates,
   permission prompts, settings opens, filesystem access, network access,
   mutations, paths, URLs, secrets, raw payloads, and app-server traffic blocked
+- done: read-only Codex Memories catalog in `/api/settings-integrations`,
+  exposing only static official Memories documentation keys plus local boundary
+  keys/groups/states/sources/counts/redaction flags for default-disabled state,
+  regional consent requirements, stable preference recall, team guidance
+  boundaries, Chronicle linkage, app/config enablement, eligible prior-thread
+  inputs, background generation, idle-delay and rate-limit gating, local memory
+  storage, generated-state review, per-thread controls, global use/generation
+  controls, external-context exclusion, model override controls, and secret
+  review guidance, with setting values, config values/paths, memory files/
+  contents/paths, thread ids/content, rate-limit values, model names, generated
+  summaries, prompt context, secret values, config reads/writes, memory-file
+  reads, memory generation/injection, filesystem access, network access, model
+  traffic, mutations, paths, URLs, secrets, raw payloads, and app-server traffic
+  blocked
 - done: read-only Codex GitHub Action catalog in `/api/settings-integrations`,
   exposing only static official GitHub Action documentation keys plus local
   boundary keys/groups/states/sources/counts/redaction flags for CI workflows,

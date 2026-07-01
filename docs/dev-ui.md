@@ -846,6 +846,21 @@ URLs, secrets, raw payloads, and app-server traffic. It must not activate
 Chronicle, read screen or memory data, touch local Chronicle directories, start
 background agents, create model traffic, or mutate Chronicle settings.
 
+The same response exposes `codexMemories` as a static review-only catalog for
+the official Codex Memories guide. The UI shows only catalog counts, entry keys,
+groups, state/source chips, and negative redaction chips for default-disabled
+state, regional consent requirements, stable preference recall, team guidance
+boundaries, Chronicle linkage, app/config enablement, eligible prior-thread
+inputs, background generation, idle-delay and rate-limit gating, local memory
+storage, generated-state review, per-thread controls, global use/generation
+controls, external-context exclusion, model override controls, and secret review
+guidance. It must not show setting values, config values or paths, memory files
+or contents, memory paths, thread ids or contents, rate-limit values, model
+names, generated summaries, prompt context, secret values, paths, URLs, secrets,
+raw payloads, or app-server traffic, and it must not read/write config, read
+memory files, generate or inject memories, access files/network, create model
+traffic, or mutate Memories state.
+
 The same response exposes `codexSecurity` as a static review-only catalog for
 official Codex Security behavior. The UI shows only catalog counts, entry keys,
 groups, state/source chips, and negative redaction chips for local plugin
