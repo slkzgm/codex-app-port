@@ -633,6 +633,16 @@
   config/features, apply network rules, apply auto-review policy, change
   Appshots or remote-control settings, access files or network, or mutate
   managed configuration state. Its
+  Codex Appshots catalog may expose only static official-documentation keys
+  plus local boundary keys, groups, states, sources, counts, and redaction
+  flags; it must not return platform values, hotkey values, window titles, app
+  names, screenshots, available text, attachment content, session paths, thread
+  IDs, permission states, setting values, plugin names, document content,
+  sensitive content, paths, URLs, secrets, raw payloads, app-server payloads, or
+  app-server traffic, and must not start capture, hotkey listeners,
+  accessibility reads, plugin access, model traffic, write attachments/session
+  files/settings, create or update threads, prompt permissions, open settings,
+  access filesystem or network, or mutate Appshots state. Its
   Codex Environment variables catalog may expose only static
   official-documentation keys plus local boundary keys, groups, states,
   sources, counts, and redaction flags; it must not read `process.env`, return

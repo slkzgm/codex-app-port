@@ -67,6 +67,8 @@ const elements = {
   ),
   codexReviewText: document.querySelector("#codex-review-text"),
   codexReviewValuesText: document.querySelector("#codex-review-values-text"),
+  codexAppshotsText: document.querySelector("#codex-appshots-text"),
+  codexAppshotsValuesText: document.querySelector("#codex-appshots-values-text"),
   codexGovernanceText: document.querySelector("#codex-governance-text"),
   codexGovernanceValuesText: document.querySelector("#codex-governance-values-text"),
   codexManagedConfigurationText: document.querySelector("#codex-managed-configuration-text"),
@@ -492,6 +494,7 @@ const elements = {
   codexWorktreesList: document.querySelector("#codex-worktrees-list"),
   codexLocalEnvironmentsList: document.querySelector("#codex-local-environments-list"),
   codexReviewList: document.querySelector("#codex-review-list"),
+  codexAppshotsList: document.querySelector("#codex-appshots-list"),
   codexGovernanceList: document.querySelector("#codex-governance-list"),
   codexManagedConfigurationList: document.querySelector("#codex-managed-configuration-list"),
   codexEnvironmentVariablesList: document.querySelector("#codex-environment-variables-list"),
@@ -10564,6 +10567,7 @@ function renderSettingsIntegrations(payload) {
   const codexWorktrees = payload.codexWorktrees ?? {};
   const codexLocalEnvironments = payload.codexLocalEnvironments ?? {};
   const codexReview = payload.codexReview ?? {};
+  const codexAppshots = payload.codexAppshots ?? {};
   const codexGovernance = payload.codexGovernance ?? {};
   const codexManagedConfiguration = payload.codexManagedConfiguration ?? {};
   const codexEnvironmentVariables = payload.codexEnvironmentVariables ?? {};
@@ -11268,6 +11272,50 @@ function renderSettingsIntegrations(payload) {
     codexReview.secretsReturned ||
     codexReview.rawPayloadsReturned ||
     codexReview.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexAppshotsText.textContent = codexAppshots.returned
+    ? `${codexAppshots.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexAppshots.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexAppshotsValuesText.textContent =
+    codexAppshots.platformValuesReturned ||
+    codexAppshots.hotkeyValuesReturned ||
+    codexAppshots.windowTitlesReturned ||
+    codexAppshots.appNamesReturned ||
+    codexAppshots.screenshotsReturned ||
+    codexAppshots.availableTextsReturned ||
+    codexAppshots.attachmentContentsReturned ||
+    codexAppshots.sessionPathsReturned ||
+    codexAppshots.threadIdsReturned ||
+    codexAppshots.permissionStatesReturned ||
+    codexAppshots.settingValuesReturned ||
+    codexAppshots.pluginNamesReturned ||
+    codexAppshots.documentContentsReturned ||
+    codexAppshots.sensitiveContentsReturned ||
+    codexAppshots.capturesStarted ||
+    codexAppshots.hotkeyListenersStarted ||
+    codexAppshots.accessibilityReads ||
+    codexAppshots.attachmentsWritten ||
+    codexAppshots.threadsCreated ||
+    codexAppshots.threadsUpdated ||
+    codexAppshots.sessionFilesRead ||
+    codexAppshots.sessionFilesWritten ||
+    codexAppshots.permissionPromptsStarted ||
+    codexAppshots.settingsOpened ||
+    codexAppshots.settingsWritten ||
+    codexAppshots.pluginAccessStarted ||
+    codexAppshots.modelTraffic ||
+    codexAppshots.filesystemReads ||
+    codexAppshots.filesystemWrites ||
+    codexAppshots.networkAccess ||
+    codexAppshots.mutationEnabled ||
+    codexAppshots.pathsReturned ||
+    codexAppshots.urlsReturned ||
+    codexAppshots.secretsReturned ||
+    codexAppshots.rawPayloadsReturned ||
+    codexAppshots.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexGovernanceText.textContent = codexGovernance.returned
@@ -12442,6 +12490,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexWorktreesCatalog(codexWorktrees);
   renderCodexLocalEnvironmentsCatalog(codexLocalEnvironments);
   renderCodexReviewCatalog(codexReview);
+  renderCodexAppshotsCatalog(codexAppshots);
   renderCodexGovernanceCatalog(codexGovernance);
   renderCodexManagedConfigurationCatalog(codexManagedConfiguration);
   renderCodexEnvironmentVariablesCatalog(codexEnvironmentVariables);
@@ -15473,6 +15522,93 @@ function renderCodexReviewCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexReviewList.append(row);
+  }
+}
+
+function renderCodexAppshotsCatalog(summary) {
+  elements.codexAppshotsList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexAppshotsList.append(emptyState("No Codex appshots catalog returned."));
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "appshots";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.platformValueReturned ? "platform values returned" : "platform values hidden",
+      entry.hotkeyValueReturned ? "hotkey values returned" : "hotkey values hidden",
+      entry.windowTitleReturned ? "window titles returned" : "window titles hidden",
+      entry.appNameReturned ? "app names returned" : "app names hidden",
+      entry.screenshotReturned ? "screenshots returned" : "screenshots hidden",
+      entry.availableTextReturned ? "available text returned" : "available text hidden",
+      entry.attachmentContentReturned
+        ? "attachment content returned"
+        : "attachment content hidden",
+      entry.sessionPathReturned ? "session paths returned" : "session paths hidden",
+      entry.threadIdReturned ? "thread IDs returned" : "thread IDs hidden",
+      entry.permissionStateReturned
+        ? "permission states returned"
+        : "permission states hidden",
+      entry.settingValueReturned ? "setting values returned" : "setting values hidden",
+      entry.pluginNameReturned ? "plugin names returned" : "plugin names hidden",
+      entry.documentContentReturned ? "document content returned" : "document content hidden",
+      entry.sensitiveContentReturned
+        ? "sensitive content returned"
+        : "sensitive content hidden",
+      entry.captureStarted ? "capture started" : "capture blocked",
+      entry.hotkeyListenerStarted ? "hotkey listener started" : "hotkey listener blocked",
+      entry.accessibilityRead ? "accessibility read" : "accessibility reads blocked",
+      entry.attachmentWritten ? "attachment written" : "attachment writes blocked",
+      entry.threadCreated ? "thread created" : "thread creation blocked",
+      entry.threadUpdated ? "thread updated" : "thread updates blocked",
+      entry.sessionFileRead ? "session file read" : "session file reads blocked",
+      entry.sessionFileWritten ? "session file written" : "session file writes blocked",
+      entry.permissionPromptStarted
+        ? "permission prompt started"
+        : "permission prompts blocked",
+      entry.settingsOpened ? "settings opened" : "settings opens blocked",
+      entry.settingsWritten ? "settings written" : "settings writes blocked",
+      entry.pluginAccessStarted ? "plugin access started" : "plugin access blocked",
+      entry.modelTraffic ? "model traffic" : "model traffic blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexAppshotsList.append(row);
   }
 }
 

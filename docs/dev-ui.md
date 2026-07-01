@@ -997,6 +997,22 @@ open editors, create inline comments, start reviews, invoke GitHub CLI,
 stage/unstage/revert/commit/push, open PRs, access files/network, create model
 traffic, or mutate state.
 
+The same response exposes `codexAppshots` as a static review-only catalog for
+official Codex Appshots behavior. The UI shows only catalog counts, entry keys,
+groups, state/source chips, and redaction chips for macOS availability,
+frontmost-window capture concepts, visible image and available text capture,
+thread attachment storage/routing, hotkey settings, screen-capture and
+accessibility permission concepts, sensitive-content guidance, CLI creation
+limits, limited-text apps, plugin fallback, permissions troubleshooting, and
+restart guidance. It must not show platform values, hotkey values, window
+titles, app names, screenshots, available text, attachment content, session
+paths, thread IDs, permission states, setting values, plugin names, document
+content, sensitive content, paths, URLs, secrets, raw payloads, or app-server
+traffic, and it must not start capture, hotkey listeners, accessibility reads,
+plugin access, or model traffic, write attachments/session files/settings,
+create/update threads, prompt permissions, open settings, access files/network,
+or mutate state.
+
 The same response exposes `codexManagedConfiguration` as a static review-only
 catalog for official Codex managed-configuration behavior. The UI shows only
 catalog counts, entry keys, groups, state/source chips, and redaction chips for

@@ -776,6 +776,20 @@ Current M1 status:
   auto-review policy application, Appshots or remote-control setting changes,
   filesystem access, network access, mutations, paths, URLs, secrets, raw
   payloads, and app-server traffic blocked
+- done: read-only Codex Appshots catalog in `/api/settings-integrations`,
+  exposing only static official Appshots documentation keys plus local boundary
+  keys/groups/states/sources/counts/redaction flags for macOS availability,
+  frontmost-window capture concepts, visible image and available text capture,
+  thread attachment storage/routing, hotkey settings, screen-capture and
+  accessibility permission concepts, sensitive-content guidance, CLI creation
+  limits, limited-text apps, plugin fallback, permissions troubleshooting, and
+  restart guidance, with platform values, hotkey values, window titles, app
+  names, screenshots, available text, attachment contents, session paths,
+  thread IDs, permission states, setting values, plugin names, document
+  contents, sensitive content, capture/hotkey/accessibility/plugin/model
+  activity, attachment/session/settings writes, thread creation or updates,
+  permission prompts, settings opens, filesystem access, network access,
+  mutations, paths, URLs, secrets, raw payloads, and app-server traffic blocked
 - done: read-only Codex Environment variables catalog in
   `/api/settings-integrations`, exposing only static official Environment
   variables documentation keys plus local boundary keys/groups/states/sources/

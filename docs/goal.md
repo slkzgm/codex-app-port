@@ -378,6 +378,21 @@ Target parity with the Codex desktop workflow:
   open dashboards, call Analytics or Compliance APIs, start exports, read API
   keys, write warehouses/SIEM pipelines, access files/network, or mutate
   governance state.
+- `/api/settings-integrations` now also exposes a read-only Codex Appshots
+  catalog aligned to the official appshots guide. It returns only static keys,
+  groups, states, sources, counts, and redaction flags for macOS availability,
+  frontmost-window capture concepts, visible image and available text capture,
+  thread attachment storage/routing, hotkey settings, screen-capture and
+  accessibility permission concepts, sensitive-content guidance, CLI creation
+  limits, limited-text apps, plugin fallback, permissions troubleshooting, and
+  restart guidance. It does not return platform values, hotkey values, window
+  titles, app names, screenshots, available text, attachment content, session
+  paths, thread IDs, permission states, setting values, plugin names, document
+  content, sensitive content, paths, URLs, secrets, raw payloads, or app-server
+  traffic, and it does not start capture, hotkey listeners, accessibility
+  reads, plugin access, or model traffic, write attachments/session files/
+  settings, create/update threads, prompt permissions, open settings, access
+  files/network, or mutate state.
 - `/api/settings-integrations` now also exposes a read-only Codex Managed
   configuration catalog aligned to the official managed-configuration guide. It
   returns only static keys, groups, states, sources, counts, and redaction flags

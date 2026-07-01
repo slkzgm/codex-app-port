@@ -37818,6 +37818,188 @@ function assertCodexReviewCatalog(payload) {
   }
 }
 
+function expectedCodexAppshotsEntries() {
+  return [
+    ["appshotOverview", "overview", "catalog-only", "official-codex-appshots-docs"],
+    ["macosAvailability", "availability", "catalog-only", "official-codex-appshots-docs"],
+    ["frontmostWindowContext", "capture", "catalog-only", "official-codex-appshots-docs"],
+    ["visibleWindowImageCapture", "capture", "catalog-only", "official-codex-appshots-docs"],
+    ["availableWindowTextCapture", "capture", "catalog-only", "official-codex-appshots-docs"],
+    ["threadAttachmentStorage", "storage", "catalog-only", "official-codex-appshots-docs"],
+    ["recentThreadRouting", "thread-routing", "catalog-only", "official-codex-appshots-docs"],
+    ["consecutiveAppshotsThreadReuse", "thread-routing", "catalog-only", "official-codex-appshots-docs"],
+    ["customHotkeySetting", "settings", "catalog-only", "official-codex-appshots-docs"],
+    ["screenRecordingPermission", "permissions", "catalog-only", "official-codex-appshots-docs"],
+    ["accessibilityPermission", "permissions", "catalog-only", "official-codex-appshots-docs"],
+    ["sensitiveContentReviewGuidance", "safety", "catalog-only", "official-codex-appshots-docs"],
+    ["cliResumeLimit", "limits", "catalog-only", "official-codex-appshots-docs"],
+    ["unsupportedCliCreation", "limits", "catalog-only", "official-codex-appshots-docs"],
+    ["limitedTextApps", "limits", "catalog-only", "official-codex-appshots-docs"],
+    ["pluginAccessFallback", "limits", "catalog-only", "official-codex-appshots-docs"],
+    ["permissionsTroubleshooting", "troubleshooting", "catalog-only", "official-codex-appshots-docs"],
+    ["restartAfterPermissionChange", "troubleshooting", "catalog-only", "official-codex-appshots-docs"],
+    ["platformAvailabilityBoundary", "availability", "blocked", "local-appshots-boundary"],
+    ["hotkeyListenerBoundary", "input", "blocked", "local-appshots-boundary"],
+    ["screenCaptureBoundary", "capture", "blocked", "local-appshots-boundary"],
+    ["accessibilityTextBoundary", "capture", "blocked", "local-appshots-boundary"],
+    ["frontmostWindowBoundary", "windowing", "blocked", "local-appshots-boundary"],
+    ["attachmentWriteBoundary", "storage", "blocked", "local-appshots-boundary"],
+    ["threadRoutingBoundary", "thread-routing", "blocked", "local-appshots-boundary"],
+    ["sessionFileBoundary", "storage", "blocked", "local-appshots-boundary"],
+    ["permissionPromptBoundary", "permissions", "blocked", "local-appshots-boundary"],
+    ["settingsWriteBoundary", "settings", "blocked", "local-appshots-boundary"],
+    ["pluginContentBoundary", "plugins", "blocked", "local-appshots-boundary"],
+    ["sensitiveContentBoundary", "safety", "blocked", "local-appshots-boundary"],
+    ["modelTrafficBoundary", "model", "blocked", "local-appshots-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexAppshotsCatalog(payload) {
+  const catalog = payload.codexAppshots;
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-appshots-docs");
+  assert.equal(catalog.entryCount, 31);
+  assert.equal(catalog.officialEntryCount, 18);
+  assert.equal(catalog.localBoundaryEntryCount, 13);
+  assert.equal(catalog.catalogOnlyEntryCount, 18);
+  assert.equal(catalog.blockedEntryCount, 13);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({ key, group, state, source })),
+    expectedCodexAppshotsEntries(),
+  );
+
+  const entryRedactionFlags = [
+    "platformValueReturned",
+    "hotkeyValueReturned",
+    "windowTitleReturned",
+    "appNameReturned",
+    "screenshotReturned",
+    "availableTextReturned",
+    "attachmentContentReturned",
+    "sessionPathReturned",
+    "threadIdReturned",
+    "permissionStateReturned",
+    "settingValueReturned",
+    "pluginNameReturned",
+    "documentContentReturned",
+    "sensitiveContentReturned",
+    "captureStarted",
+    "hotkeyListenerStarted",
+    "accessibilityRead",
+    "attachmentWritten",
+    "threadCreated",
+    "threadUpdated",
+    "sessionFileRead",
+    "sessionFileWritten",
+    "permissionPromptStarted",
+    "settingsOpened",
+    "settingsWritten",
+    "pluginAccessStarted",
+    "modelTraffic",
+    "filesystemRead",
+    "filesystemWrite",
+    "networkAccess",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.appshotsCatalogReturned, true);
+  for (const flag of [
+    "platformValuesReturned",
+    "hotkeyValuesReturned",
+    "windowTitlesReturned",
+    "appNamesReturned",
+    "screenshotsReturned",
+    "availableTextsReturned",
+    "attachmentContentsReturned",
+    "sessionPathsReturned",
+    "threadIdsReturned",
+    "permissionStatesReturned",
+    "settingValuesReturned",
+    "pluginNamesReturned",
+    "documentContentsReturned",
+    "sensitiveContentsReturned",
+    "capturesStarted",
+    "hotkeyListenersStarted",
+    "accessibilityReads",
+    "attachmentsWritten",
+    "threadsCreated",
+    "threadsUpdated",
+    "sessionFilesRead",
+    "sessionFilesWritten",
+    "permissionPromptsStarted",
+    "settingsOpened",
+    "settingsWritten",
+    "pluginAccessStarted",
+    "modelTraffic",
+    "filesystemReads",
+    "filesystemWrites",
+    "networkAccess",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexAppshotsReturned", true],
+    ["codexAppshotsValuesReturned", false],
+    ["codexAppshotsPlatformValuesReturned", false],
+    ["codexAppshotsHotkeyValuesReturned", false],
+    ["codexAppshotsWindowTitlesReturned", false],
+    ["codexAppshotsAppNamesReturned", false],
+    ["codexAppshotsScreenshotsReturned", false],
+    ["codexAppshotsAvailableTextsReturned", false],
+    ["codexAppshotsAttachmentContentsReturned", false],
+    ["codexAppshotsSessionPathsReturned", false],
+    ["codexAppshotsThreadIdsReturned", false],
+    ["codexAppshotsPermissionStatesReturned", false],
+    ["codexAppshotsSettingValuesReturned", false],
+    ["codexAppshotsPluginNamesReturned", false],
+    ["codexAppshotsDocumentContentsReturned", false],
+    ["codexAppshotsPrivateContentsReturned", false],
+    ["codexAppshotsCaptureEnabled", false],
+    ["codexAppshotsHotkeyListenerEnabled", false],
+    ["codexAppshotsAccessibilityReadEnabled", false],
+    ["codexAppshotsAttachmentWriteEnabled", false],
+    ["codexAppshotsThreadCreateEnabled", false],
+    ["codexAppshotsThreadUpdateEnabled", false],
+    ["codexAppshotsSessionFileReadEnabled", false],
+    ["codexAppshotsSessionFileWriteEnabled", false],
+    ["codexAppshotsPermissionPromptEnabled", false],
+    ["codexAppshotsSettingsOpenEnabled", false],
+    ["codexAppshotsSettingsWriteEnabled", false],
+    ["codexAppshotsPluginAccessEnabled", false],
+    ["codexAppshotsModelTraffic", false],
+    ["codexAppshotsFilesystemAccess", false],
+    ["codexAppshotsNetworkAccess", false],
+    ["codexAppshotsMutationsEnabled", false],
+    ["codexAppshotsPathsReturned", false],
+    ["codexAppshotsUrlsReturned", false],
+    ["codexAppshotsSecretsReturned", false],
+    ["codexAppshotsRawPayloadsReturned", false],
+    ["codexAppshotsAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexGovernanceEntries() {
   return [
     ["governanceVisibilityAuditability", "overview", "catalog-only", "official-codex-governance-docs"],
@@ -42174,6 +42356,7 @@ function assertCodexAppSettingsParity(
   assertCodexWorktreesCatalog(payload);
   assertCodexLocalEnvironmentsCatalog(payload);
   assertCodexReviewCatalog(payload);
+  assertCodexAppshotsCatalog(payload);
   assertCodexGovernanceCatalog(payload);
   assertCodexManagedConfigurationCatalog(payload);
   assertCodexEnvironmentVariablesCatalog(payload);
