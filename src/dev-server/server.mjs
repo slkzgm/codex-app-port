@@ -67692,7 +67692,9 @@ function sanitizeIntegrationsInventory(inventory, { namesEnabled = false } = {})
     mcp: sanitizeMcpInventory(inventory?.mcp, { namesEnabled }),
     skills: sanitizeSkillsInventory(inventory?.skills, { namesEnabled }),
     plugins: sanitizePluginsInventory(inventory?.plugins, { namesEnabled }),
-    installedPlugins: sanitizeInstalledPluginsInventory(inventory?.installedPlugins),
+    installedPlugins: sanitizeInstalledPluginsInventory(inventory?.installedPlugins, {
+      namesEnabled,
+    }),
     hooks: sanitizeHooksInventory(inventory?.hooks),
     externalAgentConfig: sanitizeExternalAgentConfigInventory(inventory?.externalAgentConfig),
     externalAgentConfigImportHistories:
@@ -68101,9 +68103,9 @@ function sanitizePluginsInventory(plugins, { namesEnabled = false } = {}) {
   };
 }
 
-function sanitizeInstalledPluginsInventory(installedPlugins) {
+function sanitizeInstalledPluginsInventory(installedPlugins, { namesEnabled = false } = {}) {
   return {
-    ...sanitizePluginsInventory(installedPlugins, { namesEnabled: false }),
+    ...sanitizePluginsInventory(installedPlugins, { namesEnabled }),
     installSuggestionNamesReturned: false,
     marketplaceNamesReturned: false,
     descriptionsReturned: false,

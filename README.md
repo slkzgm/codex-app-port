@@ -495,12 +495,13 @@ and auth token access remain blocked.
 When `CODEX_APP_PORT_ALLOW_INTEGRATION_NAMES=1` is also set with the inventory
 flag, the panel may show bounded display names for apps/connectors, their
 plugin display names, model display names, collaboration-mode names, MCP
-servers/tools, skills, plugins, and safe experimental feature names. The server
+servers/tools, skills, plugins, installed plugins, and safe experimental
+feature names. The server
 still strips path-like, URL-like, and token-like names, and continues to omit
 account emails/tokens, model ids/descriptions/upgrade copy/availability
 messages, collaboration-mode model overrides, app ids/URLs/descriptions/labels/
 logos/screenshots, MCP schemas/resources, skill descriptions/paths, plugin ids/
-paths/URLs, hook commands/paths/keys/matchers, external config descriptions/
+paths/URLs, installed plugin ids/paths/URLs/prompts/capabilities, hook commands/paths/keys/matchers, external config descriptions/
 cwds/paths/names/plugin names/session titles/raw migration items, and config
 requirement values/domains, plus experimental feature display text,
 descriptions, and announcements.

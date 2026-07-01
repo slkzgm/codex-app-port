@@ -19273,6 +19273,46 @@ async function checkSettingsIntegrationsNamesApi() {
                 },
               ],
             },
+            installedPlugins: {
+              ok: true,
+              marketplaceCount: 1,
+              pluginCount: 2,
+              installedCount: 2,
+              enabledCount: 1,
+              loadErrorCount: 0,
+              featuredCount: 0,
+              sourceTypeCounts: { local: 2 },
+              installPolicyCounts: { AVAILABLE: 2 },
+              items: [
+                {
+                  name: "verify-safe-installed-plugin",
+                  installed: true,
+                  enabled: true,
+                  sourceType: "local",
+                  installPolicy: "AVAILABLE",
+                  id: "verify-private-installed-plugin-id",
+                  path: "/tmp/codex-app-port-verify/.codex/plugins/private-installed",
+                },
+                {
+                  name: "https://verify.example.test/private-installed-plugin",
+                  installed: true,
+                  enabled: false,
+                  sourceType: "local",
+                  installPolicy: "AVAILABLE",
+                },
+              ],
+              namesReturned: true,
+              idsReturned: true,
+              pathsReturned: true,
+              urlsReturned: true,
+              installSuggestionNamesReturned: true,
+              marketplaceNamesReturned: true,
+              descriptionsReturned: true,
+              defaultPromptsReturned: true,
+              capabilityNamesReturned: true,
+              screenshotsReturned: true,
+              rawPayloadReturned: true,
+            },
             experimentalFeatures: {
               ok: true,
               featureCount: 2,
@@ -48073,6 +48113,8 @@ function assertSanitizedSettingsIntegrationsNames(payload) {
     "secret-tool",
     "sk-proj-verifysecret",
     "verify-private-plugin-id",
+    "verify-private-installed-plugin-id",
+    "private-installed",
     "private-feature",
     "https://verify.example.test",
     "codexHome",
@@ -48155,6 +48197,19 @@ function assertSanitizedSettingsIntegrationsNames(payload) {
     payload.inventory?.plugins?.urlsReturned !== false ||
     payload.inventory?.plugins?.items?.[0]?.name !== "verify-safe-plugin" ||
     payload.inventory?.plugins?.items?.[1]?.name !== null ||
+    payload.inventory?.installedPlugins?.namesReturned !== true ||
+    payload.inventory?.installedPlugins?.idsReturned !== false ||
+    payload.inventory?.installedPlugins?.pathsReturned !== false ||
+    payload.inventory?.installedPlugins?.urlsReturned !== false ||
+    payload.inventory?.installedPlugins?.installSuggestionNamesReturned !== false ||
+    payload.inventory?.installedPlugins?.marketplaceNamesReturned !== false ||
+    payload.inventory?.installedPlugins?.descriptionsReturned !== false ||
+    payload.inventory?.installedPlugins?.defaultPromptsReturned !== false ||
+    payload.inventory?.installedPlugins?.capabilityNamesReturned !== false ||
+    payload.inventory?.installedPlugins?.screenshotsReturned !== false ||
+    payload.inventory?.installedPlugins?.rawPayloadReturned !== false ||
+    payload.inventory?.installedPlugins?.items?.[0]?.name !== "verify-safe-installed-plugin" ||
+    payload.inventory?.installedPlugins?.items?.[1]?.name !== null ||
     payload.inventory?.experimentalFeatures?.namesReturned !== true ||
     payload.inventory?.experimentalFeatures?.descriptionsReturned !== false ||
     payload.inventory?.experimentalFeatures?.announcementsReturned !== false ||

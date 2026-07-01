@@ -1606,7 +1606,7 @@
   Without the second name gate it may return counts only. With
   `CODEX_APP_PORT_ALLOW_INTEGRATION_NAMES=1`, it may return bounded model
   display names, collaboration-mode names, app/connector, app plugin, MCP
-  server/tool, skill, plugin, and experimental feature display names only after
+  server/tool, skill, plugin, installed-plugin, and experimental feature display names only after
   path-like, URL-like, and token-like values are stripped. It must not
   return config requirement values/domains, model ids, model descriptions,
   model upgrade copy, model availability messages, collaboration-mode model
@@ -1614,7 +1614,7 @@
   external config descriptions, external config
   cwd values, migration paths, migration names, marketplace names, plugin names,
   session titles, raw migration items, import ids/messages/failure stages,
-  installed plugin ids/names/prompts/capabilities, remote-control status
+  installed plugin ids/paths/URLs/prompts/capabilities, remote-control status
   strings, server names, installation ids, environment ids, hook commands, hook
   paths, hook keys, hook matchers, hook plugin IDs, account emails/tokens,
   rate-limit plan types, limit ids/names, balances, used percentages, reset

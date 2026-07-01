@@ -1814,17 +1814,18 @@ callbacks, or tool invocations are returned.
 
 When `CODEX_APP_PORT_ALLOW_INTEGRATION_NAMES=1` is also set, the inventory may
 include bounded display names for models, collaboration modes, apps/connectors,
-app plugin labels, MCP servers/tools, skills, plugins, and safe experimental
-feature names. This is still a read-only inventory mode:
+app plugin labels, MCP servers/tools, skills, plugins, installed plugins, and
+safe experimental feature names. This is still a read-only inventory mode:
 path-like, URL-like, and token-like names are redacted, and the response still
 omits account emails/tokens, model ids/descriptions/upgrade copy/availability
 messages, collaboration-mode model overrides, app ids/URLs/descriptions/labels/
 logos/screenshots, MCP schemas and resource URIs, skill descriptions/paths,
-plugin ids/paths/URLs, hook commands/paths/keys/matchers/plugin IDs,
-rate-limit details, external config descriptions/cwds/paths/names/marketplaces/
-plugin names/session titles/raw migration items, config requirement values/
-domains, experimental feature display text/descriptions/announcements, imports,
-installs, callbacks, and tool invocations.
+plugin ids/paths/URLs, installed plugin ids/paths/URLs/prompts/capabilities,
+hook commands/paths/keys/matchers/plugin IDs, rate-limit details, external
+config descriptions/cwds/paths/names/marketplaces/plugin names/session titles/
+raw migration items, config requirement values/domains, experimental feature
+display text/descriptions/announcements, imports, installs, callbacks, and tool
+invocations.
 
 The mcp-tool-preflight endpoint accepts draft MCP server, tool, argument
 intent, and optional 8-character thread suffix only for local validation. It
@@ -3062,8 +3063,9 @@ or argv, that
 `/api/settings-integrations` remains
 blocked without app-server traffic by default, that its opt-in inventory is
 counts-only for config requirements, account, app/connectors, external config
-migration candidates, rate-limit buckets, MCP, skills, plugins, experimental
-features, and hooks, that its server-request and server-notification boundaries
+migration candidates, rate-limit buckets, MCP, skills, plugins, installed
+plugins, experimental features, and hooks, that its server-request and
+server-notification boundaries
 remain fail-closed and payload-free,
 that successful account login cancel and account logout actions are tracked only
 as sanitized method/status/audit history without auth tokens, account

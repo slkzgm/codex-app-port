@@ -2686,7 +2686,9 @@ export async function runIntegrationsInventoryProbe({
           mcp: summarizeMcpInventory(mcp, { includeNames }),
           skills: summarizeSkillsInventory(skills, { includeNames }),
           plugins: summarizePluginsInventory(plugins, { includeNames }),
-          installedPlugins: summarizeInstalledPluginsInventory(installedPlugins),
+          installedPlugins: summarizeInstalledPluginsInventory(installedPlugins, {
+            includeNames,
+          }),
           hooks: summarizeHooksInventory(hooks),
           externalAgentConfig: summarizeExternalAgentConfigInventory(externalAgentConfig),
           externalAgentConfigImportHistories:
@@ -6926,8 +6928,8 @@ function summarizePluginsInventory(section, { includeNames = false } = {}) {
   };
 }
 
-function summarizeInstalledPluginsInventory(section) {
-  const summary = summarizePluginsInventory(section, { includeNames: false });
+function summarizeInstalledPluginsInventory(section, { includeNames = false } = {}) {
+  const summary = summarizePluginsInventory(section, { includeNames });
   return {
     ...summary,
     installSuggestionNamesReturned: false,

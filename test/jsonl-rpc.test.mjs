@@ -599,7 +599,11 @@ test("runIntegrationsInventoryProbe can return opt-in display names without path
     assert.equal(inventory.plugins.pathsReturned, false);
     assert.equal(inventory.plugins.urlsReturned, false);
     assert.equal(inventory.plugins.items[0].name, "private-plugin");
-    assert.equal(inventory.installedPlugins.namesReturned, false);
+    assert.equal(inventory.installedPlugins.namesReturned, true);
+    assert.equal(inventory.installedPlugins.idsReturned, false);
+    assert.equal(inventory.installedPlugins.pathsReturned, false);
+    assert.equal(inventory.installedPlugins.urlsReturned, false);
+    assert.equal(inventory.installedPlugins.items[0].name, "safe-installed-plugin");
     assert.equal(inventory.installedPlugins.installSuggestionNamesReturned, false);
     assert.equal(inventory.installedPlugins.defaultPromptsReturned, false);
     assert.equal(inventory.externalAgentConfig.namesReturned, false);

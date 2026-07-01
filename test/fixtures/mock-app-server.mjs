@@ -1023,7 +1023,7 @@ function handle(message) {
             plugins: [
               {
                 id: "private-installed-plugin-id",
-                name: "private-installed-plugin",
+                name: "safe-installed-plugin",
                 installed: true,
                 enabled: true,
                 installPolicy: "AVAILABLE",

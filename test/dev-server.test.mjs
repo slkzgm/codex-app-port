@@ -23263,6 +23263,46 @@ test("dev server returns integration display names only behind explicit opt-in",
               pathsReturned: true,
               urlsReturned: true,
             },
+            installedPlugins: {
+              ok: true,
+              marketplaceCount: 1,
+              pluginCount: 2,
+              installedCount: 2,
+              enabledCount: 1,
+              loadErrorCount: 0,
+              featuredCount: 0,
+              sourceTypeCounts: { local: 2 },
+              installPolicyCounts: { AVAILABLE: 2 },
+              items: [
+                {
+                  name: "safe-installed-plugin",
+                  installed: true,
+                  enabled: true,
+                  sourceType: "local",
+                  installPolicy: "AVAILABLE",
+                  id: "private-installed-plugin-id",
+                  path: "/tmp/default-workspace/.codex/plugins/private-installed",
+                },
+                {
+                  name: "https://example.test/private-installed-plugin",
+                  installed: true,
+                  enabled: false,
+                  sourceType: "local",
+                  installPolicy: "AVAILABLE",
+                },
+              ],
+              namesReturned: true,
+              idsReturned: true,
+              pathsReturned: true,
+              urlsReturned: true,
+              installSuggestionNamesReturned: true,
+              marketplaceNamesReturned: true,
+              descriptionsReturned: true,
+              defaultPromptsReturned: true,
+              capabilityNamesReturned: true,
+              screenshotsReturned: true,
+              rawPayloadReturned: true,
+            },
             experimentalFeatures: {
               ok: true,
               featureCount: 2,
@@ -23399,6 +23439,19 @@ test("dev server returns integration display names only behind explicit opt-in",
     assert.equal(payload.inventory.plugins.urlsReturned, false);
     assert.equal(payload.inventory.plugins.items[0].name, "safe-plugin");
     assert.equal(payload.inventory.plugins.items[1].name, null);
+    assert.equal(payload.inventory.installedPlugins.namesReturned, true);
+    assert.equal(payload.inventory.installedPlugins.idsReturned, false);
+    assert.equal(payload.inventory.installedPlugins.pathsReturned, false);
+    assert.equal(payload.inventory.installedPlugins.urlsReturned, false);
+    assert.equal(payload.inventory.installedPlugins.installSuggestionNamesReturned, false);
+    assert.equal(payload.inventory.installedPlugins.marketplaceNamesReturned, false);
+    assert.equal(payload.inventory.installedPlugins.descriptionsReturned, false);
+    assert.equal(payload.inventory.installedPlugins.defaultPromptsReturned, false);
+    assert.equal(payload.inventory.installedPlugins.capabilityNamesReturned, false);
+    assert.equal(payload.inventory.installedPlugins.screenshotsReturned, false);
+    assert.equal(payload.inventory.installedPlugins.rawPayloadReturned, false);
+    assert.equal(payload.inventory.installedPlugins.items[0].name, "safe-installed-plugin");
+    assert.equal(payload.inventory.installedPlugins.items[1].name, null);
     assert.equal(payload.inventory.experimentalFeatures.namesReturned, true);
     assert.equal(payload.inventory.experimentalFeatures.descriptionsReturned, false);
     assert.equal(payload.inventory.experimentalFeatures.announcementsReturned, false);
@@ -23419,6 +23472,8 @@ test("dev server returns integration display names only behind explicit opt-in",
       "secret-tool",
       "sk-proj-private-secret",
       "private-plugin-id",
+      "private-installed-plugin-id",
+      "private-installed",
       "private-feature",
       "https://example.test",
       "codexHome",
