@@ -33364,6 +33364,202 @@ function assertSkillsPluginsCatalog(payload) {
   }
 }
 
+function expectedCodexPluginBuildEntries() {
+  return [
+    ["pluginCreatorScaffold", "creator", "catalog-only", "official-codex-plugin-build-docs"],
+    [
+      "pluginCreatorMarketplaceEntry",
+      "creator",
+      "catalog-only",
+      "official-codex-plugin-build-docs",
+    ],
+    ["curatedMarketplaceList", "marketplace", "catalog-only", "official-codex-plugin-build-docs"],
+    ["repoMarketplaceLocation", "marketplace", "catalog-only", "official-codex-plugin-build-docs"],
+    [
+      "personalMarketplaceLocation",
+      "marketplace",
+      "catalog-only",
+      "official-codex-plugin-build-docs",
+    ],
+    ["marketplaceEntrySourcePath", "marketplace", "catalog-only", "official-codex-plugin-build-docs"],
+    ["marketplaceDisplayName", "marketplace", "catalog-only", "official-codex-plugin-build-docs"],
+    ["marketplaceCliAdd", "marketplace-cli", "catalog-only", "official-codex-plugin-build-docs"],
+    [
+      "marketplaceCliListUpgradeRemove",
+      "marketplace-cli",
+      "catalog-only",
+      "official-codex-plugin-build-docs",
+    ],
+    ["minimalPluginManifest", "manifest", "catalog-only", "official-codex-plugin-build-docs"],
+    ["stablePluginName", "manifest", "catalog-only", "official-codex-plugin-build-docs"],
+    ["pluginSkillBundle", "capabilities", "catalog-only", "official-codex-plugin-build-docs"],
+    ["pluginMcpConfigExtension", "capabilities", "catalog-only", "official-codex-plugin-build-docs"],
+    ["localRepoMarketplaceInstall", "local-install", "catalog-only", "official-codex-plugin-build-docs"],
+    ["personalMarketplaceInstall", "local-install", "catalog-only", "official-codex-plugin-build-docs"],
+    ["restartAfterPluginChanges", "local-install", "catalog-only", "official-codex-plugin-build-docs"],
+    ["workspaceShareFlow", "workspace-share", "catalog-only", "official-codex-plugin-build-docs"],
+    ["sharedWithYouDirectory", "workspace-share", "catalog-only", "official-codex-plugin-build-docs"],
+    ["pluginSharingAdminDisable", "managed-policy", "catalog-only", "official-codex-plugin-build-docs"],
+    ["marketplaceVsWorkspaceSharing", "distribution", "catalog-only", "official-codex-plugin-build-docs"],
+    ["pluginScaffoldBoundary", "creator", "blocked", "local-plugin-build-boundary"],
+    ["pluginManifestReadBoundary", "manifest", "blocked", "local-plugin-build-boundary"],
+    ["pluginManifestWriteBoundary", "manifest", "blocked", "local-plugin-build-boundary"],
+    ["marketplaceReadBoundary", "marketplace", "blocked", "local-plugin-build-boundary"],
+    ["marketplaceWriteBoundary", "marketplace", "blocked", "local-plugin-build-boundary"],
+    ["pluginDirectoryCopyBoundary", "local-install", "blocked", "local-plugin-build-boundary"],
+    ["pluginShareBoundary", "workspace-share", "blocked", "local-plugin-build-boundary"],
+    ["workspacePrincipalBoundary", "workspace-share", "blocked", "local-plugin-build-boundary"],
+    ["marketplaceCliBoundary", "marketplace-cli", "blocked", "local-plugin-build-boundary"],
+    [
+      "externalCodeMaterializationBoundary",
+      "distribution",
+      "blocked",
+      "local-plugin-build-boundary",
+    ],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexPluginBuildCatalog(payload) {
+  const catalog = payload.codexPluginBuild;
+  const expectedEntries = expectedCodexPluginBuildEntries();
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-plugin-build-docs");
+  assert.equal(catalog.entryCount, 30);
+  assert.equal(catalog.officialEntryCount, 20);
+  assert.equal(catalog.localBoundaryEntryCount, 10);
+  assert.equal(catalog.catalogOnlyEntryCount, 20);
+  assert.equal(catalog.blockedEntryCount, 10);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({
+      key,
+      group,
+      state,
+      source,
+    })),
+    expectedEntries,
+  );
+
+  const entryRedactionFlags = [
+    "pluginManifestReturned",
+    "pluginNameReturned",
+    "pluginVersionReturned",
+    "pluginDescriptionReturned",
+    "skillNameReturned",
+    "skillContentReturned",
+    "mcpConfigReturned",
+    "appIntegrationReturned",
+    "marketplaceFileReturned",
+    "marketplaceEntryReturned",
+    "marketplaceNameReturned",
+    "marketplaceSourceReturned",
+    "marketplaceLocatorReturned",
+    "displayNameReturned",
+    "localPluginPathReturned",
+    "workspacePrincipalReturned",
+    "shareLinkReturned",
+    "adminRequirementReturned",
+    "commandTextReturned",
+    "scaffoldExecuted",
+    "marketplaceWritten",
+    "manifestWritten",
+    "pluginCopied",
+    "pluginShared",
+    "marketplaceCliExecuted",
+    "externalCodeMaterialized",
+    "filesystemRead",
+    "filesystemWrite",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.pluginBuildCatalogReturned, true);
+  for (const flag of [
+    "pluginManifestsReturned",
+    "pluginNamesReturned",
+    "pluginVersionsReturned",
+    "pluginDescriptionsReturned",
+    "skillNamesReturned",
+    "skillContentReturned",
+    "mcpConfigsReturned",
+    "appIntegrationsReturned",
+    "marketplaceFilesReturned",
+    "marketplaceEntriesReturned",
+    "marketplaceNamesReturned",
+    "marketplaceSourcesReturned",
+    "marketplaceLocatorsReturned",
+    "displayNamesReturned",
+    "localPluginPathsReturned",
+    "workspacePrincipalsReturned",
+    "shareLinksReturned",
+    "adminRequirementsReturned",
+    "commandTextReturned",
+    "scaffoldsExecuted",
+    "marketplacesWritten",
+    "manifestsWritten",
+    "pluginsCopied",
+    "pluginsShared",
+    "marketplaceCliExecuted",
+    "externalCodeMaterialized",
+    "filesystemReads",
+    "filesystemWrites",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexPluginBuildReturned", true],
+    ["codexPluginBuildValuesReturned", false],
+    ["codexPluginBuildManifestsReturned", false],
+    ["codexPluginBuildNamesReturned", false],
+    ["codexPluginBuildDescriptionsReturned", false],
+    ["codexPluginBuildSkillContentReturned", false],
+    ["codexPluginBuildMcpConfigsReturned", false],
+    ["codexPluginBuildAppIntegrationsReturned", false],
+    ["codexPluginBuildMarketplaceFilesReturned", false],
+    ["codexPluginBuildMarketplaceEntriesReturned", false],
+    ["codexPluginBuildMarketplaceSourcesReturned", false],
+    ["codexPluginBuildLocatorsReturned", false],
+    ["codexPluginBuildPathsReturned", false],
+    ["codexPluginBuildShareLinksReturned", false],
+    ["codexPluginBuildWorkspacePrincipalsReturned", false],
+    ["codexPluginBuildAdminRequirementsReturned", false],
+    ["codexPluginBuildCommandTextReturned", false],
+    ["codexPluginBuildScaffoldEnabled", false],
+    ["codexPluginBuildMarketplaceWriteEnabled", false],
+    ["codexPluginBuildManifestWriteEnabled", false],
+    ["codexPluginBuildCopyEnabled", false],
+    ["codexPluginBuildShareEnabled", false],
+    ["codexPluginBuildMarketplaceCliEnabled", false],
+    ["codexPluginBuildExternalCodeMaterialized", false],
+    ["codexPluginBuildFilesystemAccess", false],
+    ["codexPluginBuildMutationsEnabled", false],
+    ["codexPluginBuildUrlsReturned", false],
+    ["codexPluginBuildSecretsReturned", false],
+    ["codexPluginBuildRawPayloadsReturned", false],
+    ["codexPluginBuildAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexSitesEntries() {
   return [
     ["sitesPluginUseCase", "overview", "catalog-only", "official-codex-sites-docs"],
@@ -35375,6 +35571,7 @@ function assertCodexAppSettingsParity(
     throw new Error("Codex app settings parity section mapping changed unexpectedly");
   }
   assertSkillsPluginsCatalog(payload);
+  assertCodexPluginBuildCatalog(payload);
   assertCodexSitesCatalog(payload);
   assertCodexPermissionsCatalog(payload);
   assertCodexRulesCatalog(payload);

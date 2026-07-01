@@ -471,6 +471,16 @@
   traffic, and must not write profiles or rules, expand globs or workspace
   roots, migrate sandbox settings, access network, read or write files, or
   mutate permission state. Its
+  Codex Plugin Build catalog may expose only static official-documentation keys
+  plus local boundary keys, groups, states, sources, counts, and redaction
+  flags; it must not return plugin manifests, plugin names, versions,
+  descriptions, skill names or content, MCP configs, app integrations,
+  marketplace files, entries, names, sources, paths, display names, local
+  plugin paths, workspace principals, share links, admin requirements, command
+  text, external code, paths, URLs, secrets, raw payloads, app-server payloads,
+  or app-server traffic, and must not scaffold plugins, write marketplaces,
+  write manifests, copy plugins, share plugins, run marketplace CLI commands,
+  materialize external code, access files, or mutate plugin authoring state. Its
   Codex Rules catalog may expose only static official-documentation keys plus
   local boundary keys, groups, states, sources, counts, and redaction flags; it
   must not return rule files, rule paths, rule content, prefix patterns,

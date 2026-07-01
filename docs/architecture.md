@@ -573,6 +573,21 @@ Current M1 status:
   values, profile/rule writes, glob/workspace-root expansion, sandbox
   migration, network access, filesystem access, mutations, secrets, raw
   payloads, and app-server traffic blocked
+- done: read-only Codex Plugin Build catalog in `/api/settings-integrations`,
+  exposing only static official Build plugins documentation keys plus local
+  boundary keys/groups/states/sources/counts/redaction flags for plugin
+  creator scaffolding, local marketplace entries, repo/personal marketplace
+  locations, marketplace source/display fields, marketplace CLI actions,
+  minimal plugin manifests, stable plugin names, bundled skills/MCP configs,
+  local repo/personal install flows, restart requirements, workspace sharing,
+  admin sharing disablement, and marketplace-vs-workspace distribution, with
+  plugin manifests, plugin names/versions/descriptions, skill names/content,
+  MCP configs, app integrations, marketplace files/entries/names/sources/paths,
+  display names, local plugin paths, workspace principals, share links, admin
+  requirements, command text, scaffolds, marketplace writes, manifest writes,
+  plugin copies, sharing, marketplace CLI execution, external code
+  materialization, filesystem access, mutations, paths, URLs, secrets, raw
+  payloads, and app-server traffic blocked
 - done: read-only Codex Rules catalog in `/api/settings-integrations`,
   exposing only static official Rules documentation keys plus local boundary
   keys/groups/states/sources/counts/redaction flags for `.rules` file

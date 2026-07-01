@@ -785,6 +785,20 @@ commands, share links or principals, setting values, external code, paths,
 URLs, raw payloads, app-server traffic, installs, uninstalls, enablement writes,
 skill config writes, extra-root writes, share mutations, or marketplace
 mutations.
+The same response exposes `codexPluginBuild` as a static review-only catalog
+for official plugin authoring. The UI shows only catalog counts, entry keys,
+groups, state/source chips, and redaction chips for plugin creator scaffolding,
+local marketplace entries, repo/personal marketplace locations, marketplace
+source/display fields, marketplace CLI actions, minimal plugin manifests,
+stable plugin names, bundled skills/MCP configs, local repo/personal install
+flows, restart requirements, workspace sharing, admin sharing disablement, and
+marketplace-vs-workspace distribution. It does not show plugin manifests,
+plugin names, versions, descriptions, skill names/content, MCP configs, app
+integrations, marketplace files, entries, names, sources, paths, display names,
+local plugin paths, workspace principals, share links, admin requirements,
+command text, external code, paths, URLs, secrets, raw payloads, app-server
+traffic, scaffolds, marketplace writes, manifest writes, plugin copies, plugin
+sharing, marketplace CLI execution, filesystem access, or mutations.
 The same response exposes `codexSites` as a static review-only catalog for the
 official Sites plugin. The UI shows only catalog counts, entry keys, groups,
 state/source chips, and redaction chips for hosted website, web app, and game

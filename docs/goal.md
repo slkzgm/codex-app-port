@@ -170,6 +170,22 @@ Target parity with the Codex desktop workflow:
   paths, setting values, secrets, raw payloads, or app-server traffic, and it
   does not write profiles/rules, expand globs/workspace roots, migrate
   sandbox settings, access network, read/write files, or mutate permissions.
+- `/api/settings-integrations` now also exposes a read-only Codex Plugin Build
+  catalog aligned to the official Build plugins documentation. It returns only
+  static keys, groups, states, sources, counts, and redaction flags for plugin
+  creator scaffolding, local marketplace entries, repo/personal marketplace
+  locations, marketplace source/display fields, marketplace CLI actions,
+  minimal plugin manifests, stable plugin names, bundled skills/MCP configs,
+  local repo/personal install flows, restart requirements, workspace sharing,
+  admin sharing disablement, and marketplace-vs-workspace distribution. It
+  does not return plugin manifests, plugin names, versions, descriptions,
+  skill names/content, MCP configs, app integrations, marketplace files,
+  entries, names, sources, paths, display names, local plugin paths, workspace
+  principals, share links, admin requirements, command text, external code,
+  paths, URLs, secrets, raw payloads, or app-server traffic, and it does not
+  scaffold plugins, write marketplaces, write manifests, copy plugins, share
+  plugins, run marketplace CLI commands, materialize external code, access
+  files, or mutate plugin authoring state.
 - `/api/settings-integrations` now also exposes a read-only Codex Rules catalog
   aligned to the official Rules documentation. It returns only static keys,
   groups, states, sources, counts, and redaction flags for `.rules` file
