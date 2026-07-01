@@ -345,6 +345,21 @@ Target parity with the Codex desktop workflow:
   payloads, or app-server traffic, and it does not read/write local
   environment config, run setup scripts/actions/terminal commands, open
   settings, access files/network, or mutate state.
+- `/api/settings-integrations` now also exposes a read-only Codex Review
+  catalog aligned to the current official app review docs. It returns only
+  static keys, groups, states, sources, counts, and redaction flags for review
+  pane behavior, Git repository requirements, reflected Git state categories,
+  uncommitted/all-branch/last-turn/staged/unstaged scopes, diff navigation,
+  inline comments, `/review` result placement, pull request review context,
+  GitHub CLI prerequisite guidance, PR fix loop, staging/reverting levels, and
+  staged/unstaged same-file behavior. It does not return project names,
+  repository paths, Git state, diff content, file paths/names, line numbers,
+  comment text, review findings, pull request context, reviewer feedback,
+  GitHub identities, command text, branch names, commit SHAs, editor names,
+  paths, URLs, secrets, raw payloads, or app-server traffic, and it does not
+  read Git/diffs/PR context, open editors, create inline comments, start
+  reviews, invoke GitHub CLI, stage/unstage/revert/commit/push, open PRs,
+  access files/network, create model traffic, or mutate state.
 - `/api/settings-integrations` now also exposes a read-only Codex Governance
   catalog aligned to the official enterprise governance guide. It returns only
   static keys, groups, states, sources, counts, and redaction flags for

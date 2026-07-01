@@ -556,7 +556,17 @@
   paths, terminal output, setting values, paths, URLs, secrets, raw payloads,
   app-server payloads, or app-server traffic, and must not read or write local
   environment config, run setup scripts, run actions or terminal commands, open
-  settings, access files/network, or mutate state. Its
+  settings, access files/network, or mutate state. Its Codex Review catalog may
+  expose only static official-documentation keys plus local boundary keys,
+  groups, states, sources, counts, and redaction flags; it must not return
+  project names, repository paths, Git state, diff content, file paths or
+  names, line numbers, comment text, review findings, pull request context,
+  reviewer feedback, GitHub identities, command text, branch names, commit
+  SHAs, editor names, paths, URLs, secrets, raw payloads, app-server payloads,
+  or app-server traffic, and must not read Git/diffs/PR context, open editors,
+  create inline comments, start reviews, invoke GitHub CLI, stage, unstage,
+  revert, commit, push, open PRs, access files/network, create model traffic,
+  or mutate state. Its
   Codex Auto-review catalog may expose only static official-documentation keys
   plus local boundary keys, groups, states, sources, counts, and redaction
   flags; it must not return approval requests, reviewer rationales,

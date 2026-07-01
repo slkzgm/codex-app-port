@@ -696,6 +696,21 @@ Current M1 status:
   output, setting values, config reads/writes, setup/action/terminal command
   execution, settings opens, filesystem access, network access, mutations,
   paths, URLs, secrets, raw payloads, and app-server traffic blocked
+- done: read-only Codex Review catalog in `/api/settings-integrations`,
+  exposing only static official Review documentation keys plus local boundary
+  keys/groups/states/sources/counts/redaction flags for review pane behavior,
+  Git repository requirements, reflected Git state categories, uncommitted/all-
+  branch/last-turn/staged/unstaged scopes, diff navigation, inline comments,
+  `/review` result placement, pull request review context, GitHub CLI
+  prerequisite guidance, PR fix loop, staging/reverting levels, and
+  staged/unstaged same-file behavior, with project names, repository paths, Git
+  state, diff content, file paths/names, line numbers, comment text, review
+  findings, pull request context, reviewer feedback, GitHub identities, command
+  text, branch names, commit SHAs, editor names, Git/diff/PR-context reads,
+  editor opens, inline comments, review starts, GitHub CLI invocation,
+  stage/unstage/revert/commit/push/PR actions, filesystem access, network
+  access, model traffic, mutations, paths, URLs, secrets, raw payloads, and
+  app-server traffic blocked
 - done: read-only Codex Auto-review catalog in `/api/settings-integrations`,
   exposing only static official Auto-review documentation keys plus local
   boundary keys/groups/states/sources/counts/redaction flags for reviewer-swap

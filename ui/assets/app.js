@@ -65,6 +65,8 @@ const elements = {
   codexLocalEnvironmentsValuesText: document.querySelector(
     "#codex-local-environments-values-text",
   ),
+  codexReviewText: document.querySelector("#codex-review-text"),
+  codexReviewValuesText: document.querySelector("#codex-review-values-text"),
   codexGovernanceText: document.querySelector("#codex-governance-text"),
   codexGovernanceValuesText: document.querySelector("#codex-governance-values-text"),
   codexManagedConfigurationText: document.querySelector("#codex-managed-configuration-text"),
@@ -489,6 +491,7 @@ const elements = {
   codexTroubleshootingList: document.querySelector("#codex-troubleshooting-list"),
   codexWorktreesList: document.querySelector("#codex-worktrees-list"),
   codexLocalEnvironmentsList: document.querySelector("#codex-local-environments-list"),
+  codexReviewList: document.querySelector("#codex-review-list"),
   codexGovernanceList: document.querySelector("#codex-governance-list"),
   codexManagedConfigurationList: document.querySelector("#codex-managed-configuration-list"),
   codexEnvironmentVariablesList: document.querySelector("#codex-environment-variables-list"),
@@ -10560,6 +10563,7 @@ function renderSettingsIntegrations(payload) {
   const codexTroubleshooting = payload.codexTroubleshooting ?? {};
   const codexWorktrees = payload.codexWorktrees ?? {};
   const codexLocalEnvironments = payload.codexLocalEnvironments ?? {};
+  const codexReview = payload.codexReview ?? {};
   const codexGovernance = payload.codexGovernance ?? {};
   const codexManagedConfiguration = payload.codexManagedConfiguration ?? {};
   const codexEnvironmentVariables = payload.codexEnvironmentVariables ?? {};
@@ -11216,6 +11220,54 @@ function renderSettingsIntegrations(payload) {
     codexLocalEnvironments.secretsReturned ||
     codexLocalEnvironments.rawPayloadsReturned ||
     codexLocalEnvironments.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexReviewText.textContent = codexReview.returned
+    ? `${codexReview.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexReview.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexReviewValuesText.textContent =
+    codexReview.projectNamesReturned ||
+    codexReview.repositoryPathsReturned ||
+    codexReview.gitStatesReturned ||
+    codexReview.diffContentsReturned ||
+    codexReview.filePathsReturned ||
+    codexReview.fileNamesReturned ||
+    codexReview.lineNumbersReturned ||
+    codexReview.commentTextsReturned ||
+    codexReview.reviewFindingsReturned ||
+    codexReview.pullRequestContextsReturned ||
+    codexReview.reviewerFeedbackReturned ||
+    codexReview.githubIdentitiesReturned ||
+    codexReview.commandTextsReturned ||
+    codexReview.branchNamesReturned ||
+    codexReview.commitShasReturned ||
+    codexReview.editorNamesReturned ||
+    codexReview.gitRepositoryReads ||
+    codexReview.diffReads ||
+    codexReview.editorsOpened ||
+    codexReview.inlineCommentsCreated ||
+    codexReview.reviewsStarted ||
+    codexReview.pullRequestContextReads ||
+    codexReview.githubCliInvocations ||
+    codexReview.stagesRun ||
+    codexReview.unstagesRun ||
+    codexReview.revertsRun ||
+    codexReview.commitsStarted ||
+    codexReview.pushesStarted ||
+    codexReview.pullRequestsOpened ||
+    codexReview.filesystemReads ||
+    codexReview.filesystemWrites ||
+    codexReview.gitMutations ||
+    codexReview.networkAccess ||
+    codexReview.modelTraffic ||
+    codexReview.mutationEnabled ||
+    codexReview.pathsReturned ||
+    codexReview.urlsReturned ||
+    codexReview.secretsReturned ||
+    codexReview.rawPayloadsReturned ||
+    codexReview.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexGovernanceText.textContent = codexGovernance.returned
@@ -12389,6 +12441,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexTroubleshootingCatalog(codexTroubleshooting);
   renderCodexWorktreesCatalog(codexWorktrees);
   renderCodexLocalEnvironmentsCatalog(codexLocalEnvironments);
+  renderCodexReviewCatalog(codexReview);
   renderCodexGovernanceCatalog(codexGovernance);
   renderCodexManagedConfigurationCatalog(codexManagedConfiguration);
   renderCodexEnvironmentVariablesCatalog(codexEnvironmentVariables);
@@ -15329,6 +15382,97 @@ function renderCodexLocalEnvironmentsCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexLocalEnvironmentsList.append(row);
+  }
+}
+
+function renderCodexReviewCatalog(summary) {
+  elements.codexReviewList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexReviewList.append(emptyState("No Codex review catalog returned."));
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "review";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.projectNameReturned ? "project names returned" : "project names hidden",
+      entry.repositoryPathReturned ? "repository paths returned" : "repository paths hidden",
+      entry.gitStateReturned ? "Git state returned" : "Git state hidden",
+      entry.diffContentReturned ? "diff content returned" : "diff content hidden",
+      entry.filePathReturned ? "file paths returned" : "file paths hidden",
+      entry.fileNameReturned ? "file names returned" : "file names hidden",
+      entry.lineNumberReturned ? "line numbers returned" : "line numbers hidden",
+      entry.commentTextReturned ? "comment text returned" : "comment text hidden",
+      entry.reviewFindingReturned ? "review findings returned" : "review findings hidden",
+      entry.pullRequestContextReturned
+        ? "pull request context returned"
+        : "pull request context hidden",
+      entry.reviewerFeedbackReturned
+        ? "reviewer feedback returned"
+        : "reviewer feedback hidden",
+      entry.githubIdentityReturned
+        ? "GitHub identities returned"
+        : "GitHub identities hidden",
+      entry.commandTextReturned ? "command text returned" : "command text hidden",
+      entry.branchNameReturned ? "branch names returned" : "branch names hidden",
+      entry.commitShaReturned ? "commit SHAs returned" : "commit SHAs hidden",
+      entry.editorNameReturned ? "editor names returned" : "editor names hidden",
+      entry.gitRepositoryRead ? "Git repository read" : "Git repository reads blocked",
+      entry.diffRead ? "diff read" : "diff reads blocked",
+      entry.editorOpened ? "editor opened" : "editor opens blocked",
+      entry.inlineCommentCreated ? "inline comment created" : "inline comments blocked",
+      entry.reviewStarted ? "review started" : "review starts blocked",
+      entry.pullRequestContextRead
+        ? "pull request context read"
+        : "pull request context reads blocked",
+      entry.githubCliInvoked ? "GitHub CLI invoked" : "GitHub CLI blocked",
+      entry.stageRun ? "stage run" : "stage blocked",
+      entry.unstageRun ? "unstage run" : "unstage blocked",
+      entry.revertRun ? "revert run" : "revert blocked",
+      entry.commitStarted ? "commit started" : "commit blocked",
+      entry.pushStarted ? "push started" : "push blocked",
+      entry.pullRequestOpened ? "pull request opened" : "pull request blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      entry.gitMutation ? "Git mutation" : "Git mutations blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.modelTraffic ? "model traffic" : "model traffic blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexReviewList.append(row);
   }
 }
 

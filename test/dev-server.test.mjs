@@ -37623,6 +37623,201 @@ function assertCodexLocalEnvironmentsCatalog(payload) {
   }
 }
 
+function expectedCodexReviewEntries() {
+  return [
+    ["reviewPaneOverview", "overview", "catalog-only", "official-codex-review-docs"],
+    ["gitRepositoryRequirement", "requirements", "catalog-only", "official-codex-review-docs"],
+    ["reflectedGitState", "change-scope", "catalog-only", "official-codex-review-docs"],
+    ["uncommittedChangesDefaultScope", "change-scope", "catalog-only", "official-codex-review-docs"],
+    ["allBranchChangesScope", "change-scope", "catalog-only", "official-codex-review-docs"],
+    ["lastTurnChangesScope", "change-scope", "catalog-only", "official-codex-review-docs"],
+    ["stagedUnstagedToggle", "change-scope", "catalog-only", "official-codex-review-docs"],
+    ["fileOpenInEditor", "navigation", "catalog-only", "official-codex-review-docs"],
+    ["diffExpandCollapse", "navigation", "catalog-only", "official-codex-review-docs"],
+    ["lineOpenInEditor", "navigation", "catalog-only", "official-codex-review-docs"],
+    ["stageRevertHappyPath", "git-actions", "catalog-only", "official-codex-review-docs"],
+    ["inlineCommentWorkflow", "inline-comments", "catalog-only", "official-codex-review-docs"],
+    ["inlineCommentsAsGuidance", "inline-comments", "catalog-only", "official-codex-review-docs"],
+    ["slashReviewResults", "code-review", "catalog-only", "official-codex-review-docs"],
+    ["pullRequestReviewContext", "pull-requests", "catalog-only", "official-codex-review-docs"],
+    ["githubCliPrerequisite", "pull-requests", "catalog-only", "official-codex-review-docs"],
+    ["pullRequestFixLoop", "pull-requests", "catalog-only", "official-codex-review-docs"],
+    ["stagingRevertingLevels", "git-actions", "catalog-only", "official-codex-review-docs"],
+    ["stagedUnstagedSameFileExplanation", "git-actions", "catalog-only", "official-codex-review-docs"],
+    ["gitRepositoryReadBoundary", "git", "blocked", "local-review-boundary"],
+    ["diffContentBoundary", "diffs", "blocked", "local-review-boundary"],
+    ["filePathBoundary", "files", "blocked", "local-review-boundary"],
+    ["editorOpenBoundary", "navigation", "blocked", "local-review-boundary"],
+    ["inlineCommentBoundary", "inline-comments", "blocked", "local-review-boundary"],
+    ["reviewStartBoundary", "code-review", "blocked", "local-review-boundary"],
+    ["pullRequestContextBoundary", "pull-requests", "blocked", "local-review-boundary"],
+    ["githubCliBoundary", "pull-requests", "blocked", "local-review-boundary"],
+    ["stageUnstageBoundary", "git-actions", "blocked", "local-review-boundary"],
+    ["revertBoundary", "git-actions", "blocked", "local-review-boundary"],
+    ["commitPushBoundary", "git-actions", "blocked", "local-review-boundary"],
+    ["githubAccessBoundary", "pull-requests", "blocked", "local-review-boundary"],
+    ["modelTrafficBoundary", "code-review", "blocked", "local-review-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexReviewCatalog(payload) {
+  const catalog = payload.codexReview;
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-review-docs");
+  assert.equal(catalog.entryCount, 32);
+  assert.equal(catalog.officialEntryCount, 19);
+  assert.equal(catalog.localBoundaryEntryCount, 13);
+  assert.equal(catalog.catalogOnlyEntryCount, 19);
+  assert.equal(catalog.blockedEntryCount, 13);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({ key, group, state, source })),
+    expectedCodexReviewEntries(),
+  );
+
+  const entryRedactionFlags = [
+    "projectNameReturned",
+    "repositoryPathReturned",
+    "gitStateReturned",
+    "diffContentReturned",
+    "filePathReturned",
+    "fileNameReturned",
+    "lineNumberReturned",
+    "commentTextReturned",
+    "reviewFindingReturned",
+    "pullRequestContextReturned",
+    "reviewerFeedbackReturned",
+    "githubIdentityReturned",
+    "commandTextReturned",
+    "branchNameReturned",
+    "commitShaReturned",
+    "editorNameReturned",
+    "gitRepositoryRead",
+    "diffRead",
+    "editorOpened",
+    "inlineCommentCreated",
+    "reviewStarted",
+    "pullRequestContextRead",
+    "githubCliInvoked",
+    "stageRun",
+    "unstageRun",
+    "revertRun",
+    "commitStarted",
+    "pushStarted",
+    "pullRequestOpened",
+    "filesystemRead",
+    "filesystemWrite",
+    "gitMutation",
+    "networkAccess",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.reviewCatalogReturned, true);
+  for (const flag of [
+    "projectNamesReturned",
+    "repositoryPathsReturned",
+    "gitStatesReturned",
+    "diffContentsReturned",
+    "filePathsReturned",
+    "fileNamesReturned",
+    "lineNumbersReturned",
+    "commentTextsReturned",
+    "reviewFindingsReturned",
+    "pullRequestContextsReturned",
+    "reviewerFeedbackReturned",
+    "githubIdentitiesReturned",
+    "commandTextsReturned",
+    "branchNamesReturned",
+    "commitShasReturned",
+    "editorNamesReturned",
+    "gitRepositoryReads",
+    "diffReads",
+    "editorsOpened",
+    "inlineCommentsCreated",
+    "reviewsStarted",
+    "pullRequestContextReads",
+    "githubCliInvocations",
+    "stagesRun",
+    "unstagesRun",
+    "revertsRun",
+    "commitsStarted",
+    "pushesStarted",
+    "pullRequestsOpened",
+    "filesystemReads",
+    "filesystemWrites",
+    "gitMutations",
+    "networkAccess",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexReviewReturned", true],
+    ["codexReviewValuesReturned", false],
+    ["codexReviewProjectNamesReturned", false],
+    ["codexReviewRepositoryPathsReturned", false],
+    ["codexReviewGitStatesReturned", false],
+    ["codexReviewDiffContentsReturned", false],
+    ["codexReviewFilePathsReturned", false],
+    ["codexReviewFileNamesReturned", false],
+    ["codexReviewLineNumbersReturned", false],
+    ["codexReviewCommentTextsReturned", false],
+    ["codexReviewFindingsReturned", false],
+    ["codexReviewPullRequestContextsReturned", false],
+    ["codexReviewReviewerFeedbackReturned", false],
+    ["codexReviewGithubIdentitiesReturned", false],
+    ["codexReviewCommandTextsReturned", false],
+    ["codexReviewBranchNamesReturned", false],
+    ["codexReviewCommitShasReturned", false],
+    ["codexReviewEditorNamesReturned", false],
+    ["codexReviewGitRepositoryReadEnabled", false],
+    ["codexReviewDiffReadEnabled", false],
+    ["codexReviewEditorOpenEnabled", false],
+    ["codexReviewInlineCommentEnabled", false],
+    ["codexReviewStartEnabled", false],
+    ["codexReviewPullRequestContextReadEnabled", false],
+    ["codexReviewGithubCliEnabled", false],
+    ["codexReviewStageEnabled", false],
+    ["codexReviewUnstageEnabled", false],
+    ["codexReviewRevertEnabled", false],
+    ["codexReviewCommitEnabled", false],
+    ["codexReviewPushEnabled", false],
+    ["codexReviewPullRequestOpenEnabled", false],
+    ["codexReviewFilesystemAccess", false],
+    ["codexReviewGitMutationsEnabled", false],
+    ["codexReviewNetworkAccess", false],
+    ["codexReviewModelTraffic", false],
+    ["codexReviewMutationsEnabled", false],
+    ["codexReviewPathsReturned", false],
+    ["codexReviewUrlsReturned", false],
+    ["codexReviewSecretsReturned", false],
+    ["codexReviewRawPayloadsReturned", false],
+    ["codexReviewAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexGovernanceEntries() {
   return [
     ["governanceVisibilityAuditability", "overview", "catalog-only", "official-codex-governance-docs"],
@@ -41978,6 +42173,7 @@ function assertCodexAppSettingsParity(
   assertCodexTroubleshootingCatalog(payload);
   assertCodexWorktreesCatalog(payload);
   assertCodexLocalEnvironmentsCatalog(payload);
+  assertCodexReviewCatalog(payload);
   assertCodexGovernanceCatalog(payload);
   assertCodexManagedConfigurationCatalog(payload);
   assertCodexEnvironmentVariablesCatalog(payload);

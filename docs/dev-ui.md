@@ -981,6 +981,22 @@ setting values, paths, URLs, secrets, raw payloads, or app-server traffic, and
 it must not read/write local environment config, run setup scripts/actions/
 terminal commands, open settings, access files/network, or mutate state.
 
+The same response exposes `codexReview` as a static review-only catalog for
+official Codex App Review guidance. The UI shows only catalog counts, entry
+keys, groups, state/source chips, and negative redaction chips for review pane
+behavior, Git repository requirements, reflected Git state categories,
+uncommitted/all-branch/last-turn/staged/unstaged scopes, diff navigation,
+inline comments, `/review` result placement, pull request review context,
+GitHub CLI prerequisite guidance, PR fix loop, staging/reverting levels, and
+staged/unstaged same-file behavior. It must not show project names, repository
+paths, Git state, diff content, file paths/names, line numbers, comment text,
+review findings, pull request context, reviewer feedback, GitHub identities,
+command text, branch names, commit SHAs, editor names, paths, URLs, secrets,
+raw payloads, or app-server traffic, and it must not read Git/diffs/PR context,
+open editors, create inline comments, start reviews, invoke GitHub CLI,
+stage/unstage/revert/commit/push, open PRs, access files/network, create model
+traffic, or mutate state.
+
 The same response exposes `codexManagedConfiguration` as a static review-only
 catalog for official Codex managed-configuration behavior. The UI shows only
 catalog counts, entry keys, groups, state/source chips, and redaction chips for
