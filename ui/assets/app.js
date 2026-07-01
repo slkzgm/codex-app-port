@@ -259,6 +259,13 @@ const elements = {
   permissionProfilesCountText: document.querySelector("#permission-profiles-count-text"),
   permissionProfilesAllowedText: document.querySelector("#permission-profiles-allowed-text"),
   permissionProfilesDetailsText: document.querySelector("#permission-profiles-details-text"),
+  remoteControlStatusButton: document.querySelector("#remote-control-status-button"),
+  remoteControlStatusStatus: document.querySelector("#remote-control-status-status"),
+  remoteControlStatusCountText: document.querySelector("#remote-control-status-count-text"),
+  remoteControlStatusIdentitiesText: document.querySelector(
+    "#remote-control-status-identities-text",
+  ),
+  remoteControlStatusDetailsText: document.querySelector("#remote-control-status-details-text"),
   accountLoginPreflightButton: document.querySelector("#account-login-preflight-button"),
   accountLoginButton: document.querySelector("#account-login-button"),
   accountLoginStatus: document.querySelector("#account-login-status"),
@@ -1210,6 +1217,10 @@ elements.workspaceSelect.addEventListener("change", () => {
   elements.permissionProfilesCountText.textContent = "0";
   elements.permissionProfilesAllowedText.textContent = "0";
   elements.permissionProfilesDetailsText.textContent = "Hidden";
+  elements.remoteControlStatusStatus.textContent = "Remote status disabled by default.";
+  elements.remoteControlStatusCountText.textContent = "0";
+  elements.remoteControlStatusIdentitiesText.textContent = "Hidden";
+  elements.remoteControlStatusDetailsText.textContent = "Hidden";
   lastApprovalPayload = null;
   lastApprovalQueue = [];
   approvalQueueFilter = "all";
@@ -2192,6 +2203,10 @@ elements.permissionProfilesButton.addEventListener("click", () => {
   runPermissionProfiles();
 });
 
+elements.remoteControlStatusButton.addEventListener("click", () => {
+  runRemoteControlStatus();
+});
+
 elements.accountLoginPreflightButton.addEventListener("click", () => {
   runAccountLoginPreflight();
 });
@@ -2695,6 +2710,16 @@ function permissionProfilesEndpoint() {
   const params = new URLSearchParams();
   params.set("workspace", selectedWorkspaceId);
   return `/api/permission-profiles?${params.toString()}`;
+}
+
+function remoteControlStatusEndpoint() {
+  if (!selectedWorkspaceId) {
+    return "/api/remote-control-status";
+  }
+
+  const params = new URLSearchParams();
+  params.set("workspace", selectedWorkspaceId);
+  return `/api/remote-control-status?${params.toString()}`;
 }
 
 function accountLoginPreflightEndpoint() {
@@ -4816,6 +4841,28 @@ async function runPermissionProfiles() {
     renderError(error);
   } finally {
     setPermissionProfilesLoading(false);
+  }
+}
+
+async function runRemoteControlStatus() {
+  setRemoteControlStatusLoading(true);
+  hideError();
+
+  try {
+    const response = await fetch(remoteControlStatusEndpoint(), {
+      headers: apiHeaders(),
+      cache: "no-store",
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderRemoteControlStatus(payload);
+  } catch (error) {
+    elements.remoteControlStatusStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    setRemoteControlStatusLoading(false);
   }
 }
 
@@ -13756,6 +13803,27 @@ function renderSettingsIntegrations(payload) {
   elements.remoteControlStateText.textContent = settings.remoteControlStatusAvailable
     ? remoteControlStatusText(inventory.remoteControlStatus)
     : "Blocked";
+  elements.remoteControlStatusStatus.textContent = settings.remoteControlStatusEnabled
+    ? "Remote status enabled"
+    : "Remote status disabled";
+  elements.remoteControlStatusCountText.textContent = String(
+    Object.values(inventory.remoteControlStatus?.statusCounts ?? {}).reduce(
+      (sum, value) => sum + (Number.isFinite(value) ? value : 0),
+      0,
+    ),
+  );
+  elements.remoteControlStatusIdentitiesText.textContent =
+    (inventory.remoteControlStatus?.identityFieldCount ?? 0) > 0
+      ? `${inventory.remoteControlStatus.identityFieldCount} present`
+      : "Hidden";
+  elements.remoteControlStatusDetailsText.textContent =
+    inventory.remoteControlStatus?.statusValueReturned ||
+    inventory.remoteControlStatus?.environmentIdReturned ||
+    inventory.remoteControlStatus?.installationIdReturned ||
+    inventory.remoteControlStatus?.serverNameReturned ||
+    inventory.remoteControlStatus?.rawPayloadReturned
+      ? "Returned"
+      : "Hidden";
   elements.hooksStateText.textContent = settings.hookListingAvailable
     ? `${inventory.hooks?.hookCount ?? 0} hooks`
     : "Blocked";
@@ -15429,6 +15497,37 @@ function renderPermissionProfiles(payload) {
   elements.permissionProfilesStateText.textContent = blocked
     ? "Blocked"
     : `${profileCount} profiles / ${blockedCount} blocked`;
+}
+
+function renderRemoteControlStatus(payload) {
+  const settings = payload.settings ?? {};
+  const result = payload.result ?? {};
+  const blocked =
+    settings.remoteControlStatusEnabled !== true || payload.appServer?.touched !== true;
+  const statusCounts = result.statusCounts ?? payload.probes?.remoteControlStatus?.statusCounts ?? {};
+  const statusCount = Object.values(statusCounts).reduce(
+    (sum, value) => sum + (Number.isFinite(value) ? value : 0),
+    0,
+  );
+  const identityFieldCount =
+    result.identityFieldCount ?? payload.probes?.remoteControlStatus?.identityFieldCount ?? 0;
+  const status = result.status ?? (blocked ? "blocked" : "available");
+  elements.remoteControlStatusStatus.textContent = blocked ? "Read blocked" : status;
+  elements.remoteControlStatusCountText.textContent = String(statusCount);
+  elements.remoteControlStatusIdentitiesText.textContent =
+    identityFieldCount > 0 ? `${identityFieldCount} present` : "Hidden";
+  elements.remoteControlStatusDetailsText.textContent =
+    result.statusValueReturned ||
+    result.environmentIdReturned ||
+    result.installationIdReturned ||
+    result.serverNameReturned ||
+    result.rawPayloadReturned ||
+    settings.rawPayloadReturned
+      ? "Returned"
+      : "Hidden";
+  elements.remoteControlStateText.textContent = blocked
+    ? "Blocked"
+    : remoteControlStatusText({ statusCounts });
 }
 
 function renderAccountLoginPreflight(payload) {
@@ -23352,6 +23451,14 @@ function setPermissionProfilesLoading(isLoading) {
   elements.permissionProfilesButton.textContent = isLoading ? "Checking" : "Profiles Check";
   if (isLoading) {
     elements.permissionProfilesStatus.textContent = "Checking";
+  }
+}
+
+function setRemoteControlStatusLoading(isLoading) {
+  elements.remoteControlStatusButton.disabled = isLoading;
+  elements.remoteControlStatusButton.textContent = isLoading ? "Checking" : "Remote Check";
+  if (isLoading) {
+    elements.remoteControlStatusStatus.textContent = "Checking";
   }
 }
 

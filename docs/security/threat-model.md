@@ -1653,6 +1653,12 @@
   only; profile names, ids, descriptions, cursors, cwd, paths, permission rules,
   filesystem/network grants, config values, and raw app-server payloads remain
   blocked.
+- `/api/remote-control-status` may call only `remoteControl/status/read` behind
+  `CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_STATUS=1`. It is GET-only, local-token
+  protected, and returns known status buckets plus identity-field presence
+  counts only; raw status strings, server names, installation ids, environment
+  ids, cwd, paths, client lists, pairing state, mutations, and raw app-server
+  payloads remain blocked.
 - Browser-facing action preflights may issue short-lived process-local tokens
   for future mutation gates. The registry may store only token metadata and a
   non-returned hash of the intent; it must not store or return raw prompts,

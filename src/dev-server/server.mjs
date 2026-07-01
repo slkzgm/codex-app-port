@@ -39,6 +39,7 @@ import {
   runPluginShareCheckoutProbe,
   runPluginUninstallProbe,
   runPermissionProfilesReadProbe,
+  runRemoteControlStatusReadProbe,
   runRemoteControlClientRevokeProbe,
   runRemoteControlClientsListProbe,
   runProcessSpawnProbe,
@@ -13111,6 +13112,7 @@ export function createDevServer({
   accountUsageFn = runAccountUsageReadProbe,
   accountWorkspaceMessagesFn = runAccountWorkspaceMessagesReadProbe,
   permissionProfilesFn = runPermissionProfilesReadProbe,
+  remoteControlStatusFn = runRemoteControlStatusReadProbe,
   accountLoginCancelFn = runAccountLoginCancelProbe,
   accountLoginStartFn = runAccountLoginStartProbe,
   accountCreditsNudgeFn = runAccountCreditsNudgeProbe,
@@ -13181,6 +13183,8 @@ export function createDevServer({
   accountWorkspaceMessagesEnabled =
     process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_WORKSPACE_MESSAGES === "1",
   permissionProfilesEnabled = process.env.CODEX_APP_PORT_ALLOW_PERMISSION_PROFILES === "1",
+  remoteControlStatusEnabled =
+    process.env.CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_STATUS === "1",
   accountLoginCancelEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN_CANCEL === "1",
   accountLoginEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN === "1",
   accountCreditsNudgeEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_CREDITS_NUDGE === "1",
@@ -13335,6 +13339,7 @@ export function createDevServer({
       accountUsageFn,
       accountWorkspaceMessagesFn,
       permissionProfilesFn,
+      remoteControlStatusFn,
       accountLoginCancelFn,
       accountLoginStartFn,
       accountCreditsNudgeFn,
@@ -13401,6 +13406,7 @@ export function createDevServer({
       accountUsageEnabled,
       accountWorkspaceMessagesEnabled,
       permissionProfilesEnabled,
+      remoteControlStatusEnabled,
       accountLoginCancelEnabled,
       accountLoginEnabled,
       accountCreditsNudgeEnabled,
@@ -14936,6 +14942,48 @@ export async function handleRequest(request, response, options) {
       sendJson(response, error.statusCode ?? 502, {
         ok: false,
         error: cleanDisplayText(error.message, 200) ?? "Invalid permission profiles request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/remote-control-status") {
+    if (request.method !== "GET") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        url.searchParams.get("workspace"),
+      );
+      if (!options.remoteControlStatusEnabled) {
+        sendJson(response, 200, buildRemoteControlStatusBlockedPayload({ workspace }));
+        return;
+      }
+      const payload = await options.remoteControlStatusFn({
+        codexBin: options.codexBin,
+        cwd: workspace.cwd,
+        timeoutMs: options.timeoutMs,
+      });
+      sendJson(
+        response,
+        200,
+        sanitizeRemoteControlStatusPayload(payload, {
+          workspace,
+          enabled: true,
+        }),
+      );
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 502, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid remote control status request",
       });
     }
     return;
@@ -19634,6 +19682,7 @@ export async function handleRequest(request, response, options) {
             accountUsageEnabled: options.accountUsageEnabled,
             accountWorkspaceMessagesEnabled: options.accountWorkspaceMessagesEnabled,
             permissionProfilesEnabled: options.permissionProfilesEnabled,
+            remoteControlStatusEnabled: options.remoteControlStatusEnabled,
             accountLoginCancelEnabled: options.accountLoginCancelEnabled,
             accountLoginEnabled: options.accountLoginEnabled,
             accountCreditsNudgeEnabled: options.accountCreditsNudgeEnabled,
@@ -19677,6 +19726,7 @@ export async function handleRequest(request, response, options) {
           accountUsageEnabled: options.accountUsageEnabled,
           accountWorkspaceMessagesEnabled: options.accountWorkspaceMessagesEnabled,
           permissionProfilesEnabled: options.permissionProfilesEnabled,
+          remoteControlStatusEnabled: options.remoteControlStatusEnabled,
           accountLoginCancelEnabled: options.accountLoginCancelEnabled,
           accountLoginEnabled: options.accountLoginEnabled,
           accountCreditsNudgeEnabled: options.accountCreditsNudgeEnabled,
@@ -51974,6 +52024,7 @@ export function sanitizeSettingsIntegrationsPayload(
     accountUsageEnabled = false,
     accountWorkspaceMessagesEnabled = false,
     permissionProfilesEnabled = false,
+    remoteControlStatusEnabled = false,
     accountLoginCancelEnabled = false,
     accountLoginEnabled = false,
     accountCreditsNudgeEnabled = false,
@@ -52013,6 +52064,7 @@ export function sanitizeSettingsIntegrationsPayload(
   const usageEnabled = Boolean(accountUsageEnabled);
   const workspaceMessagesEnabled = Boolean(accountWorkspaceMessagesEnabled);
   const profilesEnabled = Boolean(permissionProfilesEnabled);
+  const remoteStatusEnabled = Boolean(remoteControlStatusEnabled);
   const loginEnabled = Boolean(accountLoginEnabled);
   const loginCancelEnabled = Boolean(accountLoginCancelEnabled);
   const creditsNudgeEnabled = Boolean(accountCreditsNudgeEnabled);
@@ -52053,6 +52105,7 @@ export function sanitizeSettingsIntegrationsPayload(
     accountUsageEnabled: usageEnabled,
     accountWorkspaceMessagesEnabled: workspaceMessagesEnabled,
     permissionProfilesEnabled: profilesEnabled,
+    remoteControlStatusEnabled: remoteStatusEnabled,
     accountLoginCancelEnabled: loginCancelEnabled,
     accountLoginEnabled: loginEnabled,
     accountCreditsNudgeEnabled: creditsNudgeEnabled,
@@ -52110,7 +52163,8 @@ export function sanitizeSettingsIntegrationsPayload(
         collaborationModeListingAvailable: inventory.collaborationModes.ok,
         permissionProfileListingAvailable: inventory.permissionProfiles.ok || profilesEnabled,
         permissionProfilesEnabled: profilesEnabled,
-        remoteControlStatusAvailable: inventory.remoteControlStatus.ok,
+        remoteControlStatusAvailable: inventory.remoteControlStatus.ok || remoteStatusEnabled,
+        remoteControlStatusEnabled: remoteStatusEnabled,
         remoteControlDisableEnabled: Boolean(remoteControlDisableEnabled),
         environmentAddEnabled: Boolean(environmentAddEnabled),
         hookListingAvailable: inventory.hooks.ok,
@@ -58417,6 +58471,165 @@ export function sanitizePermissionProfilesPayload(
   };
 }
 
+export function buildRemoteControlStatusBlockedPayload({ workspace } = {}) {
+  const remoteControlStatus = sanitizeRemoteControlStatusInventory(null);
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["remoteControl/status/read"],
+    },
+    settings: {
+      remoteControlStatusAvailable: true,
+      remoteControlStatusEnabled: false,
+      appServerTraffic: false,
+      statusValueReturned: false,
+      environmentIdReturned: false,
+      installationIdReturned: false,
+      serverNameReturned: false,
+      rawPayloadReturned: false,
+      reason: "remote-control-status-requires-opt-in",
+    },
+    probes: {
+      remoteControlStatus,
+    },
+    result: {
+      status: "blocked",
+      remoteControlStatusEnabled: false,
+      appServerTraffic: false,
+      statusKnown: false,
+      statusCounts: {},
+      identityFieldCount: 0,
+      environmentIdPresent: false,
+      installationIdPresent: false,
+      serverNamePresent: false,
+      statusValueReturned: false,
+      environmentIdReturned: false,
+      installationIdReturned: false,
+      serverNameReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      settingsWrites: false,
+      authCallbacks: false,
+      authMutations: false,
+      toolInvocation: false,
+      installsEnabled: false,
+      remoteControlMutations: false,
+      remoteControlPairing: false,
+      remoteControlClientListing: false,
+      secretsReturned: false,
+      tokensReturned: false,
+      accountIdentifiersReturned: false,
+      authUrlsReturned: false,
+      urlsReturned: false,
+      pathsReturned: false,
+      statusValueReturned: false,
+      environmentIdReturned: false,
+      installationIdReturned: false,
+      serverNameReturned: false,
+      rawPayloadReturned: false,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: true,
+      implemented: true,
+    },
+    notifications: sanitizeNotificationCounts(null),
+  };
+}
+
+export function sanitizeRemoteControlStatusPayload(
+  payload,
+  { workspace = null, enabled = false } = {},
+) {
+  const remoteControlStatus = sanitizeRemoteControlStatusInventory(
+    payload?.probes?.remoteControlStatus,
+  );
+  const status = enabled ? "available" : "blocked";
+  return {
+    ok: Boolean(payload?.ok),
+    generatedAt: payload?.generatedAt ?? new Date().toISOString(),
+    transport: cleanDisplayText(payload?.transport, 80),
+    protocol: cleanDisplayText(payload?.protocol, 80),
+    initialize: sanitizeInitialize(payload?.initialize),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: Boolean(enabled),
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["remoteControl/status/read"],
+    },
+    settings: {
+      remoteControlStatusAvailable: true,
+      remoteControlStatusEnabled: Boolean(enabled),
+      appServerTraffic: Boolean(enabled),
+      statusValueReturned: false,
+      environmentIdReturned: false,
+      installationIdReturned: false,
+      serverNameReturned: false,
+      rawPayloadReturned: false,
+      reason: Boolean(enabled)
+        ? "remote-control-status-counts-only"
+        : "remote-control-status-requires-opt-in",
+    },
+    probes: {
+      remoteControlStatus,
+    },
+    result: {
+      status,
+      remoteControlStatusEnabled: Boolean(enabled),
+      appServerTraffic: Boolean(enabled),
+      statusKnown: remoteControlStatus.statusKnown,
+      statusCounts: remoteControlStatus.statusCounts,
+      identityFieldCount: remoteControlStatus.identityFieldCount,
+      environmentIdPresent: remoteControlStatus.environmentIdPresent,
+      installationIdPresent: remoteControlStatus.installationIdPresent,
+      serverNamePresent: remoteControlStatus.serverNamePresent,
+      statusValueReturned: false,
+      environmentIdReturned: false,
+      installationIdReturned: false,
+      serverNameReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: Boolean(enabled),
+      modelTraffic: false,
+      commandTraffic: false,
+      settingsWrites: false,
+      authCallbacks: false,
+      authMutations: false,
+      toolInvocation: false,
+      installsEnabled: false,
+      remoteControlMutations: false,
+      remoteControlPairing: false,
+      remoteControlClientListing: false,
+      secretsReturned: false,
+      tokensReturned: false,
+      accountIdentifiersReturned: false,
+      authUrlsReturned: false,
+      urlsReturned: false,
+      pathsReturned: false,
+      statusValueReturned: false,
+      environmentIdReturned: false,
+      installationIdReturned: false,
+      serverNameReturned: false,
+      rawPayloadReturned: false,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: true,
+      implemented: true,
+    },
+    notifications: sanitizeNotificationCounts(payload?.notifications),
+  };
+}
+
 export function buildAccountLoginCancelPreflight(
   body,
   { workspace, accountLoginCancelEnabled = false, accountLoginFlowRegistry = null } = {},
@@ -62650,6 +62863,7 @@ export function buildSettingsIntegrations({
   accountUsageEnabled = false,
   accountWorkspaceMessagesEnabled = false,
   permissionProfilesEnabled = false,
+  remoteControlStatusEnabled = false,
   accountLoginCancelEnabled = false,
   accountLoginEnabled = false,
   accountCreditsNudgeEnabled = false,
@@ -62689,6 +62903,7 @@ export function buildSettingsIntegrations({
   const usageEnabled = Boolean(accountUsageEnabled);
   const workspaceMessagesEnabled = Boolean(accountWorkspaceMessagesEnabled);
   const profilesEnabled = Boolean(permissionProfilesEnabled);
+  const remoteStatusEnabled = Boolean(remoteControlStatusEnabled);
   const loginCancelEnabled = Boolean(accountLoginCancelEnabled);
   const loginEnabled = Boolean(accountLoginEnabled);
   const creditsNudgeEnabled = Boolean(accountCreditsNudgeEnabled);
@@ -62711,6 +62926,7 @@ export function buildSettingsIntegrations({
     enabledReadMethods: [
       "config/read",
       profilesEnabled ? "permissionProfile/list" : null,
+      remoteStatusEnabled ? "remoteControl/status/read" : null,
       readEnabled ? "account/read" : null,
       rateLimitsEnabled ? "account/rateLimits/read" : null,
       usageEnabled ? "account/usage/read" : null,
@@ -62721,6 +62937,7 @@ export function buildSettingsIntegrations({
     accountUsageEnabled: usageEnabled,
     accountWorkspaceMessagesEnabled: workspaceMessagesEnabled,
     permissionProfilesEnabled: profilesEnabled,
+    remoteControlStatusEnabled: remoteStatusEnabled,
     accountLoginCancelEnabled: loginCancelEnabled,
     accountLoginEnabled: loginEnabled,
     accountCreditsNudgeEnabled: creditsNudgeEnabled,
@@ -62755,6 +62972,7 @@ export function buildSettingsIntegrations({
       auditedReadMethods: [
         "config/read",
         profilesEnabled ? "permissionProfile/list" : null,
+        remoteStatusEnabled ? "remoteControl/status/read" : null,
         readEnabled ? "account/read" : null,
         rateLimitsEnabled ? "account/rateLimits/read" : null,
         usageEnabled ? "account/usage/read" : null,
@@ -62778,6 +62996,8 @@ export function buildSettingsIntegrations({
         collaborationModeListingAvailable: false,
         permissionProfileListingAvailable: profilesEnabled,
         permissionProfilesEnabled: profilesEnabled,
+        remoteControlStatusAvailable: remoteStatusEnabled,
+        remoteControlStatusEnabled: remoteStatusEnabled,
         hookListingAvailable: false,
         appListingAvailable: false,
         externalAgentConfigDetectionAvailable: false,
@@ -65437,6 +65657,7 @@ function buildIntegrationActionScope({
   accountUsageEnabled = false,
   accountWorkspaceMessagesEnabled = false,
   permissionProfilesEnabled = false,
+  remoteControlStatusEnabled = false,
   accountLoginCancelEnabled = false,
   accountLoginEnabled = false,
   accountCreditsNudgeEnabled = false,
@@ -65525,6 +65746,7 @@ function buildIntegrationActionScope({
     accountUsageEnabled: Boolean(accountUsageEnabled),
     accountWorkspaceMessagesEnabled: Boolean(accountWorkspaceMessagesEnabled),
     permissionProfilesEnabled: Boolean(permissionProfilesEnabled),
+    remoteControlStatusEnabled: Boolean(remoteControlStatusEnabled),
     accountLoginEnabled: Boolean(accountLoginEnabled),
     authDeviceCodeLoginEnabled: Boolean(accountLoginEnabled),
     accountLoginCancelEnabled: Boolean(accountLoginCancelEnabled),

@@ -1117,9 +1117,12 @@ Target parity with the Codex desktop workflow:
   marketplace names/display names/sources, plugin ids, plugin display names,
   plugin descriptions, plugin paths, URLs, prompts, capabilities, screenshots,
   and raw payloads.
-- `remoteControl/status/read` has an opt-in, counts-only inventory path; it
-  reports status buckets and identity-field presence only, not status strings,
-  server names, installation ids, environment ids, or raw payloads.
+- `remoteControl/status/read` has both a dedicated opt-in
+  `/api/remote-control-status` route behind
+  `CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_STATUS=1` and an opt-in, counts-only
+  inventory path. It reports status buckets and identity-field presence only,
+  not raw status strings, server names, installation ids, environment ids, cwd,
+  paths, remote-control mutations, client lists, pairing state, or raw payloads.
 - `account/sendAddCreditsNudgeEmail` has a separate disabled-by-default
   `POST /api/account-credits-nudge` path behind
   `CODEX_APP_PORT_ALLOW_ACCOUNT_CREDITS_NUDGE=1`; it consumes a matching

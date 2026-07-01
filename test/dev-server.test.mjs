@@ -380,6 +380,11 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /permission-profiles-count-text/);
     assert.match(html, /permission-profiles-allowed-text/);
     assert.match(html, /permission-profiles-details-text/);
+    assert.match(html, /remote-control-status-button/);
+    assert.match(html, /remote-control-status-status/);
+    assert.match(html, /remote-control-status-count-text/);
+    assert.match(html, /remote-control-status-identities-text/);
+    assert.match(html, /remote-control-status-details-text/);
     assert.match(appScript, /runAccountRead/);
     assert.match(appScript, /renderAccountRead/);
     assert.match(appScript, /runAccountRateLimits/);
@@ -390,6 +395,8 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(appScript, /renderAccountWorkspaceMessages/);
     assert.match(appScript, /runPermissionProfiles/);
     assert.match(appScript, /renderPermissionProfiles/);
+    assert.match(appScript, /runRemoteControlStatus/);
+    assert.match(appScript, /renderRemoteControlStatus/);
     assert.match(html, /account-login-preflight-button/);
     assert.match(html, /account-login-button/);
     assert.match(html, /thread-delete-preflight-button/);
@@ -15134,6 +15141,170 @@ test("dev server exposes permission profiles only behind explicit opt-in and red
       "\"namesReturned\":true",
       "\"idsReturned\":true",
       "\"descriptionsReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    await closeServer(enabledServer.server);
+  }
+});
+
+test("dev server exposes remote control status only behind explicit opt-in and redacts identities", async () => {
+  const blockedCalls = [];
+  const blockedServer = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    remoteControlStatusFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+
+  try {
+    const settingsResponse = await fetch(`${blockedServer.url}/api/settings-integrations`, {
+      headers: apiHeaders(blockedServer.server),
+    });
+    assert.equal(settingsResponse.status, 200);
+    const settingsPayload = await settingsResponse.json();
+    assert.equal(settingsPayload.surfaces.settings.remoteControlStatusAvailable, false);
+    assert.equal(settingsPayload.surfaces.settings.remoteControlStatusEnabled, false);
+    assert.equal(settingsPayload.integrationScope.remoteControlStatusEnabled, false);
+
+    const blockedResponse = await fetch(`${blockedServer.url}/api/remote-control-status`, {
+      headers: apiHeaders(blockedServer.server),
+    });
+    assert.equal(blockedResponse.status, 200);
+    const blockedPayload = await blockedResponse.json();
+    const blockedSerialized = JSON.stringify(blockedPayload);
+    assert.equal(blockedPayload.ok, true);
+    assert.equal(blockedPayload.appServer.touched, false);
+    assert.equal(blockedPayload.settings.remoteControlStatusEnabled, false);
+    assert.equal(blockedPayload.policy.appServerTraffic, false);
+    assert.equal(blockedPayload.result.status, "blocked");
+    assert.equal(blockedCalls.length, 0);
+    assert.equal(blockedSerialized.includes("/tmp/default-workspace"), false);
+  } finally {
+    await closeServer(blockedServer.server);
+  }
+
+  const calls = [];
+  const enabledServer = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    remoteControlStatusEnabled: true,
+    remoteControlStatusFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-07-01T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/private-home",
+          userAgent: "mock/0.0.0",
+        },
+        probes: {
+          remoteControlStatus: {
+            ok: true,
+            statusKnown: true,
+            statusCounts: {
+              connected: 1,
+              privateStatus: 1,
+            },
+            identityFieldCount: 3,
+            environmentIdPresent: true,
+            installationIdPresent: true,
+            serverNamePresent: true,
+            status: "connected-private",
+            environmentId: "env-private-id",
+            installationId: "install-private-id",
+            serverName: "private server name",
+            statusValueReturned: true,
+            environmentIdReturned: true,
+            installationIdReturned: true,
+            serverNameReturned: true,
+            rawPayloadReturned: true,
+          },
+        },
+        rawRemoteControlStatus: {
+          status: "connected-private",
+          environmentId: "env-private-id",
+          installationId: "install-private-id",
+          serverName: "private server name",
+        },
+        notifications: {},
+      };
+    },
+  });
+
+  try {
+    const settingsResponse = await fetch(`${enabledServer.url}/api/settings-integrations`, {
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(settingsResponse.status, 200);
+    const settingsPayload = await settingsResponse.json();
+    assert.equal(settingsPayload.surfaces.settings.remoteControlStatusAvailable, true);
+    assert.equal(settingsPayload.surfaces.settings.remoteControlStatusEnabled, true);
+    assert.equal(settingsPayload.integrationScope.remoteControlStatusEnabled, true);
+    assert.equal(
+      settingsPayload.integrationScope.enabledReadMethods.includes("remoteControl/status/read"),
+      true,
+    );
+
+    const methodResponse = await fetch(`${enabledServer.url}/api/remote-control-status`, {
+      method: "POST",
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(methodResponse.status, 405);
+
+    const response = await fetch(`${enabledServer.url}/api/remote-control-status`, {
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, true);
+    assert.equal(payload.appServer.modelTraffic, false);
+    assert.deepEqual(payload.appServer.auditedMethods, ["remoteControl/status/read"]);
+    assert.equal(payload.settings.remoteControlStatusEnabled, true);
+    assert.equal(payload.result.status, "available");
+    assert.deepEqual(payload.result.statusCounts, { connected: 1 });
+    assert.equal(payload.result.identityFieldCount, 3);
+    assert.equal(payload.result.environmentIdPresent, true);
+    assert.equal(payload.result.installationIdPresent, true);
+    assert.equal(payload.result.serverNamePresent, true);
+    assert.equal(payload.result.statusValueReturned, false);
+    assert.equal(payload.result.environmentIdReturned, false);
+    assert.equal(payload.result.installationIdReturned, false);
+    assert.equal(payload.result.serverNameReturned, false);
+    assert.equal(payload.result.rawPayloadReturned, false);
+    assert.equal(payload.policy.readOnly, true);
+    assert.equal(payload.policy.remoteControlMutations, false);
+    assert.equal(payload.policy.remoteControlPairing, false);
+    assert.equal(payload.policy.remoteControlClientListing, false);
+    assert.equal(payload.policy.statusValueReturned, false);
+    assert.equal(payload.policy.environmentIdReturned, false);
+    assert.equal(payload.policy.installationIdReturned, false);
+    assert.equal(payload.policy.serverNameReturned, false);
+    assert.equal(payload.policy.rawPayloadReturned, false);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].cwd, "/tmp/default-workspace");
+    for (const marker of [
+      "/tmp/default-workspace",
+      "/tmp/private-home",
+      "codexHome",
+      "userAgent",
+      "privateStatus",
+      "connected-private",
+      "env-private-id",
+      "install-private-id",
+      "private server name",
+      "\"statusValueReturned\":true",
+      "\"environmentIdReturned\":true",
+      "\"installationIdReturned\":true",
+      "\"serverNameReturned\":true",
       "\"rawPayloadReturned\":true",
     ]) {
       assert.equal(serialized.includes(marker), false, `leaked ${marker}`);

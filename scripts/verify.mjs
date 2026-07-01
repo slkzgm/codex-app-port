@@ -85,6 +85,7 @@ async function main() {
   await checkAccountUsageApi();
   await checkAccountWorkspaceMessagesApi();
   await checkPermissionProfilesApi();
+  await checkRemoteControlStatusApi();
   await checkAccountLoginApi();
   await checkAccountLoginCancelApi();
   await checkAccountCreditsNudgeApi();
@@ -18353,6 +18354,194 @@ async function checkPermissionProfilesApi() {
     await closeServer(server);
   }
   pass("dev server permission profiles exposes counts behind opt-in without returning profile details");
+}
+
+async function checkRemoteControlStatusApi() {
+  const blockedCalls = [];
+  const blockedServer = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    remoteControlStatusFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+  const blockedPort = await listenWithFallback(blockedServer, { host: "127.0.0.1", port: 0 });
+  const blockedBaseUrl = `http://127.0.0.1:${blockedPort}`;
+
+  try {
+    const token = await readUiSessionToken(blockedBaseUrl);
+    const settingsResponse = await fetch(`${blockedBaseUrl}/api/settings-integrations`, {
+      headers: apiHeaders(token),
+    });
+    if (!settingsResponse.ok) {
+      throw new Error(`settings integrations for blocked remote control status returned HTTP ${settingsResponse.status}`);
+    }
+    const settingsPayload = await settingsResponse.json();
+    if (
+      settingsPayload.surfaces?.settings?.remoteControlStatusAvailable !== false ||
+      settingsPayload.surfaces?.settings?.remoteControlStatusEnabled !== false ||
+      settingsPayload.integrationScope?.remoteControlStatusEnabled !== false
+    ) {
+      throw new Error("settings integrations did not expose the blocked remote control status gate safely");
+    }
+
+    const response = await fetch(`${blockedBaseUrl}/api/remote-control-status`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`blocked remote control status returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (
+      payload.appServer?.touched !== false ||
+      payload.settings?.remoteControlStatusEnabled !== false ||
+      payload.result?.status !== "blocked" ||
+      payload.policy?.appServerTraffic !== false
+    ) {
+      throw new Error("blocked remote control status did not fail closed without app-server traffic");
+    }
+    if (blockedCalls.length !== 0) {
+      throw new Error("blocked remote control status unexpectedly touched app-server");
+    }
+    assertNoMarkers(JSON.stringify(payload), ["/tmp/codex-app-port-verify"]);
+  } finally {
+    await closeServer(blockedServer);
+  }
+
+  const calls = [];
+  const server = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    remoteControlStatusEnabled: true,
+    remoteControlStatusFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-07-01T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/verify-private-home",
+          userAgent: "verify-private-agent",
+        },
+        probes: {
+          remoteControlStatus: {
+            ok: true,
+            statusKnown: true,
+            statusCounts: {
+              connected: 1,
+              privateStatus: 1,
+            },
+            identityFieldCount: 3,
+            environmentIdPresent: true,
+            installationIdPresent: true,
+            serverNamePresent: true,
+            status: "connected-private",
+            environmentId: "env-private-id",
+            installationId: "install-private-id",
+            serverName: "private server name",
+            statusValueReturned: true,
+            environmentIdReturned: true,
+            installationIdReturned: true,
+            serverNameReturned: true,
+            rawPayloadReturned: true,
+          },
+        },
+        rawRemoteControlStatus: {
+          status: "connected-private",
+          environmentId: "env-private-id",
+          installationId: "install-private-id",
+          serverName: "private server name",
+        },
+        notifications: {},
+      };
+    },
+  });
+  const port = await listenWithFallback(server, { host: "127.0.0.1", port: 0 });
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  try {
+    const token = await readUiSessionToken(baseUrl);
+    const settingsResponse = await fetch(`${baseUrl}/api/settings-integrations`, {
+      headers: apiHeaders(token),
+    });
+    if (!settingsResponse.ok) {
+      throw new Error(`settings integrations for remote control status returned HTTP ${settingsResponse.status}`);
+    }
+    const settingsPayload = await settingsResponse.json();
+    if (
+      settingsPayload.surfaces?.settings?.remoteControlStatusAvailable !== true ||
+      settingsPayload.surfaces?.settings?.remoteControlStatusEnabled !== true ||
+      settingsPayload.integrationScope?.remoteControlStatusEnabled !== true ||
+      !settingsPayload.integrationScope?.enabledReadMethods?.includes("remoteControl/status/read")
+    ) {
+      throw new Error("settings integrations did not expose the remote control status gate safely");
+    }
+
+    const wrongMethod = await fetch(`${baseUrl}/api/remote-control-status`, {
+      method: "POST",
+      headers: apiHeaders(token),
+    });
+    if (wrongMethod.status !== 405) {
+      throw new Error(`remote control status POST returned HTTP ${wrongMethod.status}`);
+    }
+
+    const response = await fetch(`${baseUrl}/api/remote-control-status`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`remote control status returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (
+      payload.appServer?.touched !== true ||
+      payload.appServer?.modelTraffic !== false ||
+      payload.settings?.remoteControlStatusEnabled !== true ||
+      payload.result?.status !== "available" ||
+      payload.result?.statusCounts?.connected !== 1 ||
+      payload.result?.statusCounts?.privateStatus != null ||
+      payload.result?.identityFieldCount !== 3 ||
+      payload.result?.environmentIdPresent !== true ||
+      payload.result?.installationIdPresent !== true ||
+      payload.result?.serverNamePresent !== true ||
+      payload.result?.statusValueReturned !== false ||
+      payload.result?.environmentIdReturned !== false ||
+      payload.result?.installationIdReturned !== false ||
+      payload.result?.serverNameReturned !== false ||
+      payload.result?.rawPayloadReturned !== false ||
+      payload.policy?.readOnly !== true ||
+      payload.policy?.remoteControlMutations !== false ||
+      payload.policy?.remoteControlPairing !== false ||
+      payload.policy?.remoteControlClientListing !== false ||
+      payload.policy?.rawPayloadReturned !== false
+    ) {
+      throw new Error("remote control status did not return the safe counts-only summary shape");
+    }
+    if (calls.length !== 1 || calls[0].cwd !== "/tmp/codex-app-port-verify") {
+      throw new Error("remote control status did not call the app-server read path once");
+    }
+    assertNoMarkers(JSON.stringify(payload), [
+      "/tmp/codex-app-port-verify",
+      "/tmp/verify-private-home",
+      "verify-private-agent",
+      "codexHome",
+      "userAgent",
+      "privateStatus",
+      "connected-private",
+      "env-private-id",
+      "install-private-id",
+      "private server name",
+      "\"statusValueReturned\":true",
+      "\"environmentIdReturned\":true",
+      "\"installationIdReturned\":true",
+      "\"serverNameReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]);
+  } finally {
+    await closeServer(server);
+  }
+  pass("dev server remote control status exposes enum counts behind opt-in without returning identities");
 }
 
 async function checkAccountLoginApi() {
@@ -57051,6 +57240,11 @@ async function readUiSessionToken(baseUrl) {
     !html.includes("permission-profiles-count-text") ||
     !html.includes("permission-profiles-allowed-text") ||
     !html.includes("permission-profiles-details-text") ||
+    !html.includes("remote-control-status-button") ||
+    !html.includes("remote-control-status-status") ||
+    !html.includes("remote-control-status-count-text") ||
+    !html.includes("remote-control-status-identities-text") ||
+    !html.includes("remote-control-status-details-text") ||
     !appScript.includes("runAccountRead") ||
     !appScript.includes("renderAccountRead") ||
     !appScript.includes("runAccountRateLimits") ||
@@ -57061,6 +57255,8 @@ async function readUiSessionToken(baseUrl) {
     !appScript.includes("renderAccountWorkspaceMessages") ||
     !appScript.includes("runPermissionProfiles") ||
     !appScript.includes("renderPermissionProfiles") ||
+    !appScript.includes("runRemoteControlStatus") ||
+    !appScript.includes("renderRemoteControlStatus") ||
     !html.includes("account-login-button") ||
     !html.includes("account-login-cancel-button") ||
     !html.includes("account-reset-credit-button") ||

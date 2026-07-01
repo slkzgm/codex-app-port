@@ -160,12 +160,13 @@ model traffic, changes no elicitation counters, approves no guarded action, and
 returns only count/presence metadata with no full ids, thread content, guardian
 event details, paths, secrets, or raw payloads.
 
-Current local status: `externalAgentConfig/import/readHistories`,
-`plugin/installed`, and `remoteControl/status/read` are exposed only through
-the explicit integration-inventory opt-in. `permissionProfile/list`,
+Current local status: `externalAgentConfig/import/readHistories` and
+`plugin/installed` are exposed only through the explicit integration-inventory
+opt-in. `permissionProfile/list`, `remoteControl/status/read`,
 `account/usage/read`, and `account/workspaceMessages/read` also have dedicated
 disabled-by-default GET routes behind
 `CODEX_APP_PORT_ALLOW_PERMISSION_PROFILES=1`,
+`CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_STATUS=1`,
 `CODEX_APP_PORT_ALLOW_ACCOUNT_USAGE=1`, and
 `CODEX_APP_PORT_ALLOW_ACCOUNT_WORKSPACE_MESSAGES=1`. These surfaces return
 counts plus bounded categorical totals only. They do not return permission

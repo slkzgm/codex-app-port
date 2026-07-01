@@ -2151,6 +2151,14 @@ traffic, calls `skills/extraRoots/set` only with `{"extraRoots":[]}`, and
 reduces the result to status/count/shape metadata. It does not return or audit
 extra roots, paths, tokens, notifications, or raw payloads.
 
+`/api/remote-control-status` is a dedicated disabled-by-default GET route for
+`remoteControl/status/read`. It requires
+`CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_STATUS=1`, accepts only the local session
+token and workspace selector, and returns only known status enum buckets plus
+identity-field presence counts. Raw status strings, server names, installation
+ids, environment ids, cwd, paths, client lists, pairing state, mutations, and
+raw payloads are not returned.
+
 The remote-control-disable-preflight endpoint accepts no remote-control params
 and creates only a local one-time confirmation token. The matching
 `/api/remote-control-disable` route is fail-closed unless
