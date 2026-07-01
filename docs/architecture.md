@@ -633,6 +633,14 @@ Current M1 status:
   content, external code, repository fetches, issue/discussion/contribution
   mutations, OSS program applications, filesystem access, network access,
   paths, URLs, secrets, raw payloads, and app-server traffic blocked
+- done: read-only Codex Windows Platform catalog in `/api/settings-integrations`,
+  exposing only static official Windows/WSL platform keys plus local boundary
+  keys/groups/states/sources/counts/redaction flags, with Windows versions,
+  sandbox modes, config values, managed policies, WSL distributions, Windows or
+  WSL paths, commands, winget/admin/firewall/user/install state, sandbox
+  configuration, policy/firewall/user mutations, WSL installs, winget/VS Code
+  invocation, filesystem access, network access, paths, URLs, secrets, raw
+  payloads, and app-server traffic blocked
 - done: read-only Codex Managed configuration catalog in
   `/api/settings-integrations`, exposing only static official Managed
   configuration documentation keys plus local boundary keys/groups/states/

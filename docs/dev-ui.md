@@ -868,6 +868,18 @@ paths, URLs, secrets, raw payloads, and app-server traffic. It must not fetch
 GitHub repositories, import code, create issues, post discussions, submit
 contributions, or start OSS program applications.
 
+The same response exposes `codexWindowsPlatform` as a static review-only
+catalog for official Windows/WSL platform behavior. The UI shows only catalog
+counts, entry keys, groups, state/source chips, and negative redaction chips
+for platform values, Windows versions, sandbox modes, private desktop values,
+managed policies, config values, commands, WSL distributions, WSL/Windows/
+repository paths, VS Code/winget/admin/firewall/user/install state, sandbox
+configuration, private desktop changes, managed policy writes, firewall/user
+changes, WSL install, winget/VS Code invocation, command execution,
+filesystem/network access, paths, URLs, secrets, raw payloads, and app-server
+traffic. It must not configure Windows sandboxing, install WSL, invoke winget,
+open VS Code, execute commands, read paths, or mutate Windows/WSL state.
+
 The same response exposes `codexManagedConfiguration` as a static review-only
 catalog for official Codex managed-configuration behavior. The UI shows only
 catalog counts, entry keys, groups, state/source chips, and redaction chips for

@@ -36131,6 +36131,184 @@ function assertCodexOpenSourceCatalog(payload) {
   }
 }
 
+function expectedCodexWindowsPlatformEntries() {
+  return [
+    ["windowsSurfaceOverview", "overview", "catalog-only", "official-codex-windows-platform-docs"],
+    ["windowsAppCoreWorkflows", "app", "catalog-only", "official-codex-windows-platform-docs"],
+    ["nativeElevatedSandbox", "native-sandbox", "catalog-only", "official-codex-windows-platform-docs"],
+    ["nativeUnelevatedSandbox", "native-sandbox", "catalog-only", "official-codex-windows-platform-docs"],
+    ["wsl2LinuxSandbox", "wsl", "catalog-only", "official-codex-windows-platform-docs"],
+    ["windowsSandboxConfigToml", "configuration", "catalog-only", "official-codex-windows-platform-docs"],
+    ["elevatedSandboxPreferred", "native-sandbox", "catalog-only", "official-codex-windows-platform-docs"],
+    ["unelevatedSandboxFallback", "native-sandbox", "catalog-only", "official-codex-windows-platform-docs"],
+    ["managedAllowedSandboxImplementations", "managed-policy", "catalog-only", "official-codex-windows-platform-docs"],
+    ["privateDesktopDefault", "native-sandbox", "catalog-only", "official-codex-windows-platform-docs"],
+    ["fullAccessRisk", "safety", "catalog-only", "official-codex-windows-platform-docs"],
+    ["windowsVersionMatrix", "requirements", "catalog-only", "official-codex-windows-platform-docs"],
+    ["wingetPrerequisite", "requirements", "catalog-only", "official-codex-windows-platform-docs"],
+    ["adminApprovedSetup", "requirements", "catalog-only", "official-codex-windows-platform-docs"],
+    ["sandboxReadDirCommand", "sandbox-access", "catalog-only", "official-codex-windows-platform-docs"],
+    ["wsl2UseCases", "wsl", "catalog-only", "official-codex-windows-platform-docs"],
+    ["wsl1UnsupportedAfter0115", "wsl", "catalog-only", "official-codex-windows-platform-docs"],
+    ["vscodeWslWorkflow", "wsl", "catalog-only", "official-codex-windows-platform-docs"],
+    ["wslRepositoryPlacement", "wsl", "catalog-only", "official-codex-windows-platform-docs"],
+    ["wslExplorerAccess", "wsl", "catalog-only", "official-codex-windows-platform-docs"],
+    ["windowsConfigBoundary", "configuration", "blocked", "local-windows-platform-boundary"],
+    ["windowsPolicyBoundary", "managed-policy", "blocked", "local-windows-platform-boundary"],
+    ["windowsSandboxMutationBoundary", "native-sandbox", "blocked", "local-windows-platform-boundary"],
+    ["windowsFirewallBoundary", "native-sandbox", "blocked", "local-windows-platform-boundary"],
+    ["windowsUserBoundary", "native-sandbox", "blocked", "local-windows-platform-boundary"],
+    ["wslInstallBoundary", "wsl", "blocked", "local-windows-platform-boundary"],
+    ["wslPathBoundary", "wsl", "blocked", "local-windows-platform-boundary"],
+    ["windowsCommandBoundary", "commands", "blocked", "local-windows-platform-boundary"],
+    ["wingetBoundary", "requirements", "blocked", "local-windows-platform-boundary"],
+    ["vscodeWslBoundary", "wsl", "blocked", "local-windows-platform-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexWindowsPlatformCatalog(payload) {
+  const catalog = payload.codexWindowsPlatform;
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-windows-platform-docs");
+  assert.equal(catalog.entryCount, 30);
+  assert.equal(catalog.officialEntryCount, 20);
+  assert.equal(catalog.localBoundaryEntryCount, 10);
+  assert.equal(catalog.catalogOnlyEntryCount, 20);
+  assert.equal(catalog.blockedEntryCount, 10);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({ key, group, state, source })),
+    expectedCodexWindowsPlatformEntries(),
+  );
+
+  const entryRedactionFlags = [
+    "platformValueReturned",
+    "windowsVersionReturned",
+    "sandboxModeReturned",
+    "privateDesktopValueReturned",
+    "managedPolicyReturned",
+    "configValueReturned",
+    "commandTextReturned",
+    "wslDistributionReturned",
+    "wslPathReturned",
+    "windowsPathReturned",
+    "repositoryPathReturned",
+    "vscodeStateReturned",
+    "wingetStateReturned",
+    "administratorStateReturned",
+    "firewallStateReturned",
+    "userAccountReturned",
+    "installStateReturned",
+    "sandboxConfigured",
+    "privateDesktopChanged",
+    "managedPolicyWritten",
+    "firewallChanged",
+    "sandboxUserChanged",
+    "wslInstalled",
+    "wingetInvoked",
+    "vscodeOpened",
+    "commandExecuted",
+    "filesystemRead",
+    "filesystemWrite",
+    "networkAccess",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.windowsPlatformCatalogReturned, true);
+  for (const flag of [
+    "platformValuesReturned",
+    "windowsVersionsReturned",
+    "sandboxModesReturned",
+    "privateDesktopValuesReturned",
+    "managedPoliciesReturned",
+    "configValuesReturned",
+    "commandTextsReturned",
+    "wslDistributionsReturned",
+    "wslPathsReturned",
+    "windowsPathsReturned",
+    "repositoryPathsReturned",
+    "vscodeStatesReturned",
+    "wingetStatesReturned",
+    "administratorStatesReturned",
+    "firewallStatesReturned",
+    "userAccountsReturned",
+    "installStatesReturned",
+    "sandboxesConfigured",
+    "privateDesktopsChanged",
+    "managedPoliciesWritten",
+    "firewallsChanged",
+    "sandboxUsersChanged",
+    "wslInstallsStarted",
+    "wingetInvocationsStarted",
+    "vscodeOpensStarted",
+    "commandsExecuted",
+    "filesystemReads",
+    "filesystemWrites",
+    "networkAccess",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexWindowsPlatformReturned", true],
+    ["codexWindowsPlatformValuesReturned", false],
+    ["codexWindowsPlatformPlatformValuesReturned", false],
+    ["codexWindowsPlatformWindowsVersionsReturned", false],
+    ["codexWindowsPlatformSandboxModesReturned", false],
+    ["codexWindowsPlatformPrivateDesktopValuesReturned", false],
+    ["codexWindowsPlatformManagedPoliciesReturned", false],
+    ["codexWindowsPlatformConfigValuesReturned", false],
+    ["codexWindowsPlatformCommandTextsReturned", false],
+    ["codexWindowsPlatformWslDistributionsReturned", false],
+    ["codexWindowsPlatformWslPathsReturned", false],
+    ["codexWindowsPlatformWindowsPathsReturned", false],
+    ["codexWindowsPlatformRepositoryPathsReturned", false],
+    ["codexWindowsPlatformVscodeStatesReturned", false],
+    ["codexWindowsPlatformWingetStatesReturned", false],
+    ["codexWindowsPlatformAdministratorStatesReturned", false],
+    ["codexWindowsPlatformFirewallStatesReturned", false],
+    ["codexWindowsPlatformUserAccountsReturned", false],
+    ["codexWindowsPlatformInstallStatesReturned", false],
+    ["codexWindowsPlatformSandboxConfigurationEnabled", false],
+    ["codexWindowsPlatformPrivateDesktopChangeEnabled", false],
+    ["codexWindowsPlatformManagedPolicyWriteEnabled", false],
+    ["codexWindowsPlatformFirewallChangeEnabled", false],
+    ["codexWindowsPlatformSandboxUserChangeEnabled", false],
+    ["codexWindowsPlatformWslInstallEnabled", false],
+    ["codexWindowsPlatformWingetInvocationEnabled", false],
+    ["codexWindowsPlatformVscodeOpenEnabled", false],
+    ["codexWindowsPlatformCommandExecutionEnabled", false],
+    ["codexWindowsPlatformFilesystemAccess", false],
+    ["codexWindowsPlatformNetworkAccess", false],
+    ["codexWindowsPlatformMutationsEnabled", false],
+    ["codexWindowsPlatformPathsReturned", false],
+    ["codexWindowsPlatformUrlsReturned", false],
+    ["codexWindowsPlatformSecretsReturned", false],
+    ["codexWindowsPlatformRawPayloadsReturned", false],
+    ["codexWindowsPlatformAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexGovernanceEntries() {
   return [
     ["governanceVisibilityAuditability", "overview", "catalog-only", "official-codex-governance-docs"],
@@ -40478,6 +40656,7 @@ function assertCodexAppSettingsParity(
   assertCodexChronicleCatalog(payload);
   assertCodexSecurityCatalog(payload);
   assertCodexOpenSourceCatalog(payload);
+  assertCodexWindowsPlatformCatalog(payload);
   assertCodexGovernanceCatalog(payload);
   assertCodexManagedConfigurationCatalog(payload);
   assertCodexEnvironmentVariablesCatalog(payload);

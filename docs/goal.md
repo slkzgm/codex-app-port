@@ -221,6 +221,22 @@ Target parity with the Codex desktop workflow:
   paths, URLs, secrets, raw payloads, or app-server traffic, and it does not
   fetch repositories, create issues, post discussions, submit contributions,
   start OSS program applications, access files/network, or import code.
+- `/api/settings-integrations` now also exposes a read-only Codex Windows
+  Platform catalog aligned to the current official Windows platform docs. It
+  returns only static keys, groups, states, sources, counts, and redaction flags
+  for native Windows app workflows, elevated/unelevated sandbox modes, WSL2
+  Linux sandbox routing, config.toml sandbox settings, managed sandbox
+  requirements, private desktop behavior, full-access risk, Windows version
+  guidance, winget/admin prerequisites, sandbox read-dir guidance, WSL2 use
+  cases, WSL1 support cutoff, VS Code WSL workflow, repository placement, and
+  Explorer access. It does not return platform values, Windows versions,
+  sandbox modes, private desktop values, managed policies, config values,
+  commands, WSL distributions, WSL/Windows/repository paths, VS Code or winget
+  state, administrator/firewall/user/install state, paths, URLs, secrets, raw
+  payloads, or app-server traffic, and it does not configure sandboxes, change
+  private desktop settings, write managed policy, modify firewall/users, install
+  WSL, invoke winget, open VS Code, execute commands, access files/network, or
+  mutate Windows/WSL state.
 - `/api/settings-integrations` now also exposes a read-only Codex Governance
   catalog aligned to the official enterprise governance guide. It returns only
   static keys, groups, states, sources, counts, and redaction flags for

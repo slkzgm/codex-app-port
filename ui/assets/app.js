@@ -41,6 +41,8 @@ const elements = {
   codexSecurityValuesText: document.querySelector("#codex-security-values-text"),
   codexOpenSourceText: document.querySelector("#codex-open-source-text"),
   codexOpenSourceValuesText: document.querySelector("#codex-open-source-values-text"),
+  codexWindowsPlatformText: document.querySelector("#codex-windows-platform-text"),
+  codexWindowsPlatformValuesText: document.querySelector("#codex-windows-platform-values-text"),
   codexGovernanceText: document.querySelector("#codex-governance-text"),
   codexGovernanceValuesText: document.querySelector("#codex-governance-values-text"),
   codexManagedConfigurationText: document.querySelector("#codex-managed-configuration-text"),
@@ -457,6 +459,7 @@ const elements = {
   codexChronicleList: document.querySelector("#codex-chronicle-list"),
   codexSecurityList: document.querySelector("#codex-security-list"),
   codexOpenSourceList: document.querySelector("#codex-open-source-list"),
+  codexWindowsPlatformList: document.querySelector("#codex-windows-platform-list"),
   codexGovernanceList: document.querySelector("#codex-governance-list"),
   codexManagedConfigurationList: document.querySelector("#codex-managed-configuration-list"),
   codexEnvironmentVariablesList: document.querySelector("#codex-environment-variables-list"),
@@ -10520,6 +10523,7 @@ function renderSettingsIntegrations(payload) {
   const codexChronicle = payload.codexChronicle ?? {};
   const codexSecurity = payload.codexSecurity ?? {};
   const codexOpenSource = payload.codexOpenSource ?? {};
+  const codexWindowsPlatform = payload.codexWindowsPlatform ?? {};
   const codexGovernance = payload.codexGovernance ?? {};
   const codexManagedConfiguration = payload.codexManagedConfiguration ?? {};
   const codexEnvironmentVariables = payload.codexEnvironmentVariables ?? {};
@@ -10817,6 +10821,49 @@ function renderSettingsIntegrations(payload) {
     codexOpenSource.secretsReturned ||
     codexOpenSource.rawPayloadsReturned ||
     codexOpenSource.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexWindowsPlatformText.textContent = codexWindowsPlatform.returned
+    ? `${codexWindowsPlatform.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexWindowsPlatform.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexWindowsPlatformValuesText.textContent =
+    codexWindowsPlatform.platformValuesReturned ||
+    codexWindowsPlatform.windowsVersionsReturned ||
+    codexWindowsPlatform.sandboxModesReturned ||
+    codexWindowsPlatform.privateDesktopValuesReturned ||
+    codexWindowsPlatform.managedPoliciesReturned ||
+    codexWindowsPlatform.configValuesReturned ||
+    codexWindowsPlatform.commandTextsReturned ||
+    codexWindowsPlatform.wslDistributionsReturned ||
+    codexWindowsPlatform.wslPathsReturned ||
+    codexWindowsPlatform.windowsPathsReturned ||
+    codexWindowsPlatform.repositoryPathsReturned ||
+    codexWindowsPlatform.vscodeStatesReturned ||
+    codexWindowsPlatform.wingetStatesReturned ||
+    codexWindowsPlatform.administratorStatesReturned ||
+    codexWindowsPlatform.firewallStatesReturned ||
+    codexWindowsPlatform.userAccountsReturned ||
+    codexWindowsPlatform.installStatesReturned ||
+    codexWindowsPlatform.sandboxesConfigured ||
+    codexWindowsPlatform.privateDesktopsChanged ||
+    codexWindowsPlatform.managedPoliciesWritten ||
+    codexWindowsPlatform.firewallsChanged ||
+    codexWindowsPlatform.sandboxUsersChanged ||
+    codexWindowsPlatform.wslInstallsStarted ||
+    codexWindowsPlatform.wingetInvocationsStarted ||
+    codexWindowsPlatform.vscodeOpensStarted ||
+    codexWindowsPlatform.commandsExecuted ||
+    codexWindowsPlatform.filesystemReads ||
+    codexWindowsPlatform.filesystemWrites ||
+    codexWindowsPlatform.networkAccess ||
+    codexWindowsPlatform.mutationEnabled ||
+    codexWindowsPlatform.pathsReturned ||
+    codexWindowsPlatform.urlsReturned ||
+    codexWindowsPlatform.secretsReturned ||
+    codexWindowsPlatform.rawPayloadsReturned ||
+    codexWindowsPlatform.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexGovernanceText.textContent = codexGovernance.returned
@@ -11982,6 +12029,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexChronicleCatalog(codexChronicle);
   renderCodexSecurityCatalog(codexSecurity);
   renderCodexOpenSourceCatalog(codexOpenSource);
+  renderCodexWindowsPlatformCatalog(codexWindowsPlatform);
   renderCodexGovernanceCatalog(codexGovernance);
   renderCodexManagedConfigurationCatalog(codexManagedConfiguration);
   renderCodexEnvironmentVariablesCatalog(codexEnvironmentVariables);
@@ -14220,6 +14268,88 @@ function renderCodexOpenSourceCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexOpenSourceList.append(row);
+  }
+}
+
+function renderCodexWindowsPlatformCatalog(summary) {
+  elements.codexWindowsPlatformList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexWindowsPlatformList.append(
+      emptyState("No Codex Windows platform catalog returned."),
+    );
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "windows-platform";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.platformValueReturned ? "platform values returned" : "platform values hidden",
+      entry.windowsVersionReturned ? "Windows versions returned" : "Windows versions hidden",
+      entry.sandboxModeReturned ? "sandbox modes returned" : "sandbox modes hidden",
+      entry.privateDesktopValueReturned
+        ? "private desktop values returned"
+        : "private desktop values hidden",
+      entry.managedPolicyReturned ? "managed policies returned" : "managed policies hidden",
+      entry.configValueReturned ? "config values returned" : "config values hidden",
+      entry.commandTextReturned ? "command text returned" : "command text hidden",
+      entry.wslDistributionReturned ? "WSL distributions returned" : "WSL distributions hidden",
+      entry.wslPathReturned ? "WSL paths returned" : "WSL paths hidden",
+      entry.windowsPathReturned ? "Windows paths returned" : "Windows paths hidden",
+      entry.repositoryPathReturned ? "repository paths returned" : "repository paths hidden",
+      entry.vscodeStateReturned ? "VS Code state returned" : "VS Code state hidden",
+      entry.wingetStateReturned ? "winget state returned" : "winget state hidden",
+      entry.administratorStateReturned ? "admin state returned" : "admin state hidden",
+      entry.firewallStateReturned ? "firewall state returned" : "firewall state hidden",
+      entry.userAccountReturned ? "user accounts returned" : "user accounts hidden",
+      entry.installStateReturned ? "install state returned" : "install state hidden",
+      entry.sandboxConfigured ? "sandbox configured" : "sandbox configuration blocked",
+      entry.privateDesktopChanged ? "private desktop changed" : "private desktop unchanged",
+      entry.managedPolicyWritten ? "managed policy written" : "managed policy writes blocked",
+      entry.firewallChanged ? "firewall changed" : "firewall changes blocked",
+      entry.sandboxUserChanged ? "sandbox users changed" : "sandbox user changes blocked",
+      entry.wslInstalled ? "WSL installed" : "WSL install blocked",
+      entry.wingetInvoked ? "winget invoked" : "winget blocked",
+      entry.vscodeOpened ? "VS Code opened" : "VS Code open blocked",
+      entry.commandExecuted ? "command executed" : "command execution blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexWindowsPlatformList.append(row);
   }
 }
 
