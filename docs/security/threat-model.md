@@ -486,8 +486,17 @@
   cursors, analytics or compliance URLs, warehouse/SIEM targets, paths, URLs,
   secrets, raw payloads, app-server payloads, or app-server traffic, and must
   not open dashboards, call Analytics or Compliance APIs, start exports, read
-  API keys, write warehouses or SIEM pipelines, access files or network, or
-  mutate governance state. Its
+  API keys, or write warehouse/SIEM targets. Its Codex Bedrock catalog may
+  expose only static official-documentation keys plus local boundary keys,
+  groups, states, sources, counts, and redaction flags; it must not return
+  provider names, AWS accounts, Regions, profiles, credentials, API keys,
+  access keys, secret keys, session tokens, identities, model ids/names,
+  provider config, config paths, environment variables, IAM policies, billing
+  usage, request/response payloads, error details, feature availability values,
+  paths, URLs, secrets, raw payloads, app-server payloads, or app-server
+  traffic, and must not read credentials, profiles, environment variables,
+  config files, start status or Bedrock requests, run credential processes,
+  create model traffic, access files/network, or mutate provider state. Its
   Codex Auto-review catalog may expose only static official-documentation keys
   plus local boundary keys, groups, states, sources, counts, and redaction
   flags; it must not return approval requests, reviewer rationales,

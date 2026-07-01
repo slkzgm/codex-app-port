@@ -592,6 +592,23 @@ Current M1 status:
   Analytics/Compliance API requests, exports, API-key reads, warehouse/SIEM
   writes, filesystem access, network access, mutations, paths, URLs, secrets,
   raw payloads, and app-server traffic blocked
+- done: read-only Codex Bedrock catalog in `/api/settings-integrations`,
+  exposing only static official Amazon Bedrock documentation keys plus local
+  boundary keys/groups/states/sources/counts/redaction flags for the Bedrock
+  Mantle request path, AWS-native auth, model/Region prerequisites,
+  `config.toml` provider setup, auth order, Bedrock API key auth, AWS SDK
+  credential-chain sources, shared config/credentials files, environment
+  credentials, console credentials, SSO/named profiles,
+  `credential_process` federation, desktop `.env` guidance, setup
+  verification, exact model-id guidance, feature-availability limits, Fast Mode
+  unavailability, and cloud-discovery limitations, with provider names, AWS
+  accounts, Regions, profiles, credentials, API keys, access keys, secret keys,
+  session tokens, identities, model ids/names, provider config, config paths,
+  environment variables, IAM policies, billing usage, request/response
+  payloads, error details, feature availability values, credential/profile/
+  environment/config reads, status or Bedrock requests, credential processes,
+  model traffic, filesystem access, network access, mutations, paths, URLs,
+  secrets, raw payloads, and app-server traffic blocked
 - done: read-only Codex Auto-review catalog in `/api/settings-integrations`,
   exposing only static official Auto-review documentation keys plus local
   boundary keys/groups/states/sources/counts/redaction flags for reviewer-swap

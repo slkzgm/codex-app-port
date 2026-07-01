@@ -880,6 +880,20 @@ filesystem/network access, paths, URLs, secrets, raw payloads, and app-server
 traffic. It must not configure Windows sandboxing, install WSL, invoke winget,
 open VS Code, execute commands, read paths, or mutate Windows/WSL state.
 
+The same response exposes `codexBedrock` as a static review-only catalog for
+official Amazon Bedrock provider behavior. The UI shows only catalog counts,
+entry keys, groups, state/source chips, and negative redaction chips for
+provider names, AWS accounts, Regions, profiles, credentials, API keys, access
+keys, secret keys, session tokens, identities, model ids/names, provider
+config, config paths, environment variables, IAM policies, billing usage,
+request/response payloads, error details, feature availability values,
+credential/profile/environment/config reads, status or Bedrock requests,
+credential processes, model traffic, filesystem/network access, paths, URLs,
+secrets, raw payloads, and app-server traffic. It must not read AWS or Codex
+provider configuration, inspect environment variables, start credential
+processes, call Bedrock or status endpoints, create model traffic, or mutate
+provider state.
+
 The same response exposes `codexManagedConfiguration` as a static review-only
 catalog for official Codex managed-configuration behavior. The UI shows only
 catalog counts, entry keys, groups, state/source chips, and redaction chips for

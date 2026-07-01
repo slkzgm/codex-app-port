@@ -34476,6 +34476,204 @@ function assertCodexWindowsPlatformCatalog(payload) {
   }
 }
 
+function expectedCodexBedrockEntries() {
+  return [
+    ["bedrockOverview", "overview", "catalog-only", "official-codex-bedrock-docs"],
+    ["bedrockMantleRequestPath", "overview", "catalog-only", "official-codex-bedrock-docs"],
+    ["openAiHostedBypass", "overview", "catalog-only", "official-codex-bedrock-docs"],
+    ["awsNativeAuthentication", "authentication", "catalog-only", "official-codex-bedrock-docs"],
+    ["supportedModelAccess", "prerequisites", "catalog-only", "official-codex-bedrock-docs"],
+    ["supportedAwsRegion", "prerequisites", "catalog-only", "official-codex-bedrock-docs"],
+    ["awsAccountAuthentication", "prerequisites", "catalog-only", "official-codex-bedrock-docs"],
+    ["configTomlProvider", "configuration", "catalog-only", "official-codex-bedrock-docs"],
+    ["optionalModelSelection", "configuration", "catalog-only", "official-codex-bedrock-docs"],
+    ["govCloudUnsupported", "regions", "catalog-only", "official-codex-bedrock-docs"],
+    ["authenticationOrder", "authentication", "catalog-only", "official-codex-bedrock-docs"],
+    ["bedrockApiKeyAuthentication", "authentication", "catalog-only", "official-codex-bedrock-docs"],
+    ["apiKeyRegionRequired", "authentication", "catalog-only", "official-codex-bedrock-docs"],
+    ["sdkCredentialChain", "authentication", "catalog-only", "official-codex-bedrock-docs"],
+    ["sharedAwsConfigCredentials", "authentication", "catalog-only", "official-codex-bedrock-docs"],
+    ["environmentCredentialSource", "authentication", "catalog-only", "official-codex-bedrock-docs"],
+    ["awsConsoleCredentials", "authentication", "catalog-only", "official-codex-bedrock-docs"],
+    ["ssoNamedProfile", "authentication", "catalog-only", "official-codex-bedrock-docs"],
+    ["credentialProcessFederation", "authentication", "catalog-only", "official-codex-bedrock-docs"],
+    ["desktopEnvFile", "configuration", "catalog-only", "official-codex-bedrock-docs"],
+    ["verifyStatusProvider", "verification", "catalog-only", "official-codex-bedrock-docs"],
+    ["verifyRegionModelPermissions", "verification", "catalog-only", "official-codex-bedrock-docs"],
+    ["exactModelIds", "model-routing", "catalog-only", "official-codex-bedrock-docs"],
+    ["featureAvailability", "limits", "catalog-only", "official-codex-bedrock-docs"],
+    ["fastModeUnavailable", "limits", "catalog-only", "official-codex-bedrock-docs"],
+    ["curatedPluginDiscoveryLimit", "limits", "catalog-only", "official-codex-bedrock-docs"],
+    ["providerConfigBoundary", "configuration", "blocked", "local-bedrock-boundary"],
+    ["bedrockApiKeyBoundary", "authentication", "blocked", "local-bedrock-boundary"],
+    ["awsCredentialBoundary", "authentication", "blocked", "local-bedrock-boundary"],
+    ["awsProfileBoundary", "authentication", "blocked", "local-bedrock-boundary"],
+    ["awsRegionBoundary", "configuration", "blocked", "local-bedrock-boundary"],
+    ["modelIdBoundary", "model-routing", "blocked", "local-bedrock-boundary"],
+    ["configTomlBoundary", "configuration", "blocked", "local-bedrock-boundary"],
+    ["envFileBoundary", "configuration", "blocked", "local-bedrock-boundary"],
+    ["environmentVariableBoundary", "authentication", "blocked", "local-bedrock-boundary"],
+    ["credentialProcessBoundary", "authentication", "blocked", "local-bedrock-boundary"],
+    ["bedrockRequestBoundary", "model-routing", "blocked", "local-bedrock-boundary"],
+    ["networkTrafficBoundary", "security", "blocked", "local-bedrock-boundary"],
+    ["iamPolicyBoundary", "security", "blocked", "local-bedrock-boundary"],
+    ["billingUsageBoundary", "security", "blocked", "local-bedrock-boundary"],
+    ["featureAvailabilityBoundary", "limits", "blocked", "local-bedrock-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexBedrockCatalog(payload) {
+  const catalog = payload.codexBedrock;
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-bedrock-docs");
+  assert.equal(catalog.entryCount, 41);
+  assert.equal(catalog.officialEntryCount, 26);
+  assert.equal(catalog.localBoundaryEntryCount, 15);
+  assert.equal(catalog.catalogOnlyEntryCount, 26);
+  assert.equal(catalog.blockedEntryCount, 15);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({ key, group, state, source })),
+    expectedCodexBedrockEntries(),
+  );
+
+  const entryRedactionFlags = [
+    "providerNameReturned",
+    "awsAccountReturned",
+    "awsRegionReturned",
+    "awsProfileReturned",
+    "awsCredentialReturned",
+    "awsApiKeyReturned",
+    "awsAccessKeyReturned",
+    "awsSecretKeyReturned",
+    "awsSessionTokenReturned",
+    "awsIdentityReturned",
+    "modelIdReturned",
+    "modelNameReturned",
+    "providerConfigReturned",
+    "configPathReturned",
+    "environmentVariableReturned",
+    "iamPolicyReturned",
+    "billingUsageReturned",
+    "requestPayloadReturned",
+    "responsePayloadReturned",
+    "errorDetailReturned",
+    "featureAvailabilityReturned",
+    "credentialRead",
+    "profileRead",
+    "environmentRead",
+    "configRead",
+    "statusRequestStarted",
+    "bedrockRequestStarted",
+    "credentialProcessStarted",
+    "modelTraffic",
+    "networkAccess",
+    "filesystemRead",
+    "filesystemWrite",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.bedrockCatalogReturned, true);
+  for (const flag of [
+    "providerNamesReturned",
+    "awsAccountsReturned",
+    "awsRegionsReturned",
+    "awsProfilesReturned",
+    "awsCredentialsReturned",
+    "awsApiKeysReturned",
+    "awsAccessKeysReturned",
+    "awsSecretKeysReturned",
+    "awsSessionTokensReturned",
+    "awsIdentitiesReturned",
+    "modelIdsReturned",
+    "modelNamesReturned",
+    "providerConfigsReturned",
+    "configPathsReturned",
+    "environmentVariablesReturned",
+    "iamPoliciesReturned",
+    "billingUsageReturned",
+    "requestPayloadsReturned",
+    "responsePayloadsReturned",
+    "errorDetailsReturned",
+    "featureAvailabilityReturned",
+    "credentialReads",
+    "profileReads",
+    "environmentReads",
+    "configReads",
+    "statusRequestsStarted",
+    "bedrockRequestsStarted",
+    "credentialProcessesStarted",
+    "modelTraffic",
+    "networkAccess",
+    "filesystemReads",
+    "filesystemWrites",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexBedrockReturned", true],
+    ["codexBedrockValuesReturned", false],
+    ["codexBedrockProviderNamesReturned", false],
+    ["codexBedrockAwsAccountsReturned", false],
+    ["codexBedrockAwsRegionsReturned", false],
+    ["codexBedrockAwsProfilesReturned", false],
+    ["codexBedrockAwsCredentialsReturned", false],
+    ["codexBedrockAwsApiKeysReturned", false],
+    ["codexBedrockAwsAccessKeysReturned", false],
+    ["codexBedrockAwsSecretKeysReturned", false],
+    ["codexBedrockAwsSessionTokensReturned", false],
+    ["codexBedrockAwsIdentitiesReturned", false],
+    ["codexBedrockModelIdsReturned", false],
+    ["codexBedrockModelNamesReturned", false],
+    ["codexBedrockProviderConfigsReturned", false],
+    ["codexBedrockConfigPathsReturned", false],
+    ["codexBedrockEnvironmentVariablesReturned", false],
+    ["codexBedrockIamPoliciesReturned", false],
+    ["codexBedrockBillingUsageReturned", false],
+    ["codexBedrockRequestPayloadsReturned", false],
+    ["codexBedrockResponsePayloadsReturned", false],
+    ["codexBedrockErrorDetailsReturned", false],
+    ["codexBedrockFeatureAvailabilityReturned", false],
+    ["codexBedrockCredentialReadEnabled", false],
+    ["codexBedrockProfileReadEnabled", false],
+    ["codexBedrockEnvironmentReadEnabled", false],
+    ["codexBedrockConfigReadEnabled", false],
+    ["codexBedrockStatusRequestEnabled", false],
+    ["codexBedrockApiRequestEnabled", false],
+    ["codexBedrockCredentialProcessEnabled", false],
+    ["codexBedrockModelTraffic", false],
+    ["codexBedrockNetworkAccess", false],
+    ["codexBedrockFilesystemAccess", false],
+    ["codexBedrockMutationsEnabled", false],
+    ["codexBedrockPathsReturned", false],
+    ["codexBedrockUrlsReturned", false],
+    ["codexBedrockSecretsReturned", false],
+    ["codexBedrockRawPayloadsReturned", false],
+    ["codexBedrockAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexGovernanceEntries() {
   return [
     ["governanceVisibilityAuditability", "overview", "catalog-only", "official-codex-governance-docs"],
@@ -38795,6 +38993,7 @@ function assertCodexAppSettingsParity(
   assertCodexSecurityCatalog(payload);
   assertCodexOpenSourceCatalog(payload);
   assertCodexWindowsPlatformCatalog(payload);
+  assertCodexBedrockCatalog(payload);
   assertCodexGovernanceCatalog(payload);
   assertCodexManagedConfigurationCatalog(payload);
   assertCodexEnvironmentVariablesCatalog(payload);

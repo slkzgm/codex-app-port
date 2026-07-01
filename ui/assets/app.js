@@ -43,6 +43,8 @@ const elements = {
   codexOpenSourceValuesText: document.querySelector("#codex-open-source-values-text"),
   codexWindowsPlatformText: document.querySelector("#codex-windows-platform-text"),
   codexWindowsPlatformValuesText: document.querySelector("#codex-windows-platform-values-text"),
+  codexBedrockText: document.querySelector("#codex-bedrock-text"),
+  codexBedrockValuesText: document.querySelector("#codex-bedrock-values-text"),
   codexGovernanceText: document.querySelector("#codex-governance-text"),
   codexGovernanceValuesText: document.querySelector("#codex-governance-values-text"),
   codexManagedConfigurationText: document.querySelector("#codex-managed-configuration-text"),
@@ -460,6 +462,7 @@ const elements = {
   codexSecurityList: document.querySelector("#codex-security-list"),
   codexOpenSourceList: document.querySelector("#codex-open-source-list"),
   codexWindowsPlatformList: document.querySelector("#codex-windows-platform-list"),
+  codexBedrockList: document.querySelector("#codex-bedrock-list"),
   codexGovernanceList: document.querySelector("#codex-governance-list"),
   codexManagedConfigurationList: document.querySelector("#codex-managed-configuration-list"),
   codexEnvironmentVariablesList: document.querySelector("#codex-environment-variables-list"),
@@ -10524,6 +10527,7 @@ function renderSettingsIntegrations(payload) {
   const codexSecurity = payload.codexSecurity ?? {};
   const codexOpenSource = payload.codexOpenSource ?? {};
   const codexWindowsPlatform = payload.codexWindowsPlatform ?? {};
+  const codexBedrock = payload.codexBedrock ?? {};
   const codexGovernance = payload.codexGovernance ?? {};
   const codexManagedConfiguration = payload.codexManagedConfiguration ?? {};
   const codexEnvironmentVariables = payload.codexEnvironmentVariables ?? {};
@@ -10864,6 +10868,52 @@ function renderSettingsIntegrations(payload) {
     codexWindowsPlatform.secretsReturned ||
     codexWindowsPlatform.rawPayloadsReturned ||
     codexWindowsPlatform.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexBedrockText.textContent = codexBedrock.returned
+    ? `${codexBedrock.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexBedrock.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexBedrockValuesText.textContent =
+    codexBedrock.providerNamesReturned ||
+    codexBedrock.awsAccountsReturned ||
+    codexBedrock.awsRegionsReturned ||
+    codexBedrock.awsProfilesReturned ||
+    codexBedrock.awsCredentialsReturned ||
+    codexBedrock.awsApiKeysReturned ||
+    codexBedrock.awsAccessKeysReturned ||
+    codexBedrock.awsSecretKeysReturned ||
+    codexBedrock.awsSessionTokensReturned ||
+    codexBedrock.awsIdentitiesReturned ||
+    codexBedrock.modelIdsReturned ||
+    codexBedrock.modelNamesReturned ||
+    codexBedrock.providerConfigsReturned ||
+    codexBedrock.configPathsReturned ||
+    codexBedrock.environmentVariablesReturned ||
+    codexBedrock.iamPoliciesReturned ||
+    codexBedrock.billingUsageReturned ||
+    codexBedrock.requestPayloadsReturned ||
+    codexBedrock.responsePayloadsReturned ||
+    codexBedrock.errorDetailsReturned ||
+    codexBedrock.featureAvailabilityReturned ||
+    codexBedrock.credentialReads ||
+    codexBedrock.profileReads ||
+    codexBedrock.environmentReads ||
+    codexBedrock.configReads ||
+    codexBedrock.statusRequestsStarted ||
+    codexBedrock.bedrockRequestsStarted ||
+    codexBedrock.credentialProcessesStarted ||
+    codexBedrock.modelTraffic ||
+    codexBedrock.networkAccess ||
+    codexBedrock.filesystemReads ||
+    codexBedrock.filesystemWrites ||
+    codexBedrock.mutationEnabled ||
+    codexBedrock.pathsReturned ||
+    codexBedrock.urlsReturned ||
+    codexBedrock.secretsReturned ||
+    codexBedrock.rawPayloadsReturned ||
+    codexBedrock.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexGovernanceText.textContent = codexGovernance.returned
@@ -12030,6 +12080,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexSecurityCatalog(codexSecurity);
   renderCodexOpenSourceCatalog(codexOpenSource);
   renderCodexWindowsPlatformCatalog(codexWindowsPlatform);
+  renderCodexBedrockCatalog(codexBedrock);
   renderCodexGovernanceCatalog(codexGovernance);
   renderCodexManagedConfigurationCatalog(codexManagedConfiguration);
   renderCodexEnvironmentVariablesCatalog(codexEnvironmentVariables);
@@ -14350,6 +14401,93 @@ function renderCodexWindowsPlatformCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexWindowsPlatformList.append(row);
+  }
+}
+
+function renderCodexBedrockCatalog(summary) {
+  elements.codexBedrockList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexBedrockList.append(emptyState("No Codex Bedrock catalog returned."));
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "bedrock";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.providerNameReturned ? "provider names returned" : "provider names hidden",
+      entry.awsAccountReturned ? "AWS accounts returned" : "AWS accounts hidden",
+      entry.awsRegionReturned ? "AWS regions returned" : "AWS regions hidden",
+      entry.awsProfileReturned ? "AWS profiles returned" : "AWS profiles hidden",
+      entry.awsCredentialReturned ? "AWS credentials returned" : "AWS credentials hidden",
+      entry.awsApiKeyReturned ? "Bedrock API keys returned" : "Bedrock API keys hidden",
+      entry.awsAccessKeyReturned ? "AWS access keys returned" : "AWS access keys hidden",
+      entry.awsSecretKeyReturned ? "AWS secret keys returned" : "AWS secret keys hidden",
+      entry.awsSessionTokenReturned ? "AWS session tokens returned" : "AWS session tokens hidden",
+      entry.awsIdentityReturned ? "AWS identities returned" : "AWS identities hidden",
+      entry.modelIdReturned ? "model IDs returned" : "model IDs hidden",
+      entry.modelNameReturned ? "model names returned" : "model names hidden",
+      entry.providerConfigReturned ? "provider config returned" : "provider config hidden",
+      entry.configPathReturned ? "config paths returned" : "config paths hidden",
+      entry.environmentVariableReturned
+        ? "environment variables returned"
+        : "environment variables hidden",
+      entry.iamPolicyReturned ? "IAM policies returned" : "IAM policies hidden",
+      entry.billingUsageReturned ? "billing usage returned" : "billing usage hidden",
+      entry.requestPayloadReturned ? "request payloads returned" : "request payloads hidden",
+      entry.responsePayloadReturned ? "response payloads returned" : "response payloads hidden",
+      entry.errorDetailReturned ? "error details returned" : "error details hidden",
+      entry.featureAvailabilityReturned
+        ? "feature availability returned"
+        : "feature availability hidden",
+      entry.credentialRead ? "credentials read" : "credential reads blocked",
+      entry.profileRead ? "profiles read" : "profile reads blocked",
+      entry.environmentRead ? "environment read" : "environment reads blocked",
+      entry.configRead ? "config read" : "config reads blocked",
+      entry.statusRequestStarted ? "status request started" : "status requests blocked",
+      entry.bedrockRequestStarted ? "Bedrock request started" : "Bedrock requests blocked",
+      entry.credentialProcessStarted
+        ? "credential process started"
+        : "credential process blocked",
+      entry.modelTraffic ? "model traffic" : "model traffic blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexBedrockList.append(row);
   }
 }
 

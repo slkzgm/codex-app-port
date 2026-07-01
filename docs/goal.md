@@ -237,6 +237,24 @@ Target parity with the Codex desktop workflow:
   private desktop settings, write managed policy, modify firewall/users, install
   WSL, invoke winget, open VS Code, execute commands, access files/network, or
   mutate Windows/WSL state.
+- `/api/settings-integrations` now also exposes a read-only Codex Bedrock
+  catalog aligned to the current official Amazon Bedrock guide. It returns only
+  static keys, groups, states, sources, counts, and redaction flags for the
+  Bedrock Mantle request path, AWS-native authentication, supported model/Region
+  prerequisites, `config.toml` provider setup, authentication order, Bedrock API
+  key and AWS SDK credential-chain paths, shared config/credentials files,
+  environment credentials, console credentials, SSO/named profiles,
+  `credential_process` federation, desktop `.env` restart guidance, setup
+  verification, exact-model-id guidance, feature availability limits, Fast Mode
+  unavailability, and cloud-discovery limitations. It does not return provider
+  names, AWS accounts, Regions, profiles, credentials, API keys, access keys,
+  secret keys, session tokens, identities, model ids/names, provider config,
+  config paths, environment variables, IAM policies, billing usage, request or
+  response payloads, error details, feature availability values, paths, URLs,
+  secrets, raw payloads, or app-server traffic, and it does not read credentials,
+  profiles, environment, config files, start status/Bedrock requests, run
+  credential processes, create model traffic, access files/network, or mutate
+  provider state.
 - `/api/settings-integrations` now also exposes a read-only Codex Governance
   catalog aligned to the official enterprise governance guide. It returns only
   static keys, groups, states, sources, counts, and redaction flags for
