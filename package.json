@@ -13,6 +13,7 @@
     "goal:audit": "node scripts/goal-audit.mjs",
     "install:local": "node scripts/install-local.mjs",
     "smoke:app-server": "node scripts/app-server-smoke.mjs",
+    "source:check": "node scripts/check-official-codex-source.mjs",
     "test": "node --test 'test/**/*.test.mjs'",
     "url:validate": "node scripts/url-handler.mjs",
     "verify": "node scripts/verify.mjs"

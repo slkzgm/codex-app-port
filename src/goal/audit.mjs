@@ -3760,6 +3760,7 @@ const CHECKS = [
       "`fs/readFile` now has a dedicated local-only preflight derived from the official schema shape, with workspace-relative path validation only, no execution route, no filesystem read, no app-server traffic, and no returned path, basename, file content, `dataBase64`, or raw payload.",
       "`fs/watch` and `fs/unwatch` now have a dedicated local-only preflight derived from the official schema shapes, with workspace-relative path validation for watch and safe watch-id validation for both methods, no execution route, no watcher lifecycle mutation, no `fs/changed` notifications, no app-server traffic, and no returned paths, canonical paths, basenames, watch ids, handles, notifications, or raw payloads.",
       "`fuzzyFileSearch/sessionStart`, `fuzzyFileSearch/sessionUpdate`, and `fuzzyFileSearch/sessionStop` now have a dedicated local-only preflight derived from the official schema shapes, with workspace-relative root validation, safe query/session-id validation, no execution route, no search session lifecycle mutation, no app-server traffic, and no returned roots, queries, session ids, file names, paths, scores, match indices, notifications, or raw payloads.",
+      "`npm run source:check` now compares the audited stable npm package, alpha dist-tag, local `codex --version`, generated schema manifest/count, and OpenAI `openai/codex` HEAD snapshot, ignores global GitHub SSH rewrites for the HEAD check, does not execute alpha packages, and exits non-zero on drift.",
     ],
     verify: allOf(
       allFiles([
@@ -3823,6 +3824,19 @@ const CHECKS = [
         "environment/info",
         "thread/items/list",
         "blocked-until-stable-schema",
+      ]),
+      fileIncludes("scripts/check-official-codex-source.mjs", [
+        "buildOfficialCodexSourceReport",
+        "npm view",
+        "git ls-remote",
+        "GIT_CONFIG_GLOBAL",
+        "alphaPackageNotExecuted",
+        "browserRoutesBlockedUntilAudited",
+      ]),
+      fileIncludes("package.json", ["\"source:check\""]),
+      fileIncludes("test/official-source-check.test.mjs", [
+        "official source checker reports no drift for the audited snapshot",
+        "official source checker reports package and schema drift",
       ]),
     ),
   },

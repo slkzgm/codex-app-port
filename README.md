@@ -23,14 +23,17 @@ Why:
 
 ## Checked Sources
 
-- OpenAI Codex app documentation, checked 2026-06-30.
-- OpenAI Codex changelog, checked 2026-06-30.
-- OpenAI Codex open-source documentation, checked 2026-06-30.
-- OpenAI `openai/codex` repository at `cfead68e5d3984b247cf0758e3e53b19165de848`.
-- Local official `codex app-server` schema snapshot from `codex-cli 0.142.4`
+- OpenAI Codex app/manual documentation, checked 2026-07-01.
+- OpenAI Codex changelog/open-source documentation, checked 2026-07-01.
+- OpenAI `openai/codex` repository at `db887d03e1f907467e33271572dffb73bceecd6b`.
+- Local official `codex app-server` schema snapshot from `codex-cli 0.142.5`
   with 335 JSON Schema files.
-- Stable npm `@openai/codex` latest is `0.142.4`; `0.143.0-alpha.31` exists
+- Stable npm `@openai/codex` latest is `0.142.5`; `0.143.0-alpha.32` exists
   as an alpha dist-tag but is not executed or used as a protocol baseline.
+- `npm run source:check` compares the audited source snapshot against npm,
+  local `codex --version`, the generated schema manifest, and `openai/codex`
+  HEAD. It ignores global Git URL rewrites for the HEAD check so HTTPS stays
+  usable on machines that default GitHub to SSH.
 - HEAD-only app-server drift is tracked in
   `src/app-server/upstream-drift.mjs`; `environment/info` and
   `thread/items/list` stay blocked until a stable generated schema exposes
@@ -75,6 +78,7 @@ npm run smoke:app-server
 npm run dev
 npm run launch
 npm run goal:audit
+npm run source:check
 npm run install:local -- --dry-run
 npm run package:local -- --dry-run --json
 npm run package:arch -- --json

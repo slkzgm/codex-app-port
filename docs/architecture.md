@@ -151,7 +151,10 @@ Current M1 status:
 - done: dependency-free runtime protocol contracts for the methods currently
   used by the prototype
 - done: official generated JSON Schema snapshot for the experimental
-  app-server protocol from local `codex-cli 0.142.4`
+  app-server protocol from local `codex-cli 0.142.5`
+- done: `npm run source:check` compares the audited stable package, local
+  `codex --version`, generated schema manifest, and OpenAI HEAD snapshot
+  without executing alpha packages or using global GitHub SSH rewrites
 - done: executable goal audit that maps the full objective to concrete repo
   evidence and keeps incomplete work visible
 - done: `initialize` request and required `initialized` notification
