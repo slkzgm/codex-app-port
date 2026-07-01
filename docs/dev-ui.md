@@ -1140,6 +1140,21 @@ sidebar/cloud follow-ups, switch model/reasoning or approval modes, run web
 search, attach/generate images, submit feedback, attach logs, execute slash
 commands, access files/network, create model traffic, or mutate state.
 
+The same response exposes `codexWeb` as a static review-only catalog for the
+official Codex web overview. The UI shows only catalog counts, entry keys,
+groups, state/source chips, and redaction chips for the web entry point, GitHub
+connection, repository work surface, pull-request creation, included plan
+access, enterprise admin prerequisites, prompting guidance, and common
+delegation/review/PR workflows. It must not show web URLs, GitHub accounts or
+tokens, repository names or content, branch names, commit SHAs, pull request
+numbers or content, plan names, entitlement details, enterprise policies, admin
+setup state, prompt text, workflow prompts, cloud task IDs or content, browser
+sessions, cookies, auth state, paths, URLs, secrets, raw payloads, or app-server
+traffic, and it must not open Codex web, connect GitHub, read/write
+repositories, create/update pull requests, start/review cloud tasks, submit
+prompts, start workflows, open admin setup, call GitHub APIs, access network,
+create model traffic, or mutate state.
+
 The same response exposes `codexAgentInternetAccess` as a static review-only
 catalog for official Codex agent internet access behavior. The UI shows only
 catalog counts, entry keys, groups, state/source chips, and redaction chips for

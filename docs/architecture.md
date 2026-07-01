@@ -906,6 +906,19 @@ Current M1 status:
   feedback submission, log attachment, slash-command execution, filesystem
   access, network access, model traffic, mutations, paths, URLs, secrets, raw
   payloads, and app-server traffic blocked
+- done: read-only Codex web catalog in `/api/settings-integrations`, exposing
+  only static official Codex web overview keys plus local boundary keys/groups/
+  states/sources/counts/redaction flags for the web entry point, GitHub
+  connection, repository work surface, pull-request creation, included plan
+  access, enterprise admin prerequisites, prompting guidance, and common
+  delegation/review/PR workflows, with web URLs, GitHub accounts/tokens,
+  repository names/content, branch names, commit SHAs, pull-request numbers/
+  content, plan names, entitlement details, enterprise policies, admin setup
+  state, prompts, workflow prompts, cloud task IDs/content, browser sessions,
+  cookies, auth state, web opening, GitHub connection, repository reads/writes,
+  PR creation/updates, cloud task starts/reviews, prompt submission, workflow
+  starts, admin setup opens, GitHub API traffic, network access, model traffic,
+  mutations, paths, URLs, secrets, raw payloads, and app-server traffic blocked
 - done: read-only Codex agent internet access catalog in
   `/api/settings-integrations`, exposing only static official Agent internet
   access guide keys plus local boundary keys/groups/states/sources/counts/

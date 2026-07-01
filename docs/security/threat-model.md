@@ -724,6 +724,17 @@
   model/reasoning or approval modes, run web search, attach or generate images,
   submit feedback, attach logs, execute slash commands, access filesystem or
   network, create model traffic, or mutate IDE state. Its Codex
+  web catalog may expose only static official-documentation keys plus local
+  boundary keys, groups, states, sources, counts, and redaction flags; it must
+  not return web URLs, GitHub accounts or tokens, repository names or content,
+  branch names, commit SHAs, pull request numbers or content, plan names,
+  entitlement details, enterprise policies, admin setup state, prompt text,
+  workflow prompts, cloud task IDs or content, browser sessions, cookies, auth
+  state, paths, URLs, secrets, raw payloads, app-server payloads, or app-server
+  traffic, and must not open Codex web, connect GitHub, read or write
+  repositories, create or update pull requests, start or review cloud tasks,
+  submit prompts, start workflows, open admin setup, call GitHub APIs, access
+  network, create model traffic, or mutate web state. Its Codex
   agent internet access catalog
   may expose only static official-documentation keys plus local boundary keys,
   groups, states, sources, counts, and redaction flags; it must not return

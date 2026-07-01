@@ -516,6 +516,20 @@ Target parity with the Codex desktop workflow:
   or approval modes, run web search, attach/generate images, submit feedback,
   attach logs, execute slash commands, access files/network, create model
   traffic, or mutate state.
+- `/api/settings-integrations` now also exposes a read-only Codex web catalog
+  aligned to the official Codex web overview. It returns only static keys,
+  groups, states, sources, counts, and redaction flags for the web entry point,
+  GitHub connection, repository work surface, pull-request creation, included
+  plan access, enterprise admin prerequisites, prompting guidance, and common
+  delegation/review/PR workflows. It does not return web URLs, GitHub accounts
+  or tokens, repository names or content, branch names, commit SHAs, pull
+  request numbers or content, plan names, entitlement details, enterprise
+  policies, admin setup state, prompt text, workflow prompts, cloud task IDs or
+  content, browser sessions, cookies, auth state, paths, URLs, secrets, raw
+  payloads, or app-server traffic, and it does not open Codex web, connect
+  GitHub, read/write repositories, create/update pull requests, start/review
+  cloud tasks, submit prompts, start workflows, open admin setup, call GitHub
+  APIs, access network, create model traffic, or mutate state.
 - `/api/settings-integrations` now also exposes a read-only Codex agent
   internet access catalog aligned to the official Agent internet access guide.
   It returns only static keys, groups, states, sources, counts, and redaction

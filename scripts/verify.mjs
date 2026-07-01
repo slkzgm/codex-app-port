@@ -37842,6 +37842,193 @@ function assertCodexIdeExtensionCatalog(payload) {
   }
 }
 
+function expectedCodexWebEntries() {
+  return [
+    ["webSetupEntryPoint", "setup", "catalog-only", "official-codex-web-docs"],
+    ["githubAccountConnection", "setup", "catalog-only", "official-codex-web-docs"],
+    ["repositoryWorkSurface", "repositories", "catalog-only", "official-codex-web-docs"],
+    ["pullRequestCreation", "pull-requests", "catalog-only", "official-codex-web-docs"],
+    ["includedPlanAccess", "plans", "catalog-only", "official-codex-web-docs"],
+    ["enterpriseAdminPrerequisite", "enterprise", "catalog-only", "official-codex-web-docs"],
+    ["promptingGuidance", "prompting", "catalog-only", "official-codex-web-docs"],
+    ["workflowDelegationPatterns", "workflows", "catalog-only", "official-codex-web-docs"],
+    ["reviewChangesWorkflow", "workflows", "catalog-only", "official-codex-web-docs"],
+    ["resultsToPullRequestWorkflow", "workflows", "catalog-only", "official-codex-web-docs"],
+    ["webUrlBoundary", "setup", "blocked", "local-codex-web-boundary"],
+    ["githubAccountBoundary", "github", "blocked", "local-codex-web-boundary"],
+    ["repositoryIdentityBoundary", "repositories", "blocked", "local-codex-web-boundary"],
+    ["repositoryContentBoundary", "repositories", "blocked", "local-codex-web-boundary"],
+    ["pullRequestBoundary", "pull-requests", "blocked", "local-codex-web-boundary"],
+    ["workspacePlanBoundary", "plans", "blocked", "local-codex-web-boundary"],
+    ["enterprisePolicyBoundary", "enterprise", "blocked", "local-codex-web-boundary"],
+    ["promptTextBoundary", "prompting", "blocked", "local-codex-web-boundary"],
+    ["cloudTaskBoundary", "cloud", "blocked", "local-codex-web-boundary"],
+    ["browserSessionBoundary", "web-session", "blocked", "local-codex-web-boundary"],
+    ["githubApiBoundary", "github", "blocked", "local-codex-web-boundary"],
+    ["networkBoundary", "network", "blocked", "local-codex-web-boundary"],
+    ["modelTrafficBoundary", "model", "blocked", "local-codex-web-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexWebCatalog(payload) {
+  const catalog = payload.codexWeb;
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-web-docs");
+  assert.equal(catalog.entryCount, 23);
+  assert.equal(catalog.officialEntryCount, 10);
+  assert.equal(catalog.localBoundaryEntryCount, 13);
+  assert.equal(catalog.catalogOnlyEntryCount, 10);
+  assert.equal(catalog.blockedEntryCount, 13);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({ key, group, state, source })),
+    expectedCodexWebEntries(),
+  );
+
+  const entryRedactionFlags = [
+    "webUrlReturned",
+    "githubAccountReturned",
+    "githubTokenReturned",
+    "repositoryNameReturned",
+    "repositoryContentReturned",
+    "branchNameReturned",
+    "commitShaReturned",
+    "pullRequestNumberReturned",
+    "pullRequestContentReturned",
+    "planNameReturned",
+    "entitlementReturned",
+    "enterprisePolicyReturned",
+    "adminSetupStateReturned",
+    "promptTextReturned",
+    "workflowPromptReturned",
+    "cloudTaskIdReturned",
+    "cloudTaskContentReturned",
+    "browserSessionReturned",
+    "cookieReturned",
+    "authStateReturned",
+    "webOpened",
+    "githubConnected",
+    "repositoryRead",
+    "repositoryWritten",
+    "pullRequestCreated",
+    "pullRequestUpdated",
+    "cloudTaskStarted",
+    "cloudTaskReviewed",
+    "promptSubmitted",
+    "workflowStarted",
+    "adminSetupOpened",
+    "githubApiTraffic",
+    "networkAccess",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.webCatalogReturned, true);
+  for (const flag of [
+    "webUrlsReturned",
+    "githubAccountsReturned",
+    "githubTokensReturned",
+    "repositoryNamesReturned",
+    "repositoryContentsReturned",
+    "branchNamesReturned",
+    "commitShasReturned",
+    "pullRequestNumbersReturned",
+    "pullRequestContentsReturned",
+    "planNamesReturned",
+    "entitlementsReturned",
+    "enterprisePoliciesReturned",
+    "adminSetupStatesReturned",
+    "promptTextsReturned",
+    "workflowPromptsReturned",
+    "cloudTaskIdsReturned",
+    "cloudTaskContentsReturned",
+    "browserSessionsReturned",
+    "cookiesReturned",
+    "authStatesReturned",
+    "webOpenEnabled",
+    "githubConnectionEnabled",
+    "repositoryReads",
+    "repositoryWrites",
+    "pullRequestCreationEnabled",
+    "pullRequestUpdateEnabled",
+    "cloudTaskStartEnabled",
+    "cloudTaskReviewEnabled",
+    "promptSubmissionEnabled",
+    "workflowStartEnabled",
+    "adminSetupOpenEnabled",
+    "githubApiTraffic",
+    "networkAccess",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexWebReturned", true],
+    ["codexWebValuesReturned", false],
+    ["codexWebWebUrlsReturned", false],
+    ["codexWebGithubAccountsReturned", false],
+    ["codexWebGithubTokensReturned", false],
+    ["codexWebRepositoryNamesReturned", false],
+    ["codexWebRepositoryContentsReturned", false],
+    ["codexWebBranchNamesReturned", false],
+    ["codexWebCommitShasReturned", false],
+    ["codexWebPullRequestNumbersReturned", false],
+    ["codexWebPullRequestContentsReturned", false],
+    ["codexWebPlanNamesReturned", false],
+    ["codexWebEntitlementsReturned", false],
+    ["codexWebEnterprisePoliciesReturned", false],
+    ["codexWebAdminSetupStatesReturned", false],
+    ["codexWebPromptTextsReturned", false],
+    ["codexWebWorkflowPromptsReturned", false],
+    ["codexWebCloudTaskIdsReturned", false],
+    ["codexWebCloudTaskContentsReturned", false],
+    ["codexWebBrowserSessionsReturned", false],
+    ["codexWebCookiesReturned", false],
+    ["codexWebAuthStatesReturned", false],
+    ["codexWebOpenEnabled", false],
+    ["codexWebGithubConnectionEnabled", false],
+    ["codexWebRepositoryReads", false],
+    ["codexWebRepositoryWrites", false],
+    ["codexWebPullRequestCreationEnabled", false],
+    ["codexWebPullRequestUpdateEnabled", false],
+    ["codexWebCloudTaskStartEnabled", false],
+    ["codexWebCloudTaskReviewEnabled", false],
+    ["codexWebPromptSubmissionEnabled", false],
+    ["codexWebWorkflowStartEnabled", false],
+    ["codexWebAdminSetupOpenEnabled", false],
+    ["codexWebGithubApiTraffic", false],
+    ["codexWebNetworkAccess", false],
+    ["codexWebModelTraffic", false],
+    ["codexWebMutationsEnabled", false],
+    ["codexWebPathsReturned", false],
+    ["codexWebUrlsReturned", false],
+    ["codexWebSecretsReturned", false],
+    ["codexWebRawPayloadsReturned", false],
+    ["codexWebAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexAgentInternetAccessEntries() {
   return [
     [
@@ -42636,6 +42823,7 @@ function assertCodexAppSettingsParity(
   assertCodexCliCommandReferenceCatalog(payload);
   assertCodexCliFeaturesCatalog(payload);
   assertCodexIdeExtensionCatalog(payload);
+  assertCodexWebCatalog(payload);
   assertCodexAgentInternetAccessCatalog(payload);
   assertCodexCloudEnvironmentsCatalog(payload);
   assertCodexGovernanceCatalog(payload);

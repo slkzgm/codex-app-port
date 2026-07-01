@@ -85,6 +85,8 @@ const elements = {
   codexCliFeaturesValuesText: document.querySelector("#codex-cli-features-values-text"),
   codexIdeExtensionText: document.querySelector("#codex-ide-extension-text"),
   codexIdeExtensionValuesText: document.querySelector("#codex-ide-extension-values-text"),
+  codexWebText: document.querySelector("#codex-web-text"),
+  codexWebValuesText: document.querySelector("#codex-web-values-text"),
   codexAgentInternetAccessText: document.querySelector("#codex-agent-internet-access-text"),
   codexAgentInternetAccessValuesText: document.querySelector(
     "#codex-agent-internet-access-values-text",
@@ -526,6 +528,7 @@ const elements = {
   codexCliCommandReferenceList: document.querySelector("#codex-cli-command-reference-list"),
   codexCliFeaturesList: document.querySelector("#codex-cli-features-list"),
   codexIdeExtensionList: document.querySelector("#codex-ide-extension-list"),
+  codexWebList: document.querySelector("#codex-web-list"),
   codexAgentInternetAccessList: document.querySelector("#codex-agent-internet-access-list"),
   codexCloudEnvironmentsList: document.querySelector("#codex-cloud-environments-list"),
   codexGovernanceList: document.querySelector("#codex-governance-list"),
@@ -10608,6 +10611,7 @@ function renderSettingsIntegrations(payload) {
   const codexCliCommandReference = payload.codexCliCommandReference ?? {};
   const codexCliFeatures = payload.codexCliFeatures ?? {};
   const codexIdeExtension = payload.codexIdeExtension ?? {};
+  const codexWeb = payload.codexWeb ?? {};
   const codexAgentInternetAccess = payload.codexAgentInternetAccess ?? {};
   const codexCloudEnvironments = payload.codexCloudEnvironments ?? {};
   const codexGovernance = payload.codexGovernance ?? {};
@@ -11734,6 +11738,52 @@ function renderSettingsIntegrations(payload) {
     codexIdeExtension.secretsReturned ||
     codexIdeExtension.rawPayloadsReturned ||
     codexIdeExtension.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexWebText.textContent = codexWeb.returned
+    ? `${codexWeb.catalogOnlyEntryCount ?? 0} catalog / ${codexWeb.entryCount ?? 0} tracked`
+    : "Blocked";
+  elements.codexWebValuesText.textContent =
+    codexWeb.webUrlsReturned ||
+    codexWeb.githubAccountsReturned ||
+    codexWeb.githubTokensReturned ||
+    codexWeb.repositoryNamesReturned ||
+    codexWeb.repositoryContentsReturned ||
+    codexWeb.branchNamesReturned ||
+    codexWeb.commitShasReturned ||
+    codexWeb.pullRequestNumbersReturned ||
+    codexWeb.pullRequestContentsReturned ||
+    codexWeb.planNamesReturned ||
+    codexWeb.entitlementsReturned ||
+    codexWeb.enterprisePoliciesReturned ||
+    codexWeb.adminSetupStatesReturned ||
+    codexWeb.promptTextsReturned ||
+    codexWeb.workflowPromptsReturned ||
+    codexWeb.cloudTaskIdsReturned ||
+    codexWeb.cloudTaskContentsReturned ||
+    codexWeb.browserSessionsReturned ||
+    codexWeb.cookiesReturned ||
+    codexWeb.authStatesReturned ||
+    codexWeb.webOpenEnabled ||
+    codexWeb.githubConnectionEnabled ||
+    codexWeb.repositoryReads ||
+    codexWeb.repositoryWrites ||
+    codexWeb.pullRequestCreationEnabled ||
+    codexWeb.pullRequestUpdateEnabled ||
+    codexWeb.cloudTaskStartEnabled ||
+    codexWeb.cloudTaskReviewEnabled ||
+    codexWeb.promptSubmissionEnabled ||
+    codexWeb.workflowStartEnabled ||
+    codexWeb.adminSetupOpenEnabled ||
+    codexWeb.githubApiTraffic ||
+    codexWeb.networkAccess ||
+    codexWeb.modelTraffic ||
+    codexWeb.mutationEnabled ||
+    codexWeb.pathsReturned ||
+    codexWeb.urlsReturned ||
+    codexWeb.secretsReturned ||
+    codexWeb.rawPayloadsReturned ||
+    codexWeb.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexAgentInternetAccessText.textContent = codexAgentInternetAccess.returned
@@ -13000,6 +13050,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexCliCommandReferenceCatalog(codexCliCommandReference);
   renderCodexCliFeaturesCatalog(codexCliFeatures);
   renderCodexIdeExtensionCatalog(codexIdeExtension);
+  renderCodexWebCatalog(codexWeb);
   renderCodexAgentInternetAccessCatalog(codexAgentInternetAccess);
   renderCodexCloudEnvironmentsCatalog(codexCloudEnvironments);
   renderCodexGovernanceCatalog(codexGovernance);
@@ -16801,6 +16852,99 @@ function renderCodexIdeExtensionCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexIdeExtensionList.append(row);
+  }
+}
+
+function renderCodexWebCatalog(summary) {
+  elements.codexWebList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexWebList.append(emptyState("No Codex web catalog returned."));
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "web";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.webUrlReturned ? "web URLs returned" : "web URLs hidden",
+      entry.githubAccountReturned ? "GitHub accounts returned" : "GitHub accounts hidden",
+      entry.githubTokenReturned ? "GitHub tokens returned" : "GitHub tokens hidden",
+      entry.repositoryNameReturned ? "repository names returned" : "repository names hidden",
+      entry.repositoryContentReturned
+        ? "repository content returned"
+        : "repository content hidden",
+      entry.branchNameReturned ? "branch names returned" : "branch names hidden",
+      entry.commitShaReturned ? "commit SHAs returned" : "commit SHAs hidden",
+      entry.pullRequestNumberReturned ? "PR numbers returned" : "PR numbers hidden",
+      entry.pullRequestContentReturned ? "PR content returned" : "PR content hidden",
+      entry.planNameReturned ? "plan names returned" : "plan names hidden",
+      entry.entitlementReturned ? "entitlements returned" : "entitlements hidden",
+      entry.enterprisePolicyReturned
+        ? "enterprise policies returned"
+        : "enterprise policies hidden",
+      entry.adminSetupStateReturned ? "admin setup returned" : "admin setup hidden",
+      entry.promptTextReturned ? "prompt text returned" : "prompt text hidden",
+      entry.workflowPromptReturned
+        ? "workflow prompts returned"
+        : "workflow prompts hidden",
+      entry.cloudTaskIdReturned ? "cloud task IDs returned" : "cloud task IDs hidden",
+      entry.cloudTaskContentReturned
+        ? "cloud task content returned"
+        : "cloud task content hidden",
+      entry.browserSessionReturned
+        ? "browser sessions returned"
+        : "browser sessions hidden",
+      entry.cookieReturned ? "cookies returned" : "cookies hidden",
+      entry.authStateReturned ? "auth state returned" : "auth state hidden",
+      entry.webOpened ? "web opened" : "web opens blocked",
+      entry.githubConnected ? "GitHub connected" : "GitHub connection blocked",
+      entry.repositoryRead ? "repository read" : "repository reads blocked",
+      entry.repositoryWritten ? "repository written" : "repository writes blocked",
+      entry.pullRequestCreated ? "PR created" : "PR creation blocked",
+      entry.pullRequestUpdated ? "PR updated" : "PR updates blocked",
+      entry.cloudTaskStarted ? "cloud task started" : "cloud tasks blocked",
+      entry.cloudTaskReviewed ? "cloud task reviewed" : "cloud reviews blocked",
+      entry.promptSubmitted ? "prompt submitted" : "prompt submission blocked",
+      entry.workflowStarted ? "workflow started" : "workflow starts blocked",
+      entry.adminSetupOpened ? "admin setup opened" : "admin setup blocked",
+      entry.githubApiTraffic ? "GitHub API traffic" : "GitHub API blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.modelTraffic ? "model traffic" : "model traffic blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexWebList.append(row);
   }
 }
 
