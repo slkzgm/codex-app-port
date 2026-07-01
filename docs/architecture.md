@@ -888,6 +888,24 @@ Current M1 status:
   mode changes, exec/cloud task runs, MCP server starts, filesystem access,
   network access, model traffic, mutations, paths, URLs, secrets, raw payloads,
   and app-server traffic blocked
+- done: read-only Codex IDE extension catalog in `/api/settings-integrations`,
+  exposing only static official IDE extension command/feature/settings/slash
+  guide keys plus local boundary keys/groups/states/sources/counts/redaction
+  flags for Command Palette control, keybinding assignment, thread/context
+  commands, panel/sidebar commands, supported editor concepts, shared CLI
+  configuration, editor-context prompting, file references, model/reasoning/
+  approval controls, cloud delegation and follow-up, web search, image
+  context/generation, IDE settings, and IDE slash-command categories, with
+  command IDs/names, keybindings, editor selections, file paths/content, prompts,
+  model names, reasoning values, approval modes, cloud environments/tasks,
+  web-search queries/results, image paths/content, generated images, setting
+  names/values, CLI executable paths, feedback/log contents, slash commands,
+  config values, IDE process starts, command execution, keybinding/settings/
+  config writes, editor/file-context reads, thread/panel/sidebar/cloud starts,
+  model/reasoning/approval changes, web search, image attachment/generation,
+  feedback submission, log attachment, slash-command execution, filesystem
+  access, network access, model traffic, mutations, paths, URLs, secrets, raw
+  payloads, and app-server traffic blocked
 - done: read-only Codex agent internet access catalog in
   `/api/settings-integrations`, exposing only static official Agent internet
   access guide keys plus local boundary keys/groups/states/sources/counts/

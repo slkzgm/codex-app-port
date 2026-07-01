@@ -497,6 +497,25 @@ Target parity with the Codex desktop workflow:
   search or shell completions, change approval modes, run exec/cloud tasks,
   start MCP servers, access files/network, create model traffic, or mutate
   state.
+- `/api/settings-integrations` now also exposes a read-only Codex IDE extension
+  catalog aligned to the official IDE extension commands, features, settings,
+  and slash-command guides. It returns only static keys, groups, states,
+  sources, counts, and redaction flags for Command Palette control, keybinding
+  assignment, thread/context commands, panel/sidebar commands, supported editor
+  concepts, shared CLI configuration, editor-context prompting, file references,
+  model/reasoning/approval controls, cloud delegation and follow-up, web search,
+  image context/generation, IDE settings, and IDE slash-command categories. It
+  does not return command IDs or names, keybindings, editor selections, file
+  paths or content, prompt text, model names, reasoning values, approval modes,
+  cloud environments or tasks, web-search queries or results, image paths or
+  content, generated images, setting names or values, CLI executable paths,
+  feedback/log contents, slash commands, config values, paths, URLs, secrets,
+  raw payloads, or app-server traffic, and it does not start IDE processes,
+  execute commands, write keybindings/settings/config, read editor or file
+  context, start threads/panels/sidebar/cloud follow-ups, switch model/reasoning
+  or approval modes, run web search, attach/generate images, submit feedback,
+  attach logs, execute slash commands, access files/network, create model
+  traffic, or mutate state.
 - `/api/settings-integrations` now also exposes a read-only Codex agent
   internet access catalog aligned to the official Agent internet access guide.
   It returns only static keys, groups, states, sources, counts, and redaction

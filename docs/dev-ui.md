@@ -1121,6 +1121,25 @@ themes, start reviews, run web search or shell completions, change approval
 modes, run exec/cloud tasks, start MCP servers, access files/network, create
 model traffic, or mutate state.
 
+The same response exposes `codexIdeExtension` as a static review-only catalog
+for official Codex IDE extension commands, features, settings, and slash
+commands. The UI shows only catalog counts, entry keys, groups, state/source
+chips, and redaction chips for Command Palette control, keybinding assignment,
+thread/context commands, panel/sidebar commands, supported editor concepts,
+shared CLI configuration, editor-context prompting, file references, model/
+reasoning/approval controls, cloud delegation and follow-up, web search, image
+context/generation, IDE settings, and IDE slash-command categories. It must not
+show command IDs or names, keybindings, editor selections, file paths or
+content, prompt text, model names, reasoning values, approval modes, cloud
+environments or tasks, web-search queries or results, image paths or content,
+generated images, setting names or values, CLI executable paths, feedback/log
+contents, slash commands, config values, paths, URLs, secrets, raw payloads, or
+app-server traffic, and it must not start IDE processes, execute commands, write
+keybindings/settings/config, read editor or file context, start threads/panels/
+sidebar/cloud follow-ups, switch model/reasoning or approval modes, run web
+search, attach/generate images, submit feedback, attach logs, execute slash
+commands, access files/network, create model traffic, or mutate state.
+
 The same response exposes `codexAgentInternetAccess` as a static review-only
 catalog for official Codex agent internet access behavior. The UI shows only
 catalog counts, entry keys, groups, state/source chips, and redaction chips for

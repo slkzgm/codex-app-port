@@ -711,6 +711,19 @@
   generate images, write themes, start reviews, run web search or shell
   completions, change approval modes, run exec/cloud tasks, start MCP servers,
   access filesystem or network, create model traffic, or mutate CLI state. Its Codex
+  IDE extension catalog may expose only static official-documentation keys plus
+  local boundary keys, groups, states, sources, counts, and redaction flags; it
+  must not return command IDs or names, keybindings, editor selections, file
+  paths or content, prompt text, model names, reasoning values, approval modes,
+  cloud environments or tasks, web-search queries or results, image paths or
+  content, generated images, setting names or values, CLI executable paths,
+  feedback or log contents, slash commands, config values, paths, URLs, secrets,
+  raw payloads, app-server payloads, or app-server traffic, and must not start
+  IDE processes, execute commands, write keybindings/settings/config, read
+  editor or file context, start threads/panels/sidebar/cloud follow-ups, switch
+  model/reasoning or approval modes, run web search, attach or generate images,
+  submit feedback, attach logs, execute slash commands, access filesystem or
+  network, create model traffic, or mutate IDE state. Its Codex
   agent internet access catalog
   may expose only static official-documentation keys plus local boundary keys,
   groups, states, sources, counts, and redaction flags; it must not return

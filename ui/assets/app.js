@@ -83,6 +83,8 @@ const elements = {
   ),
   codexCliFeaturesText: document.querySelector("#codex-cli-features-text"),
   codexCliFeaturesValuesText: document.querySelector("#codex-cli-features-values-text"),
+  codexIdeExtensionText: document.querySelector("#codex-ide-extension-text"),
+  codexIdeExtensionValuesText: document.querySelector("#codex-ide-extension-values-text"),
   codexAgentInternetAccessText: document.querySelector("#codex-agent-internet-access-text"),
   codexAgentInternetAccessValuesText: document.querySelector(
     "#codex-agent-internet-access-values-text",
@@ -523,6 +525,7 @@ const elements = {
   codexAgentsSdkList: document.querySelector("#codex-agents-sdk-list"),
   codexCliCommandReferenceList: document.querySelector("#codex-cli-command-reference-list"),
   codexCliFeaturesList: document.querySelector("#codex-cli-features-list"),
+  codexIdeExtensionList: document.querySelector("#codex-ide-extension-list"),
   codexAgentInternetAccessList: document.querySelector("#codex-agent-internet-access-list"),
   codexCloudEnvironmentsList: document.querySelector("#codex-cloud-environments-list"),
   codexGovernanceList: document.querySelector("#codex-governance-list"),
@@ -10604,6 +10607,7 @@ function renderSettingsIntegrations(payload) {
   const codexAgentsSdk = payload.codexAgentsSdk ?? {};
   const codexCliCommandReference = payload.codexCliCommandReference ?? {};
   const codexCliFeatures = payload.codexCliFeatures ?? {};
+  const codexIdeExtension = payload.codexIdeExtension ?? {};
   const codexAgentInternetAccess = payload.codexAgentInternetAccess ?? {};
   const codexCloudEnvironments = payload.codexCloudEnvironments ?? {};
   const codexGovernance = payload.codexGovernance ?? {};
@@ -11667,6 +11671,69 @@ function renderSettingsIntegrations(payload) {
     codexCliFeatures.secretsReturned ||
     codexCliFeatures.rawPayloadsReturned ||
     codexCliFeatures.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexIdeExtensionText.textContent = codexIdeExtension.returned
+    ? `${codexIdeExtension.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexIdeExtension.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexIdeExtensionValuesText.textContent =
+    codexIdeExtension.commandIdsReturned ||
+    codexIdeExtension.commandNamesReturned ||
+    codexIdeExtension.keybindingsReturned ||
+    codexIdeExtension.editorSelectionsReturned ||
+    codexIdeExtension.filePathsReturned ||
+    codexIdeExtension.fileContentsReturned ||
+    codexIdeExtension.promptTextsReturned ||
+    codexIdeExtension.modelNamesReturned ||
+    codexIdeExtension.reasoningValuesReturned ||
+    codexIdeExtension.approvalModesReturned ||
+    codexIdeExtension.cloudEnvironmentsReturned ||
+    codexIdeExtension.cloudTasksReturned ||
+    codexIdeExtension.webSearchQueriesReturned ||
+    codexIdeExtension.webSearchResultsReturned ||
+    codexIdeExtension.imagePathsReturned ||
+    codexIdeExtension.imageContentsReturned ||
+    codexIdeExtension.generatedImagesReturned ||
+    codexIdeExtension.settingNamesReturned ||
+    codexIdeExtension.settingValuesReturned ||
+    codexIdeExtension.cliExecutablePathsReturned ||
+    codexIdeExtension.feedbackContentsReturned ||
+    codexIdeExtension.logContentsReturned ||
+    codexIdeExtension.slashCommandsReturned ||
+    codexIdeExtension.configValuesReturned ||
+    codexIdeExtension.ideProcessStartEnabled ||
+    codexIdeExtension.commandExecutionEnabled ||
+    codexIdeExtension.keybindingWriteEnabled ||
+    codexIdeExtension.editorContextReads ||
+    codexIdeExtension.fileContextReads ||
+    codexIdeExtension.threadStartEnabled ||
+    codexIdeExtension.panelOpenEnabled ||
+    codexIdeExtension.sidebarOpenEnabled ||
+    codexIdeExtension.modelSwitchEnabled ||
+    codexIdeExtension.reasoningChangeEnabled ||
+    codexIdeExtension.approvalModeChangeEnabled ||
+    codexIdeExtension.cloudTaskStartEnabled ||
+    codexIdeExtension.cloudTaskFollowUpEnabled ||
+    codexIdeExtension.webSearchEnabled ||
+    codexIdeExtension.imageAttachmentEnabled ||
+    codexIdeExtension.imageGenerationEnabled ||
+    codexIdeExtension.settingsWriteEnabled ||
+    codexIdeExtension.feedbackSubmissionEnabled ||
+    codexIdeExtension.logAttachmentEnabled ||
+    codexIdeExtension.slashCommandExecutionEnabled ||
+    codexIdeExtension.configWriteEnabled ||
+    codexIdeExtension.filesystemReads ||
+    codexIdeExtension.filesystemWrites ||
+    codexIdeExtension.networkAccess ||
+    codexIdeExtension.modelTraffic ||
+    codexIdeExtension.mutationEnabled ||
+    codexIdeExtension.pathsReturned ||
+    codexIdeExtension.urlsReturned ||
+    codexIdeExtension.secretsReturned ||
+    codexIdeExtension.rawPayloadsReturned ||
+    codexIdeExtension.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexAgentInternetAccessText.textContent = codexAgentInternetAccess.returned
@@ -12932,6 +12999,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexAgentsSdkCatalog(codexAgentsSdk);
   renderCodexCliCommandReferenceCatalog(codexCliCommandReference);
   renderCodexCliFeaturesCatalog(codexCliFeatures);
+  renderCodexIdeExtensionCatalog(codexIdeExtension);
   renderCodexAgentInternetAccessCatalog(codexAgentInternetAccess);
   renderCodexCloudEnvironmentsCatalog(codexCloudEnvironments);
   renderCodexGovernanceCatalog(codexGovernance);
@@ -16619,6 +16687,120 @@ function renderCodexCliFeaturesCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexCliFeaturesList.append(row);
+  }
+}
+
+function renderCodexIdeExtensionCatalog(summary) {
+  elements.codexIdeExtensionList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexIdeExtensionList.append(emptyState("No Codex IDE extension catalog returned."));
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "ide";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.commandIdReturned ? "command IDs returned" : "command IDs hidden",
+      entry.commandNameReturned ? "command names returned" : "command names hidden",
+      entry.keybindingReturned ? "keybindings returned" : "keybindings hidden",
+      entry.editorSelectionReturned
+        ? "editor selections returned"
+        : "editor selections hidden",
+      entry.filePathReturned ? "file paths returned" : "file paths hidden",
+      entry.fileContentReturned ? "file contents returned" : "file contents hidden",
+      entry.promptTextReturned ? "prompt text returned" : "prompt text hidden",
+      entry.modelNameReturned ? "model names returned" : "model names hidden",
+      entry.reasoningValueReturned ? "reasoning values returned" : "reasoning values hidden",
+      entry.approvalModeReturned ? "approval modes returned" : "approval modes hidden",
+      entry.cloudEnvironmentReturned
+        ? "cloud environments returned"
+        : "cloud environments hidden",
+      entry.cloudTaskReturned ? "cloud tasks returned" : "cloud tasks hidden",
+      entry.webSearchQueryReturned
+        ? "web search queries returned"
+        : "web search queries hidden",
+      entry.webSearchResultReturned
+        ? "web search results returned"
+        : "web search results hidden",
+      entry.imagePathReturned ? "image paths returned" : "image paths hidden",
+      entry.imageContentReturned ? "image content returned" : "image content hidden",
+      entry.generatedImageReturned ? "generated images returned" : "generated images hidden",
+      entry.settingNameReturned ? "setting names returned" : "setting names hidden",
+      entry.settingValueReturned ? "setting values returned" : "setting values hidden",
+      entry.cliExecutablePathReturned
+        ? "CLI executable paths returned"
+        : "CLI executable paths hidden",
+      entry.feedbackContentReturned
+        ? "feedback content returned"
+        : "feedback content hidden",
+      entry.logContentReturned ? "logs returned" : "logs hidden",
+      entry.slashCommandReturned ? "slash commands returned" : "slash commands hidden",
+      entry.configValueReturned ? "config values returned" : "config values hidden",
+      entry.ideProcessStarted ? "IDE process started" : "IDE process starts blocked",
+      entry.commandExecuted ? "command executed" : "commands blocked",
+      entry.keybindingWritten ? "keybinding written" : "keybinding writes blocked",
+      entry.editorContextRead ? "editor context read" : "editor context reads blocked",
+      entry.fileContextRead ? "file context read" : "file context reads blocked",
+      entry.threadStarted ? "thread started" : "thread starts blocked",
+      entry.panelOpened ? "panel opened" : "panel opens blocked",
+      entry.sidebarOpened ? "sidebar opened" : "sidebar opens blocked",
+      entry.modelSwitched ? "model switched" : "model switches blocked",
+      entry.reasoningChanged ? "reasoning changed" : "reasoning changes blocked",
+      entry.approvalModeChanged
+        ? "approval mode changed"
+        : "approval mode changes blocked",
+      entry.cloudTaskStarted ? "cloud task started" : "cloud tasks blocked",
+      entry.cloudTaskFollowUpStarted
+        ? "cloud follow-up started"
+        : "cloud follow-ups blocked",
+      entry.webSearchStarted ? "web search started" : "web search blocked",
+      entry.imageAttached ? "image attached" : "image attachment blocked",
+      entry.imageGenerated ? "image generated" : "image generation blocked",
+      entry.settingsWritten ? "settings written" : "settings writes blocked",
+      entry.feedbackSubmitted ? "feedback submitted" : "feedback submission blocked",
+      entry.logsAttached ? "logs attached" : "log attachment blocked",
+      entry.slashCommandExecuted ? "slash command executed" : "slash commands blocked",
+      entry.configWritten ? "config written" : "config writes blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem written" : "filesystem writes blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.modelTraffic ? "model traffic" : "model traffic blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexIdeExtensionList.append(row);
   }
 }
 
