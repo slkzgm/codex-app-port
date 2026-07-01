@@ -55,6 +55,10 @@ const elements = {
   codexOverviewQuickstartValuesText: document.querySelector(
     "#codex-overview-quickstart-values-text",
   ),
+  codexTroubleshootingText: document.querySelector("#codex-troubleshooting-text"),
+  codexTroubleshootingValuesText: document.querySelector(
+    "#codex-troubleshooting-values-text",
+  ),
   codexGovernanceText: document.querySelector("#codex-governance-text"),
   codexGovernanceValuesText: document.querySelector("#codex-governance-values-text"),
   codexManagedConfigurationText: document.querySelector("#codex-managed-configuration-text"),
@@ -476,6 +480,7 @@ const elements = {
   codexPricingList: document.querySelector("#codex-pricing-list"),
   codexWorkflowGuidanceList: document.querySelector("#codex-workflow-guidance-list"),
   codexOverviewQuickstartList: document.querySelector("#codex-overview-quickstart-list"),
+  codexTroubleshootingList: document.querySelector("#codex-troubleshooting-list"),
   codexGovernanceList: document.querySelector("#codex-governance-list"),
   codexManagedConfigurationList: document.querySelector("#codex-managed-configuration-list"),
   codexEnvironmentVariablesList: document.querySelector("#codex-environment-variables-list"),
@@ -10544,6 +10549,7 @@ function renderSettingsIntegrations(payload) {
   const codexPricing = payload.codexPricing ?? {};
   const codexWorkflowGuidance = payload.codexWorkflowGuidance ?? {};
   const codexOverviewQuickstart = payload.codexOverviewQuickstart ?? {};
+  const codexTroubleshooting = payload.codexTroubleshooting ?? {};
   const codexGovernance = payload.codexGovernance ?? {};
   const codexManagedConfiguration = payload.codexManagedConfiguration ?? {};
   const codexEnvironmentVariables = payload.codexEnvironmentVariables ?? {};
@@ -11068,6 +11074,54 @@ function renderSettingsIntegrations(payload) {
     codexOverviewQuickstart.secretsReturned ||
     codexOverviewQuickstart.rawPayloadsReturned ||
     codexOverviewQuickstart.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexTroubleshootingText.textContent = codexTroubleshooting.returned
+    ? `${codexTroubleshooting.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexTroubleshooting.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexTroubleshootingValuesText.textContent =
+    codexTroubleshooting.gitStatesReturned ||
+    codexTroubleshooting.projectNamesReturned ||
+    codexTroubleshooting.threadNamesReturned ||
+    codexTroubleshooting.threadIdsReturned ||
+    codexTroubleshooting.promptTextsReturned ||
+    codexTroubleshooting.worktreePathsReturned ||
+    codexTroubleshooting.localEnvironmentPathsReturned ||
+    codexTroubleshooting.permissionStatesReturned ||
+    codexTroubleshooting.automationNamesReturned ||
+    codexTroubleshooting.versionValuesReturned ||
+    codexTroubleshooting.feedbackSessionIdsReturned ||
+    codexTroubleshooting.issueUrlsReturned ||
+    codexTroubleshooting.logPathsReturned ||
+    codexTroubleshooting.logContentsReturned ||
+    codexTroubleshooting.terminalCommandsReturned ||
+    codexTroubleshooting.terminalOutputsReturned ||
+    codexTroubleshooting.fontValuesReturned ||
+    codexTroubleshooting.gitStateReads ||
+    codexTroubleshooting.projectsRemoved ||
+    codexTroubleshooting.threadsUnarchived ||
+    codexTroubleshooting.worktreeSetupRuns ||
+    codexTroubleshooting.localEnvironmentReads ||
+    codexTroubleshooting.permissionPromptsStarted ||
+    codexTroubleshooting.automationsArchived ||
+    codexTroubleshooting.promptsRecovered ||
+    codexTroubleshooting.versionCommandsRun ||
+    codexTroubleshooting.feedbackUploadsStarted ||
+    codexTroubleshooting.issuesOpened ||
+    codexTroubleshooting.logsRead ||
+    codexTroubleshooting.terminalCommandsRun ||
+    codexTroubleshooting.settingsOpened ||
+    codexTroubleshooting.filesystemReads ||
+    codexTroubleshooting.filesystemWrites ||
+    codexTroubleshooting.networkAccess ||
+    codexTroubleshooting.mutationEnabled ||
+    codexTroubleshooting.pathsReturned ||
+    codexTroubleshooting.urlsReturned ||
+    codexTroubleshooting.secretsReturned ||
+    codexTroubleshooting.rawPayloadsReturned ||
+    codexTroubleshooting.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexGovernanceText.textContent = codexGovernance.returned
@@ -12238,6 +12292,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexPricingCatalog(codexPricing);
   renderCodexWorkflowGuidanceCatalog(codexWorkflowGuidance);
   renderCodexOverviewQuickstartCatalog(codexOverviewQuickstart);
+  renderCodexTroubleshootingCatalog(codexTroubleshooting);
   renderCodexGovernanceCatalog(codexGovernance);
   renderCodexManagedConfigurationCatalog(codexManagedConfiguration);
   renderCodexEnvironmentVariablesCatalog(codexEnvironmentVariables);
@@ -14911,6 +14966,103 @@ function renderCodexOverviewQuickstartCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexOverviewQuickstartList.append(row);
+  }
+}
+
+function renderCodexTroubleshootingCatalog(summary) {
+  elements.codexTroubleshootingList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexTroubleshootingList.append(
+      emptyState("No Codex troubleshooting catalog returned."),
+    );
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "troubleshooting";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.gitStateReturned ? "Git state returned" : "Git state hidden",
+      entry.projectNameReturned ? "project names returned" : "project names hidden",
+      entry.threadNameReturned ? "thread names returned" : "thread names hidden",
+      entry.threadIdReturned ? "thread ids returned" : "thread ids hidden",
+      entry.promptTextReturned ? "prompt text returned" : "prompt text hidden",
+      entry.worktreePathReturned ? "worktree paths returned" : "worktree paths hidden",
+      entry.localEnvironmentPathReturned
+        ? "local environment paths returned"
+        : "local environment paths hidden",
+      entry.permissionStateReturned
+        ? "permission states returned"
+        : "permission states hidden",
+      entry.automationNameReturned ? "automation names returned" : "automation names hidden",
+      entry.versionValueReturned ? "version values returned" : "version values hidden",
+      entry.feedbackSessionIdReturned
+        ? "feedback session ids returned"
+        : "feedback session ids hidden",
+      entry.issueUrlReturned ? "issue URLs returned" : "issue URLs hidden",
+      entry.logPathReturned ? "log paths returned" : "log paths hidden",
+      entry.logContentReturned ? "log content returned" : "log content hidden",
+      entry.terminalCommandReturned
+        ? "terminal commands returned"
+        : "terminal commands hidden",
+      entry.terminalOutputReturned ? "terminal output returned" : "terminal output hidden",
+      entry.fontValueReturned ? "font values returned" : "font values hidden",
+      entry.gitStateRead ? "Git state read" : "Git state reads blocked",
+      entry.projectRemoved ? "project removed" : "project removal blocked",
+      entry.threadUnarchived ? "thread unarchived" : "thread unarchive blocked",
+      entry.worktreeSetupRun ? "worktree setup run" : "worktree setup blocked",
+      entry.localEnvironmentRead
+        ? "local environment read"
+        : "local environment reads blocked",
+      entry.permissionPromptStarted
+        ? "permission prompt started"
+        : "permission prompts blocked",
+      entry.automationArchived ? "automation archived" : "automation archive blocked",
+      entry.promptRecovered ? "prompt recovered" : "prompt recovery blocked",
+      entry.versionCommandRun ? "version command run" : "version commands blocked",
+      entry.feedbackUploaded ? "feedback uploaded" : "feedback upload blocked",
+      entry.issueOpened ? "issue opened" : "issue opening blocked",
+      entry.logsRead ? "logs read" : "log reads blocked",
+      entry.terminalCommandRun ? "terminal command run" : "terminal commands blocked",
+      entry.settingsOpened ? "settings opened" : "settings open blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexTroubleshootingList.append(row);
   }
 }
 

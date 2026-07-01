@@ -933,6 +933,23 @@ app-server traffic. It must not read auth state or project context, generate
 code, start reviews/debugging/automations/cloud tasks, open app/CLI/IDE
 surfaces, access files/network, create model traffic, or mutate state.
 
+The same response exposes `codexTroubleshooting` as a static review-only
+catalog for official Codex App Troubleshooting guidance. The UI shows only
+catalog counts, entry keys, groups, state/source chips, and negative redaction
+chips for review-panel Git-state guidance, sidebar project removal, archived/
+sidebar thread recovery, worktree/local-environment setup, macOS file-access
+approval, automation worktree cleanup, wrong-target prompt recovery, CLI/app
+version mismatch, feedback/GitHub issue guidance, log location/review guidance,
+stuck-thread recovery, terminal recovery, and font settings. It must not show
+Git state, project/thread names, thread ids, prompt text, worktree/local-
+environment/log paths, permission states, automation names, version values,
+feedback session ids, issue URLs, log content, terminal commands/output, font
+values, paths, URLs, secrets, raw payloads, or app-server traffic, and it must
+not read Git/logs/local environments, remove projects, unarchive threads, run
+setup/version/terminal commands, upload feedback, open issues/settings, trigger
+permissions, archive automations, recover prompts, access files/network, or
+mutate state.
+
 The same response exposes `codexManagedConfiguration` as a static review-only
 catalog for official Codex managed-configuration behavior. The UI shows only
 catalog counts, entry keys, groups, state/source chips, and redaction chips for

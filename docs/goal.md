@@ -298,6 +298,22 @@ Target parity with the Codex desktop workflow:
   app-server traffic, and it does not read auth/API keys/projects, generate
   code, start reviews/debugging/automations/cloud tasks, open app/CLI/IDE
   surfaces, access files/network, create model traffic, or mutate state.
+- `/api/settings-integrations` now also exposes a read-only Codex
+  Troubleshooting catalog aligned to the current official app troubleshooting
+  docs. It returns only static keys, groups, states, sources, counts, and
+  redaction flags for review-panel Git-state guidance, sidebar project removal,
+  archived/sidebar thread recovery, worktree/local-environment setup, macOS
+  file-access approval, automation worktree cleanup, wrong-target prompt
+  recovery, CLI/app version mismatch, feedback/GitHub issue guidance, log
+  location/review guidance, stuck-thread recovery, terminal recovery, and font
+  settings. It does not return Git state, project/thread names, thread ids,
+  prompt text, worktree/local-environment/log paths, permission states,
+  automation names, version values, feedback session ids, issue URLs, log
+  content, terminal commands/output, font values, paths, URLs, secrets, raw
+  payloads, or app-server traffic, and it does not read Git/logs/local
+  environments, remove projects, unarchive threads, run setup/version/terminal
+  commands, upload feedback, open issues/settings, trigger permissions, archive
+  automations, recover prompts, access files/network, or mutate state.
 - `/api/settings-integrations` now also exposes a read-only Codex Governance
   catalog aligned to the official enterprise governance guide. It returns only
   static keys, groups, states, sources, counts, and redaction flags for

@@ -651,6 +651,22 @@ Current M1 status:
   review/debug/automation/cloud-task starts, app/CLI/IDE opens, filesystem
   access, network access, model traffic, mutations, paths, URLs, secrets, raw
   payloads, and app-server traffic blocked
+- done: read-only Codex Troubleshooting catalog in
+  `/api/settings-integrations`, exposing only static official Troubleshooting
+  documentation keys plus local boundary keys/groups/states/sources/counts/
+  redaction flags for review-panel Git-state guidance, sidebar project
+  removal, archived/sidebar thread recovery, worktree/local-environment setup,
+  macOS file-access approval, automation worktree cleanup, wrong-target prompt
+  recovery, CLI/app version mismatch, feedback/GitHub issue guidance, log
+  location/review guidance, stuck-thread recovery, terminal recovery, and font
+  settings, with Git state, project/thread names, thread ids, prompt text,
+  worktree/local-environment/log paths, permission states, automation names,
+  version values, feedback session ids, issue URLs, log content, terminal
+  commands/output, font values, Git/log/local-environment reads, project
+  removal, thread unarchive, setup/version/terminal commands, feedback upload,
+  issue/settings opens, permission prompts, automation archive, prompt
+  recovery, filesystem access, network access, mutations, paths, URLs, secrets,
+  raw payloads, and app-server traffic blocked
 - done: read-only Codex Auto-review catalog in `/api/settings-integrations`,
   exposing only static official Auto-review documentation keys plus local
   boundary keys/groups/states/sources/counts/redaction flags for reviewer-swap

@@ -35245,6 +35245,200 @@ function assertCodexOverviewQuickstartCatalog(payload) {
   }
 }
 
+function expectedCodexTroubleshootingEntries() {
+  return [
+    ["reviewPanelGitState", "review-panel", "catalog-only", "official-codex-troubleshooting-docs"],
+    ["reviewPanelStagedUnstagedCompare", "review-panel", "catalog-only", "official-codex-troubleshooting-docs"],
+    ["lastTurnChangesView", "review-panel", "catalog-only", "official-codex-troubleshooting-docs"],
+    ["removeProjectSidebar", "sidebar", "catalog-only", "official-codex-troubleshooting-docs"],
+    ["archivedThreadsSettings", "threads", "catalog-only", "official-codex-troubleshooting-docs"],
+    ["sidebarThreadFiltering", "threads", "catalog-only", "official-codex-troubleshooting-docs"],
+    ["worktreeDependencySetup", "worktrees", "catalog-only", "official-codex-troubleshooting-docs"],
+    ["sharedLocalEnvironmentProjectRoot", "local-environments", "catalog-only", "official-codex-troubleshooting-docs"],
+    ["macosFileAccessApproval", "permissions", "catalog-only", "official-codex-troubleshooting-docs"],
+    ["automationWorktreeCleanup", "automations", "catalog-only", "official-codex-troubleshooting-docs"],
+    ["wrongTargetPromptRecovery", "composer", "catalog-only", "official-codex-troubleshooting-docs"],
+    ["cliAppVersionMismatch", "versioning", "catalog-only", "official-codex-troubleshooting-docs"],
+    ["feedbackSessionSharing", "feedback", "catalog-only", "official-codex-troubleshooting-docs"],
+    ["githubIssueReporting", "feedback", "catalog-only", "official-codex-troubleshooting-docs"],
+    ["logLocationGuidance", "logs", "catalog-only", "official-codex-troubleshooting-docs"],
+    ["logReviewBeforeSharing", "logs", "catalog-only", "official-codex-troubleshooting-docs"],
+    ["stuckThreadRecovery", "recovery", "catalog-only", "official-codex-troubleshooting-docs"],
+    ["terminalStuckRecovery", "terminal", "catalog-only", "official-codex-troubleshooting-docs"],
+    ["terminalFontSettings", "terminal", "catalog-only", "official-codex-troubleshooting-docs"],
+    ["gitStateBoundary", "review-panel", "blocked", "local-troubleshooting-boundary"],
+    ["projectSidebarMutationBoundary", "sidebar", "blocked", "local-troubleshooting-boundary"],
+    ["archivedThreadBoundary", "threads", "blocked", "local-troubleshooting-boundary"],
+    ["worktreeSetupBoundary", "worktrees", "blocked", "local-troubleshooting-boundary"],
+    ["localEnvironmentBoundary", "local-environments", "blocked", "local-troubleshooting-boundary"],
+    ["macosPermissionBoundary", "permissions", "blocked", "local-troubleshooting-boundary"],
+    ["automationArchiveBoundary", "automations", "blocked", "local-troubleshooting-boundary"],
+    ["promptRecoveryBoundary", "composer", "blocked", "local-troubleshooting-boundary"],
+    ["versionCommandBoundary", "versioning", "blocked", "local-troubleshooting-boundary"],
+    ["feedbackUploadBoundary", "feedback", "blocked", "local-troubleshooting-boundary"],
+    ["logsReadBoundary", "logs", "blocked", "local-troubleshooting-boundary"],
+    ["terminalCommandBoundary", "terminal", "blocked", "local-troubleshooting-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexTroubleshootingCatalog(payload) {
+  const catalog = payload.codexTroubleshooting;
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-troubleshooting-docs");
+  assert.equal(catalog.entryCount, 31);
+  assert.equal(catalog.officialEntryCount, 19);
+  assert.equal(catalog.localBoundaryEntryCount, 12);
+  assert.equal(catalog.catalogOnlyEntryCount, 19);
+  assert.equal(catalog.blockedEntryCount, 12);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({ key, group, state, source })),
+    expectedCodexTroubleshootingEntries(),
+  );
+
+  const entryRedactionFlags = [
+    "gitStateReturned",
+    "projectNameReturned",
+    "threadNameReturned",
+    "threadIdReturned",
+    "promptTextReturned",
+    "worktreePathReturned",
+    "localEnvironmentPathReturned",
+    "permissionStateReturned",
+    "automationNameReturned",
+    "versionValueReturned",
+    "feedbackSessionIdReturned",
+    "issueUrlReturned",
+    "logPathReturned",
+    "logContentReturned",
+    "terminalCommandReturned",
+    "terminalOutputReturned",
+    "fontValueReturned",
+    "gitStateRead",
+    "projectRemoved",
+    "threadUnarchived",
+    "worktreeSetupRun",
+    "localEnvironmentRead",
+    "permissionPromptStarted",
+    "automationArchived",
+    "promptRecovered",
+    "versionCommandRun",
+    "feedbackUploaded",
+    "issueOpened",
+    "logsRead",
+    "terminalCommandRun",
+    "settingsOpened",
+    "filesystemRead",
+    "filesystemWrite",
+    "networkAccess",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.troubleshootingCatalogReturned, true);
+  for (const flag of [
+    "gitStatesReturned",
+    "projectNamesReturned",
+    "threadNamesReturned",
+    "threadIdsReturned",
+    "promptTextsReturned",
+    "worktreePathsReturned",
+    "localEnvironmentPathsReturned",
+    "permissionStatesReturned",
+    "automationNamesReturned",
+    "versionValuesReturned",
+    "feedbackSessionIdsReturned",
+    "issueUrlsReturned",
+    "logPathsReturned",
+    "logContentsReturned",
+    "terminalCommandsReturned",
+    "terminalOutputsReturned",
+    "fontValuesReturned",
+    "gitStateReads",
+    "projectsRemoved",
+    "threadsUnarchived",
+    "worktreeSetupRuns",
+    "localEnvironmentReads",
+    "permissionPromptsStarted",
+    "automationsArchived",
+    "promptsRecovered",
+    "versionCommandsRun",
+    "feedbackUploadsStarted",
+    "issuesOpened",
+    "logsRead",
+    "terminalCommandsRun",
+    "settingsOpened",
+    "filesystemReads",
+    "filesystemWrites",
+    "networkAccess",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexTroubleshootingReturned", true],
+    ["codexTroubleshootingValuesReturned", false],
+    ["codexTroubleshootingGitStatesReturned", false],
+    ["codexTroubleshootingProjectNamesReturned", false],
+    ["codexTroubleshootingThreadNamesReturned", false],
+    ["codexTroubleshootingThreadIdsReturned", false],
+    ["codexTroubleshootingPromptTextsReturned", false],
+    ["codexTroubleshootingWorktreePathsReturned", false],
+    ["codexTroubleshootingLocalEnvironmentPathsReturned", false],
+    ["codexTroubleshootingPermissionStatesReturned", false],
+    ["codexTroubleshootingAutomationNamesReturned", false],
+    ["codexTroubleshootingVersionValuesReturned", false],
+    ["codexTroubleshootingFeedbackSessionIdsReturned", false],
+    ["codexTroubleshootingIssueUrlsReturned", false],
+    ["codexTroubleshootingLogPathsReturned", false],
+    ["codexTroubleshootingLogContentsReturned", false],
+    ["codexTroubleshootingTerminalCommandsReturned", false],
+    ["codexTroubleshootingTerminalOutputsReturned", false],
+    ["codexTroubleshootingFontValuesReturned", false],
+    ["codexTroubleshootingGitStateReadEnabled", false],
+    ["codexTroubleshootingProjectRemoveEnabled", false],
+    ["codexTroubleshootingThreadUnarchiveEnabled", false],
+    ["codexTroubleshootingWorktreeSetupEnabled", false],
+    ["codexTroubleshootingLocalEnvironmentReadEnabled", false],
+    ["codexTroubleshootingPermissionPromptEnabled", false],
+    ["codexTroubleshootingAutomationArchiveEnabled", false],
+    ["codexTroubleshootingPromptRecoveryEnabled", false],
+    ["codexTroubleshootingVersionCommandEnabled", false],
+    ["codexTroubleshootingFeedbackUploadEnabled", false],
+    ["codexTroubleshootingIssueOpenEnabled", false],
+    ["codexTroubleshootingLogReadEnabled", false],
+    ["codexTroubleshootingTerminalCommandEnabled", false],
+    ["codexTroubleshootingSettingsOpenEnabled", false],
+    ["codexTroubleshootingFilesystemAccess", false],
+    ["codexTroubleshootingNetworkAccess", false],
+    ["codexTroubleshootingMutationsEnabled", false],
+    ["codexTroubleshootingPathsReturned", false],
+    ["codexTroubleshootingUrlsReturned", false],
+    ["codexTroubleshootingSecretsReturned", false],
+    ["codexTroubleshootingRawPayloadsReturned", false],
+    ["codexTroubleshootingAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexGovernanceEntries() {
   return [
     ["governanceVisibilityAuditability", "overview", "catalog-only", "official-codex-governance-docs"],
@@ -39568,6 +39762,7 @@ function assertCodexAppSettingsParity(
   assertCodexPricingCatalog(payload);
   assertCodexWorkflowGuidanceCatalog(payload);
   assertCodexOverviewQuickstartCatalog(payload);
+  assertCodexTroubleshootingCatalog(payload);
   assertCodexGovernanceCatalog(payload);
   assertCodexManagedConfigurationCatalog(payload);
   assertCodexEnvironmentVariablesCatalog(payload);

@@ -527,7 +527,17 @@
   URLs, secrets, raw payloads, app-server payloads, or app-server traffic, and
   must not read auth/API keys/projects, generate code, start reviews/debugging/
   automations/cloud tasks, open app/CLI/IDE surfaces, access files/network,
-  create model traffic, or mutate state. Its
+  create model traffic, or mutate state. Its Codex Troubleshooting catalog may
+  expose only static official-documentation keys plus local boundary keys,
+  groups, states, sources, counts, and redaction flags; it must not return Git
+  state, project/thread names, thread ids, prompt text, worktree/local-
+  environment/log paths, permission states, automation names, version values,
+  feedback session ids, issue URLs, log content, terminal commands/output, font
+  values, paths, URLs, secrets, raw payloads, app-server payloads, or app-server
+  traffic, and must not read Git/logs/local environments, remove projects,
+  unarchive threads, run setup/version/terminal commands, upload feedback, open
+  issues/settings, trigger permissions, archive automations, recover prompts,
+  access files/network, or mutate state. Its
   Codex Auto-review catalog may expose only static official-documentation keys
   plus local boundary keys, groups, states, sources, counts, and redaction
   flags; it must not return approval requests, reviewer rationales,
