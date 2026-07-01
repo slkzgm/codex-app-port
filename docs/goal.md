@@ -1124,6 +1124,12 @@ Target parity with the Codex desktop workflow:
   names inventory mode: it returns no skill names, no paths, no descriptions, no
   prompts, no dependency values/commands/URLs, no cwd, no filesystem access, no
   install or execution surface, and no raw payloads.
+- `app/list` also has a dedicated opt-in `/api/apps-list` route behind
+  `CODEX_APP_PORT_ALLOW_APPS_LIST=1`. The dedicated route is stricter than the
+  names inventory mode: it returns only app/accessibility/branding/metadata/
+  plugin-label/screenshot/URL presence counts and no app names, ids, plugin
+  display names, descriptions, labels, logos, URLs, screenshots, cwd,
+  filesystem access, install/auth-linking surface, or raw payloads.
 - `hooks/list` has both a dedicated opt-in `/api/hooks-list` route behind
   `CODEX_APP_PORT_ALLOW_HOOKS_LIST=1` and an opt-in inventory path. It returns
   only workspace/hook/enabled/disabled/managed/error/warning counts plus

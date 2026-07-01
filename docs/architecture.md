@@ -1563,6 +1563,13 @@ Current M1 status:
   Skill UI metadata and tool dependencies are exposed only as counts/presence
   flags, not display text, prompts, icon paths, brand colors, dependency
   values, commands, descriptions, or URLs.
+- done: dedicated opt-in `/api/apps-list` route behind
+  `CODEX_APP_PORT_ALLOW_APPS_LIST=1`; it may call only `app/list` with
+  `cursor:null`, `forceRefetch:false`, `limit:50`, and `threadId:null`, and
+  returns app/accessibility/branding/metadata/plugin-label/screenshot/URL
+  presence counts only. App names, ids, plugin display names, descriptions,
+  labels, logos, URLs, screenshots, cwd, filesystem access, installs,
+  auth-linking, and raw app-server payloads remain hidden or blocked.
 - done: dedicated `/api/config-requirements` read route for
   `configRequirements/read`, disabled by default behind
   `CODEX_APP_PORT_ALLOW_CONFIG_REQUIREMENTS=1`, returning only requirement

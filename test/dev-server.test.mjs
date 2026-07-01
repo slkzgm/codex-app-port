@@ -390,6 +390,11 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /permission-profiles-count-text/);
     assert.match(html, /permission-profiles-allowed-text/);
     assert.match(html, /permission-profiles-details-text/);
+    assert.match(html, /apps-list-button/);
+    assert.match(html, /apps-list-status/);
+    assert.match(html, /apps-list-count-text/);
+    assert.match(html, /apps-list-metadata-text/);
+    assert.match(html, /apps-list-details-text/);
     assert.match(html, /skills-list-button/);
     assert.match(html, /skills-list-status/);
     assert.match(html, /skills-list-count-text/);
@@ -431,6 +436,9 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(appScript, /setMcpServerStatusLoading/);
     assert.match(appScript, /runPermissionProfiles/);
     assert.match(appScript, /renderPermissionProfiles/);
+    assert.match(appScript, /runAppsList/);
+    assert.match(appScript, /renderAppsList/);
+    assert.match(appScript, /setAppsListLoading/);
     assert.match(appScript, /runSkillsList/);
     assert.match(appScript, /renderSkillsList/);
     assert.match(appScript, /setSkillsListLoading/);
@@ -15554,6 +15562,219 @@ test("dev server exposes permission profiles only behind explicit opt-in and red
       "\"idsReturned\":true",
       "\"descriptionsReturned\":true",
       "\"rawPayloadReturned\":true",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    await closeServer(enabledServer.server);
+  }
+});
+
+test("dev server exposes apps list only behind explicit opt-in and redacts app details", async () => {
+  const blockedCalls = [];
+  const blockedServer = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    appsListFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+
+  try {
+    const settingsResponse = await fetch(`${blockedServer.url}/api/settings-integrations`, {
+      headers: apiHeaders(blockedServer.server),
+    });
+    assert.equal(settingsResponse.status, 200);
+    const settingsPayload = await settingsResponse.json();
+    assert.equal(settingsPayload.surfaces.settings.appListingAvailable, false);
+    assert.equal(settingsPayload.surfaces.settings.appsListEnabled, false);
+    assert.equal(settingsPayload.integrationScope.appsListEnabled, false);
+
+    const blockedResponse = await fetch(`${blockedServer.url}/api/apps-list`, {
+      headers: apiHeaders(blockedServer.server),
+    });
+    assert.equal(blockedResponse.status, 200);
+    const blockedPayload = await blockedResponse.json();
+    const blockedSerialized = JSON.stringify(blockedPayload);
+    assert.equal(blockedPayload.ok, true);
+    assert.equal(blockedPayload.appServer.touched, false);
+    assert.deepEqual(blockedPayload.appServer.auditedMethods, ["app/list"]);
+    assert.equal(blockedPayload.settings.appsListEnabled, false);
+    assert.equal(blockedPayload.policy.appServerTraffic, false);
+    assert.equal(blockedPayload.result.status, "blocked");
+    assert.equal(blockedCalls.length, 0);
+    assert.equal(blockedSerialized.includes("/tmp/default-workspace"), false);
+  } finally {
+    await closeServer(blockedServer.server);
+  }
+
+  const calls = [];
+  const enabledServer = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    appsListEnabled: true,
+    appsListFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-07-01T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/private-home",
+          userAgent: "mock/0.0.0",
+        },
+        probes: {
+          apps: {
+            ok: true,
+            appCount: 2,
+            enabledCount: 1,
+            disabledCount: 1,
+            accessibleCount: 1,
+            inaccessibleCount: 1,
+            discoverableCount: 1,
+            metadataCount: 2,
+            brandingCount: 1,
+            developerCount: 2,
+            categoryValueCount: 3,
+            distributionChannelValueCount: 1,
+            firstPartyTypeValueCount: 1,
+            reviewStatusValueCount: 1,
+            labelKeyCount: 2,
+            pluginDisplayNameCount: 3,
+            screenshotCount: 4,
+            urlFieldCount: 5,
+            hasNextCursor: true,
+            returnedAppCount: 2,
+            items: [
+              {
+                name: "private-app",
+                enabled: true,
+                accessible: true,
+                discoverable: true,
+                pluginDisplayNameCount: 1,
+                returnedPluginDisplayNameCount: 1,
+                pluginDisplayNames: ["private-plugin"],
+              },
+            ],
+            namesReturned: true,
+            pluginDisplayNamesReturned: true,
+            nameRedactedCount: 1,
+            pluginDisplayNameRedactedCount: 1,
+            idsReturned: true,
+            descriptionsReturned: true,
+            labelsReturned: true,
+            logosReturned: true,
+            urlsReturned: true,
+            screenshotsReturned: true,
+          },
+        },
+        rawApps: {
+          id: "private-app-id",
+          name: "private-app",
+          description: "private app description",
+          url: "https://example.test/private/app",
+          logoUrl: "https://example.test/private/app/logo.png",
+          screenshot: "https://example.test/private/app/screenshot.png",
+          path: "/tmp/default-workspace/private-app",
+        },
+        notifications: {},
+      };
+    },
+  });
+
+  try {
+    const settingsResponse = await fetch(`${enabledServer.url}/api/settings-integrations`, {
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(settingsResponse.status, 200);
+    const settingsPayload = await settingsResponse.json();
+    assert.equal(settingsPayload.surfaces.settings.appListingAvailable, true);
+    assert.equal(settingsPayload.surfaces.settings.appsListEnabled, true);
+    assert.equal(settingsPayload.surfaces.apps.appsListEnabled, true);
+    assert.equal(settingsPayload.integrationScope.appsListEnabled, true);
+    assert.equal(settingsPayload.integrationScope.enabledReadMethods.includes("app/list"), true);
+
+    const methodResponse = await fetch(`${enabledServer.url}/api/apps-list`, {
+      method: "POST",
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(methodResponse.status, 405);
+
+    const response = await fetch(`${enabledServer.url}/api/apps-list`, {
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, true);
+    assert.equal(payload.appServer.modelTraffic, false);
+    assert.deepEqual(payload.appServer.auditedMethods, ["app/list"]);
+    assert.equal(payload.settings.appsListEnabled, true);
+    assert.equal(payload.result.status, "available");
+    assert.equal(payload.result.appCount, 2);
+    assert.equal(payload.result.enabledCount, 1);
+    assert.equal(payload.result.disabledCount, 1);
+    assert.equal(payload.result.accessibleCount, 1);
+    assert.equal(payload.result.inaccessibleCount, 1);
+    assert.equal(payload.result.discoverableCount, 1);
+    assert.equal(payload.result.metadataCount, 2);
+    assert.equal(payload.result.brandingCount, 1);
+    assert.equal(payload.result.developerCount, 2);
+    assert.equal(payload.result.categoryValueCount, 3);
+    assert.equal(payload.result.pluginDisplayNameCount, 3);
+    assert.equal(payload.result.screenshotCount, 4);
+    assert.equal(payload.result.urlFieldCount, 5);
+    assert.equal(payload.result.hasNextCursor, true);
+    assert.equal(payload.result.returnedAppCount, 0);
+    assert.equal(payload.result.namesReturned, false);
+    assert.equal(payload.result.pluginDisplayNamesReturned, false);
+    assert.equal(payload.result.idsReturned, false);
+    assert.equal(payload.result.descriptionsReturned, false);
+    assert.equal(payload.result.labelsReturned, false);
+    assert.equal(payload.result.logosReturned, false);
+    assert.equal(payload.result.urlsReturned, false);
+    assert.equal(payload.result.screenshotsReturned, false);
+    assert.equal(payload.result.rawPayloadReturned, false);
+    assert.equal(payload.probes.apps.returnedAppCount, 0);
+    assert.deepEqual(payload.probes.apps.items, []);
+    assert.equal(payload.policy.readOnly, true);
+    assert.equal(payload.policy.appInstalls, false);
+    assert.equal(payload.policy.appAuthLinking, false);
+    assert.equal(payload.policy.installsEnabled, false);
+    assert.equal(payload.policy.namesReturned, false);
+    assert.equal(payload.policy.pluginDisplayNamesReturned, false);
+    assert.equal(payload.policy.idsReturned, false);
+    assert.equal(payload.policy.descriptionsReturned, false);
+    assert.equal(payload.policy.labelsReturned, false);
+    assert.equal(payload.policy.logosReturned, false);
+    assert.equal(payload.policy.urlsReturned, false);
+    assert.equal(payload.policy.screenshotsReturned, false);
+    assert.equal(payload.policy.rawPayloadReturned, false);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].cwd, "/tmp/default-workspace");
+    for (const marker of [
+      "/tmp/default-workspace",
+      "/tmp/private-home",
+      "codexHome",
+      "userAgent",
+      "private-app-id",
+      "private-app",
+      "private app description",
+      "private-plugin",
+      "example.test",
+      "logo.png",
+      "screenshot.png",
+      "\"namesReturned\":true",
+      "\"pluginDisplayNamesReturned\":true",
+      "\"idsReturned\":true",
+      "\"descriptionsReturned\":true",
+      "\"labelsReturned\":true",
+      "\"logosReturned\":true",
+      "\"urlsReturned\":true",
+      "\"screenshotsReturned\":true",
     ]) {
       assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
     }

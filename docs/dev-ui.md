@@ -1949,6 +1949,16 @@ workspace `cwd`, and `limit:50`, and returns only profile counts plus
 allowed/blocked/description totals. Profile names, ids, descriptions, cursors,
 cwd, paths, and raw payloads are never returned by this dedicated route.
 
+`/api/apps-list` is a dedicated disabled-by-default GET route for `app/list`.
+It requires `CODEX_APP_PORT_ALLOW_APPS_LIST=1`, accepts only the local session
+token and workspace selector, calls the app server with `cursor:null`,
+`forceRefetch:false`, `limit:50`, and `threadId:null`, and returns only
+app/accessibility/branding/metadata/plugin-display-name/screenshot/URL
+presence counts. App names, ids, plugin display names, descriptions, labels,
+logos, URLs, screenshots, cwd, filesystem access, installs, auth linking, and
+raw payloads are never returned by this dedicated route. The Apps Check control
+renders only sanitized count/detail-redaction fields.
+
 `/api/skills-list` is a dedicated disabled-by-default GET route for
 `skills/list`. It requires `CODEX_APP_PORT_ALLOW_SKILLS_LIST=1`, accepts only
 the local session token and workspace selector, calls the app server with

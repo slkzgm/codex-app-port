@@ -1694,6 +1694,14 @@
   icon paths, brand colors, dependency values, dependency commands, dependency
   URLs, cwd, filesystem reads, skill execution, installs, and raw app-server
   payloads remain blocked.
+- `/api/apps-list` may call only `app/list` behind
+  `CODEX_APP_PORT_ALLOW_APPS_LIST=1`. It is GET-only, local-token protected,
+  sends only `cursor:null`, `forceRefetch:false`, `limit:50`, and
+  `threadId:null`, and returns app, enabled/disabled, accessibility, branding,
+  metadata, developer/category/review, plugin-display-name, screenshot, URL,
+  label-key, and cursor presence counts only; app names, ids, plugin display
+  names, descriptions, labels, logos, URLs, screenshots, cwd, filesystem reads,
+  app installs, auth linking, and raw app-server payloads remain blocked.
 - `/api/remote-control-status` may call only `remoteControl/status/read` behind
   `CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_STATUS=1`. It is GET-only, local-token
   protected, and returns known status buckets plus identity-field presence

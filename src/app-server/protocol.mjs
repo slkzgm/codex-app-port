@@ -15,6 +15,7 @@ export const APP_SERVER_METHODS = Object.freeze({
   modelList: "model/list",
   modelProviderCapabilitiesRead: "modelProvider/capabilities/read",
   collaborationModeList: "collaborationMode/list",
+  appList: "app/list",
   permissionProfileList: "permissionProfile/list",
   threadList: "thread/list",
   threadSearch: "thread/search",

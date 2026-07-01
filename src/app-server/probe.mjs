@@ -2626,7 +2626,7 @@ export async function runIntegrationsInventoryProbe({
       ),
       readInventorySection(() => client.request(APP_SERVER_METHODS.remoteControlStatusRead, null)),
       readInventorySection(() =>
-        client.request("app/list", {
+        client.request(APP_SERVER_METHODS.appList, {
           cursor: null,
           forceRefetch: false,
           limit: 50,
@@ -3499,6 +3499,83 @@ export async function runSkillsListReadProbe({
           {
             ok: true,
             result: skills,
+          },
+          { includeNames: false },
+        ),
+      },
+      notifications: notificationCounts(notifications),
+    };
+  } finally {
+    await client.close();
+  }
+}
+
+export async function runAppsListReadProbe({
+  codexBin = process.env.CODEX_BIN || "codex",
+  codexArgs = ["app-server", "--listen", "stdio://"],
+  cwd = process.cwd(),
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+  onNotification,
+} = {}) {
+  if (process.env.CODEX_APP_PORT_ALLOW_APPS_LIST !== "1") {
+    throw new Error(
+      "app/list requires CODEX_APP_PORT_ALLOW_APPS_LIST=1 because it inspects installed app and connector inventory metadata",
+    );
+  }
+  const notifications = [];
+  const client = new JsonlRpcClient({
+    command: codexBin,
+    args: codexArgs,
+    cwd,
+    timeoutMs,
+    onNotification(notification) {
+      notifications.push({
+        method: notification.method,
+      });
+      onNotification?.(notification);
+    },
+  });
+
+  await client.start();
+
+  try {
+    const initialize = normalizeInitializeResponse(
+      await client.request(APP_SERVER_METHODS.initialize, {
+        clientInfo: {
+          name: "codex_app_port",
+          title: "Codex App Port",
+          version: "0.1.0",
+        },
+        capabilities: {
+          experimentalApi: false,
+          requestAttestation: false,
+        },
+      }),
+    );
+
+    client.notify(APP_SERVER_METHODS.initialized);
+    const apps = await client.request(
+      APP_SERVER_METHODS.appList,
+      {
+        cursor: null,
+        forceRefetch: false,
+        limit: 50,
+        threadId: null,
+      },
+      { timeoutMs },
+    );
+
+    return {
+      ok: true,
+      generatedAt: new Date().toISOString(),
+      transport: "stdio-jsonl",
+      protocol: "json-rpc-2.0-without-jsonrpc-field",
+      initialize: summarizeInitialize(initialize),
+      probes: {
+        apps: summarizeAppsInventory(
+          {
+            ok: true,
+            result: apps,
           },
           { includeNames: false },
         ),

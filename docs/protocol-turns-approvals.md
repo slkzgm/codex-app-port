@@ -658,6 +658,11 @@ inventory may expose only sanitized counts or, behind the display-name gate,
 bounded names with ids, URLs, logos, labels, descriptions, and screenshots
 omitted; external config detection remains counts-only and
 `externalAgentConfig/import` stays blocked.
+`/api/apps-list` is the stricter dedicated app inventory route: it is disabled
+by default, may call only `app/list` behind `CODEX_APP_PORT_ALLOW_APPS_LIST=1`,
+and never returns app names, ids, plugin display names, descriptions, labels,
+logos, URLs, screenshots, cwd, filesystem access, installs, auth-linking
+actions, or raw payloads.
 It also keeps `plugin/read` behind a local preflight that returns only plugin
 target and argument counts, with plugin names, marketplace names/paths,
 descriptions, hook keys, skill content, MCP server names, and app-server reads

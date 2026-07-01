@@ -271,6 +271,11 @@ const elements = {
   permissionProfilesCountText: document.querySelector("#permission-profiles-count-text"),
   permissionProfilesAllowedText: document.querySelector("#permission-profiles-allowed-text"),
   permissionProfilesDetailsText: document.querySelector("#permission-profiles-details-text"),
+  appsListButton: document.querySelector("#apps-list-button"),
+  appsListStatus: document.querySelector("#apps-list-status"),
+  appsListCountText: document.querySelector("#apps-list-count-text"),
+  appsListMetadataText: document.querySelector("#apps-list-metadata-text"),
+  appsListDetailsText: document.querySelector("#apps-list-details-text"),
   skillsListButton: document.querySelector("#skills-list-button"),
   skillsListStatus: document.querySelector("#skills-list-status"),
   skillsListCountText: document.querySelector("#skills-list-count-text"),
@@ -1267,6 +1272,10 @@ elements.workspaceSelect.addEventListener("change", () => {
   elements.permissionProfilesCountText.textContent = "0";
   elements.permissionProfilesAllowedText.textContent = "0";
   elements.permissionProfilesDetailsText.textContent = "Hidden";
+  elements.appsListStatus.textContent = "Apps read disabled by default.";
+  elements.appsListCountText.textContent = "0";
+  elements.appsListMetadataText.textContent = "0 / 0";
+  elements.appsListDetailsText.textContent = "Hidden";
   elements.skillsListStatus.textContent = "Skills read disabled by default.";
   elements.skillsListCountText.textContent = "0";
   elements.skillsListEnabledText.textContent = "0 / 0";
@@ -2278,6 +2287,10 @@ elements.permissionProfilesButton.addEventListener("click", () => {
   runPermissionProfiles();
 });
 
+elements.appsListButton.addEventListener("click", () => {
+  runAppsList();
+});
+
 elements.skillsListButton.addEventListener("click", () => {
   runSkillsList();
 });
@@ -2821,6 +2834,16 @@ function permissionProfilesEndpoint() {
   const params = new URLSearchParams();
   params.set("workspace", selectedWorkspaceId);
   return `/api/permission-profiles?${params.toString()}`;
+}
+
+function appsListEndpoint() {
+  if (!selectedWorkspaceId) {
+    return "/api/apps-list";
+  }
+
+  const params = new URLSearchParams();
+  params.set("workspace", selectedWorkspaceId);
+  return `/api/apps-list?${params.toString()}`;
 }
 
 function skillsListEndpoint() {
@@ -5036,6 +5059,28 @@ async function runPermissionProfiles() {
     renderError(error);
   } finally {
     setPermissionProfilesLoading(false);
+  }
+}
+
+async function runAppsList() {
+  setAppsListLoading(true);
+  hideError();
+
+  try {
+    const response = await fetch(appsListEndpoint(), {
+      headers: apiHeaders(),
+      cache: "no-store",
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderAppsList(payload);
+  } catch (error) {
+    elements.appsListStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    setAppsListLoading(false);
   }
 }
 
@@ -15870,6 +15915,38 @@ function renderPermissionProfiles(payload) {
     : `${profileCount} profiles / ${blockedCount} blocked`;
 }
 
+function renderAppsList(payload) {
+  const settings = payload.settings ?? {};
+  const result = payload.result ?? {};
+  const blocked = settings.appsListEnabled !== true || payload.appServer?.touched !== true;
+  const appCount = result.appCount ?? payload.probes?.apps?.appCount ?? 0;
+  const metadataCount = result.metadataCount ?? payload.probes?.apps?.metadataCount ?? 0;
+  const brandingCount = result.brandingCount ?? payload.probes?.apps?.brandingCount ?? 0;
+  const pluginDisplayNameCount =
+    result.pluginDisplayNameCount ?? payload.probes?.apps?.pluginDisplayNameCount ?? 0;
+  const screenshotCount = result.screenshotCount ?? payload.probes?.apps?.screenshotCount ?? 0;
+  const status = result.status ?? (blocked ? "blocked" : "available");
+  elements.appsListStatus.textContent = blocked ? "Read blocked" : status;
+  elements.appsListCountText.textContent = String(appCount);
+  elements.appsListMetadataText.textContent = `${metadataCount} / ${brandingCount}`;
+  elements.appsListDetailsText.textContent =
+    result.namesReturned ||
+    result.pluginDisplayNamesReturned ||
+    result.idsReturned ||
+    result.descriptionsReturned ||
+    result.labelsReturned ||
+    result.logosReturned ||
+    result.urlsReturned ||
+    result.screenshotsReturned ||
+    result.rawPayloadReturned ||
+    settings.rawPayloadReturned
+      ? "Returned"
+      : "Hidden";
+  elements.appsStateText.textContent = blocked
+    ? "Blocked"
+    : `${appCount} apps / ${pluginDisplayNameCount} plugins / ${screenshotCount} shots`;
+}
+
 function renderSkillsList(payload) {
   const settings = payload.settings ?? {};
   const result = payload.result ?? {};
@@ -23966,6 +24043,14 @@ function setPermissionProfilesLoading(isLoading) {
   elements.permissionProfilesButton.textContent = isLoading ? "Checking" : "Profiles Check";
   if (isLoading) {
     elements.permissionProfilesStatus.textContent = "Checking";
+  }
+}
+
+function setAppsListLoading(isLoading) {
+  elements.appsListButton.disabled = isLoading;
+  elements.appsListButton.textContent = isLoading ? "Checking" : "Apps Check";
+  if (isLoading) {
+    elements.appsListStatus.textContent = "Checking";
   }
 }
 

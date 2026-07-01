@@ -20,6 +20,7 @@ import {
   runAccountRateLimitResetCreditConsumeProbe,
   runAccountUsageReadProbe,
   runAccountWorkspaceMessagesReadProbe,
+  runAppsListReadProbe,
   runAppServerProbe,
   runConfigBatchWriteProbe,
   runConfigRequirementsReadProbe,
@@ -13157,6 +13158,7 @@ export function createDevServer({
   accountRateLimitsFn = runAccountRateLimitsReadProbe,
   accountUsageFn = runAccountUsageReadProbe,
   accountWorkspaceMessagesFn = runAccountWorkspaceMessagesReadProbe,
+  appsListFn = runAppsListReadProbe,
   configRequirementsFn = runConfigRequirementsReadProbe,
   mcpServerStatusFn = runMcpServerStatusReadProbe,
   permissionProfilesFn = runPermissionProfilesReadProbe,
@@ -13234,6 +13236,7 @@ export function createDevServer({
   accountUsageEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_USAGE === "1",
   accountWorkspaceMessagesEnabled =
     process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_WORKSPACE_MESSAGES === "1",
+  appsListEnabled = process.env.CODEX_APP_PORT_ALLOW_APPS_LIST === "1",
   configRequirementsEnabled = process.env.CODEX_APP_PORT_ALLOW_CONFIG_REQUIREMENTS === "1",
   mcpServerStatusEnabled = process.env.CODEX_APP_PORT_ALLOW_MCP_SERVER_STATUS === "1",
   permissionProfilesEnabled = process.env.CODEX_APP_PORT_ALLOW_PERMISSION_PROFILES === "1",
@@ -13397,6 +13400,7 @@ export function createDevServer({
       accountRateLimitsFn,
       accountUsageFn,
       accountWorkspaceMessagesFn,
+      appsListFn,
       configRequirementsFn,
       mcpServerStatusFn,
       permissionProfilesFn,
@@ -13470,6 +13474,7 @@ export function createDevServer({
       accountRateLimitsEnabled,
       accountUsageEnabled,
       accountWorkspaceMessagesEnabled,
+      appsListEnabled,
       configRequirementsEnabled,
       mcpServerStatusEnabled,
       permissionProfilesEnabled,
@@ -15308,6 +15313,48 @@ export async function handleRequest(request, response, options) {
       sendJson(response, error.statusCode ?? 502, {
         ok: false,
         error: cleanDisplayText(error.message, 200) ?? "Invalid skills list request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/apps-list") {
+    if (request.method !== "GET") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        url.searchParams.get("workspace"),
+      );
+      if (!options.appsListEnabled) {
+        sendJson(response, 200, buildAppsListBlockedPayload({ workspace }));
+        return;
+      }
+      const payload = await options.appsListFn({
+        codexBin: options.codexBin,
+        cwd: workspace.cwd,
+        timeoutMs: options.timeoutMs,
+      });
+      sendJson(
+        response,
+        200,
+        sanitizeAppsListPayload(payload, {
+          workspace,
+          enabled: true,
+        }),
+      );
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 502, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid apps list request",
       });
     }
     return;
@@ -20005,6 +20052,7 @@ export async function handleRequest(request, response, options) {
             accountRateLimitsEnabled: options.accountRateLimitsEnabled,
             accountUsageEnabled: options.accountUsageEnabled,
             accountWorkspaceMessagesEnabled: options.accountWorkspaceMessagesEnabled,
+            appsListEnabled: options.appsListEnabled,
             configRequirementsEnabled: options.configRequirementsEnabled,
             mcpServerStatusEnabled: options.mcpServerStatusEnabled,
             permissionProfilesEnabled: options.permissionProfilesEnabled,
@@ -20056,6 +20104,7 @@ export async function handleRequest(request, response, options) {
           accountRateLimitsEnabled: options.accountRateLimitsEnabled,
           accountUsageEnabled: options.accountUsageEnabled,
           accountWorkspaceMessagesEnabled: options.accountWorkspaceMessagesEnabled,
+          appsListEnabled: options.appsListEnabled,
           configRequirementsEnabled: options.configRequirementsEnabled,
           mcpServerStatusEnabled: options.mcpServerStatusEnabled,
           permissionProfilesEnabled: options.permissionProfilesEnabled,
@@ -52360,6 +52409,7 @@ export function sanitizeSettingsIntegrationsPayload(
     accountRateLimitsEnabled = false,
     accountUsageEnabled = false,
     accountWorkspaceMessagesEnabled = false,
+    appsListEnabled = false,
     configRequirementsEnabled = false,
     mcpServerStatusEnabled = false,
     permissionProfilesEnabled = false,
@@ -52406,6 +52456,7 @@ export function sanitizeSettingsIntegrationsPayload(
   const rateLimitsEnabled = Boolean(accountRateLimitsEnabled);
   const usageEnabled = Boolean(accountUsageEnabled);
   const workspaceMessagesEnabled = Boolean(accountWorkspaceMessagesEnabled);
+  const appsReadEnabled = Boolean(appsListEnabled);
   const requirementsEnabled = Boolean(configRequirementsEnabled);
   const mcpStatusEnabled = Boolean(mcpServerStatusEnabled);
   const profilesEnabled = Boolean(permissionProfilesEnabled);
@@ -52453,6 +52504,7 @@ export function sanitizeSettingsIntegrationsPayload(
     accountRateLimitsEnabled: rateLimitsEnabled,
     accountUsageEnabled: usageEnabled,
     accountWorkspaceMessagesEnabled: workspaceMessagesEnabled,
+    appsListEnabled: appsReadEnabled,
     configRequirementsEnabled: requirementsEnabled,
     mcpServerStatusEnabled: mcpStatusEnabled,
     permissionProfilesEnabled: profilesEnabled,
@@ -52529,7 +52581,8 @@ export function sanitizeSettingsIntegrationsPayload(
         hooksListEnabled: hooksReadEnabled,
         skillsListingAvailable: inventory.skills.ok || skillsReadEnabled,
         skillsListEnabled: skillsReadEnabled,
-        appListingAvailable: inventory.apps.ok,
+        appListingAvailable: inventory.apps.ok || appsReadEnabled,
+        appsListEnabled: appsReadEnabled,
         externalAgentConfigDetectionAvailable: inventory.externalAgentConfig.ok,
         experimentalFeatureListingAvailable: inventory.experimentalFeatures.ok,
         configBatchWriteEnabled: Boolean(configBatchWriteEnabled),
@@ -52646,8 +52699,9 @@ export function sanitizeSettingsIntegrationsPayload(
             : "mcp-status-unavailable",
       },
       apps: {
-        state: inventory.apps.ok ? "partial" : "blocked",
-        listingAvailable: inventory.apps.ok,
+        state: inventory.apps.ok || appsReadEnabled ? "partial" : "blocked",
+        listingAvailable: inventory.apps.ok || appsReadEnabled,
+        appsListEnabled: appsReadEnabled,
         installEnabled: false,
         authLinkingEnabled: false,
         mutationEnabled: false,
@@ -52655,7 +52709,9 @@ export function sanitizeSettingsIntegrationsPayload(
           ? inventory.apps.namesReturned || inventory.apps.pluginDisplayNamesReturned
             ? "names-and-counts"
             : "counts-only"
-          : "app-list-unavailable",
+          : appsReadEnabled
+            ? "apps-list-counts-only"
+            : "app-list-unavailable",
       },
       externalAgentConfig: {
         state: "partial",
@@ -58773,6 +58829,198 @@ export function buildConfigRequirementsBlockedPayload({ workspace } = {}) {
   };
 }
 
+export function buildAppsListBlockedPayload({ workspace } = {}) {
+  const apps = sanitizeAppsInventory(null, { namesEnabled: false });
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["app/list"],
+    },
+    settings: {
+      appListingAvailable: true,
+      appsListEnabled: false,
+      appServerTraffic: false,
+      namesReturned: false,
+      pluginDisplayNamesReturned: false,
+      idsReturned: false,
+      descriptionsReturned: false,
+      labelsReturned: false,
+      logosReturned: false,
+      urlsReturned: false,
+      screenshotsReturned: false,
+      rawPayloadReturned: false,
+      reason: "apps-list-requires-opt-in",
+    },
+    probes: {
+      apps,
+    },
+    result: {
+      status: "blocked",
+      appsListEnabled: false,
+      appServerTraffic: false,
+      appCount: 0,
+      enabledCount: 0,
+      disabledCount: 0,
+      accessibleCount: 0,
+      inaccessibleCount: 0,
+      discoverableCount: 0,
+      metadataCount: 0,
+      brandingCount: 0,
+      developerCount: 0,
+      categoryValueCount: 0,
+      distributionChannelValueCount: 0,
+      firstPartyTypeValueCount: 0,
+      reviewStatusValueCount: 0,
+      labelKeyCount: 0,
+      pluginDisplayNameCount: 0,
+      screenshotCount: 0,
+      urlFieldCount: 0,
+      hasNextCursor: false,
+      returnedAppCount: 0,
+      namesReturned: false,
+      pluginDisplayNamesReturned: false,
+      idsReturned: false,
+      descriptionsReturned: false,
+      labelsReturned: false,
+      logosReturned: false,
+      urlsReturned: false,
+      screenshotsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      settingsWrites: false,
+      authCallbacks: false,
+      authMutations: false,
+      installsEnabled: false,
+      appInstalls: false,
+      appAuthLinking: false,
+      secretsReturned: false,
+      tokensReturned: false,
+      namesReturned: false,
+      pluginDisplayNamesReturned: false,
+      idsReturned: false,
+      descriptionsReturned: false,
+      labelsReturned: false,
+      logosReturned: false,
+      urlsReturned: false,
+      pathsReturned: false,
+      screenshotsReturned: false,
+      rawPayloadReturned: false,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: true,
+      implemented: true,
+    },
+    notifications: sanitizeNotificationCounts(null),
+  };
+}
+
+export function sanitizeAppsListPayload(payload, { workspace = null, enabled = false } = {}) {
+  const apps = sanitizeAppsInventory(payload?.probes?.apps, { namesEnabled: false });
+  const status = enabled ? "available" : "blocked";
+  return {
+    ok: Boolean(payload?.ok),
+    generatedAt: payload?.generatedAt ?? new Date().toISOString(),
+    transport: cleanDisplayText(payload?.transport, 80),
+    protocol: cleanDisplayText(payload?.protocol, 80),
+    initialize: sanitizeInitialize(payload?.initialize),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: Boolean(enabled),
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["app/list"],
+    },
+    settings: {
+      appListingAvailable: true,
+      appsListEnabled: Boolean(enabled),
+      appServerTraffic: Boolean(enabled),
+      namesReturned: false,
+      pluginDisplayNamesReturned: false,
+      idsReturned: false,
+      descriptionsReturned: false,
+      labelsReturned: false,
+      logosReturned: false,
+      urlsReturned: false,
+      screenshotsReturned: false,
+      rawPayloadReturned: false,
+      reason: Boolean(enabled) ? "apps-list-counts-only" : "apps-list-requires-opt-in",
+    },
+    probes: {
+      apps,
+    },
+    result: {
+      status,
+      appsListEnabled: Boolean(enabled),
+      appServerTraffic: Boolean(enabled),
+      appCount: apps.appCount,
+      enabledCount: apps.enabledCount,
+      disabledCount: apps.disabledCount,
+      accessibleCount: apps.accessibleCount,
+      inaccessibleCount: apps.inaccessibleCount,
+      discoverableCount: apps.discoverableCount,
+      metadataCount: apps.metadataCount,
+      brandingCount: apps.brandingCount,
+      developerCount: apps.developerCount,
+      categoryValueCount: apps.categoryValueCount,
+      distributionChannelValueCount: apps.distributionChannelValueCount,
+      firstPartyTypeValueCount: apps.firstPartyTypeValueCount,
+      reviewStatusValueCount: apps.reviewStatusValueCount,
+      labelKeyCount: apps.labelKeyCount,
+      pluginDisplayNameCount: apps.pluginDisplayNameCount,
+      screenshotCount: apps.screenshotCount,
+      urlFieldCount: apps.urlFieldCount,
+      hasNextCursor: apps.hasNextCursor,
+      returnedAppCount: apps.returnedAppCount,
+      namesReturned: false,
+      pluginDisplayNamesReturned: false,
+      idsReturned: false,
+      descriptionsReturned: false,
+      labelsReturned: false,
+      logosReturned: false,
+      urlsReturned: false,
+      screenshotsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: Boolean(enabled),
+      modelTraffic: false,
+      commandTraffic: false,
+      settingsWrites: false,
+      authCallbacks: false,
+      authMutations: false,
+      installsEnabled: false,
+      appInstalls: false,
+      appAuthLinking: false,
+      secretsReturned: false,
+      tokensReturned: false,
+      namesReturned: false,
+      pluginDisplayNamesReturned: false,
+      idsReturned: false,
+      descriptionsReturned: false,
+      labelsReturned: false,
+      logosReturned: false,
+      urlsReturned: false,
+      pathsReturned: false,
+      screenshotsReturned: false,
+      rawPayloadReturned: false,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: true,
+      implemented: true,
+    },
+    notifications: sanitizeNotificationCounts(payload?.notifications),
+  };
+}
+
 export function sanitizeConfigRequirementsPayload(
   payload,
   { workspace = null, enabled = false } = {},
@@ -64335,6 +64583,7 @@ export function buildSettingsIntegrations({
   accountRateLimitsEnabled = false,
   accountUsageEnabled = false,
   accountWorkspaceMessagesEnabled = false,
+  appsListEnabled = false,
   configRequirementsEnabled = false,
   mcpServerStatusEnabled = false,
   permissionProfilesEnabled = false,
@@ -64381,6 +64630,7 @@ export function buildSettingsIntegrations({
   const rateLimitsEnabled = Boolean(accountRateLimitsEnabled);
   const usageEnabled = Boolean(accountUsageEnabled);
   const workspaceMessagesEnabled = Boolean(accountWorkspaceMessagesEnabled);
+  const appsReadEnabled = Boolean(appsListEnabled);
   const requirementsEnabled = Boolean(configRequirementsEnabled);
   const mcpStatusEnabled = Boolean(mcpServerStatusEnabled);
   const profilesEnabled = Boolean(permissionProfilesEnabled);
@@ -64410,6 +64660,7 @@ export function buildSettingsIntegrations({
   const integrationScope = buildIntegrationActionScope({
     enabledReadMethods: [
       "config/read",
+      appsReadEnabled ? "app/list" : null,
       requirementsEnabled ? "configRequirements/read" : null,
       mcpStatusEnabled ? "mcpServerStatus/list" : null,
       profilesEnabled ? "permissionProfile/list" : null,
@@ -64427,6 +64678,7 @@ export function buildSettingsIntegrations({
     accountRateLimitsEnabled: rateLimitsEnabled,
     accountUsageEnabled: usageEnabled,
     accountWorkspaceMessagesEnabled: workspaceMessagesEnabled,
+    appsListEnabled: appsReadEnabled,
     configRequirementsEnabled: requirementsEnabled,
     mcpServerStatusEnabled: mcpStatusEnabled,
     permissionProfilesEnabled: profilesEnabled,
@@ -64468,6 +64720,7 @@ export function buildSettingsIntegrations({
       modelTraffic: false,
       auditedReadMethods: [
         "config/read",
+        appsReadEnabled ? "app/list" : null,
         requirementsEnabled ? "configRequirements/read" : null,
         mcpStatusEnabled ? "mcpServerStatus/list" : null,
         profilesEnabled ? "permissionProfile/list" : null,
@@ -64508,7 +64761,8 @@ export function buildSettingsIntegrations({
         hooksListEnabled: hooksReadEnabled,
         skillsListingAvailable: skillsReadEnabled,
         skillsListEnabled: skillsReadEnabled,
-        appListingAvailable: false,
+        appListingAvailable: appsReadEnabled,
+        appsListEnabled: appsReadEnabled,
         externalAgentConfigDetectionAvailable: false,
         experimentalFeatureListingAvailable: false,
         remoteControlDisableEnabled: Boolean(remoteControlDisableEnabled),
@@ -64627,12 +64881,13 @@ export function buildSettingsIntegrations({
           : "requires-explicit-inventory-enable",
       },
       apps: {
-        state: "blocked",
-        listingAvailable: false,
+        state: appsReadEnabled ? "partial" : "blocked",
+        listingAvailable: appsReadEnabled,
+        appsListEnabled: appsReadEnabled,
         installEnabled: false,
         authLinkingEnabled: false,
         mutationEnabled: false,
-        reason: "requires-explicit-inventory-enable",
+        reason: appsReadEnabled ? "apps-list-counts-only" : "requires-explicit-inventory-enable",
       },
       externalAgentConfig: {
         state: "partial",
@@ -67173,6 +67428,7 @@ function buildIntegrationActionScope({
   accountRateLimitsEnabled = false,
   accountUsageEnabled = false,
   accountWorkspaceMessagesEnabled = false,
+  appsListEnabled = false,
   configRequirementsEnabled = false,
   mcpServerStatusEnabled = false,
   permissionProfilesEnabled = false,
@@ -67268,6 +67524,7 @@ function buildIntegrationActionScope({
     accountRateLimitsEnabled: Boolean(accountRateLimitsEnabled),
     accountUsageEnabled: Boolean(accountUsageEnabled),
     accountWorkspaceMessagesEnabled: Boolean(accountWorkspaceMessagesEnabled),
+    appsListEnabled: Boolean(appsListEnabled),
     configRequirementsEnabled: Boolean(configRequirementsEnabled),
     mcpServerStatusEnabled: Boolean(mcpServerStatusEnabled),
     permissionProfilesEnabled: Boolean(permissionProfilesEnabled),

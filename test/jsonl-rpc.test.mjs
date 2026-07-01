@@ -11,6 +11,7 @@ import {
   runConfigValueWriteProbe,
   runEnvironmentAddProbe,
   runExperimentalFeatureEnablementSetProbe,
+  runAppsListReadProbe,
   runHooksListReadProbe,
   runIntegrationsInventoryProbe,
   runMcpServerOauthLoginProbe,
@@ -2542,6 +2543,72 @@ test("runSkillsListReadProbe returns skill counts without skill details", async 
       delete process.env.CODEX_APP_PORT_ALLOW_SKILLS_LIST;
     } else {
       process.env.CODEX_APP_PORT_ALLOW_SKILLS_LIST = previous;
+    }
+  }
+});
+
+test("runAppsListReadProbe returns app counts without app details", async () => {
+  const previous = process.env.CODEX_APP_PORT_ALLOW_APPS_LIST;
+  process.env.CODEX_APP_PORT_ALLOW_APPS_LIST = "1";
+  try {
+    const summary = await runAppsListReadProbe({
+      codexBin: process.execPath,
+      codexArgs: [mockServer.pathname],
+      cwd: process.cwd(),
+      timeoutMs: 1_000,
+    });
+    const apps = summary.probes.apps;
+    const serialized = JSON.stringify(summary);
+    assert.equal(summary.ok, true);
+    assert.equal(apps.ok, true);
+    assert.equal(apps.appCount, 1);
+    assert.equal(apps.enabledCount, 1);
+    assert.equal(apps.disabledCount, 0);
+    assert.equal(apps.accessibleCount, 1);
+    assert.equal(apps.inaccessibleCount, 0);
+    assert.equal(apps.discoverableCount, 1);
+    assert.equal(apps.metadataCount, 1);
+    assert.equal(apps.brandingCount, 1);
+    assert.equal(apps.developerCount, 2);
+    assert.equal(apps.categoryValueCount, 3);
+    assert.equal(apps.distributionChannelValueCount, 1);
+    assert.equal(apps.firstPartyTypeValueCount, 1);
+    assert.equal(apps.reviewStatusValueCount, 1);
+    assert.equal(apps.labelKeyCount, 1);
+    assert.equal(apps.pluginDisplayNameCount, 2);
+    assert.equal(apps.screenshotCount, 1);
+    assert.equal(apps.urlFieldCount, 6);
+    assert.equal(apps.returnedAppCount, 0);
+    assert.equal(apps.namesReturned, false);
+    assert.equal(apps.pluginDisplayNamesReturned, false);
+    assert.equal(apps.idsReturned, false);
+    assert.equal(apps.descriptionsReturned, false);
+    assert.equal(apps.labelsReturned, false);
+    assert.equal(apps.logosReturned, false);
+    assert.equal(apps.urlsReturned, false);
+    assert.equal(apps.screenshotsReturned, false);
+    for (const marker of [
+      "private-app-id",
+      "private-app",
+      "private app description",
+      "private-plugin",
+      "private developer",
+      "private-category",
+      "private-review",
+      "private screenshot prompt",
+      "private label value",
+      "/tmp/mock-workspace",
+      "example.test",
+      "codexHome",
+      "userAgent",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    if (previous === undefined) {
+      delete process.env.CODEX_APP_PORT_ALLOW_APPS_LIST;
+    } else {
+      process.env.CODEX_APP_PORT_ALLOW_APPS_LIST = previous;
     }
   }
 });

@@ -87,6 +87,7 @@ async function main() {
   await checkConfigRequirementsApi();
   await checkMcpServerStatusApi();
   await checkPermissionProfilesApi();
+  await checkAppsListApi();
   await checkSkillsListApi();
   await checkRemoteControlStatusApi();
   await checkInstalledPluginsApi();
@@ -18764,6 +18765,237 @@ async function checkPermissionProfilesApi() {
     await closeServer(server);
   }
   pass("dev server permission profiles exposes counts behind opt-in without returning profile details");
+}
+
+async function checkAppsListApi() {
+  const blockedCalls = [];
+  const blockedServer = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    appsListFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+  const blockedPort = await listenWithFallback(blockedServer, { host: "127.0.0.1", port: 0 });
+  const blockedBaseUrl = `http://127.0.0.1:${blockedPort}`;
+
+  try {
+    const token = await readUiSessionToken(blockedBaseUrl);
+    const settingsResponse = await fetch(`${blockedBaseUrl}/api/settings-integrations`, {
+      headers: apiHeaders(token),
+    });
+    if (!settingsResponse.ok) {
+      throw new Error(`settings integrations for blocked apps list returned HTTP ${settingsResponse.status}`);
+    }
+    const settingsPayload = await settingsResponse.json();
+    if (
+      settingsPayload.surfaces?.settings?.appListingAvailable !== false ||
+      settingsPayload.surfaces?.settings?.appsListEnabled !== false ||
+      settingsPayload.integrationScope?.appsListEnabled !== false
+    ) {
+      throw new Error("settings integrations did not expose the blocked apps list gate safely");
+    }
+
+    const response = await fetch(`${blockedBaseUrl}/api/apps-list`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`blocked apps list returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (
+      payload.appServer?.touched !== false ||
+      payload.settings?.appsListEnabled !== false ||
+      payload.result?.status !== "blocked" ||
+      payload.policy?.appServerTraffic !== false
+    ) {
+      throw new Error("blocked apps list did not fail closed without app-server traffic");
+    }
+    if (blockedCalls.length !== 0) {
+      throw new Error("blocked apps list unexpectedly touched app-server");
+    }
+    assertNoMarkers(JSON.stringify(payload), ["/tmp/codex-app-port-verify"]);
+  } finally {
+    await closeServer(blockedServer);
+  }
+
+  const calls = [];
+  const server = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    appsListEnabled: true,
+    appsListFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-07-01T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/verify-private-home",
+          userAgent: "verify-private-agent",
+        },
+        probes: {
+          apps: {
+            ok: true,
+            appCount: 2,
+            enabledCount: 1,
+            disabledCount: 1,
+            accessibleCount: 1,
+            inaccessibleCount: 1,
+            discoverableCount: 1,
+            metadataCount: 2,
+            brandingCount: 1,
+            developerCount: 2,
+            categoryValueCount: 3,
+            distributionChannelValueCount: 1,
+            firstPartyTypeValueCount: 1,
+            reviewStatusValueCount: 1,
+            labelKeyCount: 2,
+            pluginDisplayNameCount: 3,
+            screenshotCount: 4,
+            urlFieldCount: 5,
+            hasNextCursor: true,
+            returnedAppCount: 2,
+            items: [
+              {
+                name: "verify-private-app",
+                enabled: true,
+                accessible: true,
+                discoverable: true,
+                pluginDisplayNameCount: 1,
+                returnedPluginDisplayNameCount: 1,
+                pluginDisplayNames: ["verify-private-plugin"],
+              },
+            ],
+            namesReturned: true,
+            pluginDisplayNamesReturned: true,
+            idsReturned: true,
+            descriptionsReturned: true,
+            labelsReturned: true,
+            logosReturned: true,
+            urlsReturned: true,
+            screenshotsReturned: true,
+          },
+        },
+        rawApps: {
+          id: "verify-private-app-id",
+          name: "verify-private-app",
+          description: "verify private app description",
+          url: "https://verify.example.test/private-app",
+          logoUrl: "https://verify.example.test/private-logo.png",
+          screenshot: "https://verify.example.test/private-shot.png",
+          path: "/tmp/codex-app-port-verify/private-app",
+        },
+        notifications: {},
+      };
+    },
+  });
+  const port = await listenWithFallback(server, { host: "127.0.0.1", port: 0 });
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  try {
+    const token = await readUiSessionToken(baseUrl);
+    const settingsResponse = await fetch(`${baseUrl}/api/settings-integrations`, {
+      headers: apiHeaders(token),
+    });
+    if (!settingsResponse.ok) {
+      throw new Error(`settings integrations for apps list returned HTTP ${settingsResponse.status}`);
+    }
+    const settingsPayload = await settingsResponse.json();
+    if (
+      settingsPayload.surfaces?.settings?.appListingAvailable !== true ||
+      settingsPayload.surfaces?.settings?.appsListEnabled !== true ||
+      settingsPayload.surfaces?.apps?.appsListEnabled !== true ||
+      settingsPayload.integrationScope?.appsListEnabled !== true ||
+      !settingsPayload.integrationScope?.enabledReadMethods?.includes("app/list")
+    ) {
+      throw new Error("settings integrations did not expose the apps list gate safely");
+    }
+
+    const wrongMethod = await fetch(`${baseUrl}/api/apps-list`, {
+      method: "POST",
+      headers: apiHeaders(token),
+    });
+    if (wrongMethod.status !== 405) {
+      throw new Error(`apps list POST returned HTTP ${wrongMethod.status}`);
+    }
+
+    const response = await fetch(`${baseUrl}/api/apps-list`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`apps list returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (
+      payload.appServer?.touched !== true ||
+      payload.appServer?.modelTraffic !== false ||
+      payload.settings?.appsListEnabled !== true ||
+      payload.result?.status !== "available" ||
+      payload.result?.appCount !== 2 ||
+      payload.result?.enabledCount !== 1 ||
+      payload.result?.disabledCount !== 1 ||
+      payload.result?.accessibleCount !== 1 ||
+      payload.result?.inaccessibleCount !== 1 ||
+      payload.result?.metadataCount !== 2 ||
+      payload.result?.brandingCount !== 1 ||
+      payload.result?.pluginDisplayNameCount !== 3 ||
+      payload.result?.screenshotCount !== 4 ||
+      payload.result?.urlFieldCount !== 5 ||
+      payload.result?.returnedAppCount !== 0 ||
+      payload.result?.namesReturned !== false ||
+      payload.result?.pluginDisplayNamesReturned !== false ||
+      payload.result?.idsReturned !== false ||
+      payload.result?.descriptionsReturned !== false ||
+      payload.result?.labelsReturned !== false ||
+      payload.result?.logosReturned !== false ||
+      payload.result?.urlsReturned !== false ||
+      payload.result?.screenshotsReturned !== false ||
+      payload.result?.rawPayloadReturned !== false ||
+      payload.policy?.readOnly !== true ||
+      payload.policy?.appInstalls !== false ||
+      payload.policy?.appAuthLinking !== false ||
+      payload.policy?.installsEnabled !== false ||
+      payload.policy?.namesReturned !== false ||
+      payload.policy?.pluginDisplayNamesReturned !== false ||
+      payload.policy?.idsReturned !== false ||
+      payload.policy?.urlsReturned !== false ||
+      payload.policy?.screenshotsReturned !== false ||
+      payload.policy?.rawPayloadReturned !== false
+    ) {
+      throw new Error("apps list did not return the safe counts-only summary shape");
+    }
+    if (calls.length !== 1 || calls[0].cwd !== "/tmp/codex-app-port-verify") {
+      throw new Error("apps list did not call the app-server read path once");
+    }
+    assertNoMarkers(JSON.stringify(payload), [
+      "/tmp/codex-app-port-verify",
+      "/tmp/verify-private-home",
+      "verify-private-agent",
+      "codexHome",
+      "userAgent",
+      "verify-private-app",
+      "verify-private-app-id",
+      "verify private app description",
+      "verify-private-plugin",
+      "verify.example.test",
+      "private-logo.png",
+      "private-shot.png",
+      "\"namesReturned\":true",
+      "\"pluginDisplayNamesReturned\":true",
+      "\"idsReturned\":true",
+      "\"descriptionsReturned\":true",
+      "\"labelsReturned\":true",
+      "\"logosReturned\":true",
+      "\"urlsReturned\":true",
+      "\"screenshotsReturned\":true",
+    ]);
+  } finally {
+    await closeServer(server);
+  }
+  pass("dev server apps list exposes counts behind opt-in without returning app details");
 }
 
 async function checkSkillsListApi() {
@@ -58593,6 +58825,11 @@ async function readUiSessionToken(baseUrl) {
     !html.includes("permission-profiles-count-text") ||
     !html.includes("permission-profiles-allowed-text") ||
     !html.includes("permission-profiles-details-text") ||
+    !html.includes("apps-list-button") ||
+    !html.includes("apps-list-status") ||
+    !html.includes("apps-list-count-text") ||
+    !html.includes("apps-list-metadata-text") ||
+    !html.includes("apps-list-details-text") ||
     !html.includes("skills-list-button") ||
     !html.includes("skills-list-status") ||
     !html.includes("skills-list-count-text") ||
@@ -58634,6 +58871,9 @@ async function readUiSessionToken(baseUrl) {
     !appScript.includes("setMcpServerStatusLoading") ||
     !appScript.includes("runPermissionProfiles") ||
     !appScript.includes("renderPermissionProfiles") ||
+    !appScript.includes("runAppsList") ||
+    !appScript.includes("renderAppsList") ||
+    !appScript.includes("setAppsListLoading") ||
     !appScript.includes("runSkillsList") ||
     !appScript.includes("renderSkillsList") ||
     !appScript.includes("setSkillsListLoading") ||
