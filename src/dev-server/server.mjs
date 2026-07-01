@@ -7,7 +7,9 @@ import process from "node:process";
 
 import {
   DEFAULT_TIMEOUT_MS,
+  DEFAULT_TERMINAL_OUTPUT_PREVIEW_BYTES,
   DEFAULT_LOADED_SESSION_LIMIT,
+  MAX_TERMINAL_OUTPUT_PREVIEW_CHARS,
   openReadOnlyNotificationStream,
   runAccountCreditsNudgeProbe,
   runAccountLoginCancelProbe,
@@ -5575,6 +5577,7 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
       "exitCode",
       "argvCount",
       "timeoutMs",
+      "outputBytesCap",
       "sandboxPolicy",
       "stdout",
       "stderr",
@@ -5582,19 +5585,47 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
       "argvReturned",
       "cwdReturned",
       "outputTextReturned",
+      "outputPreviewReturned",
       "processIdReturned",
       "stdinEnabled",
       "ttyEnabled",
       "streamedOutputEnabled",
       "environmentReturned",
     ],
-    "probes.terminalCommandExec.stdout": ["charCount", "byteCount", "textReturned"],
-    "probes.terminalCommandExec.stderr": ["charCount", "byteCount", "textReturned"],
+    "probes.terminalCommandExec.stdout": [
+      "charCount",
+      "byteCount",
+      "lineCount",
+      "preview",
+      "previewCharCount",
+      "previewLineCount",
+      "previewTruncated",
+      "redactionCount",
+      "textReturned",
+      "rawTextReturned",
+    ],
+    "probes.terminalCommandExec.stderr": [
+      "charCount",
+      "byteCount",
+      "lineCount",
+      "preview",
+      "previewCharCount",
+      "previewLineCount",
+      "previewTruncated",
+      "redactionCount",
+      "textReturned",
+      "rawTextReturned",
+    ],
     result: [
       "status",
       "exitCode",
       "stdoutCharCount",
       "stderrCharCount",
+      "stdoutPreview",
+      "stderrPreview",
+      "outputPreviewReturned",
+      "outputPreviewCharCount",
+      "outputPreviewRedactionCount",
       "stdoutReturned",
       "stderrReturned",
       "outputTextReturned",
@@ -5625,6 +5656,12 @@ const BROWSER_POST_RESPONSE_NESTED_KEY_SCHEMAS = Object.freeze({
       "terminalSessionIdentifiersReturned",
       "commandTextReturned",
       "argvReturned",
+      "terminalOutputPreviewEnabled",
+      "terminalOutputPreviewReturned",
+      "stdoutPreviewReturned",
+      "stderrPreviewReturned",
+      "outputPreviewBytesCap",
+      "outputPreviewCharLimit",
       "stdoutReturned",
       "stderrReturned",
       "filesystemWrites",
@@ -13206,6 +13243,8 @@ export function createDevServer({
     process.env.CODEX_APP_PORT_ALLOW_LIVE_SESSION_BULK_CONTROL === "1",
   turnSteerEnabled = process.env.CODEX_APP_PORT_ALLOW_TURN_STEER === "1",
   terminalCommandEnabled = process.env.CODEX_APP_PORT_ALLOW_TERMINAL_COMMAND === "1",
+  terminalOutputPreviewEnabled =
+    process.env.CODEX_APP_PORT_ALLOW_TERMINAL_OUTPUT_PREVIEW === "1",
   terminalCommandAllowlist = parseTerminalCommandAllowlist(
     process.env.CODEX_APP_PORT_TERMINAL_COMMAND_ALLOWLIST,
   ),
@@ -13389,6 +13428,7 @@ export function createDevServer({
       liveSessionBulkControlEnabled,
       turnSteerEnabled,
       terminalCommandEnabled,
+      terminalOutputPreviewEnabled,
       terminalCommandAllowlist,
       threadShellCommandEnabled,
       threadShellCommandAllowlist,
@@ -15935,6 +15975,7 @@ export async function handleRequest(request, response, options) {
         cwd: workspace.cwd,
         timeoutMs: options.timeoutMs,
         argv: preflightPayload.command[TERMINAL_COMMAND_ARGV],
+        outputPreviewEnabled: options.terminalOutputPreviewEnabled,
       });
       const safePayload = sanitizeTerminalCommandPayload(payload, {
         workspace,
@@ -15942,6 +15983,7 @@ export async function handleRequest(request, response, options) {
         consumedPreflight,
         actionAuditLog: options.actionAuditLog,
         auditLogWritableChecked,
+        terminalOutputPreviewEnabled: options.terminalOutputPreviewEnabled,
       });
       safePayload.policy.auditLogWritten = writeActionAuditLog(options.actionAuditLog, safePayload);
       options.terminalCommandLedger?.record(safePayload);
@@ -60944,9 +60986,15 @@ export function sanitizeTerminalCommandPayload(
     consumedPreflight,
     actionAuditLog = null,
     auditLogWritableChecked = false,
+    terminalOutputPreviewEnabled = false,
   } = {},
 ) {
-  const command = sanitizeTerminalCommandExecProbe(payload?.probes?.terminalCommandExec);
+  const command = sanitizeTerminalCommandExecProbe(payload?.probes?.terminalCommandExec, {
+    previewEnabled: terminalOutputPreviewEnabled,
+  });
+  const stdoutPreview = command.stdout.preview;
+  const stderrPreview = command.stderr.preview;
+  const outputPreviewReturned = Boolean(stdoutPreview || stderrPreview);
   return {
     ok: Boolean(payload?.ok),
     generatedAt: payload?.generatedAt ?? new Date().toISOString(),
@@ -60985,6 +61033,11 @@ export function sanitizeTerminalCommandPayload(
       exitCode: command.exitCode,
       stdoutCharCount: command.stdout.charCount,
       stderrCharCount: command.stderr.charCount,
+      stdoutPreview,
+      stderrPreview,
+      outputPreviewReturned,
+      outputPreviewCharCount: command.stdout.previewCharCount + command.stderr.previewCharCount,
+      outputPreviewRedactionCount: command.stdout.redactionCount + command.stderr.redactionCount,
       stdoutReturned: false,
       stderrReturned: false,
       outputTextReturned: false,
@@ -61010,6 +61063,14 @@ export function sanitizeTerminalCommandPayload(
       terminalSessionIdentifiersReturned: false,
       commandTextReturned: false,
       argvReturned: false,
+      terminalOutputPreviewEnabled: Boolean(terminalOutputPreviewEnabled),
+      terminalOutputPreviewReturned: outputPreviewReturned,
+      stdoutPreviewReturned: Boolean(stdoutPreview),
+      stderrPreviewReturned: Boolean(stderrPreview),
+      outputPreviewBytesCap: terminalOutputPreviewEnabled
+        ? DEFAULT_TERMINAL_OUTPUT_PREVIEW_BYTES
+        : 0,
+      outputPreviewCharLimit: MAX_TERMINAL_OUTPUT_PREVIEW_CHARS,
       stdoutReturned: false,
       stderrReturned: false,
       filesystemWrites: false,
@@ -61453,6 +61514,15 @@ function sanitizeTerminalCommandHistory(records) {
     stdoutReturned: false,
     stderrReturned: false,
     outputTextReturned: false,
+    outputPreviewReturned: items.some((item) => item.result.outputPreviewReturned),
+    outputPreviewCharCount: items.reduce(
+      (total, item) => total + safeCount(item.result.outputPreviewCharCount),
+      0,
+    ),
+    outputPreviewRedactionCount: items.reduce(
+      (total, item) => total + safeCount(item.result.outputPreviewRedactionCount),
+      0,
+    ),
     processIdsReturned: false,
     cwdReturned: false,
     environmentReturned: false,
@@ -61467,6 +61537,8 @@ function sanitizeTerminalCommandHistoryRecord(record, { recordedAt = null } = {}
   const sandbox = record?.sandbox ?? {};
   const preflight = record?.preflight ?? {};
   const policy = record?.policy ?? {};
+  const stdoutPreview = cleanTerminalOutputPreviewText(result.stdoutPreview)?.text ?? null;
+  const stderrPreview = cleanTerminalOutputPreviewText(result.stderrPreview)?.text ?? null;
   return {
     recordedAt: cleanDisplayText(recordedAt ?? record?.recordedAt, 40),
     workspace: record?.workspace
@@ -61498,6 +61570,13 @@ function sanitizeTerminalCommandHistoryRecord(record, { recordedAt = null } = {}
       exitCode: Number.isSafeInteger(result.exitCode) ? result.exitCode : null,
       stdoutCharCount: safeCount(result.stdoutCharCount),
       stderrCharCount: safeCount(result.stderrCharCount),
+      stdoutPreview,
+      stderrPreview,
+      outputPreviewReturned: Boolean(stdoutPreview || stderrPreview),
+      outputPreviewCharCount:
+        safeCount(result.outputPreviewCharCount) ||
+        (stdoutPreview?.length ?? 0) + (stderrPreview?.length ?? 0),
+      outputPreviewRedactionCount: safeCount(result.outputPreviewRedactionCount),
       stdoutReturned: false,
       stderrReturned: false,
       outputTextReturned: false,
@@ -61520,9 +61599,12 @@ function sanitizeTerminalCommandHistoryRecord(record, { recordedAt = null } = {}
       argvReturned: false,
       executableReturned: false,
       terminalOutputReturned: false,
+      terminalOutputPreviewReturned: Boolean(policy.terminalOutputPreviewReturned),
       terminalSessionIdentifiersReturned: false,
       stdoutReturned: false,
       stderrReturned: false,
+      stdoutPreviewReturned: Boolean(stdoutPreview),
+      stderrPreviewReturned: Boolean(stderrPreview),
       cwdReturned: false,
       environmentReturned: false,
       processIdReturned: false,
@@ -65865,6 +65947,9 @@ export function buildTerminalActions({
     options.terminalCommandEnabled &&
       sanitizeTerminalCommandAllowlist(options.terminalCommandAllowlist).length > 0,
   );
+  const terminalOutputPreviewEnabled = Boolean(
+    terminalCommandExecutionEnabled && options.terminalOutputPreviewEnabled,
+  );
   const processSpawnExecutionEnabled = Boolean(
     options.processSpawnEnabled &&
       sanitizeTerminalCommandAllowlist(options.processSpawnAllowlist).length > 0,
@@ -65936,6 +66021,9 @@ export function buildTerminalActions({
       lifecycleSnapshotsVisible: true,
       commandHistoryVisible: true,
       recentCommandCount: commandHistory.count,
+      outputPreviewEnabled: terminalOutputPreviewEnabled,
+      outputPreviewVisible: Boolean(commandHistory.outputPreviewReturned),
+      outputPreviewCharCount: commandHistory.outputPreviewCharCount,
       processSpawnHistoryVisible: true,
       recentProcessSpawnCount: recentProcessSpawnHistory.count,
       threadShellCommandHistoryVisible: true,
@@ -66038,6 +66126,9 @@ export function buildTerminalActions({
       hostProcessExecution: processSpawnExecutionEnabled || threadShellCommandExecutionEnabled,
       commandHistoryReturned: true,
       commandHistoryLimit: MAX_TERMINAL_COMMAND_HISTORY_RECORDS,
+      terminalOutputPreviewEnabled,
+      terminalOutputPreviewReturned: Boolean(commandHistory.outputPreviewReturned),
+      terminalOutputPreviewCharLimit: MAX_TERMINAL_OUTPUT_PREVIEW_CHARS,
       processSpawnHistoryReturned: true,
       processSpawnHistoryLimit: MAX_PROCESS_SPAWN_HISTORY_RECORDS,
       threadShellCommandHistoryReturned: true,
@@ -67374,20 +67465,24 @@ function sanitizeTerminalBackgroundTerminateProbe(terminal) {
   };
 }
 
-function sanitizeTerminalCommandExecProbe(command) {
+function sanitizeTerminalCommandExecProbe(command, { previewEnabled = false } = {}) {
   return {
     method: "command/exec",
     resultStatus: cleanDisplayText(command?.resultStatus, 80) ?? "unknown",
     exitCode: Number.isSafeInteger(command?.exitCode) ? command.exitCode : null,
     argvCount: safeCount(command?.argvCount),
     timeoutMs: safeCount(command?.timeoutMs),
+    outputBytesCap: safeCount(command?.outputBytesCap),
     sandboxPolicy: command?.sandboxPolicy === "readOnly" ? "readOnly" : "unknown",
-    stdout: sanitizeTerminalCommandOutput(command?.stdout),
-    stderr: sanitizeTerminalCommandOutput(command?.stderr),
+    stdout: sanitizeTerminalCommandOutput(command?.stdout, { previewEnabled }),
+    stderr: sanitizeTerminalCommandOutput(command?.stderr, { previewEnabled }),
     commandTextReturned: false,
     argvReturned: false,
     cwdReturned: false,
     outputTextReturned: false,
+    outputPreviewReturned: Boolean(
+      previewEnabled && (command?.stdout?.preview || command?.stderr?.preview),
+    ),
     processIdReturned: false,
     stdinEnabled: false,
     ttyEnabled: false,
@@ -67829,11 +67924,21 @@ function sanitizeSessionManager(sessionManager) {
   };
 }
 
-function sanitizeTerminalCommandOutput(output) {
+function sanitizeTerminalCommandOutput(output, { previewEnabled = false } = {}) {
+  const preview = previewEnabled ? cleanTerminalOutputPreviewText(output?.preview) : null;
   return {
     charCount: safeCount(output?.charCount),
     byteCount: safeCount(output?.byteCount),
+    lineCount: safeCount(output?.lineCount),
+    preview: preview?.text ?? null,
+    previewCharCount: preview?.text.length ?? 0,
+    previewLineCount: preview?.text ? countTextLines(preview.text) : 0,
+    previewTruncated: Boolean(
+      preview?.truncated || safeCount(output?.previewCharCount) > (preview?.text.length ?? 0),
+    ),
+    redactionCount: preview?.redactionCount ?? 0,
     textReturned: false,
+    rawTextReturned: false,
   };
 }
 
@@ -69359,6 +69464,49 @@ function cleanStreamEventText(value, maxLength) {
     return clean;
   }
   return clean.slice(0, maxLength).trimEnd();
+}
+
+function cleanTerminalOutputPreviewText(value) {
+  if (typeof value !== "string" || value.length === 0) {
+    return null;
+  }
+  let text = value.replace(/\r\n|\r/g, "\n").replace(/[^\x09\x0A\x20-\x7E]/g, " ");
+  let redactionCount = 0;
+  const redact = (pattern, replacement) => {
+    text = text.replace(pattern, (...args) => {
+      redactionCount += 1;
+      return typeof replacement === "function" ? replacement(...args) : replacement;
+    });
+  };
+
+  redact(/\bsk(?:-proj)?-[A-Za-z0-9_-]{8,}\b/g, "[secret]");
+  redact(/\bgh[opsu]_[A-Za-z0-9_]{8,}\b/g, "[secret]");
+  redact(/\bAKIA[0-9A-Z]{16}\b/g, "[secret]");
+  redact(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g, "[email]");
+  redact(/\bhttps?:\/\/[^\s"'`<>]+/gi, "[url]");
+  redact(
+    /\b(password|token|api[_-]?key|secret)(\s*[:=]\s*)(["']?)[^\s"'`]+/gi,
+    (_match, key, separator, quote) => `${key}${separator}${quote}[secret]`,
+  );
+  redact(/\bSensitive\b/g, "[redacted]");
+  redact(/~\/[^\s"'`<>]+/g, "[path]");
+  redact(/(?:\/[A-Za-z0-9._@+-]+){2,}/g, "[path]");
+  redact(/[A-Za-z]:\\[^\s"'`<>]+/g, "[path]");
+
+  const clean = text.replace(/[ \t]+/g, " ").replace(/\n{4,}/g, "\n\n\n").trim();
+  if (!clean) {
+    return {
+      text: null,
+      truncated: false,
+      redactionCount,
+    };
+  }
+  const preview = clean.slice(0, MAX_TERMINAL_OUTPUT_PREVIEW_CHARS).trimEnd();
+  return {
+    text: preview || null,
+    truncated: clean.length > preview.length,
+    redactionCount,
+  };
 }
 
 function safeCount(value) {

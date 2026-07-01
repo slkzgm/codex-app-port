@@ -306,10 +306,15 @@ cwd, a read-only sandbox policy, network disabled, no stdin, no PTY, no streamed
 output, and an output cap. Browser responses and audit records return only
 argument counts, exit code, stdout/stderr character counts, and policy flags;
 they do not return the command text, executable, argv, cwd, environment,
-process id, stdout, or stderr. `/api/terminal-actions` also exposes a
-process-local recent command ledger with the same sanitized status/count
-metadata only, never command text, argv, cwd, output, process ids, environment,
-or preflight tokens.
+process id, stdout, or stderr. Setting
+`CODEX_APP_PORT_ALLOW_TERMINAL_OUTPUT_PREVIEW=1` additionally permits a short
+redacted stdout/stderr preview for this `command/exec` route only; the preview is
+recapped and re-redacted before browser display, kept in the process-local
+history, and omitted from persistent action audit records. `/api/terminal-actions`
+also exposes a process-local recent command ledger with the same sanitized
+status/count metadata, plus the gated redacted preview when enabled, never
+command text, argv, cwd, raw output, process ids, environment, or preflight
+tokens.
 `/api/process-spawn` is disabled unless
 `CODEX_APP_PORT_ALLOW_PROCESS_SPAWN=1` and
 `CODEX_APP_PORT_PROCESS_SPAWN_ALLOWLIST=cmd1,cmd2` are set before startup. When

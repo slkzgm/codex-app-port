@@ -833,6 +833,7 @@ const elements = {
   terminalActionScopeText: document.querySelector("#terminal-action-scope-text"),
   terminalHighRiskCount: document.querySelector("#terminal-high-risk-count"),
   terminalCommandHistoryCount: document.querySelector("#terminal-command-history-count"),
+  terminalOutputPreviewText: document.querySelector("#terminal-output-preview-text"),
   processSpawnHistoryCount: document.querySelector("#process-spawn-history-count"),
   threadShellCommandHistoryCount: document.querySelector("#thread-shell-command-history-count"),
   terminalControlPreflightHistoryCount: document.querySelector(
@@ -21084,6 +21085,11 @@ function renderTerminalActions(payload) {
   const controlConfirmationHistory = payload.terminalControlConfirmationHistory ?? {};
   const fileActionHistory = payload.fileActionHistory ?? {};
   elements.terminalCommandHistoryCount.textContent = String(commandHistory.count ?? 0);
+  elements.terminalOutputPreviewText.textContent = terminal.outputPreviewEnabled
+    ? terminal.outputPreviewVisible
+      ? `${terminal.outputPreviewCharCount ?? 0} chars`
+      : "Enabled"
+    : "Blocked";
   elements.processSpawnHistoryCount.textContent = String(processSpawnHistory.count ?? 0);
   elements.threadShellCommandHistoryCount.textContent = String(
     threadShellCommandHistory.count ?? 0,
@@ -21239,7 +21245,7 @@ function renderTerminalCommandHistory(history) {
       item.preflight?.tokenConsumed ? "token consumed" : "no token",
       "command omitted",
       "argv omitted",
-      "output omitted",
+      result.outputPreviewReturned ? "redacted preview" : "output omitted",
     ]) {
       const chip = document.createElement("span");
       chip.className = "boundary-chip";
@@ -21249,6 +21255,16 @@ function renderTerminalCommandHistory(history) {
 
     header.append(title, meta);
     row.append(header, detail, chips);
+    const previewEntries = [
+      ["stdout", result.stdoutPreview],
+      ["stderr", result.stderrPreview],
+    ].filter(([, preview]) => typeof preview === "string" && preview.length > 0);
+    for (const [label, preview] of previewEntries) {
+      const previewBlock = document.createElement("pre");
+      previewBlock.className = "boundary-detail terminal-output-preview";
+      previewBlock.textContent = `${label}: ${preview}`;
+      row.append(previewBlock);
+    }
     elements.terminalCommandHistoryList.append(row);
   }
 }

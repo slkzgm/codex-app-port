@@ -2935,11 +2935,20 @@ function assertBrowserPostBodyContracts(cases) {
     !terminalCommandContract.nestedKeySchemas[
       "probes.terminalCommandExec.stdout"
     ]?.includes("byteCount") ||
+    !terminalCommandContract.nestedKeySchemas[
+      "probes.terminalCommandExec.stdout"
+    ]?.includes("preview") ||
     !terminalCommandContract.nestedKeySchemas.result?.includes(
       "processIdReturned",
     ) ||
+    !terminalCommandContract.nestedKeySchemas.result?.includes(
+      "stdoutPreview",
+    ) ||
     !terminalCommandContract.nestedKeySchemas.policy?.includes(
       "requiresCommandAllowlist",
+    ) ||
+    !terminalCommandContract.nestedKeySchemas.policy?.includes(
+      "terminalOutputPreviewEnabled",
     ) ||
     terminalCommandContract.nestedKeySchemas.policy?.includes("unexpected")
   ) {
@@ -53213,6 +53222,9 @@ function assertSanitizedTerminalCommandExecution(payload, { token, commandLength
     payload.result?.exitCode !== 0 ||
     payload.result?.stdoutCharCount !== 19 ||
     payload.result?.stderrCharCount !== 11 ||
+    payload.result?.stdoutPreview !== null ||
+    payload.result?.stderrPreview !== null ||
+    payload.result?.outputPreviewReturned !== false ||
     payload.result?.stdoutReturned !== false ||
     payload.result?.stderrReturned !== false ||
     payload.result?.processIdReturned !== false
@@ -53227,6 +53239,10 @@ function assertSanitizedTerminalCommandExecution(payload, { token, commandLength
     payload.policy?.terminalOutputReturned !== false ||
     payload.policy?.commandTextReturned !== false ||
     payload.policy?.argvReturned !== false ||
+    payload.policy?.terminalOutputPreviewEnabled !== false ||
+    payload.policy?.terminalOutputPreviewReturned !== false ||
+    payload.policy?.stdoutPreviewReturned !== false ||
+    payload.policy?.stderrPreviewReturned !== false ||
     payload.policy?.stdoutReturned !== false ||
     payload.policy?.stderrReturned !== false ||
     payload.policy?.filesystemWrites !== false ||
@@ -53273,6 +53289,7 @@ function assertSanitizedTerminalCommandHistory(payload, { token, commandLength }
     payload.commandHistory?.stdoutReturned !== false ||
     payload.commandHistory?.stderrReturned !== false ||
     payload.commandHistory?.outputTextReturned !== false ||
+    payload.commandHistory?.outputPreviewReturned !== false ||
     payload.commandHistory?.preflightTokensReturned !== false
   ) {
     throw new Error("terminal command history summary leaked command or output fields");
@@ -53292,6 +53309,9 @@ function assertSanitizedTerminalCommandHistory(payload, { token, commandLength }
     item?.result?.exitCode !== 0 ||
     item?.result?.stdoutCharCount !== 19 ||
     item?.result?.stderrCharCount !== 11 ||
+    item?.result?.stdoutPreview !== null ||
+    item?.result?.stderrPreview !== null ||
+    item?.result?.outputPreviewReturned !== false ||
     item?.result?.stdoutReturned !== false ||
     item?.result?.stderrReturned !== false ||
     item?.result?.outputTextReturned !== false ||
@@ -53305,6 +53325,7 @@ function assertSanitizedTerminalCommandHistory(payload, { token, commandLength }
     item?.policy?.commandTextReturned !== false ||
     item?.policy?.argvReturned !== false ||
     item?.policy?.terminalOutputReturned !== false ||
+    item?.policy?.terminalOutputPreviewReturned !== false ||
     item?.policy?.processIdReturned !== false ||
     item?.policy?.preflightTokenReturned !== false ||
     item?.policy?.auditLogWritten !== true

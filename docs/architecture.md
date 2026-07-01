@@ -1810,6 +1810,12 @@ Current M1 status:
   action audit records without command text, argv, cwd, environment, process ids,
   stdout, stderr, or preflight tokens; route-specific nested response schemas
   constrain command/result/sandbox/probe metadata
+- done: gated terminal command output preview behind
+  `CODEX_APP_PORT_ALLOW_TERMINAL_OUTPUT_PREVIEW=1` for `command/exec` only; the
+  preview requests a small app-server output cap, re-redacts secrets, URLs,
+  emails, and paths in the dev server, caps browser-visible text, appears only in
+  the immediate sanitized response and process-local command history, and remains
+  absent from persistent action audit records
 - done: separate process-spawn preflight/execution gates behind
   `CODEX_APP_PORT_ALLOW_PROCESS_SPAWN=1`, an executable allowlist, and a
   matching one-time preflight token, using shell-free argv, no browser-provided
@@ -1822,9 +1828,9 @@ Current M1 status:
   manager, matching one-time preflight consumption, route-specific nested
   response schemas, and no top-level command response key
 - done: process-local terminal command history exposed through
-  `/api/terminal-actions` as sanitized status/count metadata only, without
-  command text, executable names, argv, cwd, environment, process ids, stdout,
-  stderr, or preflight tokens
+  `/api/terminal-actions` as sanitized status/count metadata plus the gated
+  redacted output preview when enabled, without command text, executable names,
+  argv, cwd, environment, process ids, raw stdout/stderr, or preflight tokens
 - done: terminal control preflight that accepts draft write, resize, or
   terminate intent plus a matching audited `command/exec/*` or `process/*`
   session-control method only for count/dimension metadata and does not echo

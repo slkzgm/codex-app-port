@@ -2197,7 +2197,10 @@ test("browser POST response contracts block unsafe response values", () => {
   assert.equal(terminalCommandContract.usesRouteSpecificNestedKeySchemas, true);
   assert.equal(terminalCommandContract.nestedKeySchemas["probes.terminalCommandExec"].includes("stdout"), true);
   assert.equal(terminalCommandContract.nestedKeySchemas["probes.terminalCommandExec.stdout"].includes("byteCount"), true);
+  assert.equal(terminalCommandContract.nestedKeySchemas["probes.terminalCommandExec.stdout"].includes("preview"), true);
   assert.equal(terminalCommandContract.nestedKeySchemas.result.includes("processIdReturned"), true);
+  assert.equal(terminalCommandContract.nestedKeySchemas.result.includes("stdoutPreview"), true);
+  assert.equal(terminalCommandContract.nestedKeySchemas.policy.includes("terminalOutputPreviewEnabled"), true);
   assert.equal(terminalCommandContract.nestedKeySchemas.policy.includes("requiresCommandAllowlist"), true);
   assert.equal(terminalCommandContract.nestedKeySchemas.policy.includes("unexpected"), false);
   const processSpawnPreflightContract =
@@ -32312,6 +32315,205 @@ test("dev server executes allowlisted terminal command only behind opt-in and pr
       "\"argvReturned\":true",
     ]) {
       assert.equal(auditSerialized.includes(marker), false, `audit leaked ${marker}`);
+    }
+  } finally {
+    await closeServer(server);
+    await rm(actionAuditDir, { recursive: true, force: true });
+  }
+});
+
+test("dev server returns redacted terminal command output preview only behind explicit opt-in", async () => {
+  const calls = [];
+  const actionAuditDir = await mkdtemp(join(tmpdir(), "codex-terminal-preview-action-audit-"));
+  const actionAuditLogPath = join(actionAuditDir, "actions.jsonl");
+  const { server, url } = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    terminalCommandEnabled: true,
+    terminalOutputPreviewEnabled: true,
+    terminalCommandAllowlist: ["printf"],
+    terminalCommandFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-07-01T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+        },
+        probes: {
+          terminalCommandExec: {
+            method: "command/exec",
+            resultStatus: "completed",
+            exitCode: 0,
+            argvCount: options.argv.length,
+            timeoutMs: 1000,
+            outputBytesCap: 2048,
+            sandboxPolicy: "readOnly",
+            stdout: {
+              charCount: 120,
+              byteCount: 120,
+              lineCount: 1,
+              preview:
+                "ok sk-proj-aaaaaaaaaaaa user@example.com https://example.test/a /tmp/private-file Sensitive",
+              previewCharCount: 91,
+              previewLineCount: 1,
+              previewTruncated: false,
+              redactionCount: 0,
+              textReturned: true,
+              rawTextReturned: true,
+            },
+            stderr: {
+              charCount: 40,
+              byteCount: 40,
+              lineCount: 1,
+              preview: "secret=supersecret ~/private",
+              previewCharCount: 28,
+              previewLineCount: 1,
+              previewTruncated: false,
+              redactionCount: 0,
+              textReturned: true,
+              rawTextReturned: true,
+            },
+            commandTextReturned: true,
+            argvReturned: true,
+            cwdReturned: true,
+            outputTextReturned: true,
+            outputPreviewReturned: true,
+            processIdReturned: true,
+            environmentReturned: true,
+          },
+        },
+        notifications: {},
+      };
+    },
+    actionAuditLog: createActionAuditLog({
+      path: actionAuditLogPath,
+      now: () => "2026-07-01T00:00:00.000Z",
+    }),
+  });
+
+  try {
+    const command = "printf preview";
+    const preflightResponse = await fetch(`${url}/api/terminal-command-preflight`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        command,
+      }),
+    });
+    assert.equal(preflightResponse.status, 200);
+    const preflightPayload = await preflightResponse.json();
+    assert.equal(preflightPayload.policy.executionGateEnabled, true);
+
+    const response = await fetch(`${url}/api/terminal-command`, {
+      method: "POST",
+      headers: jsonHeaders(server),
+      body: JSON.stringify({
+        workspace: "default",
+        command,
+        preflightToken: preflightPayload.preflight.token,
+      }),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].outputPreviewEnabled, true);
+    assert.equal(payload.result.stdoutReturned, false);
+    assert.equal(payload.result.stderrReturned, false);
+    assert.equal(payload.result.outputTextReturned, false);
+    assert.equal(payload.result.outputPreviewReturned, true);
+    assert.equal(payload.policy.terminalOutputReturned, false);
+    assert.equal(payload.policy.terminalOutputPreviewEnabled, true);
+    assert.equal(payload.policy.terminalOutputPreviewReturned, true);
+    assert.equal(payload.policy.stdoutPreviewReturned, true);
+    assert.equal(payload.policy.stderrPreviewReturned, true);
+    assert.equal(payload.result.stdoutPreview.includes("[secret]"), true);
+    assert.equal(payload.result.stdoutPreview.includes("[email]"), true);
+    assert.equal(payload.result.stdoutPreview.includes("[url]"), true);
+    assert.equal(payload.result.stdoutPreview.includes("[path]"), true);
+    assert.equal(payload.result.stdoutPreview.includes("[redacted]"), true);
+    assert.equal(payload.result.stderrPreview.includes("secret=[secret]"), true);
+    for (const marker of [
+      "sk-proj-aaaaaaaaaaaa",
+      "user@example.com",
+      "https://example.test/a",
+      "/tmp/private-file",
+      "Sensitive",
+      "supersecret",
+      "~/private",
+      command,
+      preflightPayload.preflight.token,
+      "\"textReturned\":true",
+      "\"rawTextReturned\":true",
+      "\"argvReturned\":true",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `preview response leaked ${marker}`);
+    }
+
+    const historyResponse = await fetch(`${url}/api/terminal-actions?workspace=default`, {
+      headers: apiHeaders(server),
+    });
+    assert.equal(historyResponse.status, 200);
+    const historyPayload = await historyResponse.json();
+    const historySerialized = JSON.stringify(historyPayload);
+    assert.equal(historyPayload.terminal.outputPreviewEnabled, true);
+    assert.equal(historyPayload.terminal.outputPreviewVisible, true);
+    assert.equal(historyPayload.policy.terminalOutputPreviewEnabled, true);
+    assert.equal(historyPayload.policy.terminalOutputPreviewReturned, true);
+    assert.equal(historyPayload.commandHistory.outputPreviewReturned, true);
+    const historyItem = historyPayload.commandHistory.items[0];
+    assert.equal(historyItem.result.outputPreviewReturned, true);
+    assert.equal(historyItem.result.stdoutPreview.includes("[secret]"), true);
+    assert.equal(historyItem.result.stderrPreview.includes("[path]"), true);
+    assert.equal(historyItem.result.outputTextReturned, false);
+    assert.equal(historyItem.policy.terminalOutputReturned, false);
+    assert.equal(historyItem.policy.terminalOutputPreviewReturned, true);
+    for (const marker of [
+      "sk-proj-aaaaaaaaaaaa",
+      "user@example.com",
+      "https://example.test/a",
+      "/tmp/private-file",
+      "Sensitive",
+      "supersecret",
+      "~/private",
+      command,
+      preflightPayload.preflight.token,
+      "\"textReturned\":true",
+      "\"rawTextReturned\":true",
+      "\"argvReturned\":true",
+    ]) {
+      assert.equal(historySerialized.includes(marker), false, `preview history leaked ${marker}`);
+    }
+
+    const auditRecords = (await readFile(actionAuditLogPath, "utf8"))
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    assert.equal(auditRecords.length, 1);
+    assert.equal(auditRecords[0].event, "terminal-command-recorded");
+    assert.equal(auditRecords[0].result.outputPreviewReturned, false);
+    assert.equal(auditRecords[0].result.stdoutPreviewReturned, false);
+    assert.equal(auditRecords[0].result.stderrPreviewReturned, false);
+    const auditSerialized = JSON.stringify(auditRecords);
+    for (const marker of [
+      "\"stdoutPreview\":",
+      "\"stderrPreview\":",
+      "[secret]",
+      "[email]",
+      "[url]",
+      "[path]",
+      "[redacted]",
+      "sk-proj-aaaaaaaaaaaa",
+      "supersecret",
+      command,
+      preflightPayload.preflight.token,
+    ]) {
+      assert.equal(auditSerialized.includes(marker), false, `preview audit leaked ${marker}`);
     }
   } finally {
     await closeServer(server);

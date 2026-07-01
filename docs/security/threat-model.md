@@ -1340,8 +1340,11 @@
 - Browser-facing terminal command history may report only recent sanitized
   status/count metadata for commands that already passed the audited
   terminal-command route. It must not return command text, executable names,
-  argv, cwd, environment values, process ids, stdout, stderr, or preflight
-  tokens.
+  argv, cwd, environment values, process ids, raw stdout/stderr, or preflight
+  tokens. Redacted command output preview is allowed only when
+  `CODEX_APP_PORT_ALLOW_TERMINAL_OUTPUT_PREVIEW=1` is set; it is capped,
+  re-redacted by the dev server, restricted to `command/exec`, and omitted from
+  persistent action audit records.
 - Browser-facing process-spawn preflight may accept draft command text only for
   local shell-free argv validation, aggregate counts, and exact executable
   allowlist eligibility. It must not echo command text, executable names, argv,

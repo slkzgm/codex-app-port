@@ -2257,10 +2257,14 @@ output, and an output cap. Responses and action audit records expose only
 argument counts, exit code, stdout/stderr character counts, method names, and
 policy flags. They do not return command text, executable names, argv, cwd,
 environment values, process ids, stdout, stderr, or preflight tokens.
+`CODEX_APP_PORT_ALLOW_TERMINAL_OUTPUT_PREVIEW=1` enables only a short redacted
+stdout/stderr preview for `command/exec`; the dev server re-redacts secrets,
+URLs, emails, and paths, caps the displayed preview, keeps it in process-local
+history, and strips it from persistent action audit records.
 The Terminal & Actions status endpoint keeps a process-local recent command
 history that repeats only those sanitized status/count fields for already
 executed commands; it does not return command text, executable names, argv, cwd,
-environment values, process ids, stdout, stderr, or preflight tokens.
+environment values, process ids, raw stdout/stderr, or preflight tokens.
 Both terminal-command routes enforce route-specific nested response schemas so
 future app-server probe metadata cannot add command text, argv, cwd, stdout,
 stderr, environment, or process ids by accident.

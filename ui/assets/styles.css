@@ -469,6 +469,18 @@ input {
   overflow-wrap: anywhere;
 }
 
+.terminal-output-preview {
+  overflow: auto;
+  max-height: 160px;
+  border-top: 1px solid var(--line);
+  color: var(--text);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.45;
+  padding-top: 8px;
+  white-space: pre-wrap;
+}
+
 .boundary-chip-list {
   display: flex;
   flex-wrap: wrap;

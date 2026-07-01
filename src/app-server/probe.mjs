@@ -56,6 +56,8 @@ export const DEFAULT_TURN_EVENT_LOG_LIMIT = 100;
 export const DEFAULT_INTEGRATION_ITEM_LIMIT = 20;
 export const DEFAULT_INTEGRATION_NAME_LIMIT = 80;
 export const DEFAULT_TERMINAL_COMMAND_TIMEOUT_MS = 5_000;
+export const DEFAULT_TERMINAL_OUTPUT_PREVIEW_BYTES = 2_048;
+export const MAX_TERMINAL_OUTPUT_PREVIEW_CHARS = 1_000;
 export const DEFAULT_PROCESS_SPAWN_TIMEOUT_MS = 5_000;
 
 const TRANSCRIPT_ITEM_TYPES = new Set(["agentMessage", "userMessage"]);
@@ -5418,6 +5420,7 @@ export async function runTerminalCommandExecProbe({
   cwd = process.cwd(),
   timeoutMs = DEFAULT_TIMEOUT_MS,
   argv,
+  outputPreviewEnabled = process.env.CODEX_APP_PORT_ALLOW_TERMINAL_OUTPUT_PREVIEW === "1",
   onNotification = null,
 } = {}) {
   if (process.env.CODEX_APP_PORT_ALLOW_TERMINAL_COMMAND !== "1") {
@@ -5463,6 +5466,7 @@ export async function runTerminalCommandExecProbe({
     client.notify(APP_SERVER_METHODS.initialized);
 
     const commandTimeoutMs = Math.min(timeoutMs, DEFAULT_TERMINAL_COMMAND_TIMEOUT_MS);
+    const outputBytesCap = outputPreviewEnabled ? DEFAULT_TERMINAL_OUTPUT_PREVIEW_BYTES : 0;
     const result = await client.request(
       APP_SERVER_METHODS.commandExec,
       {
@@ -5473,7 +5477,7 @@ export async function runTerminalCommandExecProbe({
           networkAccess: false,
         },
         env: null,
-        outputBytesCap: 0,
+        outputBytesCap,
         timeoutMs: commandTimeoutMs,
         streamStdin: false,
         streamStdoutStderr: false,
@@ -5495,14 +5499,20 @@ export async function runTerminalCommandExecProbe({
           exitCode: Number.isSafeInteger(result?.exitCode) ? result.exitCode : null,
           argvCount: argv.length,
           timeoutMs: commandTimeoutMs,
+          outputBytesCap,
           sandboxPolicy: "readOnly",
           networkAccess: false,
-          stdout: terminalTextSummary(result?.stdout),
-          stderr: terminalTextSummary(result?.stderr),
+          stdout: terminalTextSummary(result?.stdout, {
+            includePreview: outputPreviewEnabled,
+          }),
+          stderr: terminalTextSummary(result?.stderr, {
+            includePreview: outputPreviewEnabled,
+          }),
           commandTextReturned: false,
           argvReturned: false,
           cwdReturned: false,
           outputTextReturned: false,
+          outputPreviewReturned: Boolean(outputPreviewEnabled),
           processIdReturned: false,
           stdinEnabled: false,
           ttyEnabled: false,
@@ -7795,20 +7805,64 @@ function summarizeLiveTextDelta(notification) {
   };
 }
 
-function terminalTextSummary(value) {
+function terminalTextSummary(value, { includePreview = false } = {}) {
   if (typeof value !== "string" || value.length === 0) {
     return {
       present: false,
       charCount: 0,
       lineCount: 0,
       textReturned: false,
+      rawTextReturned: false,
     };
   }
+  const preview = includePreview ? cleanTerminalOutputPreviewText(value) : null;
   return {
     present: true,
     charCount: value.length,
     lineCount: value.split(/\r\n|\r|\n/).length,
+    preview: preview?.text ?? null,
+    previewCharCount: preview?.text.length ?? 0,
+    previewLineCount: preview?.text ? preview.text.split(/\r\n|\r|\n/).length : 0,
+    previewTruncated: Boolean(preview?.truncated),
+    redactionCount: preview?.redactionCount ?? 0,
     textReturned: false,
+    rawTextReturned: false,
+  };
+}
+
+function cleanTerminalOutputPreviewText(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
+  let redactionCount = 0;
+  const redact = (pattern, replacement) => {
+    value = value.replace(pattern, (...args) => {
+      redactionCount += 1;
+      return typeof replacement === "function" ? replacement(...args) : replacement;
+    });
+  };
+
+  value = value.replace(/\r\n|\r/g, "\n").replace(/[^\x09\x0A\x20-\x7E]/g, " ");
+  redact(/\bsk(?:-proj)?-[A-Za-z0-9_-]{8,}\b/g, "[secret]");
+  redact(/\bgh[opsu]_[A-Za-z0-9_]{8,}\b/g, "[secret]");
+  redact(/\bAKIA[0-9A-Z]{16}\b/g, "[secret]");
+  redact(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g, "[email]");
+  redact(/\bhttps?:\/\/[^\s"'`<>]+/gi, "[url]");
+  redact(
+    /\b(password|token|api[_-]?key|secret)(\s*[:=]\s*)(["']?)[^\s"'`]+/gi,
+    (_match, key, separator, quote) => `${key}${separator}${quote}[secret]`,
+  );
+  redact(/\bSensitive\b/g, "[redacted]");
+  redact(/~\/[^\s"'`<>]+/g, "[path]");
+  redact(/(?:\/[A-Za-z0-9._@+-]+){2,}/g, "[path]");
+  redact(/[A-Za-z]:\\[^\s"'`<>]+/g, "[path]");
+
+  const clean = value.replace(/[ \t]+/g, " ").replace(/\n{4,}/g, "\n\n\n").trim();
+  const text = clean.slice(0, MAX_TERMINAL_OUTPUT_PREVIEW_CHARS).trimEnd();
+  return {
+    text,
+    truncated: clean.length > text.length,
+    redactionCount,
   };
 }
 
