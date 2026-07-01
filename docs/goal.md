@@ -1092,6 +1092,14 @@ Target parity with the Codex desktop workflow:
   `/api/account-workspace-messages` route and an opt-in counts-only inventory
   path; both omit workspace message ids, bodies, timestamps, account
   identifiers, paths, and raw payloads.
+- `configRequirements/read` has both a dedicated opt-in
+  `/api/config-requirements` route behind
+  `CODEX_APP_PORT_ALLOW_CONFIG_REQUIREMENTS=1` and an opt-in counts-only
+  inventory path. The dedicated route returns only requirement category counts,
+  hook requirement group/handler counts, network requirement key counts, and
+  residency presence; policy values, domains, hook commands, paths, requirement
+  keys, policy snippets, config writes, filesystem access, cwd, and raw
+  payloads remain hidden or blocked.
 - `mcpServerStatus/list` reports only server/tool/resource/resource-template
   counts and documented auth-status buckets (`unsupported`, `notLoggedIn`,
   `bearerToken`, `oAuth`, or `unknown`); arbitrary auth status values, server

@@ -7,6 +7,7 @@ import {
   runAccountLogoutProbe,
   runAccountReadProbe,
   runConfigBatchWriteProbe,
+  runConfigRequirementsReadProbe,
   runConfigValueWriteProbe,
   runEnvironmentAddProbe,
   runExperimentalFeatureEnablementSetProbe,
@@ -2381,6 +2382,54 @@ test("runHooksListReadProbe returns hook counts without hook details", async () 
       delete process.env.CODEX_APP_PORT_ALLOW_HOOKS_LIST;
     } else {
       process.env.CODEX_APP_PORT_ALLOW_HOOKS_LIST = previous;
+    }
+  }
+});
+
+test("runConfigRequirementsReadProbe returns requirement counts without policy values", async () => {
+  const previous = process.env.CODEX_APP_PORT_ALLOW_CONFIG_REQUIREMENTS;
+  process.env.CODEX_APP_PORT_ALLOW_CONFIG_REQUIREMENTS = "1";
+  try {
+    const summary = await runConfigRequirementsReadProbe({
+      codexBin: process.execPath,
+      codexArgs: [mockServer.pathname],
+      cwd: process.cwd(),
+      timeoutMs: 1_000,
+    });
+    const requirements = summary.probes.configRequirements;
+    const serialized = JSON.stringify(summary);
+    assert.equal(summary.ok, true);
+    assert.equal(requirements.ok, true);
+    assert.equal(requirements.hasRequirements, true);
+    assert.equal(requirements.allowedApprovalPolicyCount, 2);
+    assert.equal(requirements.allowedSandboxModeCount, 2);
+    assert.equal(requirements.allowedWebSearchModeCount, 1);
+    assert.equal(requirements.featureRequirementCount, 2);
+    assert.equal(requirements.hookRequirementHandlerCount, 1);
+    assert.equal(requirements.networkRequirementKeyCount, 1);
+    assert.equal(requirements.valuesReturned, false);
+    assert.equal(requirements.domainsReturned, false);
+    assert.equal(requirements.hookCommandsReturned, false);
+    assert.equal(requirements.pathsReturned, false);
+    for (const marker of [
+      "private.example.test",
+      "private hook command",
+      "private-requirement-key",
+      "/tmp/mock-workspace",
+      "secret.txt",
+      "danger-full-access",
+      "on-request",
+      "mock-codex-home",
+      "codexHome",
+      "userAgent",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    if (previous === undefined) {
+      delete process.env.CODEX_APP_PORT_ALLOW_CONFIG_REQUIREMENTS;
+    } else {
+      process.env.CODEX_APP_PORT_ALLOW_CONFIG_REQUIREMENTS = previous;
     }
   }
 });

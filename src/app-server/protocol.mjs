@@ -11,6 +11,7 @@ export const APP_SERVER_METHODS = Object.freeze({
   accountRateLimitResetCreditConsume: "account/rateLimitResetCredit/consume",
   accountSendAddCreditsNudgeEmail: "account/sendAddCreditsNudgeEmail",
   configRead: "config/read",
+  configRequirementsRead: "configRequirements/read",
   modelList: "model/list",
   modelProviderCapabilitiesRead: "modelProvider/capabilities/read",
   collaborationModeList: "collaborationMode/list",

@@ -1563,6 +1563,13 @@ Current M1 status:
   Skill UI metadata and tool dependencies are exposed only as counts/presence
   flags, not display text, prompts, icon paths, brand colors, dependency
   values, commands, descriptions, or URLs.
+- done: dedicated `/api/config-requirements` read route for
+  `configRequirements/read`, disabled by default behind
+  `CODEX_APP_PORT_ALLOW_CONFIG_REQUIREMENTS=1`, returning only requirement
+  category counts, hook requirement group/handler counts, network requirement
+  key counts, and residency presence while omitting policy values, domains,
+  hook commands, paths, requirement keys, policy snippets, config writes,
+  filesystem access, cwd, and raw payloads.
 - done: second-gate integration display inventory behind
   `CODEX_APP_PORT_ALLOW_INTEGRATION_NAMES=1`, returning bounded model display
   names, collaboration-mode names, app/connector, app plugin display, MCP

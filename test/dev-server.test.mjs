@@ -375,6 +375,11 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /account-workspace-messages-count-text/);
     assert.match(html, /account-workspace-messages-types-text/);
     assert.match(html, /account-workspace-messages-details-text/);
+    assert.match(html, /config-requirements-button/);
+    assert.match(html, /config-requirements-status/);
+    assert.match(html, /config-requirements-features-text/);
+    assert.match(html, /config-requirements-hooks-text/);
+    assert.match(html, /config-requirements-details-text/);
     assert.match(html, /permission-profiles-button/);
     assert.match(html, /permission-profiles-status/);
     assert.match(html, /permission-profiles-count-text/);
@@ -408,6 +413,9 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(appScript, /renderAccountUsage/);
     assert.match(appScript, /runAccountWorkspaceMessages/);
     assert.match(appScript, /renderAccountWorkspaceMessages/);
+    assert.match(appScript, /runConfigRequirements/);
+    assert.match(appScript, /renderConfigRequirements/);
+    assert.match(appScript, /setConfigRequirementsLoading/);
     assert.match(appScript, /runPermissionProfiles/);
     assert.match(appScript, /renderPermissionProfiles/);
     assert.match(appScript, /runRemoteControlStatus/);
@@ -14997,6 +15005,188 @@ test("dev server exposes account workspace messages only behind explicit opt-in 
       "\"messageIdsReturned\":true",
       "\"messageBodiesReturned\":true",
       "\"timestampsReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    await closeServer(enabledServer.server);
+  }
+});
+
+test("dev server exposes config requirements only behind explicit opt-in and redacts requirement details", async () => {
+  const blockedCalls = [];
+  const blockedServer = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    configRequirementsFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+
+  try {
+    const settingsResponse = await fetch(`${blockedServer.url}/api/settings-integrations`, {
+      headers: apiHeaders(blockedServer.server),
+    });
+    assert.equal(settingsResponse.status, 200);
+    const settingsPayload = await settingsResponse.json();
+    assert.equal(settingsPayload.surfaces.settings.requirementsAvailable, false);
+    assert.equal(settingsPayload.surfaces.settings.configRequirementsEnabled, false);
+    assert.equal(settingsPayload.integrationScope.configRequirementsEnabled, false);
+
+    const response = await fetch(`${blockedServer.url}/api/config-requirements`, {
+      headers: apiHeaders(blockedServer.server),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, false);
+    assert.deepEqual(payload.appServer.auditedMethods, ["configRequirements/read"]);
+    assert.equal(payload.settings.configRequirementsEnabled, false);
+    assert.equal(payload.policy.appServerTraffic, false);
+    assert.equal(payload.result.status, "blocked");
+    assert.equal(blockedCalls.length, 0);
+    assert.equal(serialized.includes("/tmp/default-workspace"), false);
+  } finally {
+    await closeServer(blockedServer.server);
+  }
+
+  const calls = [];
+  const enabledServer = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    configRequirementsEnabled: true,
+    configRequirementsFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-07-01T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/private-home",
+          userAgent: "mock/0.0.0",
+        },
+        probes: {
+          configRequirements: {
+            ok: true,
+            hasRequirements: true,
+            allowedApprovalPolicyCount: 2,
+            allowedApprovalsReviewerCount: 1,
+            allowedSandboxModeCount: 2,
+            allowedWebSearchModeCount: 1,
+            featureRequirementCount: 3,
+            hasResidencyRequirement: true,
+            hookRequirementGroupCount: 1,
+            hookRequirementHandlerCount: 2,
+            networkRequirementKeyCount: 1,
+            valuesReturned: true,
+            domainsReturned: true,
+            hookCommandsReturned: true,
+            pathsReturned: true,
+            rawPayloadReturned: true,
+          },
+        },
+        rawRequirements: {
+          allowedApprovalPolicies: ["on-request", "never"],
+          allowedSandboxModes: ["danger-full-access"],
+          featureRequirements: {
+            privateRequirementKey: true,
+          },
+          network: {
+            domains: {
+              "private.example.test": "allow",
+            },
+          },
+          hooks: {
+            PreToolUse: [
+              {
+                command: "cat /tmp/default-workspace/secret.txt",
+              },
+            ],
+          },
+          path: "/tmp/default-workspace/requirements.toml",
+        },
+        notifications: {},
+      };
+    },
+  });
+
+  try {
+    const settingsResponse = await fetch(`${enabledServer.url}/api/settings-integrations`, {
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(settingsResponse.status, 200);
+    const settingsPayload = await settingsResponse.json();
+    assert.equal(settingsPayload.surfaces.settings.requirementsAvailable, true);
+    assert.equal(settingsPayload.surfaces.settings.configRequirementsEnabled, true);
+    assert.equal(settingsPayload.integrationScope.configRequirementsEnabled, true);
+    assert.equal(
+      settingsPayload.integrationScope.enabledReadMethods.includes("configRequirements/read"),
+      true,
+    );
+
+    const methodResponse = await fetch(`${enabledServer.url}/api/config-requirements`, {
+      method: "POST",
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(methodResponse.status, 405);
+
+    const response = await fetch(`${enabledServer.url}/api/config-requirements`, {
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, true);
+    assert.equal(payload.appServer.modelTraffic, false);
+    assert.deepEqual(payload.appServer.auditedMethods, ["configRequirements/read"]);
+    assert.equal(payload.settings.configRequirementsEnabled, true);
+    assert.equal(payload.result.status, "available");
+    assert.equal(payload.result.hasRequirements, true);
+    assert.equal(payload.result.allowedApprovalPolicyCount, 2);
+    assert.equal(payload.result.allowedApprovalsReviewerCount, 1);
+    assert.equal(payload.result.allowedSandboxModeCount, 2);
+    assert.equal(payload.result.allowedWebSearchModeCount, 1);
+    assert.equal(payload.result.featureRequirementCount, 3);
+    assert.equal(payload.result.hasResidencyRequirement, true);
+    assert.equal(payload.result.hookRequirementGroupCount, 1);
+    assert.equal(payload.result.hookRequirementHandlerCount, 2);
+    assert.equal(payload.result.networkRequirementKeyCount, 1);
+    assert.equal(payload.result.valuesReturned, false);
+    assert.equal(payload.result.domainsReturned, false);
+    assert.equal(payload.result.hookCommandsReturned, false);
+    assert.equal(payload.result.pathsReturned, false);
+    assert.equal(payload.result.requirementKeysReturned, false);
+    assert.equal(payload.result.policySnippetsReturned, false);
+    assert.equal(payload.result.rawPayloadReturned, false);
+    assert.equal(payload.policy.readOnly, true);
+    assert.equal(payload.policy.configWrites, false);
+    assert.equal(payload.policy.approvalPolicyMutations, false);
+    assert.equal(payload.policy.hookExecution, false);
+    assert.equal(payload.policy.filesystemReads, false);
+    assert.equal(payload.policy.filesystemWrites, false);
+    assert.equal(payload.policy.rawPayloadReturned, false);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].cwd, "/tmp/default-workspace");
+    for (const marker of [
+      "/tmp/default-workspace",
+      "/tmp/private-home",
+      "codexHome",
+      "userAgent",
+      "on-request",
+      "danger-full-access",
+      "privateRequirementKey",
+      "private.example.test",
+      "secret.txt",
+      "requirements.toml",
+      "\"valuesReturned\":true",
+      "\"domainsReturned\":true",
+      "\"hookCommandsReturned\":true",
+      "\"pathsReturned\":true",
       "\"rawPayloadReturned\":true",
     ]) {
       assert.equal(serialized.includes(marker), false, `leaked ${marker}`);

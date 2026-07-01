@@ -58,6 +58,13 @@
   body/timestamp-presence counts; message ids, message bodies, timestamp values,
   account identifiers, cwd, paths, and raw app-server payloads must stay
   server-side.
+- Browser-facing managed-configuration requirement reads must be opt-in,
+  narrow, and sanitized. The dedicated `configRequirements/read` bridge may
+  report only requirement category counts, hook requirement group/handler
+  counts, network requirement key counts, and residency presence; policy values,
+  domains, hook commands, paths, requirement keys, policy snippets, cwd,
+  filesystem access, config writes, and raw app-server payloads must stay
+  server-side.
 - Browser-facing JSON `POST` routes must have a centralized audited body
   contract before side effects. Unsupported fields must be rejected before
   probes, app-server calls, filesystem access, token consumption, or audit-log
@@ -1647,6 +1654,12 @@
   times, MCP schemas/resource URIs, skill descriptions/paths, plugin
   ids/paths/URLs, or experimental feature descriptions/announcements/raw
   payloads. External agent config import must remain a blocked mutation.
+- `/api/config-requirements` may call only `configRequirements/read` behind
+  `CODEX_APP_PORT_ALLOW_CONFIG_REQUIREMENTS=1`. It is GET-only, local-token
+  protected, and returns requirement category counts plus hook/network/residency
+  counts only; policy values, domains, hook commands, paths, requirement keys,
+  policy snippets, filesystem reads or writes, config writes, cwd, and raw
+  app-server payloads remain blocked.
 - `/api/permission-profiles` may call only `permissionProfile/list` behind
   `CODEX_APP_PORT_ALLOW_PERMISSION_PROFILES=1`. It is GET-only, local-token
   protected, and returns profile counts plus allowed/blocked/description totals

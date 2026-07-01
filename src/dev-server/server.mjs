@@ -22,6 +22,7 @@ import {
   runAccountWorkspaceMessagesReadProbe,
   runAppServerProbe,
   runConfigBatchWriteProbe,
+  runConfigRequirementsReadProbe,
   runConfigValueWriteProbe,
   runEnvironmentAddProbe,
   runExperimentalFeatureEnablementSetProbe,
@@ -13154,6 +13155,7 @@ export function createDevServer({
   accountRateLimitsFn = runAccountRateLimitsReadProbe,
   accountUsageFn = runAccountUsageReadProbe,
   accountWorkspaceMessagesFn = runAccountWorkspaceMessagesReadProbe,
+  configRequirementsFn = runConfigRequirementsReadProbe,
   permissionProfilesFn = runPermissionProfilesReadProbe,
   remoteControlStatusFn = runRemoteControlStatusReadProbe,
   installedPluginsFn = runInstalledPluginsReadProbe,
@@ -13228,6 +13230,7 @@ export function createDevServer({
   accountUsageEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_USAGE === "1",
   accountWorkspaceMessagesEnabled =
     process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_WORKSPACE_MESSAGES === "1",
+  configRequirementsEnabled = process.env.CODEX_APP_PORT_ALLOW_CONFIG_REQUIREMENTS === "1",
   permissionProfilesEnabled = process.env.CODEX_APP_PORT_ALLOW_PERMISSION_PROFILES === "1",
   remoteControlStatusEnabled =
     process.env.CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_STATUS === "1",
@@ -13388,6 +13391,7 @@ export function createDevServer({
       accountRateLimitsFn,
       accountUsageFn,
       accountWorkspaceMessagesFn,
+      configRequirementsFn,
       permissionProfilesFn,
       remoteControlStatusFn,
       installedPluginsFn,
@@ -13458,6 +13462,7 @@ export function createDevServer({
       accountRateLimitsEnabled,
       accountUsageEnabled,
       accountWorkspaceMessagesEnabled,
+      configRequirementsEnabled,
       permissionProfilesEnabled,
       remoteControlStatusEnabled,
       installedPluginsEnabled,
@@ -14956,6 +14961,48 @@ export async function handleRequest(request, response, options) {
       sendJson(response, error.statusCode ?? 502, {
         ok: false,
         error: cleanDisplayText(error.message, 200) ?? "Invalid account workspace messages request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/config-requirements") {
+    if (request.method !== "GET") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        url.searchParams.get("workspace"),
+      );
+      if (!options.configRequirementsEnabled) {
+        sendJson(response, 200, buildConfigRequirementsBlockedPayload({ workspace }));
+        return;
+      }
+      const payload = await options.configRequirementsFn({
+        codexBin: options.codexBin,
+        cwd: workspace.cwd,
+        timeoutMs: options.timeoutMs,
+      });
+      sendJson(
+        response,
+        200,
+        sanitizeConfigRequirementsPayload(payload, {
+          workspace,
+          enabled: true,
+        }),
+      );
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 502, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid config requirements request",
       });
     }
     return;
@@ -19864,6 +19911,7 @@ export async function handleRequest(request, response, options) {
             accountRateLimitsEnabled: options.accountRateLimitsEnabled,
             accountUsageEnabled: options.accountUsageEnabled,
             accountWorkspaceMessagesEnabled: options.accountWorkspaceMessagesEnabled,
+            configRequirementsEnabled: options.configRequirementsEnabled,
             permissionProfilesEnabled: options.permissionProfilesEnabled,
             remoteControlStatusEnabled: options.remoteControlStatusEnabled,
             installedPluginsEnabled: options.installedPluginsEnabled,
@@ -19912,6 +19960,7 @@ export async function handleRequest(request, response, options) {
           accountRateLimitsEnabled: options.accountRateLimitsEnabled,
           accountUsageEnabled: options.accountUsageEnabled,
           accountWorkspaceMessagesEnabled: options.accountWorkspaceMessagesEnabled,
+          configRequirementsEnabled: options.configRequirementsEnabled,
           permissionProfilesEnabled: options.permissionProfilesEnabled,
           remoteControlStatusEnabled: options.remoteControlStatusEnabled,
           installedPluginsEnabled: options.installedPluginsEnabled,
@@ -52213,6 +52262,7 @@ export function sanitizeSettingsIntegrationsPayload(
     accountRateLimitsEnabled = false,
     accountUsageEnabled = false,
     accountWorkspaceMessagesEnabled = false,
+    configRequirementsEnabled = false,
     permissionProfilesEnabled = false,
     remoteControlStatusEnabled = false,
     installedPluginsEnabled = false,
@@ -52256,6 +52306,7 @@ export function sanitizeSettingsIntegrationsPayload(
   const rateLimitsEnabled = Boolean(accountRateLimitsEnabled);
   const usageEnabled = Boolean(accountUsageEnabled);
   const workspaceMessagesEnabled = Boolean(accountWorkspaceMessagesEnabled);
+  const requirementsEnabled = Boolean(configRequirementsEnabled);
   const profilesEnabled = Boolean(permissionProfilesEnabled);
   const remoteStatusEnabled = Boolean(remoteControlStatusEnabled);
   const installedPluginReadEnabled = Boolean(installedPluginsEnabled);
@@ -52300,6 +52351,7 @@ export function sanitizeSettingsIntegrationsPayload(
     accountRateLimitsEnabled: rateLimitsEnabled,
     accountUsageEnabled: usageEnabled,
     accountWorkspaceMessagesEnabled: workspaceMessagesEnabled,
+    configRequirementsEnabled: requirementsEnabled,
     permissionProfilesEnabled: profilesEnabled,
     remoteControlStatusEnabled: remoteStatusEnabled,
     installedPluginsEnabled: installedPluginReadEnabled,
@@ -52356,7 +52408,8 @@ export function sanitizeSettingsIntegrationsPayload(
       settings: {
         state: "partial",
         readOnlySummaryAvailable: true,
-        requirementsAvailable: inventory.requirements.ok,
+        requirementsAvailable: inventory.requirements.ok || requirementsEnabled,
+        configRequirementsEnabled: requirementsEnabled,
         modelListingAvailable: inventory.models.ok,
         modelProviderCapabilitiesAvailable: inventory.modelProviderCapabilities.ok,
         collaborationModeListingAvailable: inventory.collaborationModes.ok,
@@ -58525,6 +58578,179 @@ export function sanitizeAccountWorkspaceMessagesPayload(
   };
 }
 
+export function buildConfigRequirementsBlockedPayload({ workspace } = {}) {
+  const configRequirements = sanitizeConfigRequirementsInventory(null);
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["configRequirements/read"],
+    },
+    settings: {
+      requirementsAvailable: true,
+      configRequirementsEnabled: false,
+      appServerTraffic: false,
+      valuesReturned: false,
+      domainsReturned: false,
+      hookCommandsReturned: false,
+      pathsReturned: false,
+      requirementKeysReturned: false,
+      policySnippetsReturned: false,
+      rawPayloadReturned: false,
+      reason: "config-requirements-requires-opt-in",
+    },
+    probes: {
+      configRequirements,
+    },
+    result: {
+      status: "blocked",
+      configRequirementsEnabled: false,
+      appServerTraffic: false,
+      hasRequirements: false,
+      allowedApprovalPolicyCount: 0,
+      allowedApprovalsReviewerCount: 0,
+      allowedSandboxModeCount: 0,
+      allowedWebSearchModeCount: 0,
+      featureRequirementCount: 0,
+      hasResidencyRequirement: false,
+      hookRequirementGroupCount: 0,
+      hookRequirementHandlerCount: 0,
+      networkRequirementKeyCount: 0,
+      valuesReturned: false,
+      domainsReturned: false,
+      hookCommandsReturned: false,
+      pathsReturned: false,
+      requirementKeysReturned: false,
+      policySnippetsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      settingsWrites: false,
+      configWrites: false,
+      approvalPolicyMutations: false,
+      hookExecution: false,
+      filesystemReads: false,
+      filesystemWrites: false,
+      secretsReturned: false,
+      tokensReturned: false,
+      namesReturned: false,
+      idsReturned: false,
+      urlsReturned: false,
+      pathsReturned: false,
+      valuesReturned: false,
+      domainsReturned: false,
+      hookCommandsReturned: false,
+      requirementKeysReturned: false,
+      policySnippetsReturned: false,
+      rawPayloadReturned: false,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: true,
+      implemented: true,
+    },
+    notifications: sanitizeNotificationCounts(null),
+  };
+}
+
+export function sanitizeConfigRequirementsPayload(
+  payload,
+  { workspace = null, enabled = false } = {},
+) {
+  const configRequirements = sanitizeConfigRequirementsInventory(
+    payload?.probes?.configRequirements,
+  );
+  const status = enabled ? "available" : "blocked";
+  return {
+    ok: Boolean(payload?.ok),
+    generatedAt: payload?.generatedAt ?? new Date().toISOString(),
+    transport: cleanDisplayText(payload?.transport, 80),
+    protocol: cleanDisplayText(payload?.protocol, 80),
+    initialize: sanitizeInitialize(payload?.initialize),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: Boolean(enabled),
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["configRequirements/read"],
+    },
+    settings: {
+      requirementsAvailable: true,
+      configRequirementsEnabled: Boolean(enabled),
+      appServerTraffic: Boolean(enabled),
+      valuesReturned: false,
+      domainsReturned: false,
+      hookCommandsReturned: false,
+      pathsReturned: false,
+      requirementKeysReturned: false,
+      policySnippetsReturned: false,
+      rawPayloadReturned: false,
+      reason: Boolean(enabled)
+        ? "config-requirements-counts-only"
+        : "config-requirements-requires-opt-in",
+    },
+    probes: {
+      configRequirements,
+    },
+    result: {
+      status,
+      configRequirementsEnabled: Boolean(enabled),
+      appServerTraffic: Boolean(enabled),
+      hasRequirements: configRequirements.hasRequirements,
+      allowedApprovalPolicyCount: configRequirements.allowedApprovalPolicyCount,
+      allowedApprovalsReviewerCount: configRequirements.allowedApprovalsReviewerCount,
+      allowedSandboxModeCount: configRequirements.allowedSandboxModeCount,
+      allowedWebSearchModeCount: configRequirements.allowedWebSearchModeCount,
+      featureRequirementCount: configRequirements.featureRequirementCount,
+      hasResidencyRequirement: configRequirements.hasResidencyRequirement,
+      hookRequirementGroupCount: configRequirements.hookRequirementGroupCount,
+      hookRequirementHandlerCount: configRequirements.hookRequirementHandlerCount,
+      networkRequirementKeyCount: configRequirements.networkRequirementKeyCount,
+      valuesReturned: false,
+      domainsReturned: false,
+      hookCommandsReturned: false,
+      pathsReturned: false,
+      requirementKeysReturned: false,
+      policySnippetsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: Boolean(enabled),
+      modelTraffic: false,
+      commandTraffic: false,
+      settingsWrites: false,
+      configWrites: false,
+      approvalPolicyMutations: false,
+      hookExecution: false,
+      filesystemReads: false,
+      filesystemWrites: false,
+      secretsReturned: false,
+      tokensReturned: false,
+      namesReturned: false,
+      idsReturned: false,
+      urlsReturned: false,
+      pathsReturned: false,
+      valuesReturned: false,
+      domainsReturned: false,
+      hookCommandsReturned: false,
+      requirementKeysReturned: false,
+      policySnippetsReturned: false,
+      rawPayloadReturned: false,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: true,
+      implemented: true,
+    },
+    notifications: sanitizeNotificationCounts(payload?.notifications),
+  };
+}
+
 export function buildPermissionProfilesBlockedPayload({ workspace } = {}) {
   const permissionProfiles = sanitizePermissionProfilesInventory(null);
   return {
@@ -63651,6 +63877,7 @@ export function buildSettingsIntegrations({
   accountRateLimitsEnabled = false,
   accountUsageEnabled = false,
   accountWorkspaceMessagesEnabled = false,
+  configRequirementsEnabled = false,
   permissionProfilesEnabled = false,
   remoteControlStatusEnabled = false,
   installedPluginsEnabled = false,
@@ -63694,6 +63921,7 @@ export function buildSettingsIntegrations({
   const rateLimitsEnabled = Boolean(accountRateLimitsEnabled);
   const usageEnabled = Boolean(accountUsageEnabled);
   const workspaceMessagesEnabled = Boolean(accountWorkspaceMessagesEnabled);
+  const requirementsEnabled = Boolean(configRequirementsEnabled);
   const profilesEnabled = Boolean(permissionProfilesEnabled);
   const remoteStatusEnabled = Boolean(remoteControlStatusEnabled);
   const installedPluginReadEnabled = Boolean(installedPluginsEnabled);
@@ -63720,6 +63948,7 @@ export function buildSettingsIntegrations({
   const integrationScope = buildIntegrationActionScope({
     enabledReadMethods: [
       "config/read",
+      requirementsEnabled ? "configRequirements/read" : null,
       profilesEnabled ? "permissionProfile/list" : null,
       remoteStatusEnabled ? "remoteControl/status/read" : null,
       installedPluginReadEnabled ? "plugin/installed" : null,
@@ -63734,6 +63963,7 @@ export function buildSettingsIntegrations({
     accountRateLimitsEnabled: rateLimitsEnabled,
     accountUsageEnabled: usageEnabled,
     accountWorkspaceMessagesEnabled: workspaceMessagesEnabled,
+    configRequirementsEnabled: requirementsEnabled,
     permissionProfilesEnabled: profilesEnabled,
     remoteControlStatusEnabled: remoteStatusEnabled,
     installedPluginsEnabled: installedPluginReadEnabled,
@@ -63772,6 +64002,7 @@ export function buildSettingsIntegrations({
       modelTraffic: false,
       auditedReadMethods: [
         "config/read",
+        requirementsEnabled ? "configRequirements/read" : null,
         profilesEnabled ? "permissionProfile/list" : null,
         remoteStatusEnabled ? "remoteControl/status/read" : null,
         installedPluginReadEnabled ? "plugin/installed" : null,
@@ -63794,7 +64025,8 @@ export function buildSettingsIntegrations({
       settings: {
         state: "partial",
         readOnlySummaryAvailable: true,
-        requirementsAvailable: false,
+        requirementsAvailable: requirementsEnabled,
+        configRequirementsEnabled: requirementsEnabled,
         modelListingAvailable: false,
         modelProviderCapabilitiesAvailable: false,
         collaborationModeListingAvailable: false,
@@ -66465,6 +66697,7 @@ function buildIntegrationActionScope({
   accountRateLimitsEnabled = false,
   accountUsageEnabled = false,
   accountWorkspaceMessagesEnabled = false,
+  configRequirementsEnabled = false,
   permissionProfilesEnabled = false,
   remoteControlStatusEnabled = false,
   installedPluginsEnabled = false,
@@ -66557,6 +66790,7 @@ function buildIntegrationActionScope({
     accountRateLimitsEnabled: Boolean(accountRateLimitsEnabled),
     accountUsageEnabled: Boolean(accountUsageEnabled),
     accountWorkspaceMessagesEnabled: Boolean(accountWorkspaceMessagesEnabled),
+    configRequirementsEnabled: Boolean(configRequirementsEnabled),
     permissionProfilesEnabled: Boolean(permissionProfilesEnabled),
     remoteControlStatusEnabled: Boolean(remoteControlStatusEnabled),
     installedPluginsEnabled: Boolean(installedPluginsEnabled),

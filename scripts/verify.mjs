@@ -84,6 +84,7 @@ async function main() {
   await checkAccountRateLimitsApi();
   await checkAccountUsageApi();
   await checkAccountWorkspaceMessagesApi();
+  await checkConfigRequirementsApi();
   await checkPermissionProfilesApi();
   await checkRemoteControlStatusApi();
   await checkInstalledPluginsApi();
@@ -18166,6 +18167,207 @@ async function checkAccountWorkspaceMessagesApi() {
     await closeServer(server);
   }
   pass("dev server workspace messages exposes counts behind opt-in without returning messages");
+}
+
+async function checkConfigRequirementsApi() {
+  const blockedCalls = [];
+  const blockedServer = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    configRequirementsFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+  const blockedPort = await listenWithFallback(blockedServer, { host: "127.0.0.1", port: 0 });
+  const blockedBaseUrl = `http://127.0.0.1:${blockedPort}`;
+
+  try {
+    const token = await readUiSessionToken(blockedBaseUrl);
+    const settingsResponse = await fetch(`${blockedBaseUrl}/api/settings-integrations`, {
+      headers: apiHeaders(token),
+    });
+    if (!settingsResponse.ok) {
+      throw new Error(`settings integrations for blocked config requirements returned HTTP ${settingsResponse.status}`);
+    }
+    const settingsPayload = await settingsResponse.json();
+    if (
+      settingsPayload.surfaces?.settings?.requirementsAvailable !== false ||
+      settingsPayload.surfaces?.settings?.configRequirementsEnabled !== false ||
+      settingsPayload.integrationScope?.configRequirementsEnabled !== false
+    ) {
+      throw new Error("settings integrations did not expose the blocked config requirements gate safely");
+    }
+
+    const response = await fetch(`${blockedBaseUrl}/api/config-requirements`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`blocked config requirements returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (
+      payload.appServer?.touched !== false ||
+      payload.settings?.configRequirementsEnabled !== false ||
+      payload.result?.status !== "blocked" ||
+      payload.policy?.appServerTraffic !== false
+    ) {
+      throw new Error("blocked config requirements did not fail closed without app-server traffic");
+    }
+    if (blockedCalls.length !== 0) {
+      throw new Error("blocked config requirements unexpectedly touched app-server");
+    }
+    assertNoMarkers(JSON.stringify(payload), ["/tmp/codex-app-port-verify"]);
+  } finally {
+    await closeServer(blockedServer);
+  }
+
+  const calls = [];
+  const server = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    configRequirementsEnabled: true,
+    configRequirementsFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-07-01T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/verify-private-home",
+          userAgent: "verify-private-agent",
+        },
+        probes: {
+          configRequirements: {
+            ok: true,
+            hasRequirements: true,
+            allowedApprovalPolicyCount: 2,
+            allowedApprovalsReviewerCount: 1,
+            allowedSandboxModeCount: 2,
+            allowedWebSearchModeCount: 1,
+            featureRequirementCount: 3,
+            hasResidencyRequirement: true,
+            hookRequirementGroupCount: 2,
+            hookRequirementHandlerCount: 4,
+            networkRequirementKeyCount: 5,
+            valuesReturned: true,
+            domainsReturned: true,
+            hookCommandsReturned: true,
+            pathsReturned: true,
+            requirementKeysReturned: true,
+            policySnippetsReturned: true,
+            rawPayloadReturned: true,
+          },
+        },
+        rawRequirements: {
+          approvalPolicy: "on-request",
+          sandboxMode: "danger-full-access",
+          domain: "private.example.test",
+          hookCommand: "cat /tmp/codex-app-port-verify/secret.txt",
+          hookPath: "/tmp/codex-app-port-verify/requirements.toml",
+          requirementKey: "verify-private-requirement-key",
+        },
+        notifications: {},
+      };
+    },
+  });
+  const port = await listenWithFallback(server, { host: "127.0.0.1", port: 0 });
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  try {
+    const token = await readUiSessionToken(baseUrl);
+    const settingsResponse = await fetch(`${baseUrl}/api/settings-integrations`, {
+      headers: apiHeaders(token),
+    });
+    if (!settingsResponse.ok) {
+      throw new Error(`settings integrations for config requirements returned HTTP ${settingsResponse.status}`);
+    }
+    const settingsPayload = await settingsResponse.json();
+    if (
+      settingsPayload.surfaces?.settings?.requirementsAvailable !== true ||
+      settingsPayload.surfaces?.settings?.configRequirementsEnabled !== true ||
+      settingsPayload.integrationScope?.configRequirementsEnabled !== true ||
+      !settingsPayload.integrationScope?.enabledReadMethods?.includes("configRequirements/read")
+    ) {
+      throw new Error("settings integrations did not expose the config requirements gate safely");
+    }
+
+    const wrongMethod = await fetch(`${baseUrl}/api/config-requirements`, {
+      method: "POST",
+      headers: apiHeaders(token),
+    });
+    if (wrongMethod.status !== 405) {
+      throw new Error(`config requirements POST returned HTTP ${wrongMethod.status}`);
+    }
+
+    const response = await fetch(`${baseUrl}/api/config-requirements`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`config requirements returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (
+      payload.appServer?.touched !== true ||
+      payload.appServer?.modelTraffic !== false ||
+      payload.settings?.configRequirementsEnabled !== true ||
+      payload.result?.status !== "available" ||
+      payload.result?.hasRequirements !== true ||
+      payload.result?.allowedApprovalPolicyCount !== 2 ||
+      payload.result?.allowedApprovalsReviewerCount !== 1 ||
+      payload.result?.allowedSandboxModeCount !== 2 ||
+      payload.result?.allowedWebSearchModeCount !== 1 ||
+      payload.result?.featureRequirementCount !== 3 ||
+      payload.result?.hasResidencyRequirement !== true ||
+      payload.result?.hookRequirementGroupCount !== 2 ||
+      payload.result?.hookRequirementHandlerCount !== 4 ||
+      payload.result?.networkRequirementKeyCount !== 5 ||
+      payload.result?.valuesReturned !== false ||
+      payload.result?.domainsReturned !== false ||
+      payload.result?.hookCommandsReturned !== false ||
+      payload.result?.pathsReturned !== false ||
+      payload.result?.requirementKeysReturned !== false ||
+      payload.result?.policySnippetsReturned !== false ||
+      payload.result?.rawPayloadReturned !== false ||
+      payload.policy?.readOnly !== true ||
+      payload.policy?.settingsWrites !== false ||
+      payload.policy?.configWrites !== false ||
+      payload.policy?.approvalPolicyMutations !== false ||
+      payload.policy?.hookExecution !== false ||
+      payload.policy?.filesystemReads !== false ||
+      payload.policy?.filesystemWrites !== false ||
+      payload.policy?.rawPayloadReturned !== false
+    ) {
+      throw new Error("config requirements did not return the safe counts-only summary shape");
+    }
+    if (calls.length !== 1 || calls[0].cwd !== "/tmp/codex-app-port-verify") {
+      throw new Error("config requirements did not call the app-server read path once");
+    }
+    assertNoMarkers(JSON.stringify(payload), [
+      "/tmp/codex-app-port-verify",
+      "/tmp/verify-private-home",
+      "verify-private-agent",
+      "codexHome",
+      "userAgent",
+      "on-request",
+      "danger-full-access",
+      "private.example.test",
+      "secret.txt",
+      "requirements.toml",
+      "verify-private-requirement-key",
+      "\"valuesReturned\":true",
+      "\"domainsReturned\":true",
+      "\"hookCommandsReturned\":true",
+      "\"pathsReturned\":true",
+      "\"requirementKeysReturned\":true",
+      "\"policySnippetsReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]);
+  } finally {
+    await closeServer(server);
+  }
+  pass("dev server config requirements exposes counts behind opt-in without returning requirement details");
 }
 
 async function checkPermissionProfilesApi() {
@@ -57935,6 +58137,11 @@ async function readUiSessionToken(baseUrl) {
     !html.includes("account-workspace-messages-count-text") ||
     !html.includes("account-workspace-messages-types-text") ||
     !html.includes("account-workspace-messages-details-text") ||
+    !html.includes("config-requirements-button") ||
+    !html.includes("config-requirements-status") ||
+    !html.includes("config-requirements-features-text") ||
+    !html.includes("config-requirements-hooks-text") ||
+    !html.includes("config-requirements-details-text") ||
     !html.includes("permission-profiles-button") ||
     !html.includes("permission-profiles-status") ||
     !html.includes("permission-profiles-count-text") ||
@@ -57968,6 +58175,9 @@ async function readUiSessionToken(baseUrl) {
     !appScript.includes("renderAccountUsage") ||
     !appScript.includes("runAccountWorkspaceMessages") ||
     !appScript.includes("renderAccountWorkspaceMessages") ||
+    !appScript.includes("runConfigRequirements") ||
+    !appScript.includes("renderConfigRequirements") ||
+    !appScript.includes("setConfigRequirementsLoading") ||
     !appScript.includes("runPermissionProfiles") ||
     !appScript.includes("renderPermissionProfiles") ||
     !appScript.includes("runRemoteControlStatus") ||

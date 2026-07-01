@@ -1848,6 +1848,16 @@ returns message ids, message bodies, timestamp values, account identifiers, cwd,
 paths, or raw app-server payloads. The Messages Check control renders only
 sanitized count/type/detail-redaction fields.
 
+`/api/config-requirements` is a separate dedicated managed-configuration
+requirements read route. It is disabled unless
+`CODEX_APP_PORT_ALLOW_CONFIG_REQUIREMENTS=1` is set; when enabled, it calls
+only `configRequirements/read` and returns requirement category counts, hook
+requirement group/handler counts, network requirement key counts, and residency
+presence. It never returns policy values, domains, hook commands, paths,
+requirement keys, policy snippets, cwd, config writes, filesystem reads, or raw
+app-server payloads. The Requirements Check control renders only sanitized
+count/detail-redaction fields.
+
 Device-code account login, login cancel, account credits nudge, account reset
 credit consumption, and account logout are the only dedicated account
 auth/quota mutation routes. Their preflight endpoints do not touch app-server,
@@ -1907,7 +1917,8 @@ session titles/raw migration items, import ids/messages/paths/stages, plugin
 display names/descriptions/prompts/capabilities/screenshots, remote
 control status strings/server names/installation ids/environment ids,
 rate-limit plan types, limit ids/names, balances, used percentages, reset
-times, MCP server names, MCP tool schemas, skill names/descriptions/paths,
+times, config requirement values/domains/hook commands/paths/keys/policy
+snippets, MCP server names, MCP tool schemas, skill names/descriptions/paths,
 plugin and marketplace names/display names/sources, plugin ids/paths/URLs/
 prompts/capabilities, hook commands/paths/keys/
 matchers/plugin IDs, experimental feature names/display text/descriptions/

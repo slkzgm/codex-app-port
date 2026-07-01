@@ -254,6 +254,13 @@ const elements = {
   accountWorkspaceMessagesDetailsText: document.querySelector(
     "#account-workspace-messages-details-text",
   ),
+  configRequirementsButton: document.querySelector("#config-requirements-button"),
+  configRequirementsStatus: document.querySelector("#config-requirements-status"),
+  configRequirementsFeaturesText: document.querySelector(
+    "#config-requirements-features-text",
+  ),
+  configRequirementsHooksText: document.querySelector("#config-requirements-hooks-text"),
+  configRequirementsDetailsText: document.querySelector("#config-requirements-details-text"),
   permissionProfilesButton: document.querySelector("#permission-profiles-button"),
   permissionProfilesStatus: document.querySelector("#permission-profiles-status"),
   permissionProfilesCountText: document.querySelector("#permission-profiles-count-text"),
@@ -1238,6 +1245,10 @@ elements.workspaceSelect.addEventListener("change", () => {
   elements.accountWorkspaceMessagesCountText.textContent = "0";
   elements.accountWorkspaceMessagesTypesText.textContent = "0";
   elements.accountWorkspaceMessagesDetailsText.textContent = "Hidden";
+  elements.configRequirementsStatus.textContent = "Requirements read disabled by default.";
+  elements.configRequirementsFeaturesText.textContent = "0";
+  elements.configRequirementsHooksText.textContent = "0";
+  elements.configRequirementsDetailsText.textContent = "Hidden";
   elements.permissionProfilesStatus.textContent = "Profile read disabled by default.";
   elements.permissionProfilesCountText.textContent = "0";
   elements.permissionProfilesAllowedText.textContent = "0";
@@ -2237,6 +2248,10 @@ elements.accountWorkspaceMessagesButton.addEventListener("click", () => {
   runAccountWorkspaceMessages();
 });
 
+elements.configRequirementsButton.addEventListener("click", () => {
+  runConfigRequirements();
+});
+
 elements.permissionProfilesButton.addEventListener("click", () => {
   runPermissionProfiles();
 });
@@ -2750,6 +2765,16 @@ function accountWorkspaceMessagesEndpoint() {
   const params = new URLSearchParams();
   params.set("workspace", selectedWorkspaceId);
   return `/api/account-workspace-messages?${params.toString()}`;
+}
+
+function configRequirementsEndpoint() {
+  if (!selectedWorkspaceId) {
+    return "/api/config-requirements";
+  }
+
+  const params = new URLSearchParams();
+  params.set("workspace", selectedWorkspaceId);
+  return `/api/config-requirements?${params.toString()}`;
 }
 
 function permissionProfilesEndpoint() {
@@ -4899,6 +4924,28 @@ async function runAccountWorkspaceMessages() {
     renderError(error);
   } finally {
     setAccountWorkspaceMessagesLoading(false);
+  }
+}
+
+async function runConfigRequirements() {
+  setConfigRequirementsLoading(true);
+  hideError();
+
+  try {
+    const response = await fetch(configRequirementsEndpoint(), {
+      headers: apiHeaders(),
+      cache: "no-store",
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderConfigRequirements(payload);
+  } catch (error) {
+    elements.configRequirementsStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    setConfigRequirementsLoading(false);
   }
 }
 
@@ -15625,6 +15672,40 @@ function renderAccountWorkspaceMessages(payload) {
   elements.workspaceMessagesStateText.textContent = blocked ? "Blocked" : `${messageCount} messages`;
 }
 
+function renderConfigRequirements(payload) {
+  const settings = payload.settings ?? {};
+  const result = payload.result ?? {};
+  const blocked = settings.configRequirementsEnabled !== true || payload.appServer?.touched !== true;
+  const featureCount =
+    result.featureRequirementCount ?? payload.probes?.configRequirements?.featureRequirementCount ?? 0;
+  const hookHandlerCount =
+    result.hookRequirementHandlerCount ??
+    payload.probes?.configRequirements?.hookRequirementHandlerCount ??
+    0;
+  const hookGroupCount =
+    result.hookRequirementGroupCount ??
+    payload.probes?.configRequirements?.hookRequirementGroupCount ??
+    0;
+  const status = result.status ?? (blocked ? "blocked" : "available");
+  elements.configRequirementsStatus.textContent = blocked ? "Read blocked" : status;
+  elements.configRequirementsFeaturesText.textContent = String(featureCount);
+  elements.configRequirementsHooksText.textContent = `${hookHandlerCount} / ${hookGroupCount}`;
+  elements.configRequirementsDetailsText.textContent =
+    result.valuesReturned ||
+    result.domainsReturned ||
+    result.hookCommandsReturned ||
+    result.pathsReturned ||
+    result.requirementKeysReturned ||
+    result.policySnippetsReturned ||
+    result.rawPayloadReturned ||
+    settings.rawPayloadReturned
+      ? "Returned"
+      : "Hidden";
+  elements.requirementsStateText.textContent = blocked
+    ? "Blocked"
+    : `${featureCount} features`;
+}
+
 function renderPermissionProfiles(payload) {
   const settings = payload.settings ?? {};
   const result = payload.result ?? {};
@@ -23688,6 +23769,16 @@ function setAccountWorkspaceMessagesLoading(isLoading) {
   elements.accountWorkspaceMessagesButton.textContent = isLoading ? "Checking" : "Messages Check";
   if (isLoading) {
     elements.accountWorkspaceMessagesStatus.textContent = "Checking";
+  }
+}
+
+function setConfigRequirementsLoading(isLoading) {
+  elements.configRequirementsButton.disabled = isLoading;
+  elements.configRequirementsButton.textContent = isLoading
+    ? "Checking"
+    : "Requirements Check";
+  if (isLoading) {
+    elements.configRequirementsStatus.textContent = "Checking";
   }
 }
 
