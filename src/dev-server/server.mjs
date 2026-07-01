@@ -38359,6 +38359,126 @@ function buildCodexOpenSourceCatalog() {
   };
 }
 
+const CODEX_GLOSSARY_CATALOG = Object.freeze([
+  {
+    key: "glossaryOverview",
+    group: "overview",
+    state: "catalog-only",
+    source: "official-codex-glossary-docs",
+  },
+  {
+    key: "appTermCoverage",
+    group: "surfaces",
+    state: "catalog-only",
+    source: "official-codex-glossary-docs",
+  },
+  {
+    key: "cliTermCoverage",
+    group: "surfaces",
+    state: "catalog-only",
+    source: "official-codex-glossary-docs",
+  },
+  {
+    key: "ideExtensionTermCoverage",
+    group: "surfaces",
+    state: "catalog-only",
+    source: "official-codex-glossary-docs",
+  },
+  {
+    key: "cloudTermCoverage",
+    group: "surfaces",
+    state: "catalog-only",
+    source: "official-codex-glossary-docs",
+  },
+  {
+    key: "sdkTermCoverage",
+    group: "surfaces",
+    state: "catalog-only",
+    source: "official-codex-glossary-docs",
+  },
+  {
+    key: "integrationTermCoverage",
+    group: "surfaces",
+    state: "catalog-only",
+    source: "official-codex-glossary-docs",
+  },
+  {
+    key: "termLabelBoundary",
+    group: "terms",
+    state: "blocked",
+    source: "local-glossary-boundary",
+  },
+  {
+    key: "termDefinitionBoundary",
+    group: "terms",
+    state: "blocked",
+    source: "local-glossary-boundary",
+  },
+  {
+    key: "termLinkBoundary",
+    group: "links",
+    state: "blocked",
+    source: "local-glossary-boundary",
+  },
+  {
+    key: "externalGlossaryFetchBoundary",
+    group: "network",
+    state: "blocked",
+    source: "local-glossary-boundary",
+  },
+]);
+
+function buildCodexGlossaryCatalog() {
+  const entries = CODEX_GLOSSARY_CATALOG.map((entry) => ({
+    ...entry,
+    termLabelReturned: false,
+    termDefinitionReturned: false,
+    termLinkReturned: false,
+    surfaceNameReturned: false,
+    externalUrlReturned: false,
+    glossaryFetched: false,
+    filesystemRead: false,
+    networkAccess: false,
+    mutationEnabled: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+    rawPayloadsReturned: false,
+    appServerTraffic: false,
+  }));
+  const catalogOnlyEntryCount = entries.filter((entry) => entry.state === "catalog-only").length;
+  const blockedEntryCount = entries.filter((entry) => entry.state === "blocked").length;
+
+  return {
+    returned: true,
+    state: blockedEntryCount > 0 ? "partial" : "complete",
+    officialSource: "official-codex-glossary-docs",
+    entryCount: entries.length,
+    officialEntryCount: entries.filter((entry) => entry.source.startsWith("official-")).length,
+    localBoundaryEntryCount: entries.filter((entry) => entry.source.startsWith("local-")).length,
+    catalogOnlyEntryCount,
+    blockedEntryCount,
+    enabledEntryCount: 0,
+    entries,
+    glossaryCatalogReturned: true,
+    termLabelsReturned: false,
+    termDefinitionsReturned: false,
+    termLinksReturned: false,
+    surfaceNamesReturned: false,
+    externalUrlsReturned: false,
+    glossariesFetched: false,
+    filesystemReads: false,
+    filesystemWrites: false,
+    networkAccess: false,
+    mutationEnabled: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+    rawPayloadsReturned: false,
+    appServerTraffic: false,
+  };
+}
+
 const CODEX_WINDOWS_PLATFORM_CATALOG = Object.freeze([
   {
     key: "windowsSurfaceOverview",
@@ -52997,6 +53117,22 @@ export function sanitizeSettingsIntegrationsPayload(
       codexOpenSourceSecretsReturned: false,
       codexOpenSourceRawPayloadsReturned: false,
       codexOpenSourceAppServerTraffic: false,
+      codexGlossaryReturned: true,
+      codexGlossaryValuesReturned: false,
+      codexGlossaryTermLabelsReturned: false,
+      codexGlossaryTermDefinitionsReturned: false,
+      codexGlossaryTermLinksReturned: false,
+      codexGlossarySurfaceNamesReturned: false,
+      codexGlossaryExternalUrlsReturned: false,
+      codexGlossaryFetchEnabled: false,
+      codexGlossaryFilesystemAccess: false,
+      codexGlossaryNetworkAccess: false,
+      codexGlossaryMutationsEnabled: false,
+      codexGlossaryPathsReturned: false,
+      codexGlossaryUrlsReturned: false,
+      codexGlossarySecretsReturned: false,
+      codexGlossaryRawPayloadsReturned: false,
+      codexGlossaryAppServerTraffic: false,
       codexWindowsPlatformReturned: true,
       codexWindowsPlatformValuesReturned: false,
       codexWindowsPlatformPlatformValuesReturned: false,
@@ -54208,6 +54344,7 @@ export function sanitizeSettingsIntegrationsPayload(
   result.codexCustomization = buildCodexCustomizationCatalog();
   result.codexSecurity = buildCodexSecurityCatalog();
   result.codexOpenSource = buildCodexOpenSourceCatalog();
+  result.codexGlossary = buildCodexGlossaryCatalog();
   result.codexWindowsPlatform = buildCodexWindowsPlatformCatalog();
   result.codexBedrock = buildCodexBedrockCatalog();
   result.codexPricing = buildCodexPricingCatalog();
@@ -62903,6 +63040,22 @@ export function buildSettingsIntegrations({
       codexOpenSourceSecretsReturned: false,
       codexOpenSourceRawPayloadsReturned: false,
       codexOpenSourceAppServerTraffic: false,
+      codexGlossaryReturned: true,
+      codexGlossaryValuesReturned: false,
+      codexGlossaryTermLabelsReturned: false,
+      codexGlossaryTermDefinitionsReturned: false,
+      codexGlossaryTermLinksReturned: false,
+      codexGlossarySurfaceNamesReturned: false,
+      codexGlossaryExternalUrlsReturned: false,
+      codexGlossaryFetchEnabled: false,
+      codexGlossaryFilesystemAccess: false,
+      codexGlossaryNetworkAccess: false,
+      codexGlossaryMutationsEnabled: false,
+      codexGlossaryPathsReturned: false,
+      codexGlossaryUrlsReturned: false,
+      codexGlossarySecretsReturned: false,
+      codexGlossaryRawPayloadsReturned: false,
+      codexGlossaryAppServerTraffic: false,
       codexWindowsPlatformReturned: true,
       codexWindowsPlatformValuesReturned: false,
       codexWindowsPlatformPlatformValuesReturned: false,
@@ -64113,6 +64266,7 @@ export function buildSettingsIntegrations({
   result.codexCustomization = buildCodexCustomizationCatalog();
   result.codexSecurity = buildCodexSecurityCatalog();
   result.codexOpenSource = buildCodexOpenSourceCatalog();
+  result.codexGlossary = buildCodexGlossaryCatalog();
   result.codexWindowsPlatform = buildCodexWindowsPlatformCatalog();
   result.codexBedrock = buildCodexBedrockCatalog();
   result.codexPricing = buildCodexPricingCatalog();

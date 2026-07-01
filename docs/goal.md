@@ -42,6 +42,10 @@ Target parity with the Codex desktop workflow:
   experimental API coverage while keeping all JSON-RPC payloads, credentials,
   thread/turn ids, prompts, events, paths, network/model traffic, and mutation
   actions hidden or blocked.
+- `/api/settings-integrations` also exposes the official Codex Glossary as a
+  static, review-only catalog for cross-surface terminology coverage while
+  keeping term labels, definitions, links, URLs, paths, fetches, network access,
+  raw payloads, and app-server traffic hidden or blocked.
 - OpenAI lists Codex CLI, SDK, and App Server as open-source components.
 - The stable npm `@openai/codex` latest dist-tag is `0.142.5`; the available
   `0.143.0-alpha.32` alpha dist-tag was not executed or used as a baseline.

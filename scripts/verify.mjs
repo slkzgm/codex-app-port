@@ -36099,6 +36099,104 @@ function assertCodexOpenSourceCatalog(payload) {
   }
 }
 
+function expectedCodexGlossaryEntries() {
+  return [
+    ["glossaryOverview", "overview", "catalog-only", "official-codex-glossary-docs"],
+    ["appTermCoverage", "surfaces", "catalog-only", "official-codex-glossary-docs"],
+    ["cliTermCoverage", "surfaces", "catalog-only", "official-codex-glossary-docs"],
+    ["ideExtensionTermCoverage", "surfaces", "catalog-only", "official-codex-glossary-docs"],
+    ["cloudTermCoverage", "surfaces", "catalog-only", "official-codex-glossary-docs"],
+    ["sdkTermCoverage", "surfaces", "catalog-only", "official-codex-glossary-docs"],
+    ["integrationTermCoverage", "surfaces", "catalog-only", "official-codex-glossary-docs"],
+    ["termLabelBoundary", "terms", "blocked", "local-glossary-boundary"],
+    ["termDefinitionBoundary", "terms", "blocked", "local-glossary-boundary"],
+    ["termLinkBoundary", "links", "blocked", "local-glossary-boundary"],
+    ["externalGlossaryFetchBoundary", "network", "blocked", "local-glossary-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexGlossaryCatalog(payload) {
+  const catalog = payload.codexGlossary;
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-glossary-docs");
+  assert.equal(catalog.entryCount, 11);
+  assert.equal(catalog.officialEntryCount, 7);
+  assert.equal(catalog.localBoundaryEntryCount, 4);
+  assert.equal(catalog.catalogOnlyEntryCount, 7);
+  assert.equal(catalog.blockedEntryCount, 4);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({ key, group, state, source })),
+    expectedCodexGlossaryEntries(),
+  );
+
+  const entryRedactionFlags = [
+    "termLabelReturned",
+    "termDefinitionReturned",
+    "termLinkReturned",
+    "surfaceNameReturned",
+    "externalUrlReturned",
+    "glossaryFetched",
+    "filesystemRead",
+    "networkAccess",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.glossaryCatalogReturned, true);
+  for (const flag of [
+    "termLabelsReturned",
+    "termDefinitionsReturned",
+    "termLinksReturned",
+    "surfaceNamesReturned",
+    "externalUrlsReturned",
+    "glossariesFetched",
+    "filesystemReads",
+    "filesystemWrites",
+    "networkAccess",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexGlossaryReturned", true],
+    ["codexGlossaryValuesReturned", false],
+    ["codexGlossaryTermLabelsReturned", false],
+    ["codexGlossaryTermDefinitionsReturned", false],
+    ["codexGlossaryTermLinksReturned", false],
+    ["codexGlossarySurfaceNamesReturned", false],
+    ["codexGlossaryExternalUrlsReturned", false],
+    ["codexGlossaryFetchEnabled", false],
+    ["codexGlossaryFilesystemAccess", false],
+    ["codexGlossaryNetworkAccess", false],
+    ["codexGlossaryMutationsEnabled", false],
+    ["codexGlossaryPathsReturned", false],
+    ["codexGlossaryUrlsReturned", false],
+    ["codexGlossarySecretsReturned", false],
+    ["codexGlossaryRawPayloadsReturned", false],
+    ["codexGlossaryAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexWindowsPlatformEntries() {
   return [
     ["windowsSurfaceOverview", "overview", "catalog-only", "official-codex-windows-platform-docs"],
@@ -45645,6 +45743,7 @@ function assertCodexAppSettingsParity(
   assertCodexCustomizationCatalog(payload);
   assertCodexSecurityCatalog(payload);
   assertCodexOpenSourceCatalog(payload);
+  assertCodexGlossaryCatalog(payload);
   assertCodexWindowsPlatformCatalog(payload);
   assertCodexBedrockCatalog(payload);
   assertCodexPricingCatalog(payload);

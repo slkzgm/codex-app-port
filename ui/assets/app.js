@@ -59,6 +59,8 @@ const elements = {
   codexSecurityValuesText: document.querySelector("#codex-security-values-text"),
   codexOpenSourceText: document.querySelector("#codex-open-source-text"),
   codexOpenSourceValuesText: document.querySelector("#codex-open-source-values-text"),
+  codexGlossaryText: document.querySelector("#codex-glossary-text"),
+  codexGlossaryValuesText: document.querySelector("#codex-glossary-values-text"),
   codexWindowsPlatformText: document.querySelector("#codex-windows-platform-text"),
   codexWindowsPlatformValuesText: document.querySelector("#codex-windows-platform-values-text"),
   codexBedrockText: document.querySelector("#codex-bedrock-text"),
@@ -550,6 +552,7 @@ const elements = {
   codexCustomizationList: document.querySelector("#codex-customization-list"),
   codexSecurityList: document.querySelector("#codex-security-list"),
   codexOpenSourceList: document.querySelector("#codex-open-source-list"),
+  codexGlossaryList: document.querySelector("#codex-glossary-list"),
   codexWindowsPlatformList: document.querySelector("#codex-windows-platform-list"),
   codexBedrockList: document.querySelector("#codex-bedrock-list"),
   codexPricingList: document.querySelector("#codex-pricing-list"),
@@ -10682,6 +10685,7 @@ function renderSettingsIntegrations(payload) {
   const codexCustomization = payload.codexCustomization ?? {};
   const codexSecurity = payload.codexSecurity ?? {};
   const codexOpenSource = payload.codexOpenSource ?? {};
+  const codexGlossary = payload.codexGlossary ?? {};
   const codexWindowsPlatform = payload.codexWindowsPlatform ?? {};
   const codexBedrock = payload.codexBedrock ?? {};
   const codexPricing = payload.codexPricing ?? {};
@@ -11311,6 +11315,29 @@ function renderSettingsIntegrations(payload) {
     codexOpenSource.secretsReturned ||
     codexOpenSource.rawPayloadsReturned ||
     codexOpenSource.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexGlossaryText.textContent = codexGlossary.returned
+    ? `${codexGlossary.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexGlossary.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexGlossaryValuesText.textContent =
+    codexGlossary.termLabelsReturned ||
+    codexGlossary.termDefinitionsReturned ||
+    codexGlossary.termLinksReturned ||
+    codexGlossary.surfaceNamesReturned ||
+    codexGlossary.externalUrlsReturned ||
+    codexGlossary.glossariesFetched ||
+    codexGlossary.filesystemReads ||
+    codexGlossary.filesystemWrites ||
+    codexGlossary.networkAccess ||
+    codexGlossary.mutationEnabled ||
+    codexGlossary.pathsReturned ||
+    codexGlossary.urlsReturned ||
+    codexGlossary.secretsReturned ||
+    codexGlossary.rawPayloadsReturned ||
+    codexGlossary.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexWindowsPlatformText.textContent = codexWindowsPlatform.returned
@@ -13603,6 +13630,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexCustomizationCatalog(codexCustomization);
   renderCodexSecurityCatalog(codexSecurity);
   renderCodexOpenSourceCatalog(codexOpenSource);
+  renderCodexGlossaryCatalog(codexGlossary);
   renderCodexWindowsPlatformCatalog(codexWindowsPlatform);
   renderCodexBedrockCatalog(codexBedrock);
   renderCodexPricingCatalog(codexPricing);
@@ -16466,6 +16494,63 @@ function renderCodexOpenSourceCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexOpenSourceList.append(row);
+  }
+}
+
+function renderCodexGlossaryCatalog(summary) {
+  elements.codexGlossaryList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexGlossaryList.append(emptyState("No Codex Glossary catalog returned."));
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "glossary";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.termLabelReturned ? "term labels returned" : "term labels hidden",
+      entry.termDefinitionReturned ? "term definitions returned" : "term definitions hidden",
+      entry.termLinkReturned ? "term links returned" : "term links hidden",
+      entry.surfaceNameReturned ? "surface names returned" : "surface names hidden",
+      entry.externalUrlReturned ? "external URLs returned" : "external URLs hidden",
+      entry.glossaryFetched ? "glossary fetched" : "glossary fetches blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexGlossaryList.append(row);
   }
 }
 

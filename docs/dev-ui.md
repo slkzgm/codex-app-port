@@ -997,6 +997,15 @@ paths, URLs, secrets, raw payloads, and app-server traffic. It must not fetch
 GitHub repositories, import code, create issues, post discussions, submit
 contributions, or start OSS program applications.
 
+The same response exposes `codexGlossary` as a static review-only catalog for
+official Codex Glossary guidance. The UI shows only catalog counts, entry keys,
+groups, state/source chips, and negative redaction chips for glossary overview
+and cross-surface term coverage across the app, CLI, IDE extension, cloud, SDK,
+and integrations. It must not return term labels, term definitions, term links,
+surface names, external URLs, paths, URLs, secrets, raw payloads, or app-server
+traffic, and it must not fetch glossary content, access files/network, or
+mutate state.
+
 The same response exposes `codexWindowsPlatform` as a static review-only
 catalog for official Windows/WSL platform behavior. The UI shows only catalog
 counts, entry keys, groups, state/source chips, and negative redaction chips
