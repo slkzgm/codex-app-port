@@ -467,7 +467,8 @@ Target parity with the Codex desktop workflow:
   comment mentions, repo pinning, progress tracking, environment selection,
   triage rules, data usage, Linear MCP setup, Slack app setup, channel mention
   workflow, thread context, environment/repo hints, task links, enterprise
-  answer controls, and troubleshooting. It does not return Linear issue content
+  answer controls, connection/environment/code-context troubleshooting,
+  long-thread guidance, and workspace-posting troubleshooting. It does not return Linear issue content
   or metadata, Linear comments, Linear workspace/account/connector/MCP data,
   Slack messages, Slack thread history, Slack workspace/channel/connector data,
   cloud task data, task links or results, environment names, repo names, admin

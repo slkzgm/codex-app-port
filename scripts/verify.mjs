@@ -34503,6 +34503,9 @@ function expectedCodexThirdPartyIntegrationsEntries() {
     ["linearTriageRules", "linear-automation", "catalog-only", "official-codex-linear-docs"],
     ["linearDataUsage", "linear-security", "catalog-only", "official-codex-linear-docs"],
     ["linearLocalMcpSetup", "linear-mcp", "catalog-only", "official-codex-linear-docs"],
+    ["linearMissingConnectionTroubleshooting", "linear-troubleshooting", "catalog-only", "official-codex-linear-docs"],
+    ["linearUnexpectedEnvironmentTroubleshooting", "linear-troubleshooting", "catalog-only", "official-codex-linear-docs"],
+    ["linearWrongCodeContextTroubleshooting", "linear-troubleshooting", "catalog-only", "official-codex-linear-docs"],
     ["slackDelegationOverview", "slack", "catalog-only", "official-codex-slack-docs"],
     ["slackPlanPrerequisites", "slack-setup", "catalog-only", "official-codex-slack-docs"],
     ["slackAppInstall", "slack-setup", "catalog-only", "official-codex-slack-docs"],
@@ -34516,6 +34519,9 @@ function expectedCodexThirdPartyIntegrationsEntries() {
     ["slackEnterpriseAnswerControl", "slack-enterprise", "catalog-only", "official-codex-slack-docs"],
     ["slackDataUsage", "slack-security", "catalog-only", "official-codex-slack-docs"],
     ["slackTroubleshooting", "slack-troubleshooting", "catalog-only", "official-codex-slack-docs"],
+    ["slackMissingConnectionTroubleshooting", "slack-troubleshooting", "catalog-only", "official-codex-slack-docs"],
+    ["slackLongThreadGuidance", "slack-troubleshooting", "catalog-only", "official-codex-slack-docs"],
+    ["slackWorkspacePostingTroubleshooting", "slack-troubleshooting", "catalog-only", "official-codex-slack-docs"],
     ["linearIssueContentBoundary", "linear", "blocked", "local-third-party-integration-boundary"],
     ["linearIssueMetadataBoundary", "linear", "blocked", "local-third-party-integration-boundary"],
     ["linearCommentContentBoundary", "linear", "blocked", "local-third-party-integration-boundary"],
@@ -34542,10 +34548,10 @@ function assertCodexThirdPartyIntegrationsCatalog(payload) {
   assert.equal(catalog?.returned, true);
   assert.equal(catalog.state, "partial");
   assert.equal(catalog.officialSource, "official-codex-linear-slack-docs");
-  assert.equal(catalog.entryCount, 46);
-  assert.equal(catalog.officialEntryCount, 28);
+  assert.equal(catalog.entryCount, 52);
+  assert.equal(catalog.officialEntryCount, 34);
   assert.equal(catalog.localBoundaryEntryCount, 18);
-  assert.equal(catalog.catalogOnlyEntryCount, 28);
+  assert.equal(catalog.catalogOnlyEntryCount, 34);
   assert.equal(catalog.blockedEntryCount, 18);
   assert.equal(catalog.enabledEntryCount, 0);
   assert.deepEqual(

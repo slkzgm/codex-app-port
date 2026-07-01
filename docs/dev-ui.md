@@ -898,7 +898,8 @@ chips for issue delegation, connector setup, account linking, issue assignment,
 comment mentions, repo pinning, progress tracking, environment selection,
 triage rules, data usage, Linear MCP setup, Slack app setup, channel mention
 workflow, thread context, environment/repo hints, task links, enterprise answer
-controls, and troubleshooting. It must not show Linear issue content or
+controls, connection/environment/code-context troubleshooting, long-thread
+guidance, and workspace-posting troubleshooting. It must not show Linear issue content or
 metadata, Linear comments, Linear workspace/account/connector/MCP data, Slack
 messages, Slack thread history, Slack workspace/channel/connector data, cloud
 task data, task links or results, environment names, repo names, admin setting
