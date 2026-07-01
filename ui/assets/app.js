@@ -77,6 +77,10 @@ const elements = {
   codexNonInteractiveValuesText: document.querySelector("#codex-noninteractive-values-text"),
   codexAgentsSdkText: document.querySelector("#codex-agents-sdk-text"),
   codexAgentsSdkValuesText: document.querySelector("#codex-agents-sdk-values-text"),
+  codexAgentInternetAccessText: document.querySelector("#codex-agent-internet-access-text"),
+  codexAgentInternetAccessValuesText: document.querySelector(
+    "#codex-agent-internet-access-values-text",
+  ),
   codexGovernanceText: document.querySelector("#codex-governance-text"),
   codexGovernanceValuesText: document.querySelector("#codex-governance-values-text"),
   codexManagedConfigurationText: document.querySelector("#codex-managed-configuration-text"),
@@ -507,6 +511,7 @@ const elements = {
   codexSdkList: document.querySelector("#codex-sdk-list"),
   codexNonInteractiveList: document.querySelector("#codex-noninteractive-list"),
   codexAgentsSdkList: document.querySelector("#codex-agents-sdk-list"),
+  codexAgentInternetAccessList: document.querySelector("#codex-agent-internet-access-list"),
   codexGovernanceList: document.querySelector("#codex-governance-list"),
   codexManagedConfigurationList: document.querySelector("#codex-managed-configuration-list"),
   codexEnvironmentVariablesList: document.querySelector("#codex-environment-variables-list"),
@@ -10584,6 +10589,7 @@ function renderSettingsIntegrations(payload) {
   const codexSdk = payload.codexSdk ?? {};
   const codexNonInteractive = payload.codexNonInteractive ?? {};
   const codexAgentsSdk = payload.codexAgentsSdk ?? {};
+  const codexAgentInternetAccess = payload.codexAgentInternetAccess ?? {};
   const codexGovernance = payload.codexGovernance ?? {};
   const codexManagedConfiguration = payload.codexManagedConfiguration ?? {};
   const codexEnvironmentVariables = payload.codexEnvironmentVariables ?? {};
@@ -11532,6 +11538,41 @@ function renderSettingsIntegrations(payload) {
     codexAgentsSdk.secretsReturned ||
     codexAgentsSdk.rawPayloadsReturned ||
     codexAgentsSdk.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexAgentInternetAccessText.textContent = codexAgentInternetAccess.returned
+    ? `${codexAgentInternetAccess.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexAgentInternetAccess.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexAgentInternetAccessValuesText.textContent =
+    codexAgentInternetAccess.modeValuesReturned ||
+    codexAgentInternetAccess.environmentNamesReturned ||
+    codexAgentInternetAccess.domainAllowlistValuesReturned ||
+    codexAgentInternetAccess.domainPresetValuesReturned ||
+    codexAgentInternetAccess.httpMethodValuesReturned ||
+    codexAgentInternetAccess.riskExamplesReturned ||
+    codexAgentInternetAccess.promptExamplesReturned ||
+    codexAgentInternetAccess.resourceUrlsReturned ||
+    codexAgentInternetAccess.workLogContentsReturned ||
+    codexAgentInternetAccess.setupScriptContentsReturned ||
+    codexAgentInternetAccess.configValuesReturned ||
+    codexAgentInternetAccess.agentInternetEnabled ||
+    codexAgentInternetAccess.domainAllowlistsApplied ||
+    codexAgentInternetAccess.httpMethodAllowlistsApplied ||
+    codexAgentInternetAccess.unrestrictedInternetEnabled ||
+    codexAgentInternetAccess.setupScriptsExecuted ||
+    codexAgentInternetAccess.networkRequestsStarted ||
+    codexAgentInternetAccess.outputReviewsStarted ||
+    codexAgentInternetAccess.configWrites ||
+    codexAgentInternetAccess.networkAccess ||
+    codexAgentInternetAccess.modelTraffic ||
+    codexAgentInternetAccess.mutationEnabled ||
+    codexAgentInternetAccess.pathsReturned ||
+    codexAgentInternetAccess.urlsReturned ||
+    codexAgentInternetAccess.secretsReturned ||
+    codexAgentInternetAccess.rawPayloadsReturned ||
+    codexAgentInternetAccess.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexGovernanceText.textContent = codexGovernance.returned
@@ -12711,6 +12752,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexSdkCatalog(codexSdk);
   renderCodexNonInteractiveCatalog(codexNonInteractive);
   renderCodexAgentsSdkCatalog(codexAgentsSdk);
+  renderCodexAgentInternetAccessCatalog(codexAgentInternetAccess);
   renderCodexGovernanceCatalog(codexGovernance);
   renderCodexManagedConfigurationCatalog(codexManagedConfiguration);
   renderCodexEnvironmentVariablesCatalog(codexEnvironmentVariables);
@@ -16185,6 +16227,94 @@ function renderCodexAgentsSdkCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexAgentsSdkList.append(row);
+  }
+}
+
+function renderCodexAgentInternetAccessCatalog(summary) {
+  elements.codexAgentInternetAccessList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexAgentInternetAccessList.append(
+      emptyState("No Codex agent internet access catalog returned."),
+    );
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "network";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.modeValueReturned ? "mode values returned" : "mode values hidden",
+      entry.environmentNameReturned
+        ? "environment names returned"
+        : "environment names hidden",
+      entry.domainAllowlistValueReturned
+        ? "domain allowlist values returned"
+        : "domain allowlist values hidden",
+      entry.domainPresetValueReturned
+        ? "domain preset values returned"
+        : "domain preset values hidden",
+      entry.httpMethodValueReturned
+        ? "HTTP method values returned"
+        : "HTTP method values hidden",
+      entry.riskExampleReturned ? "risk examples returned" : "risk examples hidden",
+      entry.promptExampleReturned ? "prompt examples returned" : "prompt examples hidden",
+      entry.resourceUrlReturned ? "resource URLs returned" : "resource URLs hidden",
+      entry.workLogContentReturned ? "work log content returned" : "work log hidden",
+      entry.setupScriptContentReturned
+        ? "setup script content returned"
+        : "setup script content hidden",
+      entry.configValueReturned ? "config values returned" : "config values hidden",
+      entry.agentInternetEnabled ? "agent internet enabled" : "agent internet blocked",
+      entry.domainAllowlistApplied
+        ? "domain allowlist applied"
+        : "domain allowlist changes blocked",
+      entry.httpMethodAllowlistApplied
+        ? "HTTP method allowlist applied"
+        : "HTTP method changes blocked",
+      entry.unrestrictedInternetEnabled
+        ? "unrestricted internet enabled"
+        : "unrestricted internet blocked",
+      entry.setupScriptExecuted ? "setup script executed" : "setup script execution blocked",
+      entry.networkRequestStarted ? "network request started" : "network requests blocked",
+      entry.outputReviewStarted ? "output review started" : "review side effects blocked",
+      entry.configWritten ? "config written" : "config writes blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.modelTraffic ? "model traffic" : "model traffic blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexAgentInternetAccessList.append(row);
   }
 }
 

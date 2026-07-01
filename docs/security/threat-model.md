@@ -686,7 +686,16 @@
   start MCP servers or inspectors, list/call tools, continue sessions, forward
   approvals, install dependencies, execute scripts, run agents, start handoffs,
   create traces, write artifacts, access filesystem or network, create model
-  traffic, or mutate Agents SDK state. Its
+  traffic, or mutate Agents SDK state. Its Codex agent internet access catalog
+  may expose only static official-documentation keys plus local boundary keys,
+  groups, states, sources, counts, and redaction flags; it must not return
+  environment names, domain allowlists, preset domain values, HTTP method
+  values, prompt examples, resource URLs, work logs, setup script content,
+  config values, paths, URLs, secrets, raw payloads, app-server payloads, or
+  app-server traffic, and must not enable agent internet, apply domain or
+  method allowlists, enable unrestricted internet, run setup scripts, start
+  network probes, review work logs, write config, access filesystem or network,
+  create model traffic, or mutate agent internet access state. Its
   Codex Environment variables catalog may expose only static
   official-documentation keys plus local boundary keys, groups, states,
   sources, counts, and redaction flags; it must not read `process.env`, return

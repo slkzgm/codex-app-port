@@ -1086,6 +1086,19 @@ forward approvals, install dependencies, execute scripts, run agents, start
 handoffs, create traces, write artifacts, access files/network, create model
 traffic, or mutate state.
 
+The same response exposes `codexAgentInternetAccess` as a static review-only
+catalog for official Codex agent internet access behavior. The UI shows only
+catalog counts, entry keys, groups, state/source chips, and redaction chips for
+the default blocked agent-phase network policy, setup-script boundary,
+per-environment enablement, risk categories, off/on modes, domain-preset
+concepts, HTTP-method concepts, and local blocked boundaries. It must not show
+environment names, domain allowlists, preset domain values, HTTP method values,
+prompt examples, resource URLs, work logs, setup script content, config values,
+paths, URLs, secrets, raw payloads, or app-server traffic, and it must not
+enable agent internet, apply domain or method allowlists, enable unrestricted
+internet, run setup scripts, start network probes, review work logs, write
+config, access files/network, create model traffic, or mutate state.
+
 The same response exposes `codexManagedConfiguration` as a static review-only
 catalog for official Codex managed-configuration behavior. The UI shows only
 catalog counts, entry keys, groups, state/source chips, and redaction chips for

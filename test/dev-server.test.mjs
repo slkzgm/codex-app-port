@@ -38892,6 +38892,226 @@ function assertCodexAgentsSdkCatalog(payload) {
   }
 }
 
+function expectedCodexAgentInternetAccessEntries() {
+  return [
+    [
+      "defaultAgentInternetBlocked",
+      "default-policy",
+      "catalog-only",
+      "official-codex-agent-internet-access-docs",
+    ],
+    [
+      "setupScriptInternetBoundary",
+      "setup",
+      "catalog-only",
+      "official-codex-agent-internet-access-docs",
+    ],
+    [
+      "perEnvironmentEnablement",
+      "environment",
+      "catalog-only",
+      "official-codex-agent-internet-access-docs",
+    ],
+    ["promptInjectionRisk", "risk", "catalog-only", "official-codex-agent-internet-access-docs"],
+    [
+      "codeSecretExfiltrationRisk",
+      "risk",
+      "catalog-only",
+      "official-codex-agent-internet-access-docs",
+    ],
+    ["malwareDependencyRisk", "risk", "catalog-only", "official-codex-agent-internet-access-docs"],
+    ["licenseRestrictionRisk", "risk", "catalog-only", "official-codex-agent-internet-access-docs"],
+    ["reviewOutputAndWorkLog", "review", "catalog-only", "official-codex-agent-internet-access-docs"],
+    ["offMode", "mode", "catalog-only", "official-codex-agent-internet-access-docs"],
+    ["onMode", "mode", "catalog-only", "official-codex-agent-internet-access-docs"],
+    ["emptyDomainPreset", "domain-preset", "catalog-only", "official-codex-agent-internet-access-docs"],
+    [
+      "commonDependencyDomainPreset",
+      "domain-preset",
+      "catalog-only",
+      "official-codex-agent-internet-access-docs",
+    ],
+    [
+      "unrestrictedDomainPreset",
+      "domain-preset",
+      "catalog-only",
+      "official-codex-agent-internet-access-docs",
+    ],
+    [
+      "additionalDomainAllowlist",
+      "domain-allowlist",
+      "catalog-only",
+      "official-codex-agent-internet-access-docs",
+    ],
+    [
+      "safeHttpMethodRestriction",
+      "http-methods",
+      "catalog-only",
+      "official-codex-agent-internet-access-docs",
+    ],
+    [
+      "unsafeHttpMethodBlock",
+      "http-methods",
+      "catalog-only",
+      "official-codex-agent-internet-access-docs",
+    ],
+    [
+      "presetDomainMaintenance",
+      "domain-preset",
+      "catalog-only",
+      "official-codex-agent-internet-access-docs",
+    ],
+    ["agentInternetEnableBoundary", "network", "blocked", "local-agent-internet-access-boundary"],
+    ["environmentSettingBoundary", "environment", "blocked", "local-agent-internet-access-boundary"],
+    [
+      "domainAllowlistValueBoundary",
+      "domain-allowlist",
+      "blocked",
+      "local-agent-internet-access-boundary",
+    ],
+    [
+      "domainPresetValueBoundary",
+      "domain-preset",
+      "blocked",
+      "local-agent-internet-access-boundary",
+    ],
+    [
+      "httpMethodValueBoundary",
+      "http-methods",
+      "blocked",
+      "local-agent-internet-access-boundary",
+    ],
+    ["unrestrictedNetworkBoundary", "network", "blocked", "local-agent-internet-access-boundary"],
+    ["setupScriptExecutionBoundary", "setup", "blocked", "local-agent-internet-access-boundary"],
+    ["promptExampleBoundary", "risk", "blocked", "local-agent-internet-access-boundary"],
+    ["untrustedResourceBoundary", "risk", "blocked", "local-agent-internet-access-boundary"],
+    ["workLogContentBoundary", "review", "blocked", "local-agent-internet-access-boundary"],
+    ["networkProbeBoundary", "network", "blocked", "local-agent-internet-access-boundary"],
+    ["configurationWriteBoundary", "configuration", "blocked", "local-agent-internet-access-boundary"],
+    ["appServerTrafficBoundary", "transport", "blocked", "local-agent-internet-access-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexAgentInternetAccessCatalog(payload) {
+  const catalog = payload.codexAgentInternetAccess;
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-agent-internet-access-docs");
+  assert.equal(catalog.entryCount, 30);
+  assert.equal(catalog.officialEntryCount, 17);
+  assert.equal(catalog.localBoundaryEntryCount, 13);
+  assert.equal(catalog.catalogOnlyEntryCount, 17);
+  assert.equal(catalog.blockedEntryCount, 13);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({ key, group, state, source })),
+    expectedCodexAgentInternetAccessEntries(),
+  );
+
+  const entryRedactionFlags = [
+    "modeValueReturned",
+    "environmentNameReturned",
+    "domainAllowlistValueReturned",
+    "domainPresetValueReturned",
+    "httpMethodValueReturned",
+    "riskExampleReturned",
+    "promptExampleReturned",
+    "resourceUrlReturned",
+    "workLogContentReturned",
+    "setupScriptContentReturned",
+    "configValueReturned",
+    "agentInternetEnabled",
+    "domainAllowlistApplied",
+    "httpMethodAllowlistApplied",
+    "unrestrictedInternetEnabled",
+    "setupScriptExecuted",
+    "networkRequestStarted",
+    "outputReviewStarted",
+    "configWritten",
+    "networkAccess",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.agentInternetAccessCatalogReturned, true);
+  for (const flag of [
+    "modeValuesReturned",
+    "environmentNamesReturned",
+    "domainAllowlistValuesReturned",
+    "domainPresetValuesReturned",
+    "httpMethodValuesReturned",
+    "riskExamplesReturned",
+    "promptExamplesReturned",
+    "resourceUrlsReturned",
+    "workLogContentsReturned",
+    "setupScriptContentsReturned",
+    "configValuesReturned",
+    "agentInternetEnabled",
+    "domainAllowlistsApplied",
+    "httpMethodAllowlistsApplied",
+    "unrestrictedInternetEnabled",
+    "setupScriptsExecuted",
+    "networkRequestsStarted",
+    "outputReviewsStarted",
+    "configWrites",
+    "networkAccess",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexAgentInternetAccessReturned", true],
+    ["codexAgentInternetAccessValuesReturned", false],
+    ["codexAgentInternetAccessModeValuesReturned", false],
+    ["codexAgentInternetAccessEnvironmentNamesReturned", false],
+    ["codexAgentInternetAccessDomainAllowlistValuesReturned", false],
+    ["codexAgentInternetAccessDomainPresetValuesReturned", false],
+    ["codexAgentInternetAccessHttpMethodValuesReturned", false],
+    ["codexAgentInternetAccessRiskExamplesReturned", false],
+    ["codexAgentInternetAccessPromptExamplesReturned", false],
+    ["codexAgentInternetAccessResourceUrlsReturned", false],
+    ["codexAgentInternetAccessWorkLogContentsReturned", false],
+    ["codexAgentInternetAccessSetupScriptContentsReturned", false],
+    ["codexAgentInternetAccessConfigValuesReturned", false],
+    ["codexAgentInternetAccessEnablementAllowed", false],
+    ["codexAgentInternetAccessDomainAllowlistApplied", false],
+    ["codexAgentInternetAccessHttpMethodAllowlistApplied", false],
+    ["codexAgentInternetAccessUnrestrictedEnabled", false],
+    ["codexAgentInternetAccessSetupScriptExecutionEnabled", false],
+    ["codexAgentInternetAccessNetworkRequestsStarted", false],
+    ["codexAgentInternetAccessOutputReviewStarted", false],
+    ["codexAgentInternetAccessConfigWrites", false],
+    ["codexAgentInternetAccessNetworkAccess", false],
+    ["codexAgentInternetAccessModelTraffic", false],
+    ["codexAgentInternetAccessMutationsEnabled", false],
+    ["codexAgentInternetAccessPathsReturned", false],
+    ["codexAgentInternetAccessUrlsReturned", false],
+    ["codexAgentInternetAccessSecretsReturned", false],
+    ["codexAgentInternetAccessRawPayloadsReturned", false],
+    ["codexAgentInternetAccessAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexGovernanceEntries() {
   return [
     ["governanceVisibilityAuditability", "overview", "catalog-only", "official-codex-governance-docs"],
@@ -43253,6 +43473,7 @@ function assertCodexAppSettingsParity(
   assertCodexSdkCatalog(payload);
   assertCodexNonInteractiveCatalog(payload);
   assertCodexAgentsSdkCatalog(payload);
+  assertCodexAgentInternetAccessCatalog(payload);
   assertCodexGovernanceCatalog(payload);
   assertCodexManagedConfigurationCatalog(payload);
   assertCodexEnvironmentVariablesCatalog(payload);

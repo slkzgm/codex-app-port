@@ -463,6 +463,18 @@ Target parity with the Codex desktop workflow:
   forward approvals, install dependencies, execute scripts, run agents, start
   handoffs, create traces, write artifacts, access files/network, create model
   traffic, or mutate state.
+- `/api/settings-integrations` now also exposes a read-only Codex agent
+  internet access catalog aligned to the official Agent internet access guide.
+  It returns only static keys, groups, states, sources, counts, and redaction
+  flags for the default blocked agent-phase network policy, setup-script
+  boundary, per-environment enablement, risk categories, off/on modes,
+  domain-preset concepts, HTTP-method concepts, and local blocked boundaries.
+  It does not return environment names, domain allowlists, preset domain
+  values, HTTP method values, prompt examples, resource URLs, work logs, setup
+  script content, config values, paths, secrets, raw payloads, or app-server
+  traffic, and it does not enable agent internet, apply domain or method
+  allowlists, run setup scripts, start network probes, review work logs, write
+  config, create model traffic, access files/network, or mutate state.
 - `/api/settings-integrations` now also exposes a read-only Codex Managed
   configuration catalog aligned to the official managed-configuration guide. It
   returns only static keys, groups, states, sources, counts, and redaction flags

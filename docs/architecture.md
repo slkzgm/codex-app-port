@@ -855,6 +855,19 @@ Current M1 status:
   forwarding, dependency installs, script execution, agent runs, handoffs, trace
   creation, artifact writes, filesystem access, network access, model traffic,
   mutations, paths, URLs, secrets, raw payloads, and app-server traffic blocked
+- done: read-only Codex agent internet access catalog in
+  `/api/settings-integrations`, exposing only static official Agent internet
+  access guide keys plus local boundary keys/groups/states/sources/counts/
+  redaction flags for the default blocked agent-phase network policy,
+  setup-script boundary, per-environment enablement, risk categories, off/on
+  modes, domain-preset concepts, HTTP-method concepts, and local blocked
+  boundaries, with environment names, domain allowlists, preset domain values,
+  HTTP method values, prompt examples, resource URLs, work logs, setup script
+  content, config values, agent internet enablement, domain/method allowlist
+  application, unrestricted network, setup script execution, network probes,
+  work-log review side effects, config writes, filesystem access, network
+  access, model traffic, mutations, paths, URLs, secrets, raw payloads, and
+  app-server traffic blocked
 - done: read-only Codex Environment variables catalog in
   `/api/settings-integrations`, exposing only static official Environment
   variables documentation keys plus local boundary keys/groups/states/sources/
