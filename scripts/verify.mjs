@@ -86,6 +86,7 @@ async function main() {
   await checkAccountWorkspaceMessagesApi();
   await checkConfigRequirementsApi();
   await checkModelsListApi();
+  await checkModelProviderCapabilitiesApi();
   await checkMcpServerStatusApi();
   await checkPermissionProfilesApi();
   await checkAppsListApi();
@@ -18615,6 +18616,188 @@ async function checkModelsListApi() {
     await closeServer(server);
   }
   pass("dev server models list exposes counts behind opt-in without returning model details");
+}
+
+async function checkModelProviderCapabilitiesApi() {
+  const blockedCalls = [];
+  const blockedServer = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    modelProviderCapabilitiesFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+  const blockedPort = await listenWithFallback(blockedServer, { host: "127.0.0.1", port: 0 });
+  const blockedBaseUrl = `http://127.0.0.1:${blockedPort}`;
+
+  try {
+    const token = await readUiSessionToken(blockedBaseUrl);
+    const settingsResponse = await fetch(`${blockedBaseUrl}/api/settings-integrations`, {
+      headers: apiHeaders(token),
+    });
+    if (!settingsResponse.ok) {
+      throw new Error(
+        `settings integrations for blocked model provider capabilities returned HTTP ${settingsResponse.status}`,
+      );
+    }
+    const settingsPayload = await settingsResponse.json();
+    if (
+      settingsPayload.surfaces?.settings?.modelProviderCapabilitiesAvailable !== false ||
+      settingsPayload.surfaces?.settings?.modelProviderCapabilitiesEnabled !== false ||
+      settingsPayload.integrationScope?.modelProviderCapabilitiesEnabled !== false
+    ) {
+      throw new Error(
+        "settings integrations did not expose the blocked model provider capabilities gate safely",
+      );
+    }
+
+    const response = await fetch(`${blockedBaseUrl}/api/model-provider-capabilities`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`blocked model provider capabilities returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (
+      payload.appServer?.touched !== false ||
+      payload.settings?.modelProviderCapabilitiesEnabled !== false ||
+      payload.result?.status !== "blocked" ||
+      payload.policy?.appServerTraffic !== false
+    ) {
+      throw new Error(
+        "blocked model provider capabilities did not fail closed without app-server traffic",
+      );
+    }
+    if (blockedCalls.length !== 0) {
+      throw new Error("blocked model provider capabilities unexpectedly touched app-server");
+    }
+    assertNoMarkers(JSON.stringify(payload), ["/tmp/codex-app-port-verify"]);
+  } finally {
+    await closeServer(blockedServer);
+  }
+
+  const calls = [];
+  const server = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    modelProviderCapabilitiesEnabled: true,
+    modelProviderCapabilitiesFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-07-01T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/verify-private-home",
+          userAgent: "verify-private-agent",
+        },
+        probes: {
+          modelProviderCapabilities: {
+            ok: true,
+            capabilityCount: 3,
+            enabledCapabilityCount: 2,
+            disabledCapabilityCount: 1,
+            imageGenerationEnabled: true,
+            namespaceToolsEnabled: true,
+            webSearchEnabled: false,
+            rawPayloadReturned: true,
+          },
+        },
+        rawCapabilities: {
+          provider: "verify-private-provider",
+          model: "verify-private-model-id",
+          path: "/tmp/codex-app-port-verify/provider.json",
+          token: "verify-private-provider-token",
+        },
+        notifications: {},
+      };
+    },
+  });
+  const port = await listenWithFallback(server, { host: "127.0.0.1", port: 0 });
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  try {
+    const token = await readUiSessionToken(baseUrl);
+    const settingsResponse = await fetch(`${baseUrl}/api/settings-integrations`, {
+      headers: apiHeaders(token),
+    });
+    if (!settingsResponse.ok) {
+      throw new Error(
+        `settings integrations for model provider capabilities returned HTTP ${settingsResponse.status}`,
+      );
+    }
+    const settingsPayload = await settingsResponse.json();
+    if (
+      settingsPayload.surfaces?.settings?.modelProviderCapabilitiesAvailable !== true ||
+      settingsPayload.surfaces?.settings?.modelProviderCapabilitiesEnabled !== true ||
+      settingsPayload.integrationScope?.modelProviderCapabilitiesEnabled !== true ||
+      !settingsPayload.integrationScope?.enabledReadMethods?.includes(
+        "modelProvider/capabilities/read",
+      )
+    ) {
+      throw new Error("settings integrations did not expose the model provider capabilities gate safely");
+    }
+
+    const wrongMethod = await fetch(`${baseUrl}/api/model-provider-capabilities`, {
+      method: "POST",
+      headers: apiHeaders(token),
+    });
+    if (wrongMethod.status !== 405) {
+      throw new Error(`model provider capabilities POST returned HTTP ${wrongMethod.status}`);
+    }
+
+    const response = await fetch(`${baseUrl}/api/model-provider-capabilities`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`model provider capabilities returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (
+      payload.appServer?.touched !== true ||
+      payload.appServer?.modelTraffic !== false ||
+      payload.settings?.modelProviderCapabilitiesEnabled !== true ||
+      payload.result?.status !== "available" ||
+      payload.result?.capabilityCount !== 3 ||
+      payload.result?.enabledCapabilityCount !== 2 ||
+      payload.result?.disabledCapabilityCount !== 1 ||
+      payload.result?.imageGenerationEnabled !== true ||
+      payload.result?.namespaceToolsEnabled !== true ||
+      payload.result?.webSearchEnabled !== false ||
+      payload.result?.providerNamesReturned !== false ||
+      payload.result?.modelIdsReturned !== false ||
+      payload.result?.rawPayloadReturned !== false ||
+      payload.policy?.readOnly !== true ||
+      payload.policy?.modelTraffic !== false ||
+      payload.policy?.settingsWrites !== false ||
+      payload.policy?.providerNamesReturned !== false ||
+      payload.policy?.modelIdsReturned !== false ||
+      payload.policy?.pathsReturned !== false ||
+      payload.policy?.rawPayloadReturned !== false
+    ) {
+      throw new Error("model provider capabilities did not return the safe summary shape");
+    }
+    if (calls.length !== 1 || calls[0].cwd !== "/tmp/codex-app-port-verify") {
+      throw new Error("model provider capabilities did not call the app-server read path once");
+    }
+    assertNoMarkers(JSON.stringify(payload), [
+      "/tmp/codex-app-port-verify",
+      "/tmp/verify-private-home",
+      "verify-private-agent",
+      "codexHome",
+      "userAgent",
+      "verify-private-provider",
+      "verify-private-model-id",
+      "verify-private-provider-token",
+      "provider.json",
+      "\"rawPayloadReturned\":true",
+    ]);
+  } finally {
+    await closeServer(server);
+  }
+  pass("dev server model provider capabilities exposes flags behind opt-in without returning provider details");
 }
 
 async function checkMcpServerStatusApi() {
@@ -59329,6 +59512,11 @@ async function readUiSessionToken(baseUrl) {
     !html.includes("models-list-count-text") ||
     !html.includes("models-list-inputs-text") ||
     !html.includes("models-list-details-text") ||
+    !html.includes("model-provider-capabilities-button") ||
+    !html.includes("model-provider-capabilities-status") ||
+    !html.includes("model-provider-capabilities-count-text") ||
+    !html.includes("model-provider-capabilities-enabled-text") ||
+    !html.includes("model-provider-capabilities-details-text") ||
     !html.includes("mcp-server-status-button") ||
     !html.includes("mcp-server-status-status") ||
     !html.includes("mcp-server-status-count-text") ||
@@ -59388,6 +59576,9 @@ async function readUiSessionToken(baseUrl) {
     !appScript.includes("runModelsList") ||
     !appScript.includes("renderModelsList") ||
     !appScript.includes("setModelsListLoading") ||
+    !appScript.includes("runModelProviderCapabilities") ||
+    !appScript.includes("renderModelProviderCapabilities") ||
+    !appScript.includes("setModelProviderCapabilitiesLoading") ||
     !appScript.includes("runMcpServerStatus") ||
     !appScript.includes("renderMcpServerStatus") ||
     !appScript.includes("setMcpServerStatusLoading") ||

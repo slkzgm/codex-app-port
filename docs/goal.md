@@ -1110,6 +1110,13 @@ Target parity with the Codex desktop workflow:
   reasoning-option and metadata-presence counts; model ids, names,
   descriptions, upgrade copy, availability messages, cursors, model traffic,
   settings writes, cwd, paths, URLs, and raw payloads remain hidden or blocked.
+- `modelProvider/capabilities/read` has both an opt-in counts-only inventory
+  path and a dedicated opt-in `/api/model-provider-capabilities` route behind
+  `CODEX_APP_PORT_ALLOW_MODEL_PROVIDER_CAPABILITIES=1`. The dedicated route
+  sends an empty parameter object and returns only known image-generation,
+  namespace-tool, and web-search flags plus enabled/disabled counts; provider
+  names, model ids, model traffic, settings writes, cwd, paths, URLs, tokens,
+  and raw payloads remain hidden or blocked.
 - `mcpServerStatus/list` reports only server/tool/resource/resource-template
   counts and documented auth-status buckets (`unsupported`, `notLoggedIn`,
   `bearerToken`, `oAuth`, or `unknown`); arbitrary auth status values, server

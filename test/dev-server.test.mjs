@@ -385,6 +385,11 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /models-list-count-text/);
     assert.match(html, /models-list-inputs-text/);
     assert.match(html, /models-list-details-text/);
+    assert.match(html, /model-provider-capabilities-button/);
+    assert.match(html, /model-provider-capabilities-status/);
+    assert.match(html, /model-provider-capabilities-count-text/);
+    assert.match(html, /model-provider-capabilities-enabled-text/);
+    assert.match(html, /model-provider-capabilities-details-text/);
     assert.match(html, /mcp-server-status-button/);
     assert.match(html, /mcp-server-status-status/);
     assert.match(html, /mcp-server-status-count-text/);
@@ -444,6 +449,9 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(appScript, /runModelsList/);
     assert.match(appScript, /renderModelsList/);
     assert.match(appScript, /setModelsListLoading/);
+    assert.match(appScript, /runModelProviderCapabilities/);
+    assert.match(appScript, /renderModelProviderCapabilities/);
+    assert.match(appScript, /setModelProviderCapabilitiesLoading/);
     assert.match(appScript, /runMcpServerStatus/);
     assert.match(appScript, /renderMcpServerStatus/);
     assert.match(appScript, /setMcpServerStatusLoading/);
@@ -15442,6 +15450,154 @@ test("dev server exposes models list only behind explicit opt-in and redacts mod
       "\"descriptionsReturned\":true",
       "\"upgradeCopyReturned\":true",
       "\"availabilityMessagesReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    await closeServer(enabledServer.server);
+  }
+});
+
+test("dev server exposes model provider capabilities only behind explicit opt-in and redacts provider details", async () => {
+  const blockedCalls = [];
+  const blockedServer = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    modelProviderCapabilitiesFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+
+  try {
+    const settingsResponse = await fetch(`${blockedServer.url}/api/settings-integrations`, {
+      headers: apiHeaders(blockedServer.server),
+    });
+    assert.equal(settingsResponse.status, 200);
+    const settingsPayload = await settingsResponse.json();
+    assert.equal(settingsPayload.surfaces.settings.modelProviderCapabilitiesAvailable, false);
+    assert.equal(settingsPayload.surfaces.settings.modelProviderCapabilitiesEnabled, false);
+    assert.equal(settingsPayload.integrationScope.modelProviderCapabilitiesEnabled, false);
+
+    const response = await fetch(`${blockedServer.url}/api/model-provider-capabilities`, {
+      headers: apiHeaders(blockedServer.server),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, false);
+    assert.deepEqual(payload.appServer.auditedMethods, ["modelProvider/capabilities/read"]);
+    assert.equal(payload.settings.modelProviderCapabilitiesEnabled, false);
+    assert.equal(payload.policy.appServerTraffic, false);
+    assert.equal(payload.result.status, "blocked");
+    assert.equal(blockedCalls.length, 0);
+    assert.equal(serialized.includes("/tmp/default-workspace"), false);
+  } finally {
+    await closeServer(blockedServer.server);
+  }
+
+  const calls = [];
+  const enabledServer = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    modelProviderCapabilitiesEnabled: true,
+    modelProviderCapabilitiesFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-07-01T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/private-home",
+          userAgent: "mock/0.0.0",
+        },
+        probes: {
+          modelProviderCapabilities: {
+            ok: true,
+            capabilityCount: 3,
+            enabledCapabilityCount: 2,
+            disabledCapabilityCount: 1,
+            imageGenerationEnabled: true,
+            namespaceToolsEnabled: true,
+            webSearchEnabled: false,
+            rawPayloadReturned: true,
+          },
+        },
+        rawCapabilities: {
+          provider: "private-model-provider",
+          model: "private-model-id",
+          path: "/tmp/default-workspace/provider.json",
+          token: "provider-secret-token",
+        },
+        notifications: {},
+      };
+    },
+  });
+
+  try {
+    const settingsResponse = await fetch(`${enabledServer.url}/api/settings-integrations`, {
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(settingsResponse.status, 200);
+    const settingsPayload = await settingsResponse.json();
+    assert.equal(settingsPayload.surfaces.settings.modelProviderCapabilitiesAvailable, true);
+    assert.equal(settingsPayload.surfaces.settings.modelProviderCapabilitiesEnabled, true);
+    assert.equal(settingsPayload.integrationScope.modelProviderCapabilitiesEnabled, true);
+    assert.equal(
+      settingsPayload.integrationScope.enabledReadMethods.includes(
+        "modelProvider/capabilities/read",
+      ),
+      true,
+    );
+
+    const methodResponse = await fetch(`${enabledServer.url}/api/model-provider-capabilities`, {
+      method: "POST",
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(methodResponse.status, 405);
+
+    const response = await fetch(`${enabledServer.url}/api/model-provider-capabilities`, {
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, true);
+    assert.equal(payload.appServer.modelTraffic, false);
+    assert.deepEqual(payload.appServer.auditedMethods, ["modelProvider/capabilities/read"]);
+    assert.equal(payload.settings.modelProviderCapabilitiesEnabled, true);
+    assert.equal(payload.result.status, "available");
+    assert.equal(payload.result.capabilityCount, 3);
+    assert.equal(payload.result.enabledCapabilityCount, 2);
+    assert.equal(payload.result.disabledCapabilityCount, 1);
+    assert.equal(payload.result.imageGenerationEnabled, true);
+    assert.equal(payload.result.namespaceToolsEnabled, true);
+    assert.equal(payload.result.webSearchEnabled, false);
+    assert.equal(payload.result.providerNamesReturned, false);
+    assert.equal(payload.result.modelIdsReturned, false);
+    assert.equal(payload.result.rawPayloadReturned, false);
+    assert.equal(payload.policy.readOnly, true);
+    assert.equal(payload.policy.modelTraffic, false);
+    assert.equal(payload.policy.settingsWrites, false);
+    assert.equal(payload.policy.providerNamesReturned, false);
+    assert.equal(payload.policy.modelIdsReturned, false);
+    assert.equal(payload.policy.pathsReturned, false);
+    assert.equal(payload.policy.rawPayloadReturned, false);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].cwd, "/tmp/default-workspace");
+    for (const marker of [
+      "/tmp/default-workspace",
+      "/tmp/private-home",
+      "codexHome",
+      "userAgent",
+      "private-model-provider",
+      "private-model-id",
+      "provider-secret-token",
+      "provider.json",
       "\"rawPayloadReturned\":true",
     ]) {
       assert.equal(serialized.includes(marker), false, `leaked ${marker}`);

@@ -1680,6 +1680,14 @@
   and metadata-presence counts only; model ids, names, descriptions, upgrade
   copy, availability messages, cursors, cwd, model traffic, settings writes,
   URLs, paths, and raw app-server payloads remain blocked.
+- `/api/model-provider-capabilities` may call only
+  `modelProvider/capabilities/read` behind
+  `CODEX_APP_PORT_ALLOW_MODEL_PROVIDER_CAPABILITIES=1`. It is GET-only,
+  local-token protected, sends an empty parameter object, and returns only known
+  image-generation, namespace-tool, and web-search capability flags plus
+  enabled/disabled counts; provider names, model ids, cwd, model traffic,
+  settings writes, URLs, paths, tokens, and raw app-server payloads remain
+  blocked.
 - `/api/mcp-server-status` may call only `mcpServerStatus/list` behind
   `CODEX_APP_PORT_ALLOW_MCP_SERVER_STATUS=1`. It is GET-only, local-token
   protected, requests `toolsAndAuthOnly` detail, and returns server/tool/

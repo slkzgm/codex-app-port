@@ -266,6 +266,21 @@ const elements = {
   modelsListCountText: document.querySelector("#models-list-count-text"),
   modelsListInputsText: document.querySelector("#models-list-inputs-text"),
   modelsListDetailsText: document.querySelector("#models-list-details-text"),
+  modelProviderCapabilitiesButton: document.querySelector(
+    "#model-provider-capabilities-button",
+  ),
+  modelProviderCapabilitiesStatus: document.querySelector(
+    "#model-provider-capabilities-status",
+  ),
+  modelProviderCapabilitiesCountText: document.querySelector(
+    "#model-provider-capabilities-count-text",
+  ),
+  modelProviderCapabilitiesEnabledText: document.querySelector(
+    "#model-provider-capabilities-enabled-text",
+  ),
+  modelProviderCapabilitiesDetailsText: document.querySelector(
+    "#model-provider-capabilities-details-text",
+  ),
   mcpServerStatusButton: document.querySelector("#mcp-server-status-button"),
   mcpServerStatusStatus: document.querySelector("#mcp-server-status-status"),
   mcpServerStatusCountText: document.querySelector("#mcp-server-status-count-text"),
@@ -1278,6 +1293,11 @@ elements.workspaceSelect.addEventListener("change", () => {
   elements.modelsListCountText.textContent = "0";
   elements.modelsListInputsText.textContent = "0 / 0";
   elements.modelsListDetailsText.textContent = "Hidden";
+  elements.modelProviderCapabilitiesStatus.textContent =
+    "Provider capability read disabled by default.";
+  elements.modelProviderCapabilitiesCountText.textContent = "0";
+  elements.modelProviderCapabilitiesEnabledText.textContent = "0 / 0";
+  elements.modelProviderCapabilitiesDetailsText.textContent = "Hidden";
   elements.mcpServerStatusStatus.textContent = "MCP status disabled by default.";
   elements.mcpServerStatusCountText.textContent = "0";
   elements.mcpServerStatusToolsText.textContent = "0";
@@ -2301,6 +2321,10 @@ elements.modelsListButton.addEventListener("click", () => {
   runModelsList();
 });
 
+elements.modelProviderCapabilitiesButton.addEventListener("click", () => {
+  runModelProviderCapabilities();
+});
+
 elements.mcpServerStatusButton.addEventListener("click", () => {
   runMcpServerStatus();
 });
@@ -2850,6 +2874,16 @@ function modelsListEndpoint() {
   const params = new URLSearchParams();
   params.set("workspace", selectedWorkspaceId);
   return `/api/models-list?${params.toString()}`;
+}
+
+function modelProviderCapabilitiesEndpoint() {
+  if (!selectedWorkspaceId) {
+    return "/api/model-provider-capabilities";
+  }
+
+  const params = new URLSearchParams();
+  params.set("workspace", selectedWorkspaceId);
+  return `/api/model-provider-capabilities?${params.toString()}`;
 }
 
 function mcpServerStatusEndpoint() {
@@ -5105,6 +5139,28 @@ async function runModelsList() {
     renderError(error);
   } finally {
     setModelsListLoading(false);
+  }
+}
+
+async function runModelProviderCapabilities() {
+  setModelProviderCapabilitiesLoading(true);
+  hideError();
+
+  try {
+    const response = await fetch(modelProviderCapabilitiesEndpoint(), {
+      headers: apiHeaders(),
+      cache: "no-store",
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderModelProviderCapabilities(payload);
+  } catch (error) {
+    elements.modelProviderCapabilitiesStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    setModelProviderCapabilitiesLoading(false);
   }
 }
 
@@ -14196,7 +14252,11 @@ function renderSettingsIntegrations(payload) {
       ? "Read gate"
     : "Blocked";
   elements.modelCapabilitiesStateText.textContent = settings.modelProviderCapabilitiesAvailable
-    ? `${inventory.modelProviderCapabilities?.enabledCapabilityCount ?? 0} enabled`
+    ? inventory.modelProviderCapabilities?.ok
+      ? `${inventory.modelProviderCapabilities?.enabledCapabilityCount ?? 0} enabled`
+      : settings.modelProviderCapabilitiesEnabled
+        ? "Read gate"
+        : "Blocked"
     : "Blocked";
   elements.collaborationModesStateText.textContent = settings.collaborationModeListingAvailable
     ? `${inventory.collaborationModes?.modeCount ?? 0} modes`
@@ -15977,6 +16037,40 @@ function renderModelsList(payload) {
       ? "Returned"
       : "Hidden";
   elements.modelInventoryStateText.textContent = blocked ? "Blocked" : `${modelCount} models`;
+}
+
+function renderModelProviderCapabilities(payload) {
+  const settings = payload.settings ?? {};
+  const result = payload.result ?? {};
+  const blocked =
+    settings.modelProviderCapabilitiesEnabled !== true || payload.appServer?.touched !== true;
+  const capabilityCount =
+    result.capabilityCount ?? payload.probes?.modelProviderCapabilities?.capabilityCount ?? 0;
+  const enabledCapabilityCount =
+    result.enabledCapabilityCount ??
+    payload.probes?.modelProviderCapabilities?.enabledCapabilityCount ??
+    0;
+  const disabledCapabilityCount =
+    result.disabledCapabilityCount ??
+    payload.probes?.modelProviderCapabilities?.disabledCapabilityCount ??
+    0;
+  const status = result.status ?? (blocked ? "blocked" : "available");
+  elements.modelProviderCapabilitiesStatus.textContent = blocked ? "Read blocked" : status;
+  elements.modelProviderCapabilitiesCountText.textContent = String(capabilityCount);
+  elements.modelProviderCapabilitiesEnabledText.textContent =
+    `${enabledCapabilityCount} / ${disabledCapabilityCount}`;
+  elements.modelProviderCapabilitiesDetailsText.textContent =
+    result.providerNamesReturned ||
+    result.modelIdsReturned ||
+    result.rawPayloadReturned ||
+    settings.providerNamesReturned ||
+    settings.modelIdsReturned ||
+    settings.rawPayloadReturned
+      ? "Returned"
+      : "Hidden";
+  elements.modelCapabilitiesStateText.textContent = blocked
+    ? "Blocked"
+    : `${enabledCapabilityCount} enabled`;
 }
 
 function renderMcpServerStatus(payload) {
@@ -24191,6 +24285,16 @@ function setModelsListLoading(isLoading) {
   elements.modelsListButton.textContent = isLoading ? "Checking" : "Models Check";
   if (isLoading) {
     elements.modelsListStatus.textContent = "Checking";
+  }
+}
+
+function setModelProviderCapabilitiesLoading(isLoading) {
+  elements.modelProviderCapabilitiesButton.disabled = isLoading;
+  elements.modelProviderCapabilitiesButton.textContent = isLoading
+    ? "Checking"
+    : "Provider Check";
+  if (isLoading) {
+    elements.modelProviderCapabilitiesStatus.textContent = "Checking";
   }
 }
 

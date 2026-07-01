@@ -17,6 +17,7 @@ import {
   runMcpServerOauthLoginProbe,
   runMcpServerReloadProbe,
   runMcpServerStatusReadProbe,
+  runModelProviderCapabilitiesReadProbe,
   runModelsListReadProbe,
   runMcpToolCallProbe,
   runMcpResourceReadProbe,
@@ -2677,6 +2678,44 @@ test("runModelsListReadProbe returns model counts without model details", async 
       delete process.env.CODEX_APP_PORT_ALLOW_MODELS_LIST;
     } else {
       process.env.CODEX_APP_PORT_ALLOW_MODELS_LIST = previous;
+    }
+  }
+});
+
+test("runModelProviderCapabilitiesReadProbe returns capability flags without raw provider payload", async () => {
+  const previous = process.env.CODEX_APP_PORT_ALLOW_MODEL_PROVIDER_CAPABILITIES;
+  process.env.CODEX_APP_PORT_ALLOW_MODEL_PROVIDER_CAPABILITIES = "1";
+  try {
+    const summary = await runModelProviderCapabilitiesReadProbe({
+      codexBin: process.execPath,
+      codexArgs: [mockServer.pathname],
+      cwd: process.cwd(),
+      timeoutMs: 1_000,
+    });
+    const capabilities = summary.probes.modelProviderCapabilities;
+    const serialized = JSON.stringify(summary);
+    assert.equal(summary.ok, true);
+    assert.equal(capabilities.ok, true);
+    assert.equal(capabilities.capabilityCount, 3);
+    assert.equal(capabilities.enabledCapabilityCount, 2);
+    assert.equal(capabilities.disabledCapabilityCount, 1);
+    assert.equal(capabilities.imageGenerationEnabled, true);
+    assert.equal(capabilities.namespaceToolsEnabled, true);
+    assert.equal(capabilities.webSearchEnabled, false);
+    assert.equal(capabilities.rawPayloadReturned, false);
+    for (const marker of [
+      "/tmp/mock-workspace",
+      "codexHome",
+      "userAgent",
+      "\"rawPayloadReturned\":true",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    if (previous === undefined) {
+      delete process.env.CODEX_APP_PORT_ALLOW_MODEL_PROVIDER_CAPABILITIES;
+    } else {
+      process.env.CODEX_APP_PORT_ALLOW_MODEL_PROVIDER_CAPABILITIES = previous;
     }
   }
 });

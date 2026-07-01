@@ -1868,6 +1868,16 @@ cwd, settings writes, model traffic, URLs, paths, or raw app-server payloads.
 The Models Check control renders only sanitized count/input/detail-redaction
 fields.
 
+`/api/model-provider-capabilities` is a separate dedicated model-provider
+capability read route. It is disabled unless
+`CODEX_APP_PORT_ALLOW_MODEL_PROVIDER_CAPABILITIES=1` is set; when enabled, it
+calls only `modelProvider/capabilities/read` with an empty parameter object. It
+returns only the known image-generation, namespace-tool, and web-search
+capability flags plus enabled/disabled counts. It never returns provider names,
+model ids, cwd, settings writes, model traffic, URLs, paths, tokens, or raw
+app-server payloads. The Provider Check control renders only sanitized
+capability/count/detail-redaction fields.
+
 `/api/mcp-server-status` is a separate dedicated MCP status read route. It is
 disabled unless `CODEX_APP_PORT_ALLOW_MCP_SERVER_STATUS=1` is set; when enabled,
 it calls only `mcpServerStatus/list` with `toolsAndAuthOnly` detail and returns

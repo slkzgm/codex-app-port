@@ -34,6 +34,7 @@ import {
   runIntegrationsInventoryProbe,
   runLiveSessionControlProbe,
   runLoadedSessionsProbe,
+  runModelProviderCapabilitiesReadProbe,
   runMcpServerStatusReadProbe,
   runModelsListReadProbe,
   runMcpServerOauthLoginProbe,
@@ -13162,6 +13163,7 @@ export function createDevServer({
   accountWorkspaceMessagesFn = runAccountWorkspaceMessagesReadProbe,
   appsListFn = runAppsListReadProbe,
   modelsListFn = runModelsListReadProbe,
+  modelProviderCapabilitiesFn = runModelProviderCapabilitiesReadProbe,
   configRequirementsFn = runConfigRequirementsReadProbe,
   mcpServerStatusFn = runMcpServerStatusReadProbe,
   permissionProfilesFn = runPermissionProfilesReadProbe,
@@ -13242,6 +13244,8 @@ export function createDevServer({
     process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_WORKSPACE_MESSAGES === "1",
   appsListEnabled = process.env.CODEX_APP_PORT_ALLOW_APPS_LIST === "1",
   modelsListEnabled = process.env.CODEX_APP_PORT_ALLOW_MODELS_LIST === "1",
+  modelProviderCapabilitiesEnabled =
+    process.env.CODEX_APP_PORT_ALLOW_MODEL_PROVIDER_CAPABILITIES === "1",
   configRequirementsEnabled = process.env.CODEX_APP_PORT_ALLOW_CONFIG_REQUIREMENTS === "1",
   mcpServerStatusEnabled = process.env.CODEX_APP_PORT_ALLOW_MCP_SERVER_STATUS === "1",
   permissionProfilesEnabled = process.env.CODEX_APP_PORT_ALLOW_PERMISSION_PROFILES === "1",
@@ -13408,6 +13412,7 @@ export function createDevServer({
       accountWorkspaceMessagesFn,
       appsListFn,
       modelsListFn,
+      modelProviderCapabilitiesFn,
       configRequirementsFn,
       mcpServerStatusFn,
       permissionProfilesFn,
@@ -13484,6 +13489,7 @@ export function createDevServer({
       accountWorkspaceMessagesEnabled,
       appsListEnabled,
       modelsListEnabled,
+      modelProviderCapabilitiesEnabled,
       configRequirementsEnabled,
       mcpServerStatusEnabled,
       permissionProfilesEnabled,
@@ -15070,6 +15076,50 @@ export async function handleRequest(request, response, options) {
       sendJson(response, error.statusCode ?? 502, {
         ok: false,
         error: cleanDisplayText(error.message, 200) ?? "Invalid models list request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/model-provider-capabilities") {
+    if (request.method !== "GET") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        url.searchParams.get("workspace"),
+      );
+      if (!options.modelProviderCapabilitiesEnabled) {
+        sendJson(response, 200, buildModelProviderCapabilitiesBlockedPayload({ workspace }));
+        return;
+      }
+      const payload = await options.modelProviderCapabilitiesFn({
+        codexBin: options.codexBin,
+        cwd: workspace.cwd,
+        timeoutMs: options.timeoutMs,
+      });
+      sendJson(
+        response,
+        200,
+        sanitizeModelProviderCapabilitiesPayload(payload, {
+          workspace,
+          enabled: true,
+        }),
+      );
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 502, {
+        ok: false,
+        error:
+          cleanDisplayText(error.message, 200) ??
+          "Invalid model provider capabilities request",
       });
     }
     return;
@@ -20148,6 +20198,7 @@ export async function handleRequest(request, response, options) {
             accountWorkspaceMessagesEnabled: options.accountWorkspaceMessagesEnabled,
             appsListEnabled: options.appsListEnabled,
             modelsListEnabled: options.modelsListEnabled,
+            modelProviderCapabilitiesEnabled: options.modelProviderCapabilitiesEnabled,
             configRequirementsEnabled: options.configRequirementsEnabled,
             mcpServerStatusEnabled: options.mcpServerStatusEnabled,
             permissionProfilesEnabled: options.permissionProfilesEnabled,
@@ -20202,6 +20253,7 @@ export async function handleRequest(request, response, options) {
           accountWorkspaceMessagesEnabled: options.accountWorkspaceMessagesEnabled,
           appsListEnabled: options.appsListEnabled,
           modelsListEnabled: options.modelsListEnabled,
+          modelProviderCapabilitiesEnabled: options.modelProviderCapabilitiesEnabled,
           configRequirementsEnabled: options.configRequirementsEnabled,
           mcpServerStatusEnabled: options.mcpServerStatusEnabled,
           permissionProfilesEnabled: options.permissionProfilesEnabled,
@@ -52509,6 +52561,7 @@ export function sanitizeSettingsIntegrationsPayload(
     accountWorkspaceMessagesEnabled = false,
     appsListEnabled = false,
     modelsListEnabled = false,
+    modelProviderCapabilitiesEnabled = false,
     configRequirementsEnabled = false,
     mcpServerStatusEnabled = false,
     permissionProfilesEnabled = false,
@@ -52558,6 +52611,7 @@ export function sanitizeSettingsIntegrationsPayload(
   const workspaceMessagesEnabled = Boolean(accountWorkspaceMessagesEnabled);
   const appsReadEnabled = Boolean(appsListEnabled);
   const modelsReadEnabled = Boolean(modelsListEnabled);
+  const providerCapabilitiesReadEnabled = Boolean(modelProviderCapabilitiesEnabled);
   const requirementsEnabled = Boolean(configRequirementsEnabled);
   const mcpStatusEnabled = Boolean(mcpServerStatusEnabled);
   const profilesEnabled = Boolean(permissionProfilesEnabled);
@@ -52608,6 +52662,7 @@ export function sanitizeSettingsIntegrationsPayload(
     accountWorkspaceMessagesEnabled: workspaceMessagesEnabled,
     appsListEnabled: appsReadEnabled,
     modelsListEnabled: modelsReadEnabled,
+    modelProviderCapabilitiesEnabled: providerCapabilitiesReadEnabled,
     configRequirementsEnabled: requirementsEnabled,
     mcpServerStatusEnabled: mcpStatusEnabled,
     permissionProfilesEnabled: profilesEnabled,
@@ -52674,7 +52729,9 @@ export function sanitizeSettingsIntegrationsPayload(
         mcpServerStatusEnabled: mcpStatusEnabled,
         modelListingAvailable: inventory.models.ok || modelsReadEnabled,
         modelsListEnabled: modelsReadEnabled,
-        modelProviderCapabilitiesAvailable: inventory.modelProviderCapabilities.ok,
+        modelProviderCapabilitiesAvailable:
+          inventory.modelProviderCapabilities.ok || providerCapabilitiesReadEnabled,
+        modelProviderCapabilitiesEnabled: providerCapabilitiesReadEnabled,
         collaborationModeListingAvailable: inventory.collaborationModes.ok,
         permissionProfileListingAvailable: inventory.permissionProfiles.ok || profilesEnabled,
         permissionProfilesEnabled: profilesEnabled,
@@ -59100,6 +59157,127 @@ function modelsListPolicy({ appServerTraffic }) {
   };
 }
 
+export function buildModelProviderCapabilitiesBlockedPayload({ workspace } = {}) {
+  const modelProviderCapabilities = sanitizeModelProviderCapabilitiesInventory(null);
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["modelProvider/capabilities/read"],
+    },
+    settings: {
+      modelProviderCapabilitiesAvailable: true,
+      modelProviderCapabilitiesEnabled: false,
+      appServerTraffic: false,
+      providerNamesReturned: false,
+      modelIdsReturned: false,
+      rawPayloadReturned: false,
+      reason: "model-provider-capabilities-requires-opt-in",
+    },
+    probes: {
+      modelProviderCapabilities,
+    },
+    result: {
+      status: "blocked",
+      modelProviderCapabilitiesEnabled: false,
+      appServerTraffic: false,
+      capabilityCount: 0,
+      enabledCapabilityCount: 0,
+      disabledCapabilityCount: 0,
+      imageGenerationEnabled: false,
+      namespaceToolsEnabled: false,
+      webSearchEnabled: false,
+      providerNamesReturned: false,
+      modelIdsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: modelProviderCapabilitiesPolicy({ appServerTraffic: false }),
+    notifications: sanitizeNotificationCounts(null),
+  };
+}
+
+export function sanitizeModelProviderCapabilitiesPayload(
+  payload,
+  { workspace = null, enabled = false } = {},
+) {
+  const modelProviderCapabilities = sanitizeModelProviderCapabilitiesInventory(
+    payload?.probes?.modelProviderCapabilities,
+  );
+  const status = enabled ? "available" : "blocked";
+  return {
+    ok: Boolean(payload?.ok),
+    generatedAt: payload?.generatedAt ?? new Date().toISOString(),
+    transport: cleanDisplayText(payload?.transport, 80),
+    protocol: cleanDisplayText(payload?.protocol, 80),
+    initialize: sanitizeInitialize(payload?.initialize),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: Boolean(enabled),
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["modelProvider/capabilities/read"],
+    },
+    settings: {
+      modelProviderCapabilitiesAvailable: true,
+      modelProviderCapabilitiesEnabled: Boolean(enabled),
+      appServerTraffic: Boolean(enabled),
+      providerNamesReturned: false,
+      modelIdsReturned: false,
+      rawPayloadReturned: false,
+      reason: Boolean(enabled)
+        ? "model-provider-capabilities-counts-only"
+        : "model-provider-capabilities-requires-opt-in",
+    },
+    probes: {
+      modelProviderCapabilities,
+    },
+    result: {
+      status,
+      modelProviderCapabilitiesEnabled: Boolean(enabled),
+      appServerTraffic: Boolean(enabled),
+      capabilityCount: modelProviderCapabilities.capabilityCount,
+      enabledCapabilityCount: modelProviderCapabilities.enabledCapabilityCount,
+      disabledCapabilityCount: modelProviderCapabilities.disabledCapabilityCount,
+      imageGenerationEnabled: modelProviderCapabilities.imageGenerationEnabled,
+      namespaceToolsEnabled: modelProviderCapabilities.namespaceToolsEnabled,
+      webSearchEnabled: modelProviderCapabilities.webSearchEnabled,
+      providerNamesReturned: false,
+      modelIdsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: modelProviderCapabilitiesPolicy({ appServerTraffic: Boolean(enabled) }),
+    notifications: sanitizeNotificationCounts(payload?.notifications),
+  };
+}
+
+function modelProviderCapabilitiesPolicy({ appServerTraffic }) {
+  return {
+    readOnly: true,
+    appServerTraffic: Boolean(appServerTraffic),
+    modelTraffic: false,
+    commandTraffic: false,
+    settingsWrites: false,
+    authCallbacks: false,
+    authMutations: false,
+    toolInvocation: false,
+    installsEnabled: false,
+    secretsReturned: false,
+    tokensReturned: false,
+    providerNamesReturned: false,
+    modelIdsReturned: false,
+    urlsReturned: false,
+    pathsReturned: false,
+    rawPayloadReturned: false,
+    requiresExplicitEnablement: true,
+    browserMethodCallsAccepted: true,
+    implemented: true,
+  };
+}
+
 export function buildAppsListBlockedPayload({ workspace } = {}) {
   const apps = sanitizeAppsInventory(null, { namesEnabled: false });
   return {
@@ -65058,6 +65236,7 @@ export function buildSettingsIntegrations({
   accountWorkspaceMessagesEnabled = false,
   appsListEnabled = false,
   modelsListEnabled = false,
+  modelProviderCapabilitiesEnabled = false,
   configRequirementsEnabled = false,
   mcpServerStatusEnabled = false,
   permissionProfilesEnabled = false,
@@ -65107,6 +65286,7 @@ export function buildSettingsIntegrations({
   const workspaceMessagesEnabled = Boolean(accountWorkspaceMessagesEnabled);
   const appsReadEnabled = Boolean(appsListEnabled);
   const modelsReadEnabled = Boolean(modelsListEnabled);
+  const providerCapabilitiesReadEnabled = Boolean(modelProviderCapabilitiesEnabled);
   const requirementsEnabled = Boolean(configRequirementsEnabled);
   const mcpStatusEnabled = Boolean(mcpServerStatusEnabled);
   const profilesEnabled = Boolean(permissionProfilesEnabled);
@@ -65138,6 +65318,7 @@ export function buildSettingsIntegrations({
     enabledReadMethods: [
       "config/read",
       modelsReadEnabled ? "model/list" : null,
+      providerCapabilitiesReadEnabled ? "modelProvider/capabilities/read" : null,
       appsReadEnabled ? "app/list" : null,
       requirementsEnabled ? "configRequirements/read" : null,
       mcpStatusEnabled ? "mcpServerStatus/list" : null,
@@ -65159,6 +65340,7 @@ export function buildSettingsIntegrations({
     accountWorkspaceMessagesEnabled: workspaceMessagesEnabled,
     appsListEnabled: appsReadEnabled,
     modelsListEnabled: modelsReadEnabled,
+    modelProviderCapabilitiesEnabled: providerCapabilitiesReadEnabled,
     configRequirementsEnabled: requirementsEnabled,
     mcpServerStatusEnabled: mcpStatusEnabled,
     permissionProfilesEnabled: profilesEnabled,
@@ -65202,6 +65384,7 @@ export function buildSettingsIntegrations({
       auditedReadMethods: [
         "config/read",
         modelsReadEnabled ? "model/list" : null,
+        providerCapabilitiesReadEnabled ? "modelProvider/capabilities/read" : null,
         appsReadEnabled ? "app/list" : null,
         requirementsEnabled ? "configRequirements/read" : null,
         mcpStatusEnabled ? "mcpServerStatus/list" : null,
@@ -65235,7 +65418,8 @@ export function buildSettingsIntegrations({
         mcpServerStatusEnabled: mcpStatusEnabled,
         modelListingAvailable: modelsReadEnabled,
         modelsListEnabled: modelsReadEnabled,
-        modelProviderCapabilitiesAvailable: false,
+        modelProviderCapabilitiesAvailable: providerCapabilitiesReadEnabled,
+        modelProviderCapabilitiesEnabled: providerCapabilitiesReadEnabled,
         collaborationModeListingAvailable: false,
         permissionProfileListingAvailable: profilesEnabled,
         permissionProfilesEnabled: profilesEnabled,
@@ -67917,6 +68101,7 @@ function buildIntegrationActionScope({
   accountWorkspaceMessagesEnabled = false,
   appsListEnabled = false,
   modelsListEnabled = false,
+  modelProviderCapabilitiesEnabled = false,
   configRequirementsEnabled = false,
   mcpServerStatusEnabled = false,
   permissionProfilesEnabled = false,
@@ -68015,6 +68200,7 @@ function buildIntegrationActionScope({
     accountWorkspaceMessagesEnabled: Boolean(accountWorkspaceMessagesEnabled),
     appsListEnabled: Boolean(appsListEnabled),
     modelsListEnabled: Boolean(modelsListEnabled),
+    modelProviderCapabilitiesEnabled: Boolean(modelProviderCapabilitiesEnabled),
     configRequirementsEnabled: Boolean(configRequirementsEnabled),
     mcpServerStatusEnabled: Boolean(mcpServerStatusEnabled),
     permissionProfilesEnabled: Boolean(permissionProfilesEnabled),

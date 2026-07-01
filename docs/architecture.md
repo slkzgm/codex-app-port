@@ -1596,6 +1596,12 @@ Current M1 status:
   reasoning-option and metadata-presence counts while omitting model ids, names,
   descriptions, upgrade copy, availability messages, cursors, cwd, model
   traffic, settings writes, URLs, paths, and raw payloads.
+- done: dedicated `/api/model-provider-capabilities` read route for
+  `modelProvider/capabilities/read`, disabled by default behind
+  `CODEX_APP_PORT_ALLOW_MODEL_PROVIDER_CAPABILITIES=1`, returning only known
+  image-generation, namespace-tool, and web-search capability flags plus enabled
+  and disabled counts while omitting provider names, model ids, cwd, model
+  traffic, settings writes, URLs, paths, tokens, and raw payloads.
 - done: dedicated `/api/mcp-server-status` read route for
   `mcpServerStatus/list`, disabled by default behind
   `CODEX_APP_PORT_ALLOW_MCP_SERVER_STATUS=1`, using `toolsAndAuthOnly` detail

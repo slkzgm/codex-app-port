@@ -675,6 +675,12 @@ disabled by default, may call only `model/list` behind
 `includeHidden:false`, and `limit:50`, and never returns model ids, names,
 descriptions, upgrade copy, availability messages, cursors, cwd, settings
 writes, model traffic, URLs, paths, or raw payloads.
+`/api/model-provider-capabilities` is the stricter dedicated provider
+capability route: it is disabled by default, may call only
+`modelProvider/capabilities/read` behind
+`CODEX_APP_PORT_ALLOW_MODEL_PROVIDER_CAPABILITIES=1` with an empty parameter
+object, and never returns provider names, model ids, cwd, settings writes,
+model traffic, URLs, paths, tokens, or raw payloads.
 `/api/plugins-list` is the stricter dedicated plugin catalog route: it is
 disabled by default, may call only `plugin/list` behind
 `CODEX_APP_PORT_ALLOW_PLUGINS_LIST=1`, uses only local and workspace-directory
