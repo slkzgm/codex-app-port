@@ -481,6 +481,14 @@
   or app-server traffic, and must not scaffold plugins, write marketplaces,
   write manifests, copy plugins, share plugins, run marketplace CLI commands,
   materialize external code, access files, or mutate plugin authoring state. Its
+  Codex Hooks catalog may expose only static official-documentation keys plus
+  local boundary keys, groups, states, sources, counts, and redaction flags; it
+  must not return hook files, paths, commands, matchers, keys, sources, status
+  messages, timeouts, trust hashes, outputs, input payloads, configs, plugin
+  ids, admin requirements, feature values, URLs, secrets, raw payloads,
+  app-server payloads, or app-server traffic, and must not execute commands,
+  trust hooks, disable hooks, bypass hook trust, write hook configs, access
+  files, or mutate hook state. Its
   Codex Rules catalog may expose only static official-documentation keys plus
   local boundary keys, groups, states, sources, counts, and redaction flags; it
   must not return rule files, rule paths, rule content, prefix patterns,

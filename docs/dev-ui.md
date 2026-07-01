@@ -799,6 +799,19 @@ local plugin paths, workspace principals, share links, admin requirements,
 command text, external code, paths, URLs, secrets, raw payloads, app-server
 traffic, scaffolds, marketplace writes, manifest writes, plugin copies, plugin
 sharing, marketplace CLI execution, filesystem access, or mutations.
+The same response exposes `codexHooks` as a static review-only catalog for
+official Codex Hooks. The UI shows only catalog counts, entry keys, groups,
+state/source chips, and redaction chips for default enablement, feature disable
+keys, deprecated aliases, managed disable requirements, multiple/concurrent
+hook runtime behavior, trust review, turn/thread scoped events, `hooks.json`
+and inline config sources, plugin-bundled hooks, project trust boundaries,
+managed hooks, bypass-trust guidance, config shape, command handler fields,
+unsupported handler types, matcher semantics, and supported matcher events. It
+does not show hook files, paths, commands, matchers, keys, sources, status
+messages, timeouts, trust hashes, outputs, input payloads, configs, plugin ids,
+admin requirements, feature values, paths, URLs, secrets, raw payloads,
+app-server traffic, command execution, trust writes, disable writes, trust
+bypass, config writes, filesystem access, or mutations.
 The same response exposes `codexSites` as a static review-only catalog for the
 official Sites plugin. The UI shows only catalog counts, entry keys, groups,
 state/source chips, and redaction chips for hosted website, web app, and game

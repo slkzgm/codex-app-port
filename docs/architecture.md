@@ -588,6 +588,19 @@ Current M1 status:
   plugin copies, sharing, marketplace CLI execution, external code
   materialization, filesystem access, mutations, paths, URLs, secrets, raw
   payloads, and app-server traffic blocked
+- done: read-only Codex Hooks catalog in `/api/settings-integrations`,
+  exposing only static official Hooks documentation keys plus local boundary
+  keys/groups/states/sources/counts/redaction flags for default enablement,
+  feature disable keys, deprecated aliases, managed disable requirements,
+  multiple/concurrent hook runtime behavior, trust review, turn/thread scoped
+  events, hooks.json and inline config sources, plugin-bundled hooks, project
+  trust boundaries, managed hooks, bypass-trust guidance, config shape, command
+  handler fields, unsupported handler types, matcher semantics, and supported
+  matcher events, with hook files, paths, commands, matchers, keys, sources,
+  status messages, timeouts, trust hashes, outputs, input payloads, configs,
+  plugin ids, admin requirements, feature values, command execution, trust
+  writes, disable writes, trust bypass, config writes, filesystem access,
+  mutations, URLs, secrets, raw payloads, and app-server traffic blocked
 - done: read-only Codex Rules catalog in `/api/settings-integrations`,
   exposing only static official Rules documentation keys plus local boundary
   keys/groups/states/sources/counts/redaction flags for `.rules` file

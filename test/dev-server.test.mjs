@@ -35393,6 +35393,175 @@ function assertCodexPluginBuildCatalog(payload) {
   }
 }
 
+function expectedCodexHooksEntries() {
+  return [
+    ["hooksEnabledByDefault", "feature", "catalog-only", "official-codex-hooks-docs"],
+    ["hooksDisableFeatureFlag", "feature", "catalog-only", "official-codex-hooks-docs"],
+    ["deprecatedCodexHooksAlias", "feature", "catalog-only", "official-codex-hooks-docs"],
+    ["managedHooksDisableRequirement", "managed-policy", "catalog-only", "official-codex-hooks-docs"],
+    ["multipleMatchingHooksRun", "runtime", "catalog-only", "official-codex-hooks-docs"],
+    ["concurrentCommandHooks", "runtime", "catalog-only", "official-codex-hooks-docs"],
+    ["nonManagedHookTrustReview", "trust", "catalog-only", "official-codex-hooks-docs"],
+    ["turnScopeEvents", "events", "catalog-only", "official-codex-hooks-docs"],
+    ["threadScopeEvents", "events", "catalog-only", "official-codex-hooks-docs"],
+    ["hooksJsonSource", "sources", "catalog-only", "official-codex-hooks-docs"],
+    ["inlineConfigHooksSource", "sources", "catalog-only", "official-codex-hooks-docs"],
+    ["pluginBundledHooksSource", "sources", "catalog-only", "official-codex-hooks-docs"],
+    ["projectLocalTrustBoundary", "trust", "catalog-only", "official-codex-hooks-docs"],
+    ["hookReviewBrowser", "trust", "catalog-only", "official-codex-hooks-docs"],
+    ["managedHooksTrustedByPolicy", "managed-policy", "catalog-only", "official-codex-hooks-docs"],
+    ["dangerouslyBypassHookTrust", "trust", "catalog-only", "official-codex-hooks-docs"],
+    ["hookThreeLevelShape", "config-shape", "catalog-only", "official-codex-hooks-docs"],
+    ["commandHandlerFields", "config-shape", "catalog-only", "official-codex-hooks-docs"],
+    [
+      "unsupportedAsyncPromptAgentHandlers",
+      "config-shape",
+      "catalog-only",
+      "official-codex-hooks-docs",
+    ],
+    ["matcherPatternSemantics", "matchers", "catalog-only", "official-codex-hooks-docs"],
+    ["matcherSupportedEvents", "matchers", "catalog-only", "official-codex-hooks-docs"],
+    ["matcherExamples", "matchers", "catalog-only", "official-codex-hooks-docs"],
+    ["hookListReadBoundary", "inventory", "blocked", "local-hooks-boundary"],
+    ["hookFileReadBoundary", "sources", "blocked", "local-hooks-boundary"],
+    ["hookConfigReadBoundary", "config-shape", "blocked", "local-hooks-boundary"],
+    ["hookCommandReadBoundary", "runtime", "blocked", "local-hooks-boundary"],
+    ["hookTrustWriteBoundary", "trust", "blocked", "local-hooks-boundary"],
+    ["hookDisableWriteBoundary", "feature", "blocked", "local-hooks-boundary"],
+    ["hookExecutionBoundary", "runtime", "blocked", "local-hooks-boundary"],
+    ["hookBypassTrustBoundary", "trust", "blocked", "local-hooks-boundary"],
+    ["pluginBundledHookBoundary", "sources", "blocked", "local-hooks-boundary"],
+    ["hookOutputBoundary", "runtime", "blocked", "local-hooks-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexHooksCatalog(payload) {
+  const catalog = payload.codexHooks;
+  const expectedEntries = expectedCodexHooksEntries();
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-hooks-docs");
+  assert.equal(catalog.entryCount, 32);
+  assert.equal(catalog.officialEntryCount, 22);
+  assert.equal(catalog.localBoundaryEntryCount, 10);
+  assert.equal(catalog.catalogOnlyEntryCount, 22);
+  assert.equal(catalog.blockedEntryCount, 10);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({
+      key,
+      group,
+      state,
+      source,
+    })),
+    expectedEntries,
+  );
+
+  const entryRedactionFlags = [
+    "hookFileReturned",
+    "hookPathReturned",
+    "hookCommandReturned",
+    "hookMatcherReturned",
+    "hookKeyReturned",
+    "hookSourceReturned",
+    "hookStatusMessageReturned",
+    "hookTimeoutReturned",
+    "hookTrustHashReturned",
+    "hookOutputReturned",
+    "hookInputPayloadReturned",
+    "hookConfigReturned",
+    "pluginIdReturned",
+    "adminRequirementReturned",
+    "featureValueReturned",
+    "commandExecuted",
+    "hookTrusted",
+    "hookDisabled",
+    "hookBypassEnabled",
+    "hookConfigWritten",
+    "filesystemRead",
+    "filesystemWrite",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.hooksCatalogReturned, true);
+  for (const flag of [
+    "hookFilesReturned",
+    "hookPathsReturned",
+    "hookCommandsReturned",
+    "hookMatchersReturned",
+    "hookKeysReturned",
+    "hookSourcesReturned",
+    "hookStatusMessagesReturned",
+    "hookTimeoutsReturned",
+    "hookTrustHashesReturned",
+    "hookOutputsReturned",
+    "hookInputPayloadsReturned",
+    "hookConfigsReturned",
+    "pluginIdsReturned",
+    "adminRequirementsReturned",
+    "featureValuesReturned",
+    "commandsExecuted",
+    "hooksTrusted",
+    "hooksDisabled",
+    "hookBypassEnabled",
+    "hookConfigsWritten",
+    "filesystemReads",
+    "filesystemWrites",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexHooksReturned", true],
+    ["codexHooksValuesReturned", false],
+    ["codexHooksFilesReturned", false],
+    ["codexHooksPathsReturned", false],
+    ["codexHooksCommandsReturned", false],
+    ["codexHooksMatchersReturned", false],
+    ["codexHooksKeysReturned", false],
+    ["codexHooksSourcesReturned", false],
+    ["codexHooksStatusMessagesReturned", false],
+    ["codexHooksTimeoutsReturned", false],
+    ["codexHooksTrustHashesReturned", false],
+    ["codexHooksOutputsReturned", false],
+    ["codexHooksInputPayloadsReturned", false],
+    ["codexHooksConfigsReturned", false],
+    ["codexHooksPluginIdsReturned", false],
+    ["codexHooksAdminRequirementsReturned", false],
+    ["codexHooksFeatureValuesReturned", false],
+    ["codexHooksCommandExecutionEnabled", false],
+    ["codexHooksTrustWriteEnabled", false],
+    ["codexHooksDisableWriteEnabled", false],
+    ["codexHooksBypassEnabled", false],
+    ["codexHooksConfigWriteEnabled", false],
+    ["codexHooksFilesystemAccess", false],
+    ["codexHooksMutationsEnabled", false],
+    ["codexHooksUrlsReturned", false],
+    ["codexHooksSecretsReturned", false],
+    ["codexHooksRawPayloadsReturned", false],
+    ["codexHooksAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexSitesEntries() {
   return [
     ["sitesPluginUseCase", "overview", "catalog-only", "official-codex-sites-docs"],
@@ -37434,6 +37603,7 @@ function assertCodexAppSettingsParity(
   assert.equal(summary.settingsWritesEnabled, false);
   assertSkillsPluginsCatalog(payload);
   assertCodexPluginBuildCatalog(payload);
+  assertCodexHooksCatalog(payload);
   assertCodexSitesCatalog(payload);
   assertCodexPermissionsCatalog(payload);
   assertCodexRulesCatalog(payload);

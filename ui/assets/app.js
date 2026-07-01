@@ -33,6 +33,8 @@ const elements = {
   skillsPluginsCatalogValuesText: document.querySelector("#skills-plugins-catalog-values-text"),
   codexPluginBuildText: document.querySelector("#codex-plugin-build-text"),
   codexPluginBuildValuesText: document.querySelector("#codex-plugin-build-values-text"),
+  codexHooksText: document.querySelector("#codex-hooks-text"),
+  codexHooksValuesText: document.querySelector("#codex-hooks-values-text"),
   codexSitesText: document.querySelector("#codex-sites-text"),
   codexSitesValuesText: document.querySelector("#codex-sites-values-text"),
   codexPermissionsText: document.querySelector("#codex-permissions-text"),
@@ -417,6 +419,7 @@ const elements = {
   appIntegrationsMcpList: document.querySelector("#app-integrations-mcp-list"),
   skillsPluginsCatalogList: document.querySelector("#skills-plugins-catalog-list"),
   codexPluginBuildList: document.querySelector("#codex-plugin-build-list"),
+  codexHooksList: document.querySelector("#codex-hooks-list"),
   codexSitesList: document.querySelector("#codex-sites-list"),
   codexPermissionsList: document.querySelector("#codex-permissions-list"),
   codexRulesList: document.querySelector("#codex-rules-list"),
@@ -10466,6 +10469,7 @@ function renderSettingsIntegrations(payload) {
   const codexAppSettings = payload.codexAppSettings ?? {};
   const skillsPluginsCatalog = payload.skillsPluginsCatalog ?? {};
   const codexPluginBuild = payload.codexPluginBuild ?? {};
+  const codexHooks = payload.codexHooks ?? {};
   const codexSites = payload.codexSites ?? {};
   const codexPermissions = payload.codexPermissions ?? {};
   const codexRules = payload.codexRules ?? {};
@@ -10576,6 +10580,42 @@ function renderSettingsIntegrations(payload) {
     codexPluginBuild.secretsReturned ||
     codexPluginBuild.rawPayloadsReturned ||
     codexPluginBuild.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexHooksText.textContent = codexHooks.returned
+    ? `${codexHooks.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexHooks.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexHooksValuesText.textContent =
+    codexHooks.hookFilesReturned ||
+    codexHooks.hookPathsReturned ||
+    codexHooks.hookCommandsReturned ||
+    codexHooks.hookMatchersReturned ||
+    codexHooks.hookKeysReturned ||
+    codexHooks.hookSourcesReturned ||
+    codexHooks.hookStatusMessagesReturned ||
+    codexHooks.hookTimeoutsReturned ||
+    codexHooks.hookTrustHashesReturned ||
+    codexHooks.hookOutputsReturned ||
+    codexHooks.hookInputPayloadsReturned ||
+    codexHooks.hookConfigsReturned ||
+    codexHooks.pluginIdsReturned ||
+    codexHooks.adminRequirementsReturned ||
+    codexHooks.featureValuesReturned ||
+    codexHooks.commandsExecuted ||
+    codexHooks.hooksTrusted ||
+    codexHooks.hooksDisabled ||
+    codexHooks.hookBypassEnabled ||
+    codexHooks.hookConfigsWritten ||
+    codexHooks.filesystemReads ||
+    codexHooks.filesystemWrites ||
+    codexHooks.mutationEnabled ||
+    codexHooks.pathsReturned ||
+    codexHooks.urlsReturned ||
+    codexHooks.secretsReturned ||
+    codexHooks.rawPayloadsReturned ||
+    codexHooks.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexSitesText.textContent = codexSites.returned
@@ -11306,6 +11346,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexAppSettingsParity(codexAppSettings);
   renderSkillsPluginsCatalog(skillsPluginsCatalog);
   renderCodexPluginBuildCatalog(codexPluginBuild);
+  renderCodexHooksCatalog(codexHooks);
   renderCodexSitesCatalog(codexSites);
   renderCodexPermissionsCatalog(codexPermissions);
   renderCodexRulesCatalog(codexRules);
@@ -13021,6 +13062,83 @@ function renderCodexPluginBuildCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexPluginBuildList.append(row);
+  }
+}
+
+function renderCodexHooksCatalog(summary) {
+  elements.codexHooksList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexHooksList.append(emptyState("No Codex Hooks catalog returned."));
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "hooks";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.hookFileReturned ? "hook files returned" : "hook files hidden",
+      entry.hookPathReturned ? "hook paths returned" : "hook paths hidden",
+      entry.hookCommandReturned ? "hook commands returned" : "hook commands hidden",
+      entry.hookMatcherReturned ? "hook matchers returned" : "hook matchers hidden",
+      entry.hookKeyReturned ? "hook keys returned" : "hook keys hidden",
+      entry.hookSourceReturned ? "hook sources returned" : "hook sources hidden",
+      entry.hookStatusMessageReturned
+        ? "status messages returned"
+        : "status messages hidden",
+      entry.hookTimeoutReturned ? "timeouts returned" : "timeouts hidden",
+      entry.hookTrustHashReturned ? "trust hashes returned" : "trust hashes hidden",
+      entry.hookOutputReturned ? "hook outputs returned" : "hook outputs hidden",
+      entry.hookInputPayloadReturned
+        ? "hook input payloads returned"
+        : "hook input payloads hidden",
+      entry.hookConfigReturned ? "hook configs returned" : "hook configs hidden",
+      entry.pluginIdReturned ? "plugin ids returned" : "plugin ids hidden",
+      entry.adminRequirementReturned
+        ? "admin requirements returned"
+        : "admin requirements hidden",
+      entry.featureValueReturned ? "feature values returned" : "feature values hidden",
+      entry.commandExecuted ? "commands executed" : "command execution blocked",
+      entry.hookTrusted ? "hooks trusted" : "hook trust write blocked",
+      entry.hookDisabled ? "hooks disabled" : "hook disable write blocked",
+      entry.hookBypassEnabled ? "hook trust bypass enabled" : "hook trust bypass blocked",
+      entry.hookConfigWritten ? "hook config written" : "hook config write blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexHooksList.append(row);
   }
 }
 

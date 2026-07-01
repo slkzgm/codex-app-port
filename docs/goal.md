@@ -186,6 +186,20 @@ Target parity with the Codex desktop workflow:
   scaffold plugins, write marketplaces, write manifests, copy plugins, share
   plugins, run marketplace CLI commands, materialize external code, access
   files, or mutate plugin authoring state.
+- `/api/settings-integrations` now also exposes a read-only Codex Hooks catalog
+  aligned to the official Hooks documentation. It returns only static keys,
+  groups, states, sources, counts, and redaction flags for default enablement,
+  feature disable keys, deprecated aliases, managed disable requirements,
+  multiple/concurrent hook runtime behavior, trust review, turn/thread scoped
+  events, `hooks.json` and inline config sources, plugin-bundled hooks, project
+  trust boundaries, managed hooks, bypass-trust guidance, config shape, command
+  handler fields, unsupported handler types, matcher semantics, and supported
+  matcher events. It does not return hook files, paths, commands, matchers,
+  keys, sources, status messages, timeouts, trust hashes, outputs, input
+  payloads, configs, plugin ids, admin requirements, feature values, URLs,
+  secrets, raw payloads, or app-server traffic, and it does not execute
+  commands, trust hooks, disable hooks, bypass hook trust, write hook configs,
+  read/write files, or mutate hook state.
 - `/api/settings-integrations` now also exposes a read-only Codex Rules catalog
   aligned to the official Rules documentation. It returns only static keys,
   groups, states, sources, counts, and redaction flags for `.rules` file
