@@ -477,6 +477,17 @@
   policies, read or write Team Config files, mutate RBAC, workspace settings,
   managed policies, Slack settings, cloud environments, or internet allowlists.
   Its
+  Codex Governance catalog may expose only static official-documentation keys
+  plus local boundary keys, groups, states, sources, counts, and redaction
+  flags; it must not return dashboard values, usage metrics, code-review
+  metrics, skill invocation metrics, agent identities, access-token usage,
+  export data, user emails, workspace ids, API keys, prompt text, response
+  text, audit identifiers, model names, token usage, timestamps, pagination
+  cursors, analytics or compliance URLs, warehouse/SIEM targets, paths, URLs,
+  secrets, raw payloads, app-server payloads, or app-server traffic, and must
+  not open dashboards, call Analytics or Compliance APIs, start exports, read
+  API keys, write warehouses or SIEM pipelines, access files or network, or
+  mutate governance state. Its
   Codex Sites catalog may expose only static official-documentation keys plus
   local boundary keys, groups, states, sources, counts, and redaction flags; it
   must not return Sites projects, project ids, `.openai/hosting.json`, storage

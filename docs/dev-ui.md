@@ -802,6 +802,22 @@ app-server traffic, and it does not open admin consoles or analytics, call
 compliance APIs, start GitHub connectors, look up user policies, read/write
 Team Config files, mutate RBAC, workspace settings, managed policies, Slack
 settings, cloud environments, or internet allowlists.
+The same response exposes `codexGovernance` as a static review-only catalog for
+official Codex Governance behavior. The UI shows only catalog counts, entry
+keys, groups, state/source chips, and redaction chips for Analytics Dashboard,
+Analytics API, Compliance API, dashboard usage lag, daily/weekly windows,
+product-surface usage, workspace/personal usage breakdowns, thread/turn/code
+review/skill/agent/access-token metric categories, CSV/JSON export concepts,
+API endpoint categories, pagination/lookback/scoped-key concepts, audit logs,
+retention, ChatGPT-auth scope, audit metadata, and SIEM/eDiscovery use cases.
+It does not show dashboard values, usage metrics, code-review metrics, skill
+invocation metrics, agent identities, access-token usage, export data, user
+emails, workspace ids, API keys, prompt text, response text, audit identifiers,
+model names, token usage, timestamps, pagination cursors, analytics or
+compliance URLs, warehouse/SIEM targets, paths, URLs, secrets, raw payloads, or
+app-server traffic, and it does not open dashboards, call Analytics or
+Compliance APIs, start exports, read API keys, write warehouses/SIEM pipelines,
+access files/network, or mutate governance state.
 The same Settings & Integrations response also exposes `skillsPluginsCatalog`
 as a static review-only Skills & Plugins catalog. The UI shows only catalog
 counts, setting keys, groups, state/source chips, and redaction chips for

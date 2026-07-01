@@ -33,6 +33,8 @@ const elements = {
   codexAccessTokensValuesText: document.querySelector("#codex-access-tokens-values-text"),
   codexAdminSetupText: document.querySelector("#codex-admin-setup-text"),
   codexAdminSetupValuesText: document.querySelector("#codex-admin-setup-values-text"),
+  codexGovernanceText: document.querySelector("#codex-governance-text"),
+  codexGovernanceValuesText: document.querySelector("#codex-governance-values-text"),
   skillsPluginsCatalogText: document.querySelector("#skills-plugins-catalog-text"),
   skillsPluginsCatalogValuesText: document.querySelector("#skills-plugins-catalog-values-text"),
   codexPluginBuildText: document.querySelector("#codex-plugin-build-text"),
@@ -435,6 +437,7 @@ const elements = {
   appIntegrationsMcpList: document.querySelector("#app-integrations-mcp-list"),
   codexAccessTokensList: document.querySelector("#codex-access-tokens-list"),
   codexAdminSetupList: document.querySelector("#codex-admin-setup-list"),
+  codexGovernanceList: document.querySelector("#codex-governance-list"),
   skillsPluginsCatalogList: document.querySelector("#skills-plugins-catalog-list"),
   codexPluginBuildList: document.querySelector("#codex-plugin-build-list"),
   codexHooksList: document.querySelector("#codex-hooks-list"),
@@ -10491,6 +10494,7 @@ function renderSettingsIntegrations(payload) {
   const codexAppSettings = payload.codexAppSettings ?? {};
   const codexAccessTokens = payload.codexAccessTokens ?? {};
   const codexAdminSetup = payload.codexAdminSetup ?? {};
+  const codexGovernance = payload.codexGovernance ?? {};
   const skillsPluginsCatalog = payload.skillsPluginsCatalog ?? {};
   const codexPluginBuild = payload.codexPluginBuild ?? {};
   const codexHooks = payload.codexHooks ?? {};
@@ -10614,6 +10618,51 @@ function renderSettingsIntegrations(payload) {
     codexAdminSetup.secretsReturned ||
     codexAdminSetup.rawPayloadsReturned ||
     codexAdminSetup.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexGovernanceText.textContent = codexGovernance.returned
+    ? `${codexGovernance.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexGovernance.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexGovernanceValuesText.textContent =
+    codexGovernance.dashboardValuesReturned ||
+    codexGovernance.usageMetricsReturned ||
+    codexGovernance.codeReviewMetricsReturned ||
+    codexGovernance.skillInvocationMetricsReturned ||
+    codexGovernance.agentIdentitiesReturned ||
+    codexGovernance.accessTokenUsageReturned ||
+    codexGovernance.exportDataReturned ||
+    codexGovernance.userEmailsReturned ||
+    codexGovernance.workspaceIdsReturned ||
+    codexGovernance.apiKeysReturned ||
+    codexGovernance.promptTextsReturned ||
+    codexGovernance.responseTextsReturned ||
+    codexGovernance.auditIdentifiersReturned ||
+    codexGovernance.modelNamesReturned ||
+    codexGovernance.tokenUsageReturned ||
+    codexGovernance.timestampsReturned ||
+    codexGovernance.paginationCursorsReturned ||
+    codexGovernance.analyticsUrlsReturned ||
+    codexGovernance.complianceUrlsReturned ||
+    codexGovernance.dataWarehouseTargetsReturned ||
+    codexGovernance.siemTargetsReturned ||
+    codexGovernance.dashboardsOpened ||
+    codexGovernance.analyticsApiRequestsStarted ||
+    codexGovernance.complianceApiRequestsStarted ||
+    codexGovernance.exportsStarted ||
+    codexGovernance.dataWarehouseWritesStarted ||
+    codexGovernance.siemExportsStarted ||
+    codexGovernance.apiKeysRead ||
+    codexGovernance.filesystemReads ||
+    codexGovernance.filesystemWrites ||
+    codexGovernance.networkAccess ||
+    codexGovernance.mutationEnabled ||
+    codexGovernance.pathsReturned ||
+    codexGovernance.urlsReturned ||
+    codexGovernance.secretsReturned ||
+    codexGovernance.rawPayloadsReturned ||
+    codexGovernance.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.skillsPluginsCatalogText.textContent = skillsPluginsCatalog.returned
@@ -11649,6 +11698,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexAppSettingsParity(codexAppSettings);
   renderCodexAccessTokensCatalog(codexAccessTokens);
   renderCodexAdminSetupCatalog(codexAdminSetup);
+  renderCodexGovernanceCatalog(codexGovernance);
   renderSkillsPluginsCatalog(skillsPluginsCatalog);
   renderCodexPluginBuildCatalog(codexPluginBuild);
   renderCodexHooksCatalog(codexHooks);
@@ -13382,6 +13432,100 @@ function renderCodexAdminSetupCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexAdminSetupList.append(row);
+  }
+}
+
+function renderCodexGovernanceCatalog(summary) {
+  elements.codexGovernanceList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexGovernanceList.append(
+      emptyState("No Codex governance catalog returned."),
+    );
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "governance";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.dashboardValueReturned ? "dashboard values returned" : "dashboard values hidden",
+      entry.usageMetricReturned ? "usage metrics returned" : "usage metrics hidden",
+      entry.codeReviewMetricReturned
+        ? "code review metrics returned"
+        : "code review metrics hidden",
+      entry.skillInvocationMetricReturned
+        ? "skill invocation metrics returned"
+        : "skill invocation metrics hidden",
+      entry.agentIdentityReturned ? "agent identities returned" : "agent identities hidden",
+      entry.accessTokenUsageReturned
+        ? "access token usage returned"
+        : "access token usage hidden",
+      entry.exportDataReturned ? "export data returned" : "export data hidden",
+      entry.userEmailReturned ? "user emails returned" : "user emails hidden",
+      entry.workspaceIdReturned ? "workspace ids returned" : "workspace ids hidden",
+      entry.apiKeyReturned ? "API keys returned" : "API keys hidden",
+      entry.promptTextReturned ? "prompt text returned" : "prompt text hidden",
+      entry.responseTextReturned ? "response text returned" : "response text hidden",
+      entry.auditIdentifierReturned
+        ? "audit identifiers returned"
+        : "audit identifiers hidden",
+      entry.modelNameReturned ? "model names returned" : "model names hidden",
+      entry.tokenUsageReturned ? "token usage returned" : "token usage hidden",
+      entry.timestampReturned ? "timestamps returned" : "timestamps hidden",
+      entry.paginationCursorReturned
+        ? "pagination cursors returned"
+        : "pagination cursors hidden",
+      entry.analyticsUrlReturned ? "analytics URLs returned" : "analytics URLs hidden",
+      entry.complianceUrlReturned ? "compliance URLs returned" : "compliance URLs hidden",
+      entry.dataWarehouseTargetReturned
+        ? "warehouse targets returned"
+        : "warehouse targets hidden",
+      entry.siemTargetReturned ? "SIEM targets returned" : "SIEM targets hidden",
+      entry.dashboardOpened ? "dashboard opened" : "dashboard blocked",
+      entry.analyticsApiRequestStarted ? "Analytics API called" : "Analytics API blocked",
+      entry.complianceApiRequestStarted ? "Compliance API called" : "Compliance API blocked",
+      entry.exportStarted ? "export started" : "export blocked",
+      entry.dataWarehouseWriteStarted ? "warehouse write started" : "warehouse writes blocked",
+      entry.siemExportStarted ? "SIEM export started" : "SIEM export blocked",
+      entry.apiKeyRead ? "API key read" : "API key reads blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexGovernanceList.append(row);
   }
 }
 

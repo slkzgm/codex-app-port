@@ -577,6 +577,21 @@ Current M1 status:
   policy lookups, Team Config filesystem access, RBAC/workspace/policy/Slack/
   cloud-environment/internet-allowlist mutations, paths, URLs, secrets, raw
   payloads, and app-server traffic blocked
+- done: read-only Codex Governance catalog in `/api/settings-integrations`,
+  exposing only static official Governance documentation keys plus local
+  boundary keys/groups/states/sources/counts/redaction flags for Analytics
+  Dashboard, Analytics API, Compliance API, dashboard usage lag, daily/weekly
+  windows, product-surface/workspace/personal/thread/turn/code-review/skill/
+  agent/access-token metric categories, CSV/JSON exports, API endpoint
+  categories, pagination/lookback/scoped-key concepts, audit logs, retention,
+  ChatGPT-auth scope, audit metadata, and SIEM/eDiscovery use cases, with
+  dashboard values, usage/code-review/skill metrics, agent identities,
+  access-token usage, export data, user emails, workspace ids, API keys,
+  prompts, responses, audit identifiers, model names, token usage, timestamps,
+  cursors, analytics/compliance URLs, warehouse/SIEM targets, dashboard opens,
+  Analytics/Compliance API requests, exports, API-key reads, warehouse/SIEM
+  writes, filesystem access, network access, mutations, paths, URLs, secrets,
+  raw payloads, and app-server traffic blocked
 - done: read-only Codex Sites catalog in `/api/settings-integrations`,
   exposing only static official Sites plugin documentation keys plus local
   boundary keys/groups/states/sources/counts/redaction flags for hosted

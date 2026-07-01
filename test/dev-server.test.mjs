@@ -35396,6 +35396,209 @@ function assertCodexAdminSetupCatalog(payload) {
   }
 }
 
+function expectedCodexGovernanceEntries() {
+  return [
+    ["governanceVisibilityAuditability", "overview", "catalog-only", "official-codex-governance-docs"],
+    ["analyticsDashboardTracking", "analytics-dashboard", "catalog-only", "official-codex-governance-docs"],
+    ["analyticsApiReporting", "analytics-api", "catalog-only", "official-codex-governance-docs"],
+    ["complianceApiExports", "compliance-api", "catalog-only", "official-codex-governance-docs"],
+    ["dashboardViews", "analytics-dashboard", "catalog-only", "official-codex-governance-docs"],
+    ["usageDataLag", "analytics-dashboard", "catalog-only", "official-codex-governance-docs"],
+    ["dateRangeDailyWeekly", "analytics-dashboard", "catalog-only", "official-codex-governance-docs"],
+    ["activeUsersBySurface", "analytics-dashboard", "catalog-only", "official-codex-governance-docs"],
+    ["workspacePersonalUsageBreakdown", "analytics-dashboard", "catalog-only", "official-codex-governance-docs"],
+    ["productActivityThreadsTurns", "analytics-dashboard", "catalog-only", "official-codex-governance-docs"],
+    ["userRankingTable", "analytics-dashboard", "catalog-only", "official-codex-governance-docs"],
+    ["codeReviewActivityMetrics", "analytics-dashboard", "catalog-only", "official-codex-governance-docs"],
+    ["skillAgentAccessTokenUsage", "analytics-dashboard", "catalog-only", "official-codex-governance-docs"],
+    ["analyticsDataExport", "analytics-export", "catalog-only", "official-codex-governance-docs"],
+    ["workspaceUsageExport", "analytics-export", "catalog-only", "official-codex-governance-docs"],
+    ["perUserUsageExport", "analytics-export", "catalog-only", "official-codex-governance-docs"],
+    ["codeReviewDetailsExport", "analytics-export", "catalog-only", "official-codex-governance-docs"],
+    ["analyticsApiWorkspaceUsageEndpoint", "analytics-api", "catalog-only", "official-codex-governance-docs"],
+    ["analyticsApiCodeReviewEndpoint", "analytics-api", "catalog-only", "official-codex-governance-docs"],
+    ["analyticsApiCodeReviewResponsesEndpoint", "analytics-api", "catalog-only", "official-codex-governance-docs"],
+    ["analyticsApiPagination", "analytics-api", "catalog-only", "official-codex-governance-docs"],
+    ["analyticsApiLookbackWindow", "analytics-api", "catalog-only", "official-codex-governance-docs"],
+    ["analyticsApiScopedKey", "analytics-api", "catalog-only", "official-codex-governance-docs"],
+    ["analyticsUseCases", "analytics-api", "catalog-only", "official-codex-governance-docs"],
+    ["complianceApiAuditLogs", "compliance-api", "catalog-only", "official-codex-governance-docs"],
+    ["complianceApiRetentionWindow", "compliance-api", "catalog-only", "official-codex-governance-docs"],
+    ["complianceApiChatgptAuthScope", "compliance-api", "catalog-only", "official-codex-governance-docs"],
+    ["complianceActivityLogs", "compliance-api", "catalog-only", "official-codex-governance-docs"],
+    ["complianceAuditMetadata", "compliance-api", "catalog-only", "official-codex-governance-docs"],
+    ["complianceUseCases", "compliance-api", "catalog-only", "official-codex-governance-docs"],
+    ["analyticsDashboardOpenBoundary", "analytics-dashboard", "blocked", "local-governance-boundary"],
+    ["analyticsApiRequestBoundary", "analytics-api", "blocked", "local-governance-boundary"],
+    ["complianceApiRequestBoundary", "compliance-api", "blocked", "local-governance-boundary"],
+    ["apiKeyBoundary", "credentials", "blocked", "local-governance-boundary"],
+    ["workspaceIdBoundary", "identifiers", "blocked", "local-governance-boundary"],
+    ["userEmailBoundary", "identifiers", "blocked", "local-governance-boundary"],
+    ["usageMetricBoundary", "analytics-data", "blocked", "local-governance-boundary"],
+    ["tokenUsageBoundary", "analytics-data", "blocked", "local-governance-boundary"],
+    ["promptResponseLogBoundary", "compliance-data", "blocked", "local-governance-boundary"],
+    ["auditIdentifierBoundary", "compliance-data", "blocked", "local-governance-boundary"],
+    ["csvJsonExportBoundary", "analytics-export", "blocked", "local-governance-boundary"],
+    ["dataWarehouseBoundary", "analytics-export", "blocked", "local-governance-boundary"],
+    ["siemEdiscoveryBoundary", "compliance-export", "blocked", "local-governance-boundary"],
+    ["governanceMutationBoundary", "governance", "blocked", "local-governance-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexGovernanceCatalog(payload) {
+  const catalog = payload.codexGovernance;
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-governance-docs");
+  assert.equal(catalog.entryCount, 44);
+  assert.equal(catalog.officialEntryCount, 30);
+  assert.equal(catalog.localBoundaryEntryCount, 14);
+  assert.equal(catalog.catalogOnlyEntryCount, 30);
+  assert.equal(catalog.blockedEntryCount, 14);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({
+      key,
+      group,
+      state,
+      source,
+    })),
+    expectedCodexGovernanceEntries(),
+  );
+
+  const entryRedactionFlags = [
+    "dashboardValueReturned",
+    "usageMetricReturned",
+    "codeReviewMetricReturned",
+    "skillInvocationMetricReturned",
+    "agentIdentityReturned",
+    "accessTokenUsageReturned",
+    "exportDataReturned",
+    "userEmailReturned",
+    "workspaceIdReturned",
+    "apiKeyReturned",
+    "promptTextReturned",
+    "responseTextReturned",
+    "auditIdentifierReturned",
+    "modelNameReturned",
+    "tokenUsageReturned",
+    "timestampReturned",
+    "paginationCursorReturned",
+    "analyticsUrlReturned",
+    "complianceUrlReturned",
+    "dataWarehouseTargetReturned",
+    "siemTargetReturned",
+    "dashboardOpened",
+    "analyticsApiRequestStarted",
+    "complianceApiRequestStarted",
+    "exportStarted",
+    "dataWarehouseWriteStarted",
+    "siemExportStarted",
+    "apiKeyRead",
+    "filesystemRead",
+    "filesystemWrite",
+    "networkAccess",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.governanceCatalogReturned, true);
+  for (const flag of [
+    "dashboardValuesReturned",
+    "usageMetricsReturned",
+    "codeReviewMetricsReturned",
+    "skillInvocationMetricsReturned",
+    "agentIdentitiesReturned",
+    "accessTokenUsageReturned",
+    "exportDataReturned",
+    "userEmailsReturned",
+    "workspaceIdsReturned",
+    "apiKeysReturned",
+    "promptTextsReturned",
+    "responseTextsReturned",
+    "auditIdentifiersReturned",
+    "modelNamesReturned",
+    "tokenUsageReturned",
+    "timestampsReturned",
+    "paginationCursorsReturned",
+    "analyticsUrlsReturned",
+    "complianceUrlsReturned",
+    "dataWarehouseTargetsReturned",
+    "siemTargetsReturned",
+    "dashboardsOpened",
+    "analyticsApiRequestsStarted",
+    "complianceApiRequestsStarted",
+    "exportsStarted",
+    "dataWarehouseWritesStarted",
+    "siemExportsStarted",
+    "apiKeysRead",
+    "filesystemReads",
+    "filesystemWrites",
+    "networkAccess",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexGovernanceReturned", true],
+    ["codexGovernanceValuesReturned", false],
+    ["codexGovernanceDashboardValuesReturned", false],
+    ["codexGovernanceUsageMetricsReturned", false],
+    ["codexGovernanceCodeReviewMetricsReturned", false],
+    ["codexGovernanceSkillInvocationMetricsReturned", false],
+    ["codexGovernanceAgentIdentitiesReturned", false],
+    ["codexGovernanceAccessTokenUsageReturned", false],
+    ["codexGovernanceExportDataReturned", false],
+    ["codexGovernanceUserEmailsReturned", false],
+    ["codexGovernanceWorkspaceIdsReturned", false],
+    ["codexGovernanceApiKeysReturned", false],
+    ["codexGovernancePromptTextsReturned", false],
+    ["codexGovernanceResponseTextsReturned", false],
+    ["codexGovernanceAuditIdentifiersReturned", false],
+    ["codexGovernanceModelNamesReturned", false],
+    ["codexGovernanceTokenUsageReturned", false],
+    ["codexGovernanceTimestampsReturned", false],
+    ["codexGovernancePaginationCursorsReturned", false],
+    ["codexGovernanceAnalyticsUrlsReturned", false],
+    ["codexGovernanceComplianceUrlsReturned", false],
+    ["codexGovernanceDataWarehouseTargetsReturned", false],
+    ["codexGovernanceSiemTargetsReturned", false],
+    ["codexGovernanceDashboardEnabled", false],
+    ["codexGovernanceAnalyticsApiEnabled", false],
+    ["codexGovernanceComplianceApiEnabled", false],
+    ["codexGovernanceExportEnabled", false],
+    ["codexGovernanceDataWarehouseWriteEnabled", false],
+    ["codexGovernanceSiemExportEnabled", false],
+    ["codexGovernanceApiKeyReadEnabled", false],
+    ["codexGovernanceFilesystemAccess", false],
+    ["codexGovernanceNetworkAccess", false],
+    ["codexGovernanceMutationsEnabled", false],
+    ["codexGovernancePathsReturned", false],
+    ["codexGovernanceUrlsReturned", false],
+    ["codexGovernanceSecretsReturned", false],
+    ["codexGovernanceRawPayloadsReturned", false],
+    ["codexGovernanceAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedSkillsPluginsCatalogEntries(scope = {}) {
   const entries = [
     {
@@ -39184,6 +39387,7 @@ function assertCodexAppSettingsParity(
   assert.equal(summary.settingsWritesEnabled, false);
   assertCodexAccessTokensCatalog(payload);
   assertCodexAdminSetupCatalog(payload);
+  assertCodexGovernanceCatalog(payload);
   assertSkillsPluginsCatalog(payload);
   assertCodexPluginBuildCatalog(payload);
   assertCodexHooksCatalog(payload);

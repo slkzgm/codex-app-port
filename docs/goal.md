@@ -159,6 +159,24 @@ Target parity with the Codex desktop workflow:
   look up user policies, read/write Team Config files, mutate RBAC, workspace
   settings, managed policies, Slack settings, cloud environments, or internet
   allowlists.
+- `/api/settings-integrations` now also exposes a read-only Codex Governance
+  catalog aligned to the official enterprise governance guide. It returns only
+  static keys, groups, states, sources, counts, and redaction flags for
+  Analytics Dashboard tracking, Analytics API reporting, Compliance API export
+  concepts, dashboard views, dashboard usage lag, daily/weekly windows,
+  product-surface usage, workspace/personal usage breakdowns, thread/turn/code
+  review/skill/agent/access-token metric categories, CSV/JSON export options,
+  Analytics API endpoint categories, pagination/lookback/scoped-key concepts,
+  compliance audit logs, retention, ChatGPT-auth scope, audit metadata, and
+  SIEM/eDiscovery use cases. It does not return dashboard values, usage
+  metrics, code-review metrics, skill invocation metrics, agent identities,
+  access-token usage, export data, user emails, workspace ids, API keys, prompt
+  text, response text, audit identifiers, model names, token usage, timestamps,
+  pagination cursors, analytics or compliance URLs, warehouse/SIEM targets,
+  paths, URLs, secrets, raw payloads, or app-server traffic, and it does not
+  open dashboards, call Analytics or Compliance APIs, start exports, read API
+  keys, write warehouses/SIEM pipelines, access files/network, or mutate
+  governance state.
 - `/api/settings-integrations` now also exposes a read-only Skills & Plugins
   catalog aligned to the official Skills and Plugins documentation. It returns
   only static keys, groups, states, sources, counts, and redaction flags for
