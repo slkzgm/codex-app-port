@@ -916,8 +916,9 @@ and OAuth authentication, server instructions, config scoping, CLI/config/TUI
 management paths, STDIO and HTTP options, runtime timeouts, enablement and
 required flags, tool allow/deny lists, approval modes, OAuth callback/scopes
 behavior, derived redirect URI and callback binding guidance, OAuth scope
-fallback behavior, plugin-provided servers, plugin policy overrides, and example-server
-concepts. It must not show server listings, server names or URLs, command text,
+fallback behavior, plugin-provided servers, plugin policy overrides, and
+documented example-server categories for docs, browser, design, observability,
+and source-control workflows. It must not show server listings, server names or URLs, command text,
 arguments, env var names or values, bearer-token env vars, header names or
 values, OAuth URLs or tokens, callback ports or URLs, scopes, config.toml,
 config paths, tool names, tool allowlists, approval modes, server instructions,

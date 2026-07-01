@@ -36578,6 +36578,13 @@ function expectedCodexMcpEntries() {
     ["pluginProvidedServers", "plugins", "catalog-only", "official-codex-mcp-docs"],
     ["pluginMcpPolicyOverrides", "plugins", "catalog-only", "official-codex-mcp-docs"],
     ["usefulServerExamples", "examples", "catalog-only", "official-codex-mcp-docs"],
+    ["openAiDocsMcpExample", "examples", "catalog-only", "official-codex-mcp-docs"],
+    ["context7McpExample", "examples", "catalog-only", "official-codex-mcp-docs"],
+    ["figmaMcpExample", "examples", "catalog-only", "official-codex-mcp-docs"],
+    ["playwrightMcpExample", "examples", "catalog-only", "official-codex-mcp-docs"],
+    ["chromeDevtoolsMcpExample", "examples", "catalog-only", "official-codex-mcp-docs"],
+    ["sentryMcpExample", "examples", "catalog-only", "official-codex-mcp-docs"],
+    ["githubMcpExample", "examples", "catalog-only", "official-codex-mcp-docs"],
     ["serverListingBoundary", "servers", "blocked", "local-mcp-boundary"],
     ["serverNameBoundary", "servers", "blocked", "local-mcp-boundary"],
     ["serverUrlBoundary", "servers", "blocked", "local-mcp-boundary"],
@@ -36603,10 +36610,10 @@ function assertCodexMcpCatalog(payload) {
   assert.equal(catalog?.returned, true);
   assert.equal(catalog.state, "partial");
   assert.equal(catalog.officialSource, "official-codex-mcp-docs");
-  assert.equal(catalog.entryCount, 59);
-  assert.equal(catalog.officialEntryCount, 42);
+  assert.equal(catalog.entryCount, 66);
+  assert.equal(catalog.officialEntryCount, 49);
   assert.equal(catalog.localBoundaryEntryCount, 17);
-  assert.equal(catalog.catalogOnlyEntryCount, 42);
+  assert.equal(catalog.catalogOnlyEntryCount, 49);
   assert.equal(catalog.blockedEntryCount, 17);
   assert.equal(catalog.enabledEntryCount, 0);
   assert.deepEqual(
