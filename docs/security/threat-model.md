@@ -455,6 +455,16 @@
   new-thread usage, direct-task and `@` invocation, bundled skills/apps/MCP
   setup, external app data terms, uninstall semantics, disable config, and
   plugin guide references. Its
+  Codex Access tokens catalog may expose only static official-documentation
+  keys plus local boundary keys, groups, states, sources, counts, and redaction
+  flags; it must not return token names, token values, prefixes, hashes, user
+  or workspace identities/names, admin URLs, secret-manager locations, CI
+  secret names, expiration values, auth storage paths, environment values,
+  command text, governance records, permission states, paths, URLs, secrets,
+  raw payloads, app-server payloads, or app-server traffic, and must not create,
+  list, revoke, rotate, or persist tokens, run `codex login`, run `codex exec`,
+  trigger workspace agents, open admin consoles, read environment variables,
+  read auth storage, access files or network, or mutate access-token state. Its
   Codex Sites catalog may expose only static official-documentation keys plus
   local boundary keys, groups, states, sources, counts, and redaction flags; it
   must not return Sites projects, project ids, `.openai/hosting.json`, storage

@@ -29,6 +29,8 @@ const elements = {
   appGitValuesText: document.querySelector("#app-git-values-text"),
   appIntegrationsMcpText: document.querySelector("#app-integrations-mcp-text"),
   appIntegrationsMcpValuesText: document.querySelector("#app-integrations-mcp-values-text"),
+  codexAccessTokensText: document.querySelector("#codex-access-tokens-text"),
+  codexAccessTokensValuesText: document.querySelector("#codex-access-tokens-values-text"),
   skillsPluginsCatalogText: document.querySelector("#skills-plugins-catalog-text"),
   skillsPluginsCatalogValuesText: document.querySelector("#skills-plugins-catalog-values-text"),
   codexPluginBuildText: document.querySelector("#codex-plugin-build-text"),
@@ -429,6 +431,7 @@ const elements = {
   appPetsList: document.querySelector("#app-pets-list"),
   appGitList: document.querySelector("#app-git-list"),
   appIntegrationsMcpList: document.querySelector("#app-integrations-mcp-list"),
+  codexAccessTokensList: document.querySelector("#codex-access-tokens-list"),
   skillsPluginsCatalogList: document.querySelector("#skills-plugins-catalog-list"),
   codexPluginBuildList: document.querySelector("#codex-plugin-build-list"),
   codexHooksList: document.querySelector("#codex-hooks-list"),
@@ -10483,6 +10486,7 @@ function renderSettingsIntegrations(payload) {
   const integrationScope = payload.integrationScope ?? {};
   const integrationLifecycle = payload.integrationLifecycle ?? {};
   const codexAppSettings = payload.codexAppSettings ?? {};
+  const codexAccessTokens = payload.codexAccessTokens ?? {};
   const skillsPluginsCatalog = payload.skillsPluginsCatalog ?? {};
   const codexPluginBuild = payload.codexPluginBuild ?? {};
   const codexHooks = payload.codexHooks ?? {};
@@ -10511,6 +10515,50 @@ function renderSettingsIntegrations(payload) {
     : "Blocked";
   elements.appSettingsValuesText.textContent =
     codexAppSettings.localSettingValuesReturned || codexAppSettings.settingValuesReturned
+      ? "Returned"
+      : "Hidden";
+  elements.codexAccessTokensText.textContent = codexAccessTokens.returned
+    ? `${codexAccessTokens.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexAccessTokens.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexAccessTokensValuesText.textContent =
+    codexAccessTokens.tokenNamesReturned ||
+    codexAccessTokens.tokenValuesReturned ||
+    codexAccessTokens.tokenPrefixesReturned ||
+    codexAccessTokens.tokenHashesReturned ||
+    codexAccessTokens.userIdentitiesReturned ||
+    codexAccessTokens.workspaceIdentitiesReturned ||
+    codexAccessTokens.workspaceNamesReturned ||
+    codexAccessTokens.adminConsoleUrlsReturned ||
+    codexAccessTokens.secretManagerLocationsReturned ||
+    codexAccessTokens.ciSecretNamesReturned ||
+    codexAccessTokens.expirationValuesReturned ||
+    codexAccessTokens.authStoragePathsReturned ||
+    codexAccessTokens.environmentValuesReturned ||
+    codexAccessTokens.commandTextsReturned ||
+    codexAccessTokens.governanceRecordsReturned ||
+    codexAccessTokens.permissionStatesReturned ||
+    codexAccessTokens.tokensCreated ||
+    codexAccessTokens.tokensListed ||
+    codexAccessTokens.tokensRevoked ||
+    codexAccessTokens.tokensRotated ||
+    codexAccessTokens.tokensPersisted ||
+    codexAccessTokens.codexLoginsStarted ||
+    codexAccessTokens.codexExecsStarted ||
+    codexAccessTokens.workspaceAgentsTriggered ||
+    codexAccessTokens.adminConsolesOpened ||
+    codexAccessTokens.environmentReads ||
+    codexAccessTokens.authStorageReads ||
+    codexAccessTokens.filesystemReads ||
+    codexAccessTokens.filesystemWrites ||
+    codexAccessTokens.networkAccess ||
+    codexAccessTokens.mutationEnabled ||
+    codexAccessTokens.pathsReturned ||
+    codexAccessTokens.urlsReturned ||
+    codexAccessTokens.secretsReturned ||
+    codexAccessTokens.rawPayloadsReturned ||
+    codexAccessTokens.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.skillsPluginsCatalogText.textContent = skillsPluginsCatalog.returned
@@ -11544,6 +11592,7 @@ function renderSettingsIntegrations(payload) {
   renderIntegrationConfirmationHistory(payload.preflightConfirmationHistory);
   renderIntegrationDetails(inventory);
   renderCodexAppSettingsParity(codexAppSettings);
+  renderCodexAccessTokensCatalog(codexAccessTokens);
   renderSkillsPluginsCatalog(skillsPluginsCatalog);
   renderCodexPluginBuildCatalog(codexPluginBuild);
   renderCodexHooksCatalog(codexHooks);
@@ -13083,6 +13132,99 @@ function remoteControlStatusText(remoteControlStatus) {
     })
     .filter(Boolean);
   return parts.length > 0 ? parts.join(" / ") : "0 statuses";
+}
+
+function renderCodexAccessTokensCatalog(summary) {
+  elements.codexAccessTokensList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexAccessTokensList.append(
+      emptyState("No Codex access token catalog returned."),
+    );
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "access-tokens";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.tokenNameReturned ? "token names returned" : "token names hidden",
+      entry.tokenValueReturned ? "token values returned" : "token values hidden",
+      entry.tokenPrefixReturned ? "token prefixes returned" : "token prefixes hidden",
+      entry.tokenHashReturned ? "token hashes returned" : "token hashes hidden",
+      entry.userIdentityReturned ? "user identities returned" : "user identities hidden",
+      entry.workspaceIdentityReturned
+        ? "workspace identities returned"
+        : "workspace identities hidden",
+      entry.workspaceNameReturned ? "workspace names returned" : "workspace names hidden",
+      entry.adminConsoleUrlReturned ? "admin URLs returned" : "admin URLs hidden",
+      entry.secretManagerLocationReturned
+        ? "secret manager locations returned"
+        : "secret manager locations hidden",
+      entry.ciSecretNameReturned ? "CI secret names returned" : "CI secret names hidden",
+      entry.expirationValueReturned ? "expiration values returned" : "expiration values hidden",
+      entry.authStoragePathReturned ? "auth storage paths returned" : "auth storage paths hidden",
+      entry.environmentValueReturned
+        ? "environment values returned"
+        : "environment values hidden",
+      entry.commandTextReturned ? "command text returned" : "command text hidden",
+      entry.governanceRecordReturned
+        ? "governance records returned"
+        : "governance records hidden",
+      entry.permissionStateReturned
+        ? "permission states returned"
+        : "permission states hidden",
+      entry.accessTokenCreated ? "token created" : "token creation blocked",
+      entry.accessTokenListed ? "tokens listed" : "token listing blocked",
+      entry.accessTokenRevoked ? "token revoked" : "token revoke blocked",
+      entry.accessTokenRotated ? "token rotated" : "token rotation blocked",
+      entry.tokenPersisted ? "token persisted" : "token persistence blocked",
+      entry.codexLoginStarted ? "codex login started" : "codex login blocked",
+      entry.codexExecStarted ? "codex exec started" : "codex exec blocked",
+      entry.workspaceAgentTriggered
+        ? "workspace agent triggered"
+        : "workspace agent trigger blocked",
+      entry.adminConsoleOpened ? "admin console opened" : "admin console blocked",
+      entry.environmentRead ? "environment read" : "environment reads blocked",
+      entry.authStorageRead ? "auth storage read" : "auth storage reads blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexAccessTokensList.append(row);
+  }
 }
 
 function renderSkillsPluginsCatalog(summary) {

@@ -548,6 +548,20 @@ Current M1 status:
   MCP server names, hook commands, share links/principals, setting values,
   installs, uninstalls, writes, mutations, external code, paths, URLs, secrets,
   raw payloads, and app-server traffic blocked
+- done: read-only Codex Access tokens catalog in `/api/settings-integrations`,
+  exposing only static official Access tokens documentation keys plus local
+  boundary keys/groups/states/sources/counts/redaction flags for ChatGPT
+  workspace identity automation, Business/Enterprise availability,
+  admin-console creation, credential-choice guidance, non-interactive CLI
+  usage, governance, secret storage, trusted-runner risks, finite expiration,
+  permission model, troubleshooting, and related docs, with token names/values/
+  prefixes/hashes, user or workspace identities/names, admin URLs,
+  secret-manager locations, CI secret names, expiration values, auth storage
+  paths, environment values, command text, governance records, permission
+  states, token creation/list/revoke/rotation/persistence, codex login/exec,
+  workspace-agent triggers, admin-console access, environment reads,
+  auth-storage reads, filesystem access, network access, mutations, paths,
+  URLs, secrets, raw payloads, and app-server traffic blocked
 - done: read-only Codex Sites catalog in `/api/settings-integrations`,
   exposing only static official Sites plugin documentation keys plus local
   boundary keys/groups/states/sources/counts/redaction flags for hosted

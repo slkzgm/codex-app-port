@@ -127,6 +127,21 @@ Target parity with the Codex desktop workflow:
   `config.toml` content or paths, tool names, tool allowlists, server
   instructions, plugin ids, setting values, config writes, mutations, paths,
   URLs, secrets, raw payloads, and app-server traffic remain blocked.
+- `/api/settings-integrations` now also exposes a read-only Codex Access tokens
+  catalog aligned to the official access-token documentation. It returns only
+  static keys, groups, states, sources, counts, and redaction flags for
+  ChatGPT workspace identity automation, Business/Enterprise availability,
+  admin-console creation, credential-choice guidance, non-interactive CLI
+  usage, governance, secret storage, trusted-runner risks, finite expiration,
+  permission model, troubleshooting, and related docs. It does not return token
+  names, token values, prefixes, hashes, user or workspace identities/names,
+  admin URLs, secret-manager locations, CI secret names, expiration values,
+  auth storage paths, environment values, command text, governance records,
+  permission states, paths, URLs, secrets, raw payloads, or app-server traffic,
+  and it does not create/list/revoke/rotate/persist tokens, run `codex login`,
+  run `codex exec`, trigger workspace agents, open admin consoles, read
+  environment variables, read auth storage, access files/network, or mutate
+  auth state.
 - `/api/settings-integrations` now also exposes a read-only Skills & Plugins
   catalog aligned to the official Skills and Plugins documentation. It returns
   only static keys, groups, states, sources, counts, and redaction flags for

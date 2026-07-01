@@ -34924,6 +34924,257 @@ function assertSettingsServerBoundaries(payload) {
   assert.equal(payload.policy?.serverNotificationSdpReturned, false);
 }
 
+function expectedCodexAccessTokensEntries() {
+  return [
+    ["codexAccessTokenUseCase", "overview", "catalog-only", "official-codex-access-tokens-docs"],
+    [
+      "businessEnterpriseWorkspaceSupport",
+      "availability",
+      "catalog-only",
+      "official-codex-access-tokens-docs",
+    ],
+    ["chatgptAdminConsoleCreation", "creation", "catalog-only", "official-codex-access-tokens-docs"],
+    [
+      "chatgptUserWorkspaceIdentity",
+      "identity",
+      "catalog-only",
+      "official-codex-access-tokens-docs",
+    ],
+    ["apiKeyPreferredWhenEnough", "credential-choice", "catalog-only", "official-codex-access-tokens-docs"],
+    [
+      "workspaceAgentTokenDistinction",
+      "credential-choice",
+      "catalog-only",
+      "official-codex-access-tokens-docs",
+    ],
+    ["nonInteractiveSignIn", "automation", "catalog-only", "official-codex-access-tokens-docs"],
+    [
+      "governanceIdentityAssociation",
+      "governance",
+      "catalog-only",
+      "official-codex-access-tokens-docs",
+    ],
+    ["secretManagerStorage", "security", "catalog-only", "official-codex-access-tokens-docs"],
+    ["trustedRunnerRequirement", "security", "catalog-only", "official-codex-access-tokens-docs"],
+    ["workflowOwnerIdentity", "governance", "catalog-only", "official-codex-access-tokens-docs"],
+    ["finiteExpirationPreference", "rotation", "catalog-only", "official-codex-access-tokens-docs"],
+    [
+      "accessTokenCreationPermission",
+      "admin-permissions",
+      "catalog-only",
+      "official-codex-access-tokens-docs",
+    ],
+    [
+      "codexLocalPermissionRequirement",
+      "admin-permissions",
+      "catalog-only",
+      "official-codex-access-tokens-docs",
+    ],
+    ["expirationLimitPolicy", "admin-policy", "catalog-only", "official-codex-access-tokens-docs"],
+    ["createTokenNameAndExpiration", "creation", "catalog-only", "official-codex-access-tokens-docs"],
+    ["copyTokenOnce", "creation", "catalog-only", "official-codex-access-tokens-docs"],
+    ["envVarEphemeralUsage", "cli-usage", "catalog-only", "official-codex-access-tokens-docs"],
+    [
+      "persistentLoginWithAccessToken",
+      "cli-usage",
+      "catalog-only",
+      "official-codex-access-tokens-docs",
+    ],
+    ["rotateAndRevokeFlow", "rotation", "catalog-only", "official-codex-access-tokens-docs"],
+    [
+      "ownerAdminWorkspaceTokenList",
+      "permission-model",
+      "catalog-only",
+      "official-codex-access-tokens-docs",
+    ],
+    [
+      "memberOwnTokenManagement",
+      "permission-model",
+      "catalog-only",
+      "official-codex-access-tokens-docs",
+    ],
+    [
+      "forbiddenPageTroubleshooting",
+      "troubleshooting",
+      "catalog-only",
+      "official-codex-access-tokens-docs",
+    ],
+    [
+      "withAccessTokenFailureTroubleshooting",
+      "troubleshooting",
+      "catalog-only",
+      "official-codex-access-tokens-docs",
+    ],
+    [
+      "relatedAuthNoninteractiveAdminGovernance",
+      "related-docs",
+      "catalog-only",
+      "official-codex-access-tokens-docs",
+    ],
+    ["accessTokenValueBoundary", "security", "blocked", "local-access-token-boundary"],
+    ["accessTokenEnvReadBoundary", "cli-usage", "blocked", "local-access-token-boundary"],
+    ["authStorageReadBoundary", "cli-usage", "blocked", "local-access-token-boundary"],
+    ["accessTokenCreationBoundary", "creation", "blocked", "local-access-token-boundary"],
+    ["accessTokenPersistenceBoundary", "cli-usage", "blocked", "local-access-token-boundary"],
+    ["codexExecWithTokenBoundary", "automation", "blocked", "local-access-token-boundary"],
+    ["accessTokenRotationBoundary", "rotation", "blocked", "local-access-token-boundary"],
+    ["adminConsoleAccessBoundary", "admin-permissions", "blocked", "local-access-token-boundary"],
+    ["workspaceAgentTokenBoundary", "credential-choice", "blocked", "local-access-token-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexAccessTokensCatalog(payload) {
+  const catalog = payload.codexAccessTokens;
+  const expectedEntries = expectedCodexAccessTokensEntries();
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-access-tokens-docs");
+  assert.equal(catalog.entryCount, 34);
+  assert.equal(catalog.officialEntryCount, 25);
+  assert.equal(catalog.localBoundaryEntryCount, 9);
+  assert.equal(catalog.catalogOnlyEntryCount, 25);
+  assert.equal(catalog.blockedEntryCount, 9);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({
+      key,
+      group,
+      state,
+      source,
+    })),
+    expectedEntries,
+  );
+
+  const entryRedactionFlags = [
+    "tokenNameReturned",
+    "tokenValueReturned",
+    "tokenPrefixReturned",
+    "tokenHashReturned",
+    "userIdentityReturned",
+    "workspaceIdentityReturned",
+    "workspaceNameReturned",
+    "adminConsoleUrlReturned",
+    "secretManagerLocationReturned",
+    "ciSecretNameReturned",
+    "expirationValueReturned",
+    "authStoragePathReturned",
+    "environmentValueReturned",
+    "commandTextReturned",
+    "governanceRecordReturned",
+    "permissionStateReturned",
+    "accessTokenCreated",
+    "accessTokenListed",
+    "accessTokenRevoked",
+    "accessTokenRotated",
+    "tokenPersisted",
+    "codexLoginStarted",
+    "codexExecStarted",
+    "workspaceAgentTriggered",
+    "adminConsoleOpened",
+    "environmentRead",
+    "authStorageRead",
+    "filesystemRead",
+    "filesystemWrite",
+    "networkAccess",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.accessTokensCatalogReturned, true);
+  for (const flag of [
+    "tokenNamesReturned",
+    "tokenValuesReturned",
+    "tokenPrefixesReturned",
+    "tokenHashesReturned",
+    "userIdentitiesReturned",
+    "workspaceIdentitiesReturned",
+    "workspaceNamesReturned",
+    "adminConsoleUrlsReturned",
+    "secretManagerLocationsReturned",
+    "ciSecretNamesReturned",
+    "expirationValuesReturned",
+    "authStoragePathsReturned",
+    "environmentValuesReturned",
+    "commandTextsReturned",
+    "governanceRecordsReturned",
+    "permissionStatesReturned",
+    "tokensCreated",
+    "tokensListed",
+    "tokensRevoked",
+    "tokensRotated",
+    "tokensPersisted",
+    "codexLoginsStarted",
+    "codexExecsStarted",
+    "workspaceAgentsTriggered",
+    "adminConsolesOpened",
+    "environmentReads",
+    "authStorageReads",
+    "filesystemReads",
+    "filesystemWrites",
+    "networkAccess",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexAccessTokensReturned", true],
+    ["codexAccessTokensValuesReturned", false],
+    ["codexAccessTokensTokenNamesReturned", false],
+    ["codexAccessTokensTokenValuesReturned", false],
+    ["codexAccessTokensTokenPrefixesReturned", false],
+    ["codexAccessTokensTokenHashesReturned", false],
+    ["codexAccessTokensUserIdentitiesReturned", false],
+    ["codexAccessTokensWorkspaceIdentitiesReturned", false],
+    ["codexAccessTokensWorkspaceNamesReturned", false],
+    ["codexAccessTokensAdminConsoleUrlsReturned", false],
+    ["codexAccessTokensSecretManagerLocationsReturned", false],
+    ["codexAccessTokensCiSecretNamesReturned", false],
+    ["codexAccessTokensExpirationValuesReturned", false],
+    ["codexAccessTokensAuthStoragePathsReturned", false],
+    ["codexAccessTokensEnvironmentValuesReturned", false],
+    ["codexAccessTokensCommandTextsReturned", false],
+    ["codexAccessTokensGovernanceRecordsReturned", false],
+    ["codexAccessTokensPermissionStatesReturned", false],
+    ["codexAccessTokensCreateEnabled", false],
+    ["codexAccessTokensListEnabled", false],
+    ["codexAccessTokensRevokeEnabled", false],
+    ["codexAccessTokensRotateEnabled", false],
+    ["codexAccessTokensPersistenceEnabled", false],
+    ["codexAccessTokensCodexLoginEnabled", false],
+    ["codexAccessTokensCodexExecEnabled", false],
+    ["codexAccessTokensWorkspaceAgentTriggerEnabled", false],
+    ["codexAccessTokensAdminConsoleEnabled", false],
+    ["codexAccessTokensEnvironmentReadEnabled", false],
+    ["codexAccessTokensAuthStorageReadEnabled", false],
+    ["codexAccessTokensFilesystemAccess", false],
+    ["codexAccessTokensNetworkAccess", false],
+    ["codexAccessTokensMutationsEnabled", false],
+    ["codexAccessTokensPathsReturned", false],
+    ["codexAccessTokensUrlsReturned", false],
+    ["codexAccessTokensSecretsReturned", false],
+    ["codexAccessTokensRawPayloadsReturned", false],
+    ["codexAccessTokensAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedSkillsPluginsCatalogEntries(scope = {}) {
   const entries = [
     {
@@ -38710,6 +38961,7 @@ function assertCodexAppSettingsParity(
   assert.equal(summary.mutationsEnabled, false);
   assert.equal(summary.browserHandlersEnabled, false);
   assert.equal(summary.settingsWritesEnabled, false);
+  assertCodexAccessTokensCatalog(payload);
   assertSkillsPluginsCatalog(payload);
   assertCodexPluginBuildCatalog(payload);
   assertCodexHooksCatalog(payload);

@@ -771,6 +771,21 @@ environment variables, bearer-token environment variables, OAuth URLs or
 tokens, `config.toml` content or paths, tool names, tool allowlists, server
 instructions, plugin ids, setting values, config writes, mutations, paths,
 URLs, raw payloads, and app-server traffic remain blocked.
+The same response exposes `codexAccessTokens` as a static review-only catalog
+for official Codex Access token behavior. The UI shows only catalog counts,
+entry keys, groups, state/source chips, and redaction chips for workspace
+identity automation, Business/Enterprise availability, admin-console creation,
+credential-choice guidance, non-interactive CLI usage, governance, secret
+storage, trusted-runner risks, finite expiration, permission model,
+troubleshooting, related docs, and local token boundaries. It does not show
+token names, token values, prefixes, hashes, user/workspace identities,
+workspace names, admin URLs, secret-manager locations, CI secret names,
+expiration values, auth storage paths, environment values, command text,
+governance records, permission states, paths, URLs, secrets, raw payloads, or
+app-server traffic, and it does not create/list/revoke/rotate/persist tokens,
+run `codex login`, run `codex exec`, trigger workspace agents, open admin
+consoles, read environment variables, read auth storage, access files/network,
+or mutate access-token state.
 The same Settings & Integrations response also exposes `skillsPluginsCatalog`
 as a static review-only Skills & Plugins catalog. The UI shows only catalog
 counts, setting keys, groups, state/source chips, and redaction chips for
