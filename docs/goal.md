@@ -159,6 +159,21 @@ Target parity with the Codex desktop workflow:
   look up user policies, read/write Team Config files, mutate RBAC, workspace
   settings, managed policies, Slack settings, cloud environments, or internet
   allowlists.
+- `/api/settings-integrations` now also exposes a read-only Codex Auto-review
+  catalog aligned to the official Auto-review guide. It returns only static
+  keys, groups, states, sources, counts, and redaction flags for reviewer-swap
+  behavior, interactive approval requirements, escalation triggers, blocked
+  risk categories, reviewer context, denial behavior, rejection circuit breaker,
+  timeout semantics, explicit denial override, managed/local policy
+  configuration, review-volume guidance, transcript retention, and documented
+  limits. It does not return approval requests, reviewer rationales,
+  transcripts, tool calls or outputs, prompt text, user messages, policy
+  content, denial records, override markers, session transcript paths, config
+  policies, paths, URLs, secrets, raw payloads, or app-server traffic, and it
+  does not start reviewer agents, forward approvals, apply overrides, read
+  config or session transcripts, change sandbox/network/writable-root/protected
+  path policy, create model traffic, access files/network, or mutate
+  Auto-review state.
 - `/api/settings-integrations` now also exposes a read-only Codex Governance
   catalog aligned to the official enterprise governance guide. It returns only
   static keys, groups, states, sources, counts, and redaction flags for

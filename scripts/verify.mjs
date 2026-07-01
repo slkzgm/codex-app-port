@@ -33563,6 +33563,183 @@ function assertCodexAdminSetupCatalog(payload) {
   }
 }
 
+function expectedCodexAutoReviewEntries() {
+  return [
+    ["reviewerSwapOverview", "overview", "catalog-only", "official-codex-auto-review-docs"],
+    ["interactiveApprovalRequirement", "activation", "catalog-only", "official-codex-auto-review-docs"],
+    ["manualPauseReplacementFlow", "workflow", "catalog-only", "official-codex-auto-review-docs"],
+    ["reviewerDecisionRationale", "workflow", "catalog-only", "official-codex-auto-review-docs"],
+    ["deniedSaferPathInstruction", "denials", "catalog-only", "official-codex-auto-review-docs"],
+    ["noPermissionGrantBoundary", "security-boundary", "catalog-only", "official-codex-auto-review-docs"],
+    ["shellExecEscalationTrigger", "triggers", "catalog-only", "official-codex-auto-review-docs"],
+    ["networkEscalationTrigger", "triggers", "catalog-only", "official-codex-auto-review-docs"],
+    ["externalFileEditTrigger", "triggers", "catalog-only", "official-codex-auto-review-docs"],
+    ["mcpAppToolTrigger", "triggers", "catalog-only", "official-codex-auto-review-docs"],
+    ["browserUseDomainTrigger", "triggers", "catalog-only", "official-codex-auto-review-docs"],
+    ["routineAllowedActionBypass", "triggers", "catalog-only", "official-codex-auto-review-docs"],
+    ["computerUsePromptException", "triggers", "catalog-only", "official-codex-auto-review-docs"],
+    ["privateDataExfiltrationBlock", "blocked-risk", "catalog-only", "official-codex-auto-review-docs"],
+    ["credentialProbingBlock", "blocked-risk", "catalog-only", "official-codex-auto-review-docs"],
+    ["persistentSecurityWeakeningBlock", "blocked-risk", "catalog-only", "official-codex-auto-review-docs"],
+    ["destructiveActionBlock", "blocked-risk", "catalog-only", "official-codex-auto-review-docs"],
+    ["reviewerContextTranscript", "reviewer-context", "catalog-only", "official-codex-auto-review-docs"],
+    ["hiddenReasoningExcluded", "reviewer-context", "catalog-only", "official-codex-auto-review-docs"],
+    ["denialInstructionBehavior", "denials", "catalog-only", "official-codex-auto-review-docs"],
+    ["rejectionCircuitBreaker", "denials", "catalog-only", "official-codex-auto-review-docs"],
+    ["timeoutNotSafetySignal", "failure-behavior", "catalog-only", "official-codex-auto-review-docs"],
+    ["explicitDenialOverride", "overrides", "catalog-only", "official-codex-auto-review-docs"],
+    ["managedEnterprisePolicy", "configuration", "catalog-only", "official-codex-auto-review-docs"],
+    ["localPolicyConfiguration", "configuration", "catalog-only", "official-codex-auto-review-docs"],
+    ["reduceReviewVolumeGuidance", "configuration", "catalog-only", "official-codex-auto-review-docs"],
+    ["sessionTranscriptRetention", "retention", "catalog-only", "official-codex-auto-review-docs"],
+    ["nondeterministicLimit", "limits", "catalog-only", "official-codex-auto-review-docs"],
+    ["reviewerAgentInvocationBoundary", "reviewer-runtime", "blocked", "local-auto-review-boundary"],
+    ["approvalRequestBoundary", "reviewer-runtime", "blocked", "local-auto-review-boundary"],
+    ["rationaleBoundary", "reviewer-runtime", "blocked", "local-auto-review-boundary"],
+    ["transcriptBoundary", "reviewer-context", "blocked", "local-auto-review-boundary"],
+    ["toolEvidenceBoundary", "reviewer-context", "blocked", "local-auto-review-boundary"],
+    ["hiddenReasoningBoundary", "reviewer-context", "blocked", "local-auto-review-boundary"],
+    ["policyContentBoundary", "configuration", "blocked", "local-auto-review-boundary"],
+    ["denialOverrideBoundary", "overrides", "blocked", "local-auto-review-boundary"],
+    ["denialHistoryBoundary", "denials", "blocked", "local-auto-review-boundary"],
+    ["sessionTranscriptBoundary", "retention", "blocked", "local-auto-review-boundary"],
+    ["configPolicyReadBoundary", "configuration", "blocked", "local-auto-review-boundary"],
+    ["approvalForwardingBoundary", "reviewer-runtime", "blocked", "local-auto-review-boundary"],
+    ["autoReviewMutationBoundary", "configuration", "blocked", "local-auto-review-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexAutoReviewCatalog(payload) {
+  const catalog = payload.codexAutoReview;
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-auto-review-docs");
+  assert.equal(catalog.entryCount, 41);
+  assert.equal(catalog.officialEntryCount, 28);
+  assert.equal(catalog.localBoundaryEntryCount, 13);
+  assert.equal(catalog.catalogOnlyEntryCount, 28);
+  assert.equal(catalog.blockedEntryCount, 13);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({ key, group, state, source })),
+    expectedCodexAutoReviewEntries(),
+  );
+
+  const entryRedactionFlags = [
+    "approvalRequestReturned",
+    "reviewerRationaleReturned",
+    "transcriptReturned",
+    "toolCallReturned",
+    "toolOutputReturned",
+    "promptTextReturned",
+    "userMessageReturned",
+    "policyContentReturned",
+    "denialRecordReturned",
+    "overrideMarkerReturned",
+    "sessionTranscriptPathReturned",
+    "configPolicyReturned",
+    "sandboxChanged",
+    "networkEnabled",
+    "writableRootsExpanded",
+    "protectedPathsWeakened",
+    "reviewerAgentStarted",
+    "approvalForwarded",
+    "denialOverrideApplied",
+    "configRead",
+    "sessionTranscriptRead",
+    "filesystemRead",
+    "filesystemWrite",
+    "networkAccess",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.autoReviewCatalogReturned, true);
+  for (const flag of [
+    "approvalRequestsReturned",
+    "reviewerRationalesReturned",
+    "transcriptsReturned",
+    "toolCallsReturned",
+    "toolOutputsReturned",
+    "promptTextsReturned",
+    "userMessagesReturned",
+    "policyContentsReturned",
+    "denialRecordsReturned",
+    "overrideMarkersReturned",
+    "sessionTranscriptPathsReturned",
+    "configPoliciesReturned",
+    "sandboxesChanged",
+    "networkEnabled",
+    "writableRootsExpanded",
+    "protectedPathsWeakened",
+    "reviewerAgentsStarted",
+    "approvalsForwarded",
+    "denialOverridesApplied",
+    "configReads",
+    "sessionTranscriptReads",
+    "filesystemReads",
+    "filesystemWrites",
+    "networkAccess",
+    "modelTraffic",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexAutoReviewReturned", true],
+    ["codexAutoReviewValuesReturned", false],
+    ["codexAutoReviewApprovalRequestsReturned", false],
+    ["codexAutoReviewReviewerRationalesReturned", false],
+    ["codexAutoReviewTranscriptsReturned", false],
+    ["codexAutoReviewToolCallsReturned", false],
+    ["codexAutoReviewToolOutputsReturned", false],
+    ["codexAutoReviewPromptTextsReturned", false],
+    ["codexAutoReviewUserMessagesReturned", false],
+    ["codexAutoReviewPolicyContentsReturned", false],
+    ["codexAutoReviewDenialRecordsReturned", false],
+    ["codexAutoReviewOverrideMarkersReturned", false],
+    ["codexAutoReviewSessionTranscriptPathsReturned", false],
+    ["codexAutoReviewConfigPoliciesReturned", false],
+    ["codexAutoReviewSandboxChangeEnabled", false],
+    ["codexAutoReviewNetworkEnablementAllowed", false],
+    ["codexAutoReviewWritableRootsExpansionAllowed", false],
+    ["codexAutoReviewProtectedPathWeakeningAllowed", false],
+    ["codexAutoReviewReviewerAgentEnabled", false],
+    ["codexAutoReviewApprovalForwardingEnabled", false],
+    ["codexAutoReviewDenialOverrideEnabled", false],
+    ["codexAutoReviewConfigReadEnabled", false],
+    ["codexAutoReviewSessionTranscriptReadEnabled", false],
+    ["codexAutoReviewFilesystemAccess", false],
+    ["codexAutoReviewNetworkAccess", false],
+    ["codexAutoReviewModelTraffic", false],
+    ["codexAutoReviewMutationsEnabled", false],
+    ["codexAutoReviewPathsReturned", false],
+    ["codexAutoReviewUrlsReturned", false],
+    ["codexAutoReviewSecretsReturned", false],
+    ["codexAutoReviewRawPayloadsReturned", false],
+    ["codexAutoReviewAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexGovernanceEntries() {
   return [
     ["governanceVisibilityAuditability", "overview", "catalog-only", "official-codex-governance-docs"],
@@ -37877,6 +38054,7 @@ function assertCodexAppSettingsParity(
   }
   assertCodexAccessTokensCatalog(payload);
   assertCodexAdminSetupCatalog(payload);
+  assertCodexAutoReviewCatalog(payload);
   assertCodexGovernanceCatalog(payload);
   assertCodexManagedConfigurationCatalog(payload);
   assertCodexEnvironmentVariablesCatalog(payload);

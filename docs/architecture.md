@@ -592,6 +592,20 @@ Current M1 status:
   Analytics/Compliance API requests, exports, API-key reads, warehouse/SIEM
   writes, filesystem access, network access, mutations, paths, URLs, secrets,
   raw payloads, and app-server traffic blocked
+- done: read-only Codex Auto-review catalog in `/api/settings-integrations`,
+  exposing only static official Auto-review documentation keys plus local
+  boundary keys/groups/states/sources/counts/redaction flags for reviewer-swap
+  behavior, interactive approval requirements, escalation triggers, blocked
+  risk categories, reviewer context, denial behavior, rejection circuit
+  breaker, timeout semantics, explicit denial override, managed/local policy
+  configuration, review-volume guidance, transcript retention, and documented
+  limits, with approval requests, reviewer rationales, transcripts, tool calls
+  or outputs, prompt text, user messages, policy content, denial records,
+  override markers, session transcript paths, config policies, sandbox/network/
+  writable-root/protected-path changes, reviewer-agent starts, approval
+  forwarding, override application, config reads, transcript reads, model
+  traffic, filesystem access, network access, mutations, paths, URLs, secrets,
+  raw payloads, and app-server traffic blocked
 - done: read-only Codex Managed configuration catalog in
   `/api/settings-integrations`, exposing only static official Managed
   configuration documentation keys plus local boundary keys/groups/states/

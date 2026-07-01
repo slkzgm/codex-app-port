@@ -818,6 +818,20 @@ compliance URLs, warehouse/SIEM targets, paths, URLs, secrets, raw payloads, or
 app-server traffic, and it does not open dashboards, call Analytics or
 Compliance APIs, start exports, read API keys, write warehouses/SIEM pipelines,
 access files/network, or mutate governance state.
+The same response exposes `codexAutoReview` as a static review-only catalog for
+official Codex Auto-review behavior. The UI shows only catalog counts, entry
+keys, groups, state/source chips, and redaction chips for reviewer-swap
+behavior, interactive approval requirements, escalation triggers, blocked risk
+categories, reviewer context, denial behavior, rejection circuit breaker,
+timeout semantics, explicit denial override, managed/local policy
+configuration, review-volume guidance, transcript retention, and documented
+limits. It does not show approval requests, reviewer rationales, transcripts,
+tool calls or outputs, prompt text, user messages, policy content, denial
+records, override markers, session transcript paths, config policies, paths,
+URLs, secrets, raw payloads, or app-server traffic, and it does not start
+reviewer agents, forward approvals, apply overrides, read config or session
+transcripts, change sandbox/network/writable-root/protected-path policy, create
+model traffic, access files/network, or mutate Auto-review state.
 The same response exposes `codexManagedConfiguration` as a static review-only
 catalog for official Codex managed-configuration behavior. The UI shows only
 catalog counts, entry keys, groups, state/source chips, and redaction chips for

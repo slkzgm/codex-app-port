@@ -33,6 +33,8 @@ const elements = {
   codexAccessTokensValuesText: document.querySelector("#codex-access-tokens-values-text"),
   codexAdminSetupText: document.querySelector("#codex-admin-setup-text"),
   codexAdminSetupValuesText: document.querySelector("#codex-admin-setup-values-text"),
+  codexAutoReviewText: document.querySelector("#codex-auto-review-text"),
+  codexAutoReviewValuesText: document.querySelector("#codex-auto-review-values-text"),
   codexGovernanceText: document.querySelector("#codex-governance-text"),
   codexGovernanceValuesText: document.querySelector("#codex-governance-values-text"),
   codexManagedConfigurationText: document.querySelector("#codex-managed-configuration-text"),
@@ -445,6 +447,7 @@ const elements = {
   appIntegrationsMcpList: document.querySelector("#app-integrations-mcp-list"),
   codexAccessTokensList: document.querySelector("#codex-access-tokens-list"),
   codexAdminSetupList: document.querySelector("#codex-admin-setup-list"),
+  codexAutoReviewList: document.querySelector("#codex-auto-review-list"),
   codexGovernanceList: document.querySelector("#codex-governance-list"),
   codexManagedConfigurationList: document.querySelector("#codex-managed-configuration-list"),
   codexEnvironmentVariablesList: document.querySelector("#codex-environment-variables-list"),
@@ -10504,6 +10507,7 @@ function renderSettingsIntegrations(payload) {
   const codexAppSettings = payload.codexAppSettings ?? {};
   const codexAccessTokens = payload.codexAccessTokens ?? {};
   const codexAdminSetup = payload.codexAdminSetup ?? {};
+  const codexAutoReview = payload.codexAutoReview ?? {};
   const codexGovernance = payload.codexGovernance ?? {};
   const codexManagedConfiguration = payload.codexManagedConfiguration ?? {};
   const codexEnvironmentVariables = payload.codexEnvironmentVariables ?? {};
@@ -10630,6 +10634,45 @@ function renderSettingsIntegrations(payload) {
     codexAdminSetup.secretsReturned ||
     codexAdminSetup.rawPayloadsReturned ||
     codexAdminSetup.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexAutoReviewText.textContent = codexAutoReview.returned
+    ? `${codexAutoReview.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexAutoReview.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexAutoReviewValuesText.textContent =
+    codexAutoReview.approvalRequestsReturned ||
+    codexAutoReview.reviewerRationalesReturned ||
+    codexAutoReview.transcriptsReturned ||
+    codexAutoReview.toolCallsReturned ||
+    codexAutoReview.toolOutputsReturned ||
+    codexAutoReview.promptTextsReturned ||
+    codexAutoReview.userMessagesReturned ||
+    codexAutoReview.policyContentsReturned ||
+    codexAutoReview.denialRecordsReturned ||
+    codexAutoReview.overrideMarkersReturned ||
+    codexAutoReview.sessionTranscriptPathsReturned ||
+    codexAutoReview.configPoliciesReturned ||
+    codexAutoReview.sandboxesChanged ||
+    codexAutoReview.networkEnabled ||
+    codexAutoReview.writableRootsExpanded ||
+    codexAutoReview.protectedPathsWeakened ||
+    codexAutoReview.reviewerAgentsStarted ||
+    codexAutoReview.approvalsForwarded ||
+    codexAutoReview.denialOverridesApplied ||
+    codexAutoReview.configReads ||
+    codexAutoReview.sessionTranscriptReads ||
+    codexAutoReview.filesystemReads ||
+    codexAutoReview.filesystemWrites ||
+    codexAutoReview.networkAccess ||
+    codexAutoReview.modelTraffic ||
+    codexAutoReview.mutationEnabled ||
+    codexAutoReview.pathsReturned ||
+    codexAutoReview.urlsReturned ||
+    codexAutoReview.secretsReturned ||
+    codexAutoReview.rawPayloadsReturned ||
+    codexAutoReview.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexGovernanceText.textContent = codexGovernance.returned
@@ -11791,6 +11834,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexAppSettingsParity(codexAppSettings);
   renderCodexAccessTokensCatalog(codexAccessTokens);
   renderCodexAdminSetupCatalog(codexAdminSetup);
+  renderCodexAutoReviewCatalog(codexAutoReview);
   renderCodexGovernanceCatalog(codexGovernance);
   renderCodexManagedConfigurationCatalog(codexManagedConfiguration);
   renderCodexEnvironmentVariablesCatalog(codexEnvironmentVariables);
@@ -13694,6 +13738,82 @@ function renderCodexEnvironmentVariablesCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexEnvironmentVariablesList.append(row);
+  }
+}
+
+function renderCodexAutoReviewCatalog(summary) {
+  elements.codexAutoReviewList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexAutoReviewList.append(emptyState("No Codex auto-review catalog returned."));
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "auto-review";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.approvalRequestReturned ? "approval requests returned" : "approval requests hidden",
+      entry.reviewerRationaleReturned ? "rationales returned" : "rationales hidden",
+      entry.transcriptReturned ? "transcripts returned" : "transcripts hidden",
+      entry.toolCallReturned ? "tool calls returned" : "tool calls hidden",
+      entry.toolOutputReturned ? "tool output returned" : "tool output hidden",
+      entry.promptTextReturned ? "prompt text returned" : "prompt text hidden",
+      entry.userMessageReturned ? "user messages returned" : "user messages hidden",
+      entry.policyContentReturned ? "policy content returned" : "policy content hidden",
+      entry.denialRecordReturned ? "denial records returned" : "denial records hidden",
+      entry.overrideMarkerReturned ? "override markers returned" : "override markers hidden",
+      entry.sessionTranscriptPathReturned
+        ? "session transcript paths returned"
+        : "session transcript paths hidden",
+      entry.configPolicyReturned ? "config policy returned" : "config policy hidden",
+      entry.sandboxChanged ? "sandbox changed" : "sandbox unchanged",
+      entry.networkEnabled ? "network enabled" : "network unchanged",
+      entry.writableRootsExpanded ? "writable roots expanded" : "writable roots unchanged",
+      entry.protectedPathsWeakened ? "protected paths weakened" : "protected paths unchanged",
+      entry.reviewerAgentStarted ? "reviewer started" : "reviewer not started",
+      entry.approvalForwarded ? "approval forwarded" : "approval forwarding blocked",
+      entry.denialOverrideApplied ? "override applied" : "override blocked",
+      entry.configRead ? "config read" : "config reads blocked",
+      entry.sessionTranscriptRead ? "session transcript read" : "session transcript reads blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.modelTraffic ? "model traffic" : "model traffic blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexAutoReviewList.append(row);
   }
 }
 

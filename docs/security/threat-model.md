@@ -488,6 +488,16 @@
   not open dashboards, call Analytics or Compliance APIs, start exports, read
   API keys, write warehouses or SIEM pipelines, access files or network, or
   mutate governance state. Its
+  Codex Auto-review catalog may expose only static official-documentation keys
+  plus local boundary keys, groups, states, sources, counts, and redaction
+  flags; it must not return approval requests, reviewer rationales,
+  transcripts, tool calls or outputs, prompt text, user messages, policy
+  content, denial records, override markers, session transcript paths, config
+  policies, paths, URLs, secrets, raw payloads, app-server payloads, or
+  app-server traffic, and must not start reviewer agents, forward approvals,
+  apply overrides, read config or session transcripts, change sandbox, network,
+  writable-root, or protected-path policy, create model traffic, access files
+  or network, or mutate Auto-review state. Its
   Codex Managed configuration catalog may expose only static
   official-documentation keys plus local boundary keys, groups, states,
   sources, counts, and redaction flags; it must not return requirement names or
