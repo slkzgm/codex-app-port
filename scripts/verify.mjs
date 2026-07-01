@@ -33966,6 +33966,359 @@ function assertCodexRecordReplayCatalog(payload) {
   }
 }
 
+function expectedCodexRemoteConnectionsEntries() {
+  return [
+    ["remoteAccessUseCases", "overview", "catalog-only", "official-codex-remote-connections-docs"],
+    [
+      "connectedHostEnvironment",
+      "overview",
+      "catalog-only",
+      "official-codex-remote-connections-docs",
+    ],
+    [
+      "remoteThreadsAndFollowUps",
+      "remote-workflow",
+      "catalog-only",
+      "official-codex-remote-connections-docs",
+    ],
+    [
+      "remoteApprovalsAndSteering",
+      "remote-workflow",
+      "catalog-only",
+      "official-codex-remote-connections-docs",
+    ],
+    [
+      "remoteOutputReview",
+      "remote-workflow",
+      "catalog-only",
+      "official-codex-remote-connections-docs",
+    ],
+    [
+      "remoteNotifications",
+      "remote-workflow",
+      "catalog-only",
+      "official-codex-remote-connections-docs",
+    ],
+    [
+      "hostAndThreadSwitching",
+      "remote-workflow",
+      "catalog-only",
+      "official-codex-remote-connections-docs",
+    ],
+    [
+      "macWindowsHostSupport",
+      "availability",
+      "catalog-only",
+      "official-codex-remote-connections-docs",
+    ],
+    [
+      "windowsControlLimit",
+      "availability",
+      "catalog-only",
+      "official-codex-remote-connections-docs",
+    ],
+    [
+      "sameAccountWorkspaceRequirement",
+      "setup",
+      "catalog-only",
+      "official-codex-remote-connections-docs",
+    ],
+    ["mobileAppRequirement", "setup", "catalog-only", "official-codex-remote-connections-docs"],
+    ["codexAppHostRequirement", "setup", "catalog-only", "official-codex-remote-connections-docs"],
+    [
+      "workspaceAdminRemoteControl",
+      "managed-policy",
+      "catalog-only",
+      "official-codex-remote-connections-docs",
+    ],
+    [
+      "mobileSetupSidebarEntry",
+      "pairing",
+      "catalog-only",
+      "official-codex-remote-connections-docs",
+    ],
+    ["qrPairingFlow", "pairing", "catalog-only", "official-codex-remote-connections-docs"],
+    ["pairingRefreshDate", "pairing", "catalog-only", "official-codex-remote-connections-docs"],
+    [
+      "connectionsSettingsManagement",
+      "settings",
+      "catalog-only",
+      "official-codex-remote-connections-docs",
+    ],
+    [
+      "keepAwakeComputerUseChromeOptions",
+      "settings",
+      "catalog-only",
+      "official-codex-remote-connections-docs",
+    ],
+    [
+      "dailyLaptopDesktopHost",
+      "host-choice",
+      "catalog-only",
+      "official-codex-remote-connections-docs",
+    ],
+    [
+      "sleepNetworkAvailability",
+      "host-availability",
+      "catalog-only",
+      "official-codex-remote-connections-docs",
+    ],
+    [
+      "macLidPowerDisplayRequirement",
+      "host-availability",
+      "catalog-only",
+      "official-codex-remote-connections-docs",
+    ],
+    [
+      "windowsUnlockedForegroundComputerUse",
+      "host-availability",
+      "catalog-only",
+      "official-codex-remote-connections-docs",
+    ],
+    ["alwaysOnHostChoice", "host-choice", "catalog-only", "official-codex-remote-connections-docs"],
+    [
+      "remoteDevelopmentEnvironment",
+      "ssh",
+      "catalog-only",
+      "official-codex-remote-connections-docs",
+    ],
+    [
+      "connectedHostProjectSources",
+      "host-environment",
+      "catalog-only",
+      "official-codex-remote-connections-docs",
+    ],
+    [
+      "connectedHostPluginMcpSkills",
+      "host-environment",
+      "catalog-only",
+      "official-codex-remote-connections-docs",
+    ],
+    [
+      "connectedHostSandboxApprovals",
+      "security",
+      "catalog-only",
+      "official-codex-remote-connections-docs",
+    ],
+    ["secureRelayLayer", "security", "catalog-only", "official-codex-remote-connections-docs"],
+    [
+      "multiDeviceContinuation",
+      "remote-workflow",
+      "catalog-only",
+      "official-codex-remote-connections-docs",
+    ],
+    ["sshConfigConcreteAliases", "ssh", "catalog-only", "official-codex-remote-connections-docs"],
+    ["sshOpenSshResolution", "ssh", "catalog-only", "official-codex-remote-connections-docs"],
+    ["remoteCodexAppServerViaSsh", "ssh", "catalog-only", "official-codex-remote-connections-docs"],
+    ["sshSecurityExpectations", "security", "catalog-only", "official-codex-remote-connections-docs"],
+    ["remoteStatusReadBoundary", "inventory", "blocked", "local-remote-connections-boundary"],
+    ["remoteEnableBoundary", "pairing", "blocked", "local-remote-connections-boundary"],
+    ["mobilePairingBoundary", "pairing", "blocked", "local-remote-connections-boundary"],
+    ["qrCodeBoundary", "pairing", "blocked", "local-remote-connections-boundary"],
+    ["connectedDeviceListBoundary", "devices", "blocked", "local-remote-connections-boundary"],
+    [
+      "connectedDeviceRevokeBoundary",
+      "devices",
+      "blocked",
+      "local-remote-connections-boundary",
+    ],
+    ["keepAwakeWriteBoundary", "settings", "blocked", "local-remote-connections-boundary"],
+    ["sshConfigReadBoundary", "ssh", "blocked", "local-remote-connections-boundary"],
+    ["sshHostConnectionBoundary", "ssh", "blocked", "local-remote-connections-boundary"],
+    ["remoteAppServerStartBoundary", "ssh", "blocked", "local-remote-connections-boundary"],
+    [
+      "remoteFilesystemBoundary",
+      "host-environment",
+      "blocked",
+      "local-remote-connections-boundary",
+    ],
+    ["remoteShellBoundary", "host-environment", "blocked", "local-remote-connections-boundary"],
+    [
+      "remoteCredentialBoundary",
+      "host-environment",
+      "blocked",
+      "local-remote-connections-boundary",
+    ],
+    ["relayTrafficBoundary", "security", "blocked", "local-remote-connections-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexRemoteConnectionsCatalog(payload) {
+  const catalog = payload.codexRemoteConnections;
+  const expectedEntries = expectedCodexRemoteConnectionsEntries();
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-remote-connections-docs");
+  assert.equal(catalog.entryCount, 47);
+  assert.equal(catalog.officialEntryCount, 33);
+  assert.equal(catalog.localBoundaryEntryCount, 14);
+  assert.equal(catalog.catalogOnlyEntryCount, 33);
+  assert.equal(catalog.blockedEntryCount, 14);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({
+      key,
+      group,
+      state,
+      source,
+    })),
+    expectedEntries,
+  );
+
+  const entryRedactionFlags = [
+    "hostNameReturned",
+    "hostIdReturned",
+    "deviceNameReturned",
+    "deviceIdReturned",
+    "qrCodeReturned",
+    "pairingCodeReturned",
+    "relayEndpointReturned",
+    "remoteStatusReturned",
+    "sshConfigReturned",
+    "sshHostAliasReturned",
+    "sshCommandReturned",
+    "remoteProjectPathReturned",
+    "remoteFilesystemContentReturned",
+    "remoteShellOutputReturned",
+    "credentialReturned",
+    "pluginNameReturned",
+    "mcpServerNameReturned",
+    "skillNameReturned",
+    "browserStateReturned",
+    "computerUseStateReturned",
+    "approvalDetailReturned",
+    "notificationPayloadReturned",
+    "screenshotReturned",
+    "terminalOutputReturned",
+    "settingValueReturned",
+    "hostEnabled",
+    "pairingStarted",
+    "deviceRevoked",
+    "keepAwakeWritten",
+    "sshConnectionStarted",
+    "remoteAppServerStarted",
+    "remoteCommandExecuted",
+    "remoteFileRead",
+    "remoteFileWritten",
+    "relayTraffic",
+    "filesystemRead",
+    "filesystemWrite",
+    "networkAccess",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.remoteConnectionsCatalogReturned, true);
+  for (const flag of [
+    "hostNamesReturned",
+    "hostIdsReturned",
+    "deviceNamesReturned",
+    "deviceIdsReturned",
+    "qrCodesReturned",
+    "pairingCodesReturned",
+    "relayEndpointsReturned",
+    "remoteStatusesReturned",
+    "sshConfigsReturned",
+    "sshHostAliasesReturned",
+    "sshCommandsReturned",
+    "remoteProjectPathsReturned",
+    "remoteFilesystemContentReturned",
+    "remoteShellOutputsReturned",
+    "credentialsReturned",
+    "pluginNamesReturned",
+    "mcpServerNamesReturned",
+    "skillNamesReturned",
+    "browserStatesReturned",
+    "computerUseStatesReturned",
+    "approvalDetailsReturned",
+    "notificationPayloadsReturned",
+    "screenshotsReturned",
+    "terminalOutputsReturned",
+    "settingValuesReturned",
+    "hostsEnabled",
+    "pairingsStarted",
+    "devicesRevoked",
+    "keepAwakeWritten",
+    "sshConnectionsStarted",
+    "remoteAppServersStarted",
+    "remoteCommandsExecuted",
+    "remoteFilesRead",
+    "remoteFilesWritten",
+    "relayTraffic",
+    "filesystemReads",
+    "filesystemWrites",
+    "networkAccess",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexRemoteConnectionsReturned", true],
+    ["codexRemoteConnectionsValuesReturned", false],
+    ["codexRemoteConnectionsHostNamesReturned", false],
+    ["codexRemoteConnectionsHostIdsReturned", false],
+    ["codexRemoteConnectionsDeviceNamesReturned", false],
+    ["codexRemoteConnectionsDeviceIdsReturned", false],
+    ["codexRemoteConnectionsQrCodesReturned", false],
+    ["codexRemoteConnectionsPairingCodesReturned", false],
+    ["codexRemoteConnectionsRelayEndpointsReturned", false],
+    ["codexRemoteConnectionsRemoteStatusesReturned", false],
+    ["codexRemoteConnectionsSshConfigsReturned", false],
+    ["codexRemoteConnectionsSshHostAliasesReturned", false],
+    ["codexRemoteConnectionsSshCommandsReturned", false],
+    ["codexRemoteConnectionsRemoteProjectPathsReturned", false],
+    ["codexRemoteConnectionsRemoteFilesystemContentReturned", false],
+    ["codexRemoteConnectionsRemoteShellOutputsReturned", false],
+    ["codexRemoteConnectionsCredentialsReturned", false],
+    ["codexRemoteConnectionsPluginNamesReturned", false],
+    ["codexRemoteConnectionsMcpServerNamesReturned", false],
+    ["codexRemoteConnectionsSkillNamesReturned", false],
+    ["codexRemoteConnectionsBrowserStatesReturned", false],
+    ["codexRemoteConnectionsComputerUseStatesReturned", false],
+    ["codexRemoteConnectionsApprovalDetailsReturned", false],
+    ["codexRemoteConnectionsNotificationPayloadsReturned", false],
+    ["codexRemoteConnectionsScreenshotsReturned", false],
+    ["codexRemoteConnectionsTerminalOutputsReturned", false],
+    ["codexRemoteConnectionsSettingValuesReturned", false],
+    ["codexRemoteConnectionsHostEnablementEnabled", false],
+    ["codexRemoteConnectionsPairingEnabled", false],
+    ["codexRemoteConnectionsDeviceRevokeEnabled", false],
+    ["codexRemoteConnectionsKeepAwakeWriteEnabled", false],
+    ["codexRemoteConnectionsSshConnectionsEnabled", false],
+    ["codexRemoteConnectionsRemoteAppServersEnabled", false],
+    ["codexRemoteConnectionsRemoteCommandsEnabled", false],
+    ["codexRemoteConnectionsRemoteFileReadsEnabled", false],
+    ["codexRemoteConnectionsRemoteFileWritesEnabled", false],
+    ["codexRemoteConnectionsRelayTraffic", false],
+    ["codexRemoteConnectionsFilesystemAccess", false],
+    ["codexRemoteConnectionsNetworkAccess", false],
+    ["codexRemoteConnectionsMutationsEnabled", false],
+    ["codexRemoteConnectionsPathsReturned", false],
+    ["codexRemoteConnectionsUrlsReturned", false],
+    ["codexRemoteConnectionsSecretsReturned", false],
+    ["codexRemoteConnectionsRawPayloadsReturned", false],
+    ["codexRemoteConnectionsAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexSitesEntries() {
   return [
     ["sitesPluginUseCase", "overview", "catalog-only", "official-codex-sites-docs"],
@@ -35980,6 +36333,7 @@ function assertCodexAppSettingsParity(
   assertCodexPluginBuildCatalog(payload);
   assertCodexHooksCatalog(payload);
   assertCodexRecordReplayCatalog(payload);
+  assertCodexRemoteConnectionsCatalog(payload);
   assertCodexSitesCatalog(payload);
   assertCodexPermissionsCatalog(payload);
   assertCodexRulesCatalog(payload);

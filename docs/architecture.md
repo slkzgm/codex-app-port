@@ -617,6 +617,25 @@ Current M1 status:
   Computer Use/browser/plugin actions, permission prompts, filesystem access,
   network access, mutations, paths, URLs, secrets, raw payloads, and
   app-server traffic blocked
+- done: read-only Codex Remote Connections catalog in `/api/settings-integrations`,
+  exposing only static official Remote connections documentation keys plus
+  local boundary keys/groups/states/sources/counts/redaction flags for mobile
+  and multi-device remote access, connected-host environment inheritance,
+  remote thread/follow-up/approval/review/notification workflows,
+  host/platform availability, same-account/workspace setup, admin policy, QR
+  pairing flow, Settings > Connections management, keep-awake/Computer
+  Use/Chrome options, laptop/always-on/SSH host choices, connected-host
+  projects/plugins/MCP/skills and sandbox approvals, secure relay, SSH alias
+  discovery, OpenSSH resolution, remote app-server startup, and SSH security
+  expectations, with host names/ids, device names/ids, QR codes, pairing codes,
+  relay endpoints, remote status values, SSH config/aliases/commands, remote
+  project paths, remote filesystem content, remote shell output, credentials,
+  plugin/MCP server/skill names, browser/Computer Use states, approval details,
+  notification payloads, screenshots, terminal output, setting values, host
+  enablement, pairing, device revocation, keep-awake writes, SSH connections,
+  remote app-server starts, remote command execution, remote file reads/writes,
+  relay traffic, filesystem access, network access, mutations, paths, URLs,
+  secrets, raw payloads, and app-server traffic blocked
 - done: read-only Codex Rules catalog in `/api/settings-integrations`,
   exposing only static official Rules documentation keys plus local boundary
   keys/groups/states/sources/counts/redaction flags for `.rules` file

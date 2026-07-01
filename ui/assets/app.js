@@ -37,6 +37,10 @@ const elements = {
   codexHooksValuesText: document.querySelector("#codex-hooks-values-text"),
   codexRecordReplayText: document.querySelector("#codex-record-replay-text"),
   codexRecordReplayValuesText: document.querySelector("#codex-record-replay-values-text"),
+  codexRemoteConnectionsText: document.querySelector("#codex-remote-connections-text"),
+  codexRemoteConnectionsValuesText: document.querySelector(
+    "#codex-remote-connections-values-text",
+  ),
   codexSitesText: document.querySelector("#codex-sites-text"),
   codexSitesValuesText: document.querySelector("#codex-sites-values-text"),
   codexPermissionsText: document.querySelector("#codex-permissions-text"),
@@ -423,6 +427,7 @@ const elements = {
   codexPluginBuildList: document.querySelector("#codex-plugin-build-list"),
   codexHooksList: document.querySelector("#codex-hooks-list"),
   codexRecordReplayList: document.querySelector("#codex-record-replay-list"),
+  codexRemoteConnectionsList: document.querySelector("#codex-remote-connections-list"),
   codexSitesList: document.querySelector("#codex-sites-list"),
   codexPermissionsList: document.querySelector("#codex-permissions-list"),
   codexRulesList: document.querySelector("#codex-rules-list"),
@@ -10474,6 +10479,7 @@ function renderSettingsIntegrations(payload) {
   const codexPluginBuild = payload.codexPluginBuild ?? {};
   const codexHooks = payload.codexHooks ?? {};
   const codexRecordReplay = payload.codexRecordReplay ?? {};
+  const codexRemoteConnections = payload.codexRemoteConnections ?? {};
   const codexSites = payload.codexSites ?? {};
   const codexPermissions = payload.codexPermissions ?? {};
   const codexRules = payload.codexRules ?? {};
@@ -10660,6 +10666,58 @@ function renderSettingsIntegrations(payload) {
     codexRecordReplay.secretsReturned ||
     codexRecordReplay.rawPayloadsReturned ||
     codexRecordReplay.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexRemoteConnectionsText.textContent = codexRemoteConnections.returned
+    ? `${codexRemoteConnections.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexRemoteConnections.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexRemoteConnectionsValuesText.textContent =
+    codexRemoteConnections.hostNamesReturned ||
+    codexRemoteConnections.hostIdsReturned ||
+    codexRemoteConnections.deviceNamesReturned ||
+    codexRemoteConnections.deviceIdsReturned ||
+    codexRemoteConnections.qrCodesReturned ||
+    codexRemoteConnections.pairingCodesReturned ||
+    codexRemoteConnections.relayEndpointsReturned ||
+    codexRemoteConnections.remoteStatusesReturned ||
+    codexRemoteConnections.sshConfigsReturned ||
+    codexRemoteConnections.sshHostAliasesReturned ||
+    codexRemoteConnections.sshCommandsReturned ||
+    codexRemoteConnections.remoteProjectPathsReturned ||
+    codexRemoteConnections.remoteFilesystemContentReturned ||
+    codexRemoteConnections.remoteShellOutputsReturned ||
+    codexRemoteConnections.credentialsReturned ||
+    codexRemoteConnections.pluginNamesReturned ||
+    codexRemoteConnections.mcpServerNamesReturned ||
+    codexRemoteConnections.skillNamesReturned ||
+    codexRemoteConnections.browserStatesReturned ||
+    codexRemoteConnections.computerUseStatesReturned ||
+    codexRemoteConnections.approvalDetailsReturned ||
+    codexRemoteConnections.notificationPayloadsReturned ||
+    codexRemoteConnections.screenshotsReturned ||
+    codexRemoteConnections.terminalOutputsReturned ||
+    codexRemoteConnections.settingValuesReturned ||
+    codexRemoteConnections.hostsEnabled ||
+    codexRemoteConnections.pairingsStarted ||
+    codexRemoteConnections.devicesRevoked ||
+    codexRemoteConnections.keepAwakeWritten ||
+    codexRemoteConnections.sshConnectionsStarted ||
+    codexRemoteConnections.remoteAppServersStarted ||
+    codexRemoteConnections.remoteCommandsExecuted ||
+    codexRemoteConnections.remoteFilesRead ||
+    codexRemoteConnections.remoteFilesWritten ||
+    codexRemoteConnections.relayTraffic ||
+    codexRemoteConnections.filesystemReads ||
+    codexRemoteConnections.filesystemWrites ||
+    codexRemoteConnections.networkAccess ||
+    codexRemoteConnections.mutationEnabled ||
+    codexRemoteConnections.pathsReturned ||
+    codexRemoteConnections.urlsReturned ||
+    codexRemoteConnections.secretsReturned ||
+    codexRemoteConnections.rawPayloadsReturned ||
+    codexRemoteConnections.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexSitesText.textContent = codexSites.returned
@@ -11392,6 +11450,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexPluginBuildCatalog(codexPluginBuild);
   renderCodexHooksCatalog(codexHooks);
   renderCodexRecordReplayCatalog(codexRecordReplay);
+  renderCodexRemoteConnectionsCatalog(codexRemoteConnections);
   renderCodexSitesCatalog(codexSites);
   renderCodexPermissionsCatalog(codexPermissions);
   renderCodexRulesCatalog(codexRules);
@@ -13271,6 +13330,105 @@ function renderCodexRecordReplayCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexRecordReplayList.append(row);
+  }
+}
+
+function renderCodexRemoteConnectionsCatalog(summary) {
+  elements.codexRemoteConnectionsList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexRemoteConnectionsList.append(
+      emptyState("No Codex Remote Connections catalog returned."),
+    );
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "remote-connections";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.hostNameReturned ? "host names returned" : "host names hidden",
+      entry.hostIdReturned ? "host ids returned" : "host ids hidden",
+      entry.deviceNameReturned ? "device names returned" : "device names hidden",
+      entry.deviceIdReturned ? "device ids returned" : "device ids hidden",
+      entry.qrCodeReturned ? "QR codes returned" : "QR codes hidden",
+      entry.pairingCodeReturned ? "pairing codes returned" : "pairing codes hidden",
+      entry.relayEndpointReturned ? "relay endpoints returned" : "relay endpoints hidden",
+      entry.remoteStatusReturned ? "remote status returned" : "remote status hidden",
+      entry.sshConfigReturned ? "SSH config returned" : "SSH config hidden",
+      entry.sshHostAliasReturned ? "SSH host aliases returned" : "SSH aliases hidden",
+      entry.sshCommandReturned ? "SSH commands returned" : "SSH commands hidden",
+      entry.remoteProjectPathReturned ? "remote project paths returned" : "remote paths hidden",
+      entry.remoteFilesystemContentReturned
+        ? "remote file content returned"
+        : "remote file content hidden",
+      entry.remoteShellOutputReturned
+        ? "remote shell output returned"
+        : "remote shell output hidden",
+      entry.credentialReturned ? "credentials returned" : "credentials hidden",
+      entry.pluginNameReturned ? "plugin names returned" : "plugin names hidden",
+      entry.mcpServerNameReturned ? "MCP server names returned" : "MCP server names hidden",
+      entry.skillNameReturned ? "skill names returned" : "skill names hidden",
+      entry.browserStateReturned ? "browser state returned" : "browser state hidden",
+      entry.computerUseStateReturned
+        ? "Computer Use state returned"
+        : "Computer Use state hidden",
+      entry.approvalDetailReturned ? "approval details returned" : "approval details hidden",
+      entry.notificationPayloadReturned
+        ? "notification payloads returned"
+        : "notification payloads hidden",
+      entry.screenshotReturned ? "screenshots returned" : "screenshots hidden",
+      entry.terminalOutputReturned ? "terminal output returned" : "terminal output hidden",
+      entry.settingValueReturned ? "setting values returned" : "setting values hidden",
+      entry.hostEnabled ? "host enabled" : "host enablement blocked",
+      entry.pairingStarted ? "pairing started" : "pairing blocked",
+      entry.deviceRevoked ? "device revoked" : "device revoke blocked",
+      entry.keepAwakeWritten ? "keep-awake written" : "keep-awake write blocked",
+      entry.sshConnectionStarted ? "SSH connection started" : "SSH connection blocked",
+      entry.remoteAppServerStarted
+        ? "remote app-server started"
+        : "remote app-server blocked",
+      entry.remoteCommandExecuted ? "remote commands executed" : "remote commands blocked",
+      entry.remoteFileRead ? "remote files read" : "remote file reads blocked",
+      entry.remoteFileWritten ? "remote files written" : "remote file writes blocked",
+      entry.relayTraffic ? "relay traffic" : "relay traffic blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexRemoteConnectionsList.append(row);
   }
 }
 

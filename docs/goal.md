@@ -217,6 +217,26 @@ Target parity with the Codex desktop workflow:
   replay workflows, write skills, invoke Computer Use, run browser/plugin
   actions, start permission prompts, access files/network, or mutate Record &
   Replay state.
+- `/api/settings-integrations` now also exposes a read-only Codex Remote
+  Connections catalog aligned to the official Remote connections documentation.
+  It returns only static keys, groups, states, sources, counts, and redaction
+  flags for mobile and multi-device remote access, connected-host environment
+  inheritance, remote thread/follow-up/approval/review/notification workflows,
+  host/platform availability, same-account/workspace setup, admin policy, QR
+  pairing flow, Settings > Connections management, keep-awake/Computer
+  Use/Chrome options, laptop/always-on/SSH host choices, connected-host
+  projects/plugins/MCP/skills and sandbox approvals, secure relay, SSH alias
+  discovery, OpenSSH resolution, remote app-server startup, and SSH security
+  expectations. It does not return host names or ids, device names or ids, QR
+  codes, pairing codes, relay endpoints, remote status values, SSH config,
+  aliases or commands, remote project paths, remote filesystem content, remote
+  shell output, credentials, plugin/MCP server/skill names, browser or Computer
+  Use state, approval details, notification payloads, screenshots, terminal
+  output, setting values, paths, URLs, secrets, raw payloads, or app-server
+  traffic, and it does not enable hosts, start pairing, revoke devices, write
+  keep-awake settings, open SSH connections, start remote app servers, execute
+  remote commands, read/write remote files, send relay traffic, access
+  files/network, or mutate Remote Connections state.
 - `/api/settings-integrations` now also exposes a read-only Codex Rules catalog
   aligned to the official Rules documentation. It returns only static keys,
   groups, states, sources, counts, and redaction flags for `.rules` file

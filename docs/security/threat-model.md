@@ -499,6 +499,18 @@
   or app-server traffic, and must not start recordings, replay workflows, write
   skills, invoke Computer Use, run browser or plugin actions, prompt for
   permissions, access files or network, or mutate Record & Replay state. Its
+  Codex Remote Connections catalog may expose only static official-documentation
+  keys plus local boundary keys, groups, states, sources, counts, and redaction
+  flags; it must not return host names or ids, device names or ids, QR codes,
+  pairing codes, relay endpoints, remote status values, SSH config, aliases,
+  commands, remote project paths, remote filesystem content, remote shell
+  output, credentials, plugin/MCP server/skill names, browser or Computer Use
+  state, approval details, notification payloads, screenshots, terminal output,
+  setting values, paths, URLs, secrets, raw payloads, app-server payloads, or
+  app-server traffic, and must not enable hosts, start pairing, revoke devices,
+  write keep-awake settings, open SSH connections, start remote app servers,
+  execute remote commands, read or write remote files, send relay traffic,
+  access files or network, or mutate Remote Connections state. Its
   Codex Rules catalog may expose only static official-documentation keys plus
   local boundary keys, groups, states, sources, counts, and redaction flags; it
   must not return rule files, rule paths, rule content, prefix patterns,
