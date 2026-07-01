@@ -82,6 +82,7 @@ async function main() {
   await checkFuzzyFileSearchPreflightApi();
   await checkAccountReadApi();
   await checkAccountRateLimitsApi();
+  await checkAccountUsageApi();
   await checkAccountLoginApi();
   await checkAccountLoginCancelApi();
   await checkAccountCreditsNudgeApi();
@@ -17809,6 +17810,173 @@ async function checkAccountRateLimitsApi() {
     await closeServer(server);
   }
   pass("dev server account rate limits exposes counts behind opt-in without returning quota details");
+}
+
+async function checkAccountUsageApi() {
+  const blockedCalls = [];
+  const blockedServer = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    accountUsageFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+  const blockedPort = await listenWithFallback(blockedServer, { host: "127.0.0.1", port: 0 });
+  const blockedBaseUrl = `http://127.0.0.1:${blockedPort}`;
+
+  try {
+    const token = await readUiSessionToken(blockedBaseUrl);
+    const settingsResponse = await fetch(`${blockedBaseUrl}/api/settings-integrations`, {
+      headers: apiHeaders(token),
+    });
+    if (!settingsResponse.ok) {
+      throw new Error(`settings integrations for blocked account usage returned HTTP ${settingsResponse.status}`);
+    }
+    const settingsPayload = await settingsResponse.json();
+    if (
+      settingsPayload.surfaces?.auth?.usageAvailable !== false ||
+      settingsPayload.surfaces?.auth?.accountUsageEnabled !== false ||
+      settingsPayload.integrationScope?.accountUsageEnabled !== false
+    ) {
+      throw new Error("settings integrations did not expose the blocked account usage gate safely");
+    }
+
+    const response = await fetch(`${blockedBaseUrl}/api/account-usage`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`blocked account usage returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (
+      payload.appServer?.touched !== false ||
+      payload.auth?.accountUsageEnabled !== false ||
+      payload.result?.status !== "blocked" ||
+      payload.policy?.appServerTraffic !== false
+    ) {
+      throw new Error("blocked account usage did not fail closed without app-server traffic");
+    }
+    if (blockedCalls.length !== 0) {
+      throw new Error("blocked account usage unexpectedly touched app-server");
+    }
+    assertNoMarkers(JSON.stringify(payload), ["/tmp/codex-app-port-verify"]);
+  } finally {
+    await closeServer(blockedServer);
+  }
+
+  const calls = [];
+  const server = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    accountUsageEnabled: true,
+    accountUsageFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-07-01T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/verify-private-home",
+          userAgent: "verify-private-agent",
+        },
+        probes: {
+          accountUsage: {
+            method: "account/usage/read",
+            ok: true,
+            summaryMetricCount: 5,
+            dailyBucketCount: 2,
+            bucketWithTokenCount: 2,
+            bucketWithStartDateCount: 2,
+            lifetimeTokens: 123456,
+            peakDailyTokens: 98765,
+            startDate: "2026-06-30",
+            usageValuesReturned: true,
+            dailyBucketDatesReturned: true,
+            rawPayloadReturned: true,
+          },
+        },
+        rawUsage: {
+          lifetimeTokens: 123456,
+          startDate: "2026-06-30",
+        },
+        notifications: {},
+      };
+    },
+  });
+  const port = await listenWithFallback(server, { host: "127.0.0.1", port: 0 });
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  try {
+    const token = await readUiSessionToken(baseUrl);
+    const settingsResponse = await fetch(`${baseUrl}/api/settings-integrations`, {
+      headers: apiHeaders(token),
+    });
+    if (!settingsResponse.ok) {
+      throw new Error(`settings integrations for account usage returned HTTP ${settingsResponse.status}`);
+    }
+    const settingsPayload = await settingsResponse.json();
+    if (
+      settingsPayload.surfaces?.auth?.accountUsageEnabled !== true ||
+      settingsPayload.integrationScope?.accountUsageEnabled !== true ||
+      !settingsPayload.integrationScope?.enabledReadMethods?.includes("account/usage/read")
+    ) {
+      throw new Error("settings integrations did not expose the account usage gate safely");
+    }
+
+    const wrongMethod = await fetch(`${baseUrl}/api/account-usage`, {
+      method: "POST",
+      headers: apiHeaders(token),
+    });
+    if (wrongMethod.status !== 405) {
+      throw new Error(`account usage POST returned HTTP ${wrongMethod.status}`);
+    }
+
+    const response = await fetch(`${baseUrl}/api/account-usage`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`account usage returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (
+      payload.appServer?.touched !== true ||
+      payload.appServer?.modelTraffic !== false ||
+      payload.auth?.accountUsageEnabled !== true ||
+      payload.result?.status !== "available" ||
+      payload.result?.summaryMetricCount !== 5 ||
+      payload.result?.dailyBucketCount !== 2 ||
+      payload.result?.bucketWithTokenCount !== 2 ||
+      payload.result?.bucketWithStartDateCount !== 2 ||
+      payload.policy?.readOnly !== true ||
+      payload.policy?.authMutations !== false ||
+      payload.policy?.usageValuesReturned !== false ||
+      payload.policy?.dailyBucketDatesReturned !== false ||
+      payload.policy?.rawPayloadReturned !== false
+    ) {
+      throw new Error("account usage did not return the safe counts-only summary shape");
+    }
+    if (calls.length !== 1 || calls[0].cwd !== "/tmp/codex-app-port-verify") {
+      throw new Error("account usage did not call the app-server read path once");
+    }
+    assertNoMarkers(JSON.stringify(payload), [
+      "/tmp/codex-app-port-verify",
+      "/tmp/verify-private-home",
+      "verify-private-agent",
+      "codexHome",
+      "userAgent",
+      "123456",
+      "98765",
+      "2026-06-30",
+      "\"usageValuesReturned\":true",
+      "\"dailyBucketDatesReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]);
+  } finally {
+    await closeServer(server);
+  }
+  pass("dev server account usage exposes counts behind opt-in without returning usage values");
 }
 
 async function checkAccountLoginApi() {
@@ -56492,10 +56660,17 @@ async function readUiSessionToken(baseUrl) {
     !html.includes("account-rate-limits-buckets-text") ||
     !html.includes("account-rate-limits-state-text") ||
     !html.includes("account-rate-limits-details-text") ||
+    !html.includes("account-usage-button") ||
+    !html.includes("account-usage-status") ||
+    !html.includes("account-usage-metrics-text") ||
+    !html.includes("account-usage-buckets-text") ||
+    !html.includes("account-usage-details-text") ||
     !appScript.includes("runAccountRead") ||
     !appScript.includes("renderAccountRead") ||
     !appScript.includes("runAccountRateLimits") ||
     !appScript.includes("renderAccountRateLimits") ||
+    !appScript.includes("runAccountUsage") ||
+    !appScript.includes("renderAccountUsage") ||
     !html.includes("account-login-button") ||
     !html.includes("account-login-cancel-button") ||
     !html.includes("account-reset-credit-button") ||

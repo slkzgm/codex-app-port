@@ -1407,6 +1407,12 @@ Current M1 status:
   it through Limit Check without plan types, limit ids, limit names, balances,
   used percentages, reset times, window durations, account identifiers, cwd,
   paths, or raw app-server payloads
+- done: opt-in `/api/account-usage` path behind
+  `CODEX_APP_PORT_ALLOW_ACCOUNT_USAGE=1`, calling only `account/usage/read`, no
+  model traffic or auth mutation, and sanitized responses with summary metric
+  and daily bucket counts only; the local UI exposes it through Usage Check
+  without lifetime token values, peak token values, streak values, bucket dates,
+  account identifiers, cwd, paths, or raw app-server payloads
 - done: opt-in `/api/account-login-start` path behind
   `CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN=1`, with matching one-time
   account-login-preflight token consumption, `account/login/start` device-code

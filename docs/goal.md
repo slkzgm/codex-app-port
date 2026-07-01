@@ -1082,9 +1082,11 @@ Target parity with the Codex desktop workflow:
   `CODEX_APP_PORT_ALLOW_INTEGRATION_NAMES=1`, it may also return bounded safe
   profile display names; raw profile ids, descriptions, cursors, and payloads
   remain hidden.
-- `account/usage/read` and `account/workspaceMessages/read` also have opt-in,
-  counts-only inventory paths; they omit token usage values, bucket dates,
-  workspace message ids, bodies, timestamps, and raw payloads.
+- `account/usage/read` has both a dedicated opt-in `/api/account-usage` route
+  and an opt-in counts-only inventory path; both omit token usage values, bucket
+  dates, account identifiers, paths, and raw payloads.
+- `account/workspaceMessages/read` has an opt-in counts-only inventory path; it
+  omits workspace message ids, bodies, timestamps, and raw payloads.
 - `mcpServerStatus/list` reports only server/tool/resource/resource-template
   counts and documented auth-status buckets (`unsupported`, `notLoggedIn`,
   `bearerToken`, `oAuth`, or `unknown`); arbitrary auth status values, server

@@ -86,6 +86,11 @@ The server binds to `127.0.0.1` by default and serves:
   bucket/window/credit/reached counts and redaction flags, never plan types,
   limit ids, limit names, balances, used percentages, reset times, window
   durations, account identifiers, raw payloads, cwd, or paths
+- `/api/account-usage`: disabled-by-default read-only `account/usage/read`
+  bridge behind `CODEX_APP_PORT_ALLOW_ACCOUNT_USAGE=1`; when enabled it returns
+  only summary metric and daily bucket counts plus redaction flags, never
+  lifetime token values, peak token values, streak values, bucket dates, account
+  identifiers, raw payloads, cwd, or paths
 - `/api/account-login-preflight` and `/api/account-login-start`: local auth
   login confirmation plus opt-in app-server `account/login/start` device-code
   flow behind `CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN=1` and a matching one-time
@@ -1819,6 +1824,14 @@ bucket/window/credit/reached counts. It never returns plan types, limit ids,
 limit names, balances, used percentages, reset times, window durations, account
 identifiers, cwd, paths, or raw app-server payloads. The Limit Check control
 renders only the sanitized count/state/detail-redaction fields.
+
+`/api/account-usage` is a separate dedicated account activity read route. It is
+disabled unless `CODEX_APP_PORT_ALLOW_ACCOUNT_USAGE=1` is set; when enabled, it
+calls only `account/usage/read` and returns summary metric and daily bucket
+counts. It never returns lifetime token values, peak token values, streak
+values, bucket dates, account identifiers, cwd, paths, or raw app-server
+payloads. The Usage Check control renders only sanitized metric/bucket counts
+and detail-redaction state.
 
 Device-code account login, login cancel, account credits nudge, account reset
 credit consumption, and account logout are the only dedicated account

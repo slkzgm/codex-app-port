@@ -47,6 +47,11 @@
   bucket/window/credit/reached counts; plan types, limit ids, limit names,
   balances, used percentages, reset times, window durations, account
   identifiers, cwd, paths, and raw app-server payloads must stay server-side.
+- Browser-facing account activity reads must be opt-in, narrow, and sanitized.
+  The dedicated `account/usage/read` bridge may report only summary metric and
+  daily bucket counts; lifetime token values, peak token values, streak values,
+  bucket dates, account identifiers, cwd, paths, and raw app-server payloads
+  must stay server-side.
 - Browser-facing JSON `POST` routes must have a centralized audited body
   contract before side effects. Unsupported fields must be rejected before
   probes, app-server calls, filesystem access, token consumption, or audit-log
