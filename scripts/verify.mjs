@@ -89,6 +89,7 @@ async function main() {
   await checkPermissionProfilesApi();
   await checkAppsListApi();
   await checkSkillsListApi();
+  await checkPluginsListApi();
   await checkRemoteControlStatusApi();
   await checkInstalledPluginsApi();
   await checkExternalAgentImportHistoriesApi();
@@ -19232,6 +19233,271 @@ async function checkSkillsListApi() {
     await closeServer(server);
   }
   pass("dev server skills list exposes counts behind opt-in without returning skill details");
+}
+
+async function checkPluginsListApi() {
+  const blockedCalls = [];
+  const blockedServer = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    pluginsListFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+  const blockedPort = await listenWithFallback(blockedServer, { host: "127.0.0.1", port: 0 });
+  const blockedBaseUrl = `http://127.0.0.1:${blockedPort}`;
+
+  try {
+    const token = await readUiSessionToken(blockedBaseUrl);
+    const settingsResponse = await fetch(`${blockedBaseUrl}/api/settings-integrations`, {
+      headers: apiHeaders(token),
+    });
+    if (!settingsResponse.ok) {
+      throw new Error(`settings integrations for blocked plugins list returned HTTP ${settingsResponse.status}`);
+    }
+    const settingsPayload = await settingsResponse.json();
+    if (
+      settingsPayload.surfaces?.plugins?.listingAvailable !== false ||
+      settingsPayload.surfaces?.plugins?.pluginsListEnabled !== false ||
+      settingsPayload.integrationScope?.pluginsListEnabled !== false
+    ) {
+      throw new Error("settings integrations did not expose the blocked plugins list gate safely");
+    }
+
+    const response = await fetch(`${blockedBaseUrl}/api/plugins-list`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`blocked plugins list returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (
+      payload.appServer?.touched !== false ||
+      payload.settings?.pluginsListEnabled !== false ||
+      payload.settings?.remotePluginCatalogRequested !== false ||
+      payload.result?.status !== "blocked" ||
+      payload.result?.remotePluginCatalogRequested !== false ||
+      payload.policy?.appServerTraffic !== false ||
+      payload.policy?.remotePluginCatalogRequested !== false
+    ) {
+      throw new Error("blocked plugins list did not fail closed without app-server traffic");
+    }
+    if (blockedCalls.length !== 0) {
+      throw new Error("blocked plugins list unexpectedly touched app-server");
+    }
+    assertNoMarkers(JSON.stringify(payload), ["/tmp/codex-app-port-verify"]);
+  } finally {
+    await closeServer(blockedServer);
+  }
+
+  const calls = [];
+  const server = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    pluginsListEnabled: true,
+    pluginsListFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-07-01T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/verify-private-home",
+          userAgent: "verify-private-agent",
+        },
+        probes: {
+          plugins: {
+            ok: true,
+            marketplaceCount: 1,
+            localMarketplaceCount: 1,
+            remoteMarketplaceCount: 0,
+            marketplaceDisplayNameCount: 1,
+            pluginCount: 2,
+            installedCount: 1,
+            enabledCount: 1,
+            pluginWithDisplayNameCount: 1,
+            pluginWithDescriptionCount: 1,
+            pluginWithDefaultPromptCount: 1,
+            pluginWithCapabilityCount: 1,
+            pluginWithScreenshotCount: 1,
+            loadErrorCount: 1,
+            featuredCount: 1,
+            sourceTypeCounts: {
+              local: 1,
+              privateSource: 1,
+            },
+            installPolicyCounts: {
+              AVAILABLE: 1,
+              privatePolicy: 1,
+            },
+            authPolicyCounts: {
+              ON_USE: 1,
+              privateAuth: 1,
+            },
+            returnedPluginCount: 2,
+            items: [
+              {
+                name: "verify-private-plugin",
+                installed: true,
+                enabled: true,
+                sourceType: "local",
+                installPolicy: "AVAILABLE",
+                authPolicy: "ON_USE",
+                hasDisplayName: true,
+                hasDescription: true,
+                hasDefaultPrompt: true,
+                hasCapability: true,
+                hasScreenshot: true,
+              },
+            ],
+            remotePluginCatalogRequested: true,
+            requestedMarketplaceKindCount: 5,
+            namesReturned: true,
+            marketplaceNamesReturned: true,
+            marketplaceDisplayNamesReturned: true,
+            marketplaceKindsReturned: true,
+            pluginDisplayNamesReturned: true,
+            idsReturned: true,
+            pathsReturned: true,
+            urlsReturned: true,
+            descriptionsReturned: true,
+            defaultPromptsReturned: true,
+            capabilityNamesReturned: true,
+            screenshotsReturned: true,
+            rawPayloadReturned: true,
+          },
+        },
+        rawPlugins: {
+          marketplace: "verify private local marketplace",
+          id: "verify-private-plugin-id",
+          name: "verify-private-plugin",
+          path: "/tmp/codex-app-port-verify/.codex/plugins/private-plugin",
+          url: "https://verify.example.test/private-plugin",
+          prompt: "verify private plugin prompt",
+          capability: "verify private plugin capability",
+          remoteName: "verify-private-remote-plugin",
+        },
+        notifications: {},
+      };
+    },
+  });
+  const port = await listenWithFallback(server, { host: "127.0.0.1", port: 0 });
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  try {
+    const token = await readUiSessionToken(baseUrl);
+    const settingsResponse = await fetch(`${baseUrl}/api/settings-integrations`, {
+      headers: apiHeaders(token),
+    });
+    if (!settingsResponse.ok) {
+      throw new Error(`settings integrations for plugins list returned HTTP ${settingsResponse.status}`);
+    }
+    const settingsPayload = await settingsResponse.json();
+    if (
+      settingsPayload.surfaces?.plugins?.listingAvailable !== true ||
+      settingsPayload.surfaces?.plugins?.pluginsListEnabled !== true ||
+      settingsPayload.integrationScope?.pluginsListEnabled !== true ||
+      !settingsPayload.integrationScope?.enabledReadMethods?.includes("plugin/list")
+    ) {
+      throw new Error("settings integrations did not expose the plugins list gate safely");
+    }
+
+    const wrongMethod = await fetch(`${baseUrl}/api/plugins-list`, {
+      method: "POST",
+      headers: apiHeaders(token),
+    });
+    if (wrongMethod.status !== 405) {
+      throw new Error(`plugins list POST returned HTTP ${wrongMethod.status}`);
+    }
+
+    const response = await fetch(`${baseUrl}/api/plugins-list`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`plugins list returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (
+      payload.appServer?.touched !== true ||
+      payload.appServer?.modelTraffic !== false ||
+      payload.settings?.pluginsListEnabled !== true ||
+      payload.settings?.remotePluginCatalogRequested !== false ||
+      payload.result?.status !== "available" ||
+      payload.result?.marketplaceCount !== 1 ||
+      payload.result?.localMarketplaceCount !== 1 ||
+      payload.result?.remoteMarketplaceCount !== 0 ||
+      payload.result?.pluginCount !== 2 ||
+      payload.result?.installedCount !== 1 ||
+      payload.result?.enabledCount !== 1 ||
+      payload.result?.sourceTypeCounts?.local !== 1 ||
+      payload.result?.sourceTypeCounts?.privateSource != null ||
+      payload.result?.installPolicyCounts?.AVAILABLE !== 1 ||
+      payload.result?.installPolicyCounts?.privatePolicy != null ||
+      payload.result?.authPolicyCounts?.ON_USE !== 1 ||
+      payload.result?.authPolicyCounts?.privateAuth != null ||
+      payload.result?.returnedPluginCount !== 0 ||
+      payload.result?.remotePluginCatalogRequested !== false ||
+      payload.result?.requestedMarketplaceKindCount !== 5 ||
+      payload.result?.namesReturned !== false ||
+      payload.result?.marketplaceNamesReturned !== false ||
+      payload.result?.marketplaceDisplayNamesReturned !== false ||
+      payload.result?.marketplaceKindsReturned !== false ||
+      payload.result?.pluginDisplayNamesReturned !== false ||
+      payload.result?.idsReturned !== false ||
+      payload.result?.pathsReturned !== false ||
+      payload.result?.urlsReturned !== false ||
+      payload.result?.descriptionsReturned !== false ||
+      payload.result?.defaultPromptsReturned !== false ||
+      payload.result?.capabilityNamesReturned !== false ||
+      payload.result?.screenshotsReturned !== false ||
+      payload.result?.rawPayloadReturned !== false ||
+      payload.policy?.readOnly !== true ||
+      payload.policy?.pluginMutations !== false ||
+      payload.policy?.pluginInstalls !== false ||
+      payload.policy?.pluginUninstalls !== false ||
+      payload.policy?.pluginEnablementWrites !== false ||
+      payload.policy?.pluginContentReads !== false ||
+      payload.policy?.pluginShareReads !== false ||
+      payload.policy?.remotePluginCatalogRequested !== false ||
+      payload.policy?.rawPayloadReturned !== false
+    ) {
+      throw new Error("plugins list did not return the safe counts-only summary shape");
+    }
+    if (calls.length !== 1 || calls[0].cwd !== "/tmp/codex-app-port-verify") {
+      throw new Error("plugins list did not call the app-server read path once");
+    }
+    assertNoMarkers(JSON.stringify(payload), [
+      "/tmp/codex-app-port-verify",
+      "/tmp/verify-private-home",
+      "verify-private-agent",
+      "codexHome",
+      "userAgent",
+      "verify private local marketplace",
+      "verify-private-plugin-id",
+      "verify-private-plugin",
+      "privateSource",
+      "privatePolicy",
+      "privateAuth",
+      "verify private plugin prompt",
+      "verify private plugin capability",
+      "verify-private-remote-plugin",
+      "https://verify.example.test/private-plugin",
+      "\"namesReturned\":true",
+      "\"marketplaceNamesReturned\":true",
+      "\"marketplaceDisplayNamesReturned\":true",
+      "\"marketplaceKindsReturned\":true",
+      "\"pluginDisplayNamesReturned\":true",
+      "\"idsReturned\":true",
+      "\"pathsReturned\":true",
+      "\"urlsReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]);
+  } finally {
+    await closeServer(server);
+  }
+  pass("dev server plugins list exposes counts behind opt-in without returning plugin details");
 }
 
 async function checkRemoteControlStatusApi() {
@@ -58835,6 +59101,11 @@ async function readUiSessionToken(baseUrl) {
     !html.includes("skills-list-count-text") ||
     !html.includes("skills-list-enabled-text") ||
     !html.includes("skills-list-details-text") ||
+    !html.includes("plugins-list-button") ||
+    !html.includes("plugins-list-status") ||
+    !html.includes("plugins-list-count-text") ||
+    !html.includes("plugins-list-marketplaces-text") ||
+    !html.includes("plugins-list-details-text") ||
     !html.includes("remote-control-status-button") ||
     !html.includes("remote-control-status-status") ||
     !html.includes("remote-control-status-count-text") ||
@@ -58877,6 +59148,9 @@ async function readUiSessionToken(baseUrl) {
     !appScript.includes("runSkillsList") ||
     !appScript.includes("renderSkillsList") ||
     !appScript.includes("setSkillsListLoading") ||
+    !appScript.includes("runPluginsList") ||
+    !appScript.includes("renderPluginsList") ||
+    !appScript.includes("setPluginsListLoading") ||
     !appScript.includes("runRemoteControlStatus") ||
     !appScript.includes("renderRemoteControlStatus") ||
     !appScript.includes("runInstalledPlugins") ||

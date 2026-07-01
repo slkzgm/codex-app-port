@@ -1570,6 +1570,15 @@ Current M1 status:
   presence counts only. App names, ids, plugin display names, descriptions,
   labels, logos, URLs, screenshots, cwd, filesystem access, installs,
   auth-linking, and raw app-server payloads remain hidden or blocked.
+- done: dedicated opt-in `/api/plugins-list` route behind
+  `CODEX_APP_PORT_ALLOW_PLUGINS_LIST=1`; it may call only `plugin/list` with
+  the current workspace cwd and local/workspace-directory marketplace kinds,
+  never requests remote curated/shared/created catalog kinds, and returns only
+  marketplace/plugin/install/auth-policy counts plus metadata presence counts.
+  Marketplace names/display names/kinds, plugin names, ids, display names,
+  descriptions, paths, URLs, prompts, capabilities, screenshots, cwd, remote
+  catalog contents, plugin mutations, installs, sharing, and raw app-server
+  payloads remain hidden or blocked.
 - done: dedicated `/api/config-requirements` read route for
   `configRequirements/read`, disabled by default behind
   `CODEX_APP_PORT_ALLOW_CONFIG_REQUIREMENTS=1`, returning only requirement

@@ -1702,6 +1702,15 @@
   label-key, and cursor presence counts only; app names, ids, plugin display
   names, descriptions, labels, logos, URLs, screenshots, cwd, filesystem reads,
   app installs, auth linking, and raw app-server payloads remain blocked.
+- `/api/plugins-list` may call only `plugin/list` behind
+  `CODEX_APP_PORT_ALLOW_PLUGINS_LIST=1`. It is GET-only, local-token protected,
+  sends only the current workspace `cwd` and local/workspace-directory
+  marketplace kinds, never requests remote curated/shared/created catalogs, and
+  returns marketplace/plugin/install/auth-policy counts plus metadata presence
+  counts only; marketplace names/display names/kinds, plugin names, ids,
+  display names, descriptions, paths, URLs, prompts, capabilities, screenshots,
+  cwd, filesystem reads, plugin mutations, installs, sharing, remote catalog
+  contents, and raw app-server payloads remain blocked.
 - `/api/remote-control-status` may call only `remoteControl/status/read` behind
   `CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_STATUS=1`. It is GET-only, local-token
   protected, and returns known status buckets plus identity-field presence

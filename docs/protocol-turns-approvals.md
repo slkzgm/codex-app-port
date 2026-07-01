@@ -663,6 +663,13 @@ by default, may call only `app/list` behind `CODEX_APP_PORT_ALLOW_APPS_LIST=1`,
 and never returns app names, ids, plugin display names, descriptions, labels,
 logos, URLs, screenshots, cwd, filesystem access, installs, auth-linking
 actions, or raw payloads.
+`/api/plugins-list` is the stricter dedicated plugin catalog route: it is
+disabled by default, may call only `plugin/list` behind
+`CODEX_APP_PORT_ALLOW_PLUGINS_LIST=1`, uses only local and workspace-directory
+marketplace kinds, never requests remote curated/shared/created catalogs, and
+never returns marketplace names/display names/kinds, plugin names, ids, display
+names, descriptions, paths, URLs, prompts, capabilities, screenshots, cwd,
+mutation/install/share actions, or raw payloads.
 It also keeps `plugin/read` behind a local preflight that returns only plugin
 target and argument counts, with plugin names, marketplace names/paths,
 descriptions, hook keys, skill content, MCP server names, and app-server reads

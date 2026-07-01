@@ -71,6 +71,7 @@ export const APP_SERVER_METHODS = Object.freeze({
   mcpToolCall: "mcpServer/tool/call",
   mcpResourceRead: "mcpServer/resource/read",
   pluginInstalled: "plugin/installed",
+  pluginList: "plugin/list",
   pluginRead: "plugin/read",
   pluginShareCheckout: "plugin/share/checkout",
   pluginShareList: "plugin/share/list",

@@ -1970,6 +1970,18 @@ installs, cwd, filesystem access, and raw payloads are never returned by this
 dedicated route. The Skills Check control renders only sanitized
 count/detail-redaction fields.
 
+`/api/plugins-list` is a dedicated disabled-by-default GET route for
+`plugin/list`. It requires `CODEX_APP_PORT_ALLOW_PLUGINS_LIST=1`, accepts only
+the local session token and workspace selector, calls the app server with the
+current workspace `cwd` and `marketplaceKinds:["local","workspace-directory"]`,
+and returns only marketplace/plugin/install/auth-policy counts plus metadata
+presence counts. It does not request remote curated, shared, or created plugin
+catalogs. Marketplace names/display names/kinds, plugin names, ids, display
+names, descriptions, paths, URLs, prompts, capabilities, screenshots, cwd,
+plugin mutations, installs, sharing, and raw payloads are never returned by
+this dedicated route. The Catalog Check control renders only sanitized
+count/detail-redaction fields.
+
 When `CODEX_APP_PORT_ALLOW_INTEGRATION_NAMES=1` is also set, the inventory may
 include bounded display names for models, collaboration modes, apps/connectors,
 app plugin labels, MCP servers/tools, skills, plugins, installed plugins,

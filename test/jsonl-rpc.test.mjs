@@ -20,6 +20,7 @@ import {
   runMcpToolCallProbe,
   runMcpResourceReadProbe,
   runPluginContentReadProbe,
+  runPluginsListReadProbe,
   runPluginReadProbe,
   runPluginShareCheckoutProbe,
   runPluginUninstallProbe,
@@ -2609,6 +2610,80 @@ test("runAppsListReadProbe returns app counts without app details", async () => 
       delete process.env.CODEX_APP_PORT_ALLOW_APPS_LIST;
     } else {
       process.env.CODEX_APP_PORT_ALLOW_APPS_LIST = previous;
+    }
+  }
+});
+
+test("runPluginsListReadProbe returns plugin catalog counts without plugin details", async () => {
+  const previous = process.env.CODEX_APP_PORT_ALLOW_PLUGINS_LIST;
+  process.env.CODEX_APP_PORT_ALLOW_PLUGINS_LIST = "1";
+  try {
+    const summary = await runPluginsListReadProbe({
+      codexBin: process.execPath,
+      codexArgs: [mockServer.pathname],
+      cwd: process.cwd(),
+      timeoutMs: 1_000,
+    });
+    const plugins = summary.probes.plugins;
+    const serialized = JSON.stringify(summary);
+    assert.equal(summary.ok, true);
+    assert.equal(plugins.ok, true);
+    assert.equal(plugins.marketplaceCount, 1);
+    assert.equal(plugins.localMarketplaceCount, 1);
+    assert.equal(plugins.remoteMarketplaceCount, 0);
+    assert.equal(plugins.marketplaceDisplayNameCount, 1);
+    assert.equal(plugins.pluginCount, 1);
+    assert.equal(plugins.installedCount, 1);
+    assert.equal(plugins.enabledCount, 1);
+    assert.equal(plugins.pluginWithDisplayNameCount, 1);
+    assert.equal(plugins.pluginWithDescriptionCount, 1);
+    assert.equal(plugins.pluginWithDefaultPromptCount, 1);
+    assert.equal(plugins.pluginWithCapabilityCount, 1);
+    assert.equal(plugins.pluginWithScreenshotCount, 1);
+    assert.equal(plugins.loadErrorCount, 1);
+    assert.equal(plugins.featuredCount, 1);
+    assert.deepEqual(plugins.sourceTypeCounts, { local: 1 });
+    assert.deepEqual(plugins.installPolicyCounts, { AVAILABLE: 1 });
+    assert.deepEqual(plugins.authPolicyCounts, { ON_USE: 1 });
+    assert.equal(plugins.returnedPluginCount, 0);
+    assert.equal(plugins.remotePluginCatalogRequested, false);
+    assert.equal(plugins.requestedMarketplaceKindCount, 2);
+    assert.equal(plugins.namesReturned, false);
+    assert.equal(plugins.marketplaceNamesReturned, false);
+    assert.equal(plugins.marketplaceDisplayNamesReturned, false);
+    assert.equal(plugins.marketplaceKindsReturned, false);
+    assert.equal(plugins.pluginDisplayNamesReturned, false);
+    assert.equal(plugins.idsReturned, false);
+    assert.equal(plugins.pathsReturned, false);
+    assert.equal(plugins.urlsReturned, false);
+    assert.equal(plugins.descriptionsReturned, false);
+    assert.equal(plugins.defaultPromptsReturned, false);
+    assert.equal(plugins.capabilityNamesReturned, false);
+    assert.equal(plugins.screenshotsReturned, false);
+    for (const marker of [
+      "private-local-marketplace",
+      "private local marketplace",
+      "private-plugin-id",
+      "private-plugin",
+      "private plugin display",
+      "private plugin short description",
+      "private plugin prompt",
+      "private plugin capability",
+      "private-plugin-screenshot.png",
+      "private marketplace error",
+      "private-remote-plugin",
+      "/tmp/mock-workspace",
+      "example.test",
+      "codexHome",
+      "userAgent",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    if (previous === undefined) {
+      delete process.env.CODEX_APP_PORT_ALLOW_PLUGINS_LIST;
+    } else {
+      process.env.CODEX_APP_PORT_ALLOW_PLUGINS_LIST = previous;
     }
   }
 });

@@ -400,6 +400,11 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /skills-list-count-text/);
     assert.match(html, /skills-list-enabled-text/);
     assert.match(html, /skills-list-details-text/);
+    assert.match(html, /plugins-list-button/);
+    assert.match(html, /plugins-list-status/);
+    assert.match(html, /plugins-list-count-text/);
+    assert.match(html, /plugins-list-marketplaces-text/);
+    assert.match(html, /plugins-list-details-text/);
     assert.match(html, /remote-control-status-button/);
     assert.match(html, /remote-control-status-status/);
     assert.match(html, /remote-control-status-count-text/);
@@ -442,6 +447,9 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(appScript, /runSkillsList/);
     assert.match(appScript, /renderSkillsList/);
     assert.match(appScript, /setSkillsListLoading/);
+    assert.match(appScript, /runPluginsList/);
+    assert.match(appScript, /renderPluginsList/);
+    assert.match(appScript, /setPluginsListLoading/);
     assert.match(appScript, /runRemoteControlStatus/);
     assert.match(appScript, /renderRemoteControlStatus/);
     assert.match(appScript, /runInstalledPlugins/);
@@ -16151,6 +16159,240 @@ test("dev server exposes remote control status only behind explicit opt-in and r
       "\"environmentIdReturned\":true",
       "\"installationIdReturned\":true",
       "\"serverNameReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    await closeServer(enabledServer.server);
+  }
+});
+
+test("dev server exposes plugins list only behind explicit opt-in and redacts plugin details", async () => {
+  const blockedCalls = [];
+  const blockedServer = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    pluginsListFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+
+  try {
+    const settingsResponse = await fetch(`${blockedServer.url}/api/settings-integrations`, {
+      headers: apiHeaders(blockedServer.server),
+    });
+    assert.equal(settingsResponse.status, 200);
+    const settingsPayload = await settingsResponse.json();
+    assert.equal(settingsPayload.surfaces.plugins.listingAvailable, false);
+    assert.equal(settingsPayload.surfaces.plugins.pluginsListEnabled, false);
+    assert.equal(settingsPayload.integrationScope.pluginsListEnabled, false);
+
+    const response = await fetch(`${blockedServer.url}/api/plugins-list`, {
+      headers: apiHeaders(blockedServer.server),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, false);
+    assert.deepEqual(payload.appServer.auditedMethods, ["plugin/list"]);
+    assert.equal(payload.settings.pluginsListEnabled, false);
+    assert.equal(payload.settings.remotePluginCatalogRequested, false);
+    assert.equal(payload.policy.appServerTraffic, false);
+    assert.equal(payload.policy.remotePluginCatalogRequested, false);
+    assert.equal(payload.result.status, "blocked");
+    assert.equal(payload.result.remotePluginCatalogRequested, false);
+    assert.equal(blockedCalls.length, 0);
+    assert.equal(serialized.includes("/tmp/default-workspace"), false);
+  } finally {
+    await closeServer(blockedServer.server);
+  }
+
+  const calls = [];
+  const enabledServer = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    pluginsListEnabled: true,
+    pluginsListFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-07-01T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/private-home",
+          userAgent: "mock/0.0.0",
+        },
+        probes: {
+          plugins: {
+            ok: true,
+            marketplaceCount: 1,
+            localMarketplaceCount: 1,
+            remoteMarketplaceCount: 0,
+            marketplaceDisplayNameCount: 1,
+            pluginCount: 2,
+            installedCount: 1,
+            enabledCount: 1,
+            pluginWithDisplayNameCount: 1,
+            pluginWithDescriptionCount: 1,
+            pluginWithDefaultPromptCount: 1,
+            pluginWithCapabilityCount: 1,
+            pluginWithScreenshotCount: 1,
+            loadErrorCount: 1,
+            featuredCount: 1,
+            sourceTypeCounts: {
+              local: 1,
+              privateSource: 1,
+            },
+            installPolicyCounts: {
+              AVAILABLE: 1,
+              privatePolicy: 1,
+            },
+            authPolicyCounts: {
+              ON_USE: 1,
+              privateAuth: 1,
+            },
+            returnedPluginCount: 2,
+            items: [
+              {
+                name: "private-plugin",
+                installed: true,
+                enabled: true,
+                sourceType: "local",
+                installPolicy: "AVAILABLE",
+                authPolicy: "ON_USE",
+                hasDisplayName: true,
+                hasDescription: true,
+                hasDefaultPrompt: true,
+                hasCapability: true,
+                hasScreenshot: true,
+              },
+            ],
+            remotePluginCatalogRequested: true,
+            requestedMarketplaceKindCount: 5,
+            namesReturned: true,
+            marketplaceNamesReturned: true,
+            marketplaceDisplayNamesReturned: true,
+            marketplaceKindsReturned: true,
+            pluginDisplayNamesReturned: true,
+            idsReturned: true,
+            pathsReturned: true,
+            urlsReturned: true,
+            descriptionsReturned: true,
+            defaultPromptsReturned: true,
+            capabilityNamesReturned: true,
+            screenshotsReturned: true,
+            rawPayloadReturned: true,
+          },
+        },
+        rawPlugins: {
+          marketplace: "private local marketplace",
+          id: "private-plugin-id",
+          name: "private-plugin",
+          path: "/tmp/default-workspace/.codex/plugins/private-plugin",
+          url: "https://example.test/private-plugin",
+          prompt: "private plugin prompt",
+          capability: "private plugin capability",
+          remoteName: "private-remote-plugin",
+        },
+        notifications: {},
+      };
+    },
+  });
+
+  try {
+    const settingsResponse = await fetch(`${enabledServer.url}/api/settings-integrations`, {
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(settingsResponse.status, 200);
+    const settingsPayload = await settingsResponse.json();
+    assert.equal(settingsPayload.surfaces.plugins.listingAvailable, true);
+    assert.equal(settingsPayload.surfaces.plugins.pluginsListEnabled, true);
+    assert.equal(settingsPayload.integrationScope.pluginsListEnabled, true);
+    assert.equal(settingsPayload.integrationScope.enabledReadMethods.includes("plugin/list"), true);
+
+    const methodResponse = await fetch(`${enabledServer.url}/api/plugins-list`, {
+      method: "POST",
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(methodResponse.status, 405);
+
+    const response = await fetch(`${enabledServer.url}/api/plugins-list`, {
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, true);
+    assert.equal(payload.appServer.modelTraffic, false);
+    assert.deepEqual(payload.appServer.auditedMethods, ["plugin/list"]);
+    assert.equal(payload.settings.pluginsListEnabled, true);
+    assert.equal(payload.settings.remotePluginCatalogRequested, false);
+    assert.equal(payload.result.status, "available");
+    assert.equal(payload.result.marketplaceCount, 1);
+    assert.equal(payload.result.localMarketplaceCount, 1);
+    assert.equal(payload.result.remoteMarketplaceCount, 0);
+    assert.equal(payload.result.pluginCount, 2);
+    assert.equal(payload.result.installedCount, 1);
+    assert.equal(payload.result.enabledCount, 1);
+    assert.deepEqual(payload.result.sourceTypeCounts, { local: 1 });
+    assert.deepEqual(payload.result.installPolicyCounts, { AVAILABLE: 1 });
+    assert.deepEqual(payload.result.authPolicyCounts, { ON_USE: 1 });
+    assert.equal(payload.result.returnedPluginCount, 0);
+    assert.equal(payload.result.remotePluginCatalogRequested, false);
+    assert.equal(payload.result.requestedMarketplaceKindCount, 5);
+    assert.equal(payload.result.namesReturned, false);
+    assert.equal(payload.result.marketplaceNamesReturned, false);
+    assert.equal(payload.result.marketplaceDisplayNamesReturned, false);
+    assert.equal(payload.result.marketplaceKindsReturned, false);
+    assert.equal(payload.result.pluginDisplayNamesReturned, false);
+    assert.equal(payload.result.idsReturned, false);
+    assert.equal(payload.result.pathsReturned, false);
+    assert.equal(payload.result.urlsReturned, false);
+    assert.equal(payload.result.descriptionsReturned, false);
+    assert.equal(payload.result.defaultPromptsReturned, false);
+    assert.equal(payload.result.capabilityNamesReturned, false);
+    assert.equal(payload.result.screenshotsReturned, false);
+    assert.equal(payload.result.rawPayloadReturned, false);
+    assert.deepEqual(payload.probes.plugins.items, []);
+    assert.equal(payload.policy.readOnly, true);
+    assert.equal(payload.policy.pluginMutations, false);
+    assert.equal(payload.policy.pluginInstalls, false);
+    assert.equal(payload.policy.pluginUninstalls, false);
+    assert.equal(payload.policy.pluginEnablementWrites, false);
+    assert.equal(payload.policy.pluginContentReads, false);
+    assert.equal(payload.policy.pluginShareReads, false);
+    assert.equal(payload.policy.remotePluginCatalogRequested, false);
+    assert.equal(payload.policy.rawPayloadReturned, false);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].cwd, "/tmp/default-workspace");
+    for (const marker of [
+      "/tmp/default-workspace",
+      "/tmp/private-home",
+      "codexHome",
+      "userAgent",
+      "private local marketplace",
+      "private-plugin-id",
+      "private-plugin",
+      "privateSource",
+      "privatePolicy",
+      "privateAuth",
+      "private plugin prompt",
+      "private plugin capability",
+      "private-remote-plugin",
+      "https://example.test/private-plugin",
+      "\"namesReturned\":true",
+      "\"marketplaceNamesReturned\":true",
+      "\"marketplaceDisplayNamesReturned\":true",
+      "\"marketplaceKindsReturned\":true",
+      "\"pluginDisplayNamesReturned\":true",
+      "\"idsReturned\":true",
+      "\"pathsReturned\":true",
+      "\"urlsReturned\":true",
       "\"rawPayloadReturned\":true",
     ]) {
       assert.equal(serialized.includes(marker), false, `leaked ${marker}`);

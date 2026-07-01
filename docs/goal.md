@@ -1130,6 +1130,15 @@ Target parity with the Codex desktop workflow:
   plugin-label/screenshot/URL presence counts and no app names, ids, plugin
   display names, descriptions, labels, logos, URLs, screenshots, cwd,
   filesystem access, install/auth-linking surface, or raw payloads.
+- `plugin/list` also has a dedicated opt-in `/api/plugins-list` route behind
+  `CODEX_APP_PORT_ALLOW_PLUGINS_LIST=1`. The dedicated route is stricter than
+  the names inventory mode and the optional remote-catalog inventory gate: it
+  calls only local and workspace-directory marketplace kinds, never requests
+  remote curated/shared/created catalogs, returns only marketplace/plugin/
+  install/auth-policy counts plus metadata presence counts, and returns no
+  marketplace names/display names/kinds, plugin names, ids, display names,
+  descriptions, paths, URLs, prompts, capabilities, screenshots, cwd, plugin
+  mutation/install/share surface, or raw payloads.
 - `hooks/list` has both a dedicated opt-in `/api/hooks-list` route behind
   `CODEX_APP_PORT_ALLOW_HOOKS_LIST=1` and an opt-in inventory path. It returns
   only workspace/hook/enabled/disabled/managed/error/warning counts plus
@@ -1144,8 +1153,10 @@ Target parity with the Codex desktop workflow:
   counts, and allowlisted item-type buckets, not import ids, timestamps, cwd
   values, source or target paths, messages, failure stages, error types, import
   execution, filesystem access, or raw payloads.
-- `plugin/list` also has an opt-in inventory path. `plugin/installed` has both
-  a dedicated opt-in `/api/installed-plugins` route behind
+- `plugin/list` also has an opt-in inventory path and a dedicated opt-in
+  `/api/plugins-list` route behind `CODEX_APP_PORT_ALLOW_PLUGINS_LIST=1`.
+  `plugin/installed` has both a dedicated opt-in `/api/installed-plugins`
+  route behind
   `CODEX_APP_PORT_ALLOW_INSTALLED_PLUGINS=1` and an opt-in inventory path.
   Plugin inventories return only marketplace local/remote counts,
   source/install/auth-policy buckets, and plugin interface metadata presence
@@ -1153,9 +1164,10 @@ Target parity with the Codex desktop workflow:
   screenshots by default, and may return bounded safe plugin names plus boolean
   metadata presence flags only in the inventory path when
   `CODEX_APP_PORT_ALLOW_INTEGRATION_NAMES=1` is also set. The dedicated
-  installed-plugin route remains names-off. `plugin/list` queries only local and
-  workspace-directory marketplaces by default; remote curated/shared/created
-  catalog categories are queried only when
+  plugin-list and installed-plugin routes remain names-off. `plugin/list`
+  queries only local and workspace-directory marketplaces by default; remote
+  curated/shared/created catalog categories are queried only by the inventory
+  path when
   `CODEX_APP_PORT_ALLOW_REMOTE_PLUGIN_CATALOG_INVENTORY=1` is also set, and
   still return counts only. They still omit marketplace names/display names,
   sources, plugin ids, plugin display names, plugin descriptions, plugin paths, URLs, prompts,

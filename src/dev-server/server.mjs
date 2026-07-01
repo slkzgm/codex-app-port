@@ -41,6 +41,7 @@ import {
   runMcpResourceReadProbe,
   runPluginContentReadProbe,
   runPluginEnablementSetProbe,
+  runPluginsListReadProbe,
   runPluginReadProbe,
   runPluginShareCheckoutProbe,
   runPluginUninstallProbe,
@@ -13188,6 +13189,7 @@ export function createDevServer({
   mcpResourceReadFn = runMcpResourceReadProbe,
   pluginContentReadFn = runPluginContentReadProbe,
   pluginEnablementSetFn = runPluginEnablementSetProbe,
+  pluginsListFn = runPluginsListReadProbe,
   pluginReadFn = runPluginReadProbe,
   pluginShareCheckoutFn = runPluginShareCheckoutProbe,
   pluginUninstallFn = runPluginUninstallProbe,
@@ -13302,6 +13304,7 @@ export function createDevServer({
   pluginEnablementAllowlist = parsePluginEnablementAllowlist(
     process.env.CODEX_APP_PORT_PLUGIN_ENABLEMENT_ALLOWLIST,
   ),
+  pluginsListEnabled = process.env.CODEX_APP_PORT_ALLOW_PLUGINS_LIST === "1",
   pluginShareListEnabled = process.env.CODEX_APP_PORT_ALLOW_PLUGIN_SHARE_LIST === "1",
   skillsConfigWriteEnabled = process.env.CODEX_APP_PORT_ALLOW_SKILLS_CONFIG_WRITE === "1",
   skillsExtraRootsClearEnabled =
@@ -13431,6 +13434,7 @@ export function createDevServer({
       mcpResourceReadFn,
       pluginContentReadFn,
       pluginEnablementSetFn,
+      pluginsListFn,
       pluginReadFn,
       pluginShareCheckoutFn,
       pluginUninstallFn,
@@ -13518,6 +13522,7 @@ export function createDevServer({
       pluginUninstallAllowlist,
       pluginEnablementSetEnabled,
       pluginEnablementAllowlist,
+      pluginsListEnabled,
       pluginShareListEnabled,
       skillsConfigWriteEnabled,
       skillsExtraRootsClearEnabled,
@@ -15355,6 +15360,48 @@ export async function handleRequest(request, response, options) {
       sendJson(response, error.statusCode ?? 502, {
         ok: false,
         error: cleanDisplayText(error.message, 200) ?? "Invalid apps list request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/plugins-list") {
+    if (request.method !== "GET") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        url.searchParams.get("workspace"),
+      );
+      if (!options.pluginsListEnabled) {
+        sendJson(response, 200, buildPluginsListBlockedPayload({ workspace }));
+        return;
+      }
+      const payload = await options.pluginsListFn({
+        codexBin: options.codexBin,
+        cwd: workspace.cwd,
+        timeoutMs: options.timeoutMs,
+      });
+      sendJson(
+        response,
+        200,
+        sanitizePluginsListPayload(payload, {
+          workspace,
+          enabled: true,
+        }),
+      );
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 502, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid plugins list request",
       });
     }
     return;
@@ -20079,6 +20126,7 @@ export async function handleRequest(request, response, options) {
             pluginShareCheckoutEnabled: options.pluginShareCheckoutEnabled,
             pluginUninstallEnabled: options.pluginUninstallEnabled,
             pluginEnablementSetEnabled: options.pluginEnablementSetEnabled,
+            pluginsListEnabled: options.pluginsListEnabled,
             pluginShareListEnabled: options.pluginShareListEnabled,
             skillsConfigWriteEnabled: options.skillsConfigWriteEnabled,
             skillsExtraRootsClearEnabled: options.skillsExtraRootsClearEnabled,
@@ -20131,6 +20179,7 @@ export async function handleRequest(request, response, options) {
           pluginShareCheckoutEnabled: options.pluginShareCheckoutEnabled,
           pluginUninstallEnabled: options.pluginUninstallEnabled,
           pluginEnablementSetEnabled: options.pluginEnablementSetEnabled,
+          pluginsListEnabled: options.pluginsListEnabled,
           pluginShareListEnabled: options.pluginShareListEnabled,
           skillsConfigWriteEnabled: options.skillsConfigWriteEnabled,
           skillsExtraRootsClearEnabled: options.skillsExtraRootsClearEnabled,
@@ -52435,6 +52484,7 @@ export function sanitizeSettingsIntegrationsPayload(
     pluginShareCheckoutEnabled = false,
     pluginUninstallEnabled = false,
     pluginEnablementSetEnabled = false,
+    pluginsListEnabled = false,
     pluginShareListEnabled = false,
     skillsConfigWriteEnabled = false,
     skillsExtraRootsClearEnabled = false,
@@ -52465,6 +52515,7 @@ export function sanitizeSettingsIntegrationsPayload(
   const importHistoriesEnabled = Boolean(externalAgentImportHistoriesEnabled);
   const hooksReadEnabled = Boolean(hooksListEnabled);
   const skillsReadEnabled = Boolean(skillsListEnabled);
+  const pluginsReadEnabled = Boolean(pluginsListEnabled);
   const loginEnabled = Boolean(accountLoginEnabled);
   const loginCancelEnabled = Boolean(accountLoginCancelEnabled);
   const creditsNudgeEnabled = Boolean(accountCreditsNudgeEnabled);
@@ -52530,6 +52581,7 @@ export function sanitizeSettingsIntegrationsPayload(
     pluginShareCheckoutEnabled,
     pluginUninstallEnabled,
     pluginEnablementSetEnabled,
+    pluginsListEnabled: pluginsReadEnabled,
     pluginShareListEnabled,
     skillsConfigWriteEnabled,
     skillsExtraRootsClearEnabled,
@@ -52755,7 +52807,8 @@ export function sanitizeSettingsIntegrationsPayload(
       },
       plugins: {
         state: "partial",
-        listingAvailable: inventory.plugins.ok,
+        listingAvailable: inventory.plugins.ok || pluginsReadEnabled,
+        pluginsListEnabled: pluginsReadEnabled,
         installedListingAvailable: inventory.installedPlugins.ok || installedPluginReadEnabled,
         installedPluginsEnabled: installedPluginReadEnabled,
         detailReadEnabled: Boolean(pluginReadEnabled),
@@ -52776,6 +52829,8 @@ export function sanitizeSettingsIntegrationsPayload(
           ? inventory.plugins.namesReturned
             ? "names-and-counts"
             : "counts-only"
+          : pluginsReadEnabled
+            ? "plugins-list-counts-only"
           : "plugin-install-marketplace-and-share-preflight-local-only",
       },
     },
@@ -59765,6 +59820,208 @@ export function sanitizeRemoteControlStatusPayload(
   };
 }
 
+export function buildPluginsListBlockedPayload({ workspace } = {}) {
+  const plugins = sanitizePluginsInventory(null, { namesEnabled: false });
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["plugin/list"],
+    },
+    settings: {
+      pluginsListAvailable: true,
+      pluginsListEnabled: false,
+      appServerTraffic: false,
+      remotePluginCatalogRequested: false,
+      namesReturned: false,
+      marketplaceNamesReturned: false,
+      marketplaceDisplayNamesReturned: false,
+      marketplaceKindsReturned: false,
+      pluginDisplayNamesReturned: false,
+      idsReturned: false,
+      pathsReturned: false,
+      urlsReturned: false,
+      descriptionsReturned: false,
+      defaultPromptsReturned: false,
+      capabilityNamesReturned: false,
+      screenshotsReturned: false,
+      rawPayloadReturned: false,
+      reason: "plugins-list-requires-opt-in",
+    },
+    probes: {
+      plugins,
+    },
+    result: {
+      status: "blocked",
+      pluginsListEnabled: false,
+      appServerTraffic: false,
+      marketplaceCount: 0,
+      localMarketplaceCount: 0,
+      remoteMarketplaceCount: 0,
+      marketplaceDisplayNameCount: 0,
+      pluginCount: 0,
+      installedCount: 0,
+      enabledCount: 0,
+      pluginWithDisplayNameCount: 0,
+      pluginWithDescriptionCount: 0,
+      pluginWithDefaultPromptCount: 0,
+      pluginWithCapabilityCount: 0,
+      pluginWithScreenshotCount: 0,
+      loadErrorCount: 0,
+      featuredCount: 0,
+      sourceTypeCounts: {},
+      installPolicyCounts: {},
+      authPolicyCounts: {},
+      returnedPluginCount: 0,
+      remotePluginCatalogRequested: false,
+      requestedMarketplaceKindCount: 0,
+      namesReturned: false,
+      marketplaceNamesReturned: false,
+      marketplaceDisplayNamesReturned: false,
+      marketplaceKindsReturned: false,
+      pluginDisplayNamesReturned: false,
+      idsReturned: false,
+      pathsReturned: false,
+      urlsReturned: false,
+      descriptionsReturned: false,
+      defaultPromptsReturned: false,
+      capabilityNamesReturned: false,
+      screenshotsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: pluginsListPolicy({ appServerTraffic: false }),
+    notifications: sanitizeNotificationCounts(null),
+  };
+}
+
+export function sanitizePluginsListPayload(
+  payload,
+  { workspace = null, enabled = false } = {},
+) {
+  const plugins = sanitizePluginsInventory(payload?.probes?.plugins, { namesEnabled: false });
+  const status = enabled ? "available" : "blocked";
+  return {
+    ok: Boolean(payload?.ok),
+    generatedAt: payload?.generatedAt ?? new Date().toISOString(),
+    transport: cleanDisplayText(payload?.transport, 80),
+    protocol: cleanDisplayText(payload?.protocol, 80),
+    initialize: sanitizeInitialize(payload?.initialize),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: Boolean(enabled),
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["plugin/list"],
+    },
+    settings: {
+      pluginsListAvailable: true,
+      pluginsListEnabled: Boolean(enabled),
+      appServerTraffic: Boolean(enabled),
+      remotePluginCatalogRequested: false,
+      namesReturned: false,
+      marketplaceNamesReturned: false,
+      marketplaceDisplayNamesReturned: false,
+      marketplaceKindsReturned: false,
+      pluginDisplayNamesReturned: false,
+      idsReturned: false,
+      pathsReturned: false,
+      urlsReturned: false,
+      descriptionsReturned: false,
+      defaultPromptsReturned: false,
+      capabilityNamesReturned: false,
+      screenshotsReturned: false,
+      rawPayloadReturned: false,
+      reason: Boolean(enabled) ? "plugins-list-counts-only" : "plugins-list-requires-opt-in",
+    },
+    probes: {
+      plugins,
+    },
+    result: {
+      status,
+      pluginsListEnabled: Boolean(enabled),
+      appServerTraffic: Boolean(enabled),
+      marketplaceCount: plugins.marketplaceCount,
+      localMarketplaceCount: plugins.localMarketplaceCount,
+      remoteMarketplaceCount: plugins.remoteMarketplaceCount,
+      marketplaceDisplayNameCount: plugins.marketplaceDisplayNameCount,
+      pluginCount: plugins.pluginCount,
+      installedCount: plugins.installedCount,
+      enabledCount: plugins.enabledCount,
+      pluginWithDisplayNameCount: plugins.pluginWithDisplayNameCount,
+      pluginWithDescriptionCount: plugins.pluginWithDescriptionCount,
+      pluginWithDefaultPromptCount: plugins.pluginWithDefaultPromptCount,
+      pluginWithCapabilityCount: plugins.pluginWithCapabilityCount,
+      pluginWithScreenshotCount: plugins.pluginWithScreenshotCount,
+      loadErrorCount: plugins.loadErrorCount,
+      featuredCount: plugins.featuredCount,
+      sourceTypeCounts: plugins.sourceTypeCounts,
+      installPolicyCounts: plugins.installPolicyCounts,
+      authPolicyCounts: plugins.authPolicyCounts,
+      returnedPluginCount: plugins.returnedPluginCount,
+      remotePluginCatalogRequested: false,
+      requestedMarketplaceKindCount: plugins.requestedMarketplaceKindCount,
+      namesReturned: false,
+      marketplaceNamesReturned: false,
+      marketplaceDisplayNamesReturned: false,
+      marketplaceKindsReturned: false,
+      pluginDisplayNamesReturned: false,
+      idsReturned: false,
+      pathsReturned: false,
+      urlsReturned: false,
+      descriptionsReturned: false,
+      defaultPromptsReturned: false,
+      capabilityNamesReturned: false,
+      screenshotsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: pluginsListPolicy({ appServerTraffic: Boolean(enabled) }),
+    notifications: sanitizeNotificationCounts(payload?.notifications),
+  };
+}
+
+function pluginsListPolicy({ appServerTraffic }) {
+  return {
+    readOnly: true,
+    appServerTraffic: Boolean(appServerTraffic),
+    modelTraffic: false,
+    commandTraffic: false,
+    settingsWrites: false,
+    authCallbacks: false,
+    authMutations: false,
+    toolInvocation: false,
+    installsEnabled: false,
+    pluginMutations: false,
+    pluginInstalls: false,
+    pluginUninstalls: false,
+    pluginEnablementWrites: false,
+    pluginContentReads: false,
+    pluginShareReads: false,
+    remotePluginCatalogRequested: false,
+    secretsReturned: false,
+    tokensReturned: false,
+    namesReturned: false,
+    marketplaceNamesReturned: false,
+    marketplaceDisplayNamesReturned: false,
+    marketplaceKindsReturned: false,
+    pluginDisplayNamesReturned: false,
+    idsReturned: false,
+    urlsReturned: false,
+    pathsReturned: false,
+    descriptionsReturned: false,
+    defaultPromptsReturned: false,
+    capabilityNamesReturned: false,
+    screenshotsReturned: false,
+    rawPayloadReturned: false,
+    requiresExplicitEnablement: true,
+    browserMethodCallsAccepted: true,
+    implemented: true,
+  };
+}
+
 export function buildInstalledPluginsBlockedPayload({ workspace } = {}) {
   const installedPlugins = sanitizeInstalledPluginsInventory(null, { namesEnabled: false });
   return {
@@ -64609,6 +64866,7 @@ export function buildSettingsIntegrations({
   pluginShareCheckoutEnabled = false,
   pluginUninstallEnabled = false,
   pluginEnablementSetEnabled = false,
+  pluginsListEnabled = false,
   pluginShareListEnabled = false,
   skillsConfigWriteEnabled = false,
   skillsExtraRootsClearEnabled = false,
@@ -64639,6 +64897,7 @@ export function buildSettingsIntegrations({
   const importHistoriesEnabled = Boolean(externalAgentImportHistoriesEnabled);
   const hooksReadEnabled = Boolean(hooksListEnabled);
   const skillsReadEnabled = Boolean(skillsListEnabled);
+  const pluginsReadEnabled = Boolean(pluginsListEnabled);
   const loginCancelEnabled = Boolean(accountLoginCancelEnabled);
   const loginEnabled = Boolean(accountLoginEnabled);
   const creditsNudgeEnabled = Boolean(accountCreditsNudgeEnabled);
@@ -64666,6 +64925,7 @@ export function buildSettingsIntegrations({
       profilesEnabled ? "permissionProfile/list" : null,
       remoteStatusEnabled ? "remoteControl/status/read" : null,
       installedPluginReadEnabled ? "plugin/installed" : null,
+      pluginsReadEnabled ? "plugin/list" : null,
       importHistoriesEnabled ? "externalAgentConfig/import/readHistories" : null,
       hooksReadEnabled ? "hooks/list" : null,
       skillsReadEnabled ? "skills/list" : null,
@@ -64704,6 +64964,7 @@ export function buildSettingsIntegrations({
     pluginShareCheckoutEnabled,
     pluginUninstallEnabled,
     pluginEnablementSetEnabled,
+    pluginsListEnabled: pluginsReadEnabled,
     pluginShareListEnabled,
     skillsConfigWriteEnabled,
     skillsExtraRootsClearEnabled,
@@ -64726,6 +64987,7 @@ export function buildSettingsIntegrations({
         profilesEnabled ? "permissionProfile/list" : null,
         remoteStatusEnabled ? "remoteControl/status/read" : null,
         installedPluginReadEnabled ? "plugin/installed" : null,
+        pluginsReadEnabled ? "plugin/list" : null,
         importHistoriesEnabled ? "externalAgentConfig/import/readHistories" : null,
         hooksReadEnabled ? "hooks/list" : null,
         skillsReadEnabled ? "skills/list" : null,
@@ -64915,7 +65177,8 @@ export function buildSettingsIntegrations({
       },
       plugins: {
         state: "partial",
-        listingAvailable: false,
+        listingAvailable: pluginsReadEnabled,
+        pluginsListEnabled: pluginsReadEnabled,
         installedListingAvailable: installedPluginReadEnabled,
         installedPluginsEnabled: installedPluginReadEnabled,
         detailReadEnabled: Boolean(pluginReadEnabled),
@@ -64932,7 +65195,9 @@ export function buildSettingsIntegrations({
         mutationEnabled: Boolean(
           pluginUninstallEnabled || pluginShareCheckoutEnabled || pluginEnablementSetEnabled,
         ),
-        reason: "plugin-install-marketplace-and-share-preflight-local-only",
+        reason: pluginsReadEnabled
+          ? "plugins-list-counts-only"
+          : "plugin-install-marketplace-and-share-preflight-local-only",
       },
     },
     preflightHistory,
@@ -67454,6 +67719,7 @@ function buildIntegrationActionScope({
   pluginShareCheckoutEnabled = false,
   pluginUninstallEnabled = false,
   pluginEnablementSetEnabled = false,
+  pluginsListEnabled = false,
   pluginShareListEnabled = false,
   skillsConfigWriteEnabled = false,
   skillsExtraRootsClearEnabled = false,
@@ -67588,6 +67854,7 @@ function buildIntegrationActionScope({
     pluginInstallEnabled: false,
     pluginShareEnabled: false,
     pluginContentReadEnabled: Boolean(pluginContentReadEnabled),
+    pluginsListEnabled: Boolean(pluginsListEnabled),
     pluginShareListEnabled: Boolean(pluginShareListEnabled),
     remotePluginCatalogInventoryEnabled: Boolean(remotePluginCatalogInventoryEnabled),
     marketplaceMutationEnabled: false,

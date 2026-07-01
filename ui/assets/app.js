@@ -281,6 +281,11 @@ const elements = {
   skillsListCountText: document.querySelector("#skills-list-count-text"),
   skillsListEnabledText: document.querySelector("#skills-list-enabled-text"),
   skillsListDetailsText: document.querySelector("#skills-list-details-text"),
+  pluginsListButton: document.querySelector("#plugins-list-button"),
+  pluginsListStatus: document.querySelector("#plugins-list-status"),
+  pluginsListCountText: document.querySelector("#plugins-list-count-text"),
+  pluginsListMarketplacesText: document.querySelector("#plugins-list-marketplaces-text"),
+  pluginsListDetailsText: document.querySelector("#plugins-list-details-text"),
   remoteControlStatusButton: document.querySelector("#remote-control-status-button"),
   remoteControlStatusStatus: document.querySelector("#remote-control-status-status"),
   remoteControlStatusCountText: document.querySelector("#remote-control-status-count-text"),
@@ -1280,6 +1285,10 @@ elements.workspaceSelect.addEventListener("change", () => {
   elements.skillsListCountText.textContent = "0";
   elements.skillsListEnabledText.textContent = "0 / 0";
   elements.skillsListDetailsText.textContent = "Hidden";
+  elements.pluginsListStatus.textContent = "Plugin catalog read disabled by default.";
+  elements.pluginsListCountText.textContent = "0";
+  elements.pluginsListMarketplacesText.textContent = "0 / 0";
+  elements.pluginsListDetailsText.textContent = "Hidden";
   elements.remoteControlStatusStatus.textContent = "Remote status disabled by default.";
   elements.remoteControlStatusCountText.textContent = "0";
   elements.remoteControlStatusIdentitiesText.textContent = "Hidden";
@@ -2295,6 +2304,10 @@ elements.skillsListButton.addEventListener("click", () => {
   runSkillsList();
 });
 
+elements.pluginsListButton.addEventListener("click", () => {
+  runPluginsList();
+});
+
 elements.remoteControlStatusButton.addEventListener("click", () => {
   runRemoteControlStatus();
 });
@@ -2854,6 +2867,16 @@ function skillsListEndpoint() {
   const params = new URLSearchParams();
   params.set("workspace", selectedWorkspaceId);
   return `/api/skills-list?${params.toString()}`;
+}
+
+function pluginsListEndpoint() {
+  if (!selectedWorkspaceId) {
+    return "/api/plugins-list";
+  }
+
+  const params = new URLSearchParams();
+  params.set("workspace", selectedWorkspaceId);
+  return `/api/plugins-list?${params.toString()}`;
 }
 
 function remoteControlStatusEndpoint() {
@@ -5103,6 +5126,28 @@ async function runSkillsList() {
     renderError(error);
   } finally {
     setSkillsListLoading(false);
+  }
+}
+
+async function runPluginsList() {
+  setPluginsListLoading(true);
+  hideError();
+
+  try {
+    const response = await fetch(pluginsListEndpoint(), {
+      headers: apiHeaders(),
+      cache: "no-store",
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderPluginsList(payload);
+  } catch (error) {
+    elements.pluginsListStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    setPluginsListLoading(false);
   }
 }
 
@@ -14293,8 +14338,10 @@ function renderSettingsIntegrations(payload) {
     : skills.configWriteEnabled
       ? "Config gate"
       : "Blocked";
-  elements.pluginsStateText.textContent = plugins.listingAvailable
+  elements.pluginsStateText.textContent = inventory.plugins?.ok
     ? `${inventory.plugins?.pluginCount ?? 0} plugins`
+    : plugins.pluginsListEnabled
+      ? "Catalog gate"
     : plugins.detailReadEnabled || plugins.contentReadEnabled || plugins.shareListEnabled
       ? "Read gates"
       : "Blocked";
@@ -16007,6 +16054,43 @@ function renderRemoteControlStatus(payload) {
   elements.remoteControlStateText.textContent = blocked
     ? "Blocked"
     : remoteControlStatusText({ statusCounts });
+}
+
+function renderPluginsList(payload) {
+  const settings = payload.settings ?? {};
+  const result = payload.result ?? {};
+  const blocked = settings.pluginsListEnabled !== true || payload.appServer?.touched !== true;
+  const pluginCount = result.pluginCount ?? payload.probes?.plugins?.pluginCount ?? 0;
+  const marketplaceCount =
+    result.marketplaceCount ?? payload.probes?.plugins?.marketplaceCount ?? 0;
+  const localMarketplaceCount =
+    result.localMarketplaceCount ?? payload.probes?.plugins?.localMarketplaceCount ?? 0;
+  const remoteMarketplaceCount =
+    result.remoteMarketplaceCount ?? payload.probes?.plugins?.remoteMarketplaceCount ?? 0;
+  const status = result.status ?? (blocked ? "blocked" : "available");
+  elements.pluginsListStatus.textContent = blocked ? "Read blocked" : status;
+  elements.pluginsListCountText.textContent = String(pluginCount);
+  elements.pluginsListMarketplacesText.textContent = `${localMarketplaceCount} / ${remoteMarketplaceCount}`;
+  elements.pluginsListDetailsText.textContent =
+    result.namesReturned ||
+    result.marketplaceNamesReturned ||
+    result.marketplaceDisplayNamesReturned ||
+    result.marketplaceKindsReturned ||
+    result.pluginDisplayNamesReturned ||
+    result.idsReturned ||
+    result.pathsReturned ||
+    result.urlsReturned ||
+    result.descriptionsReturned ||
+    result.defaultPromptsReturned ||
+    result.capabilityNamesReturned ||
+    result.screenshotsReturned ||
+    result.rawPayloadReturned ||
+    settings.rawPayloadReturned
+      ? "Returned"
+      : "Hidden";
+  elements.pluginsStateText.textContent = blocked
+    ? "Blocked"
+    : `${pluginCount} plugins / ${marketplaceCount} markets`;
 }
 
 function renderInstalledPlugins(payload) {
@@ -24059,6 +24143,14 @@ function setSkillsListLoading(isLoading) {
   elements.skillsListButton.textContent = isLoading ? "Checking" : "Skills Check";
   if (isLoading) {
     elements.skillsListStatus.textContent = "Checking";
+  }
+}
+
+function setPluginsListLoading(isLoading) {
+  elements.pluginsListButton.disabled = isLoading;
+  elements.pluginsListButton.textContent = isLoading ? "Checking" : "Catalog Check";
+  if (isLoading) {
+    elements.pluginsListStatus.textContent = "Checking";
   }
 }
 
