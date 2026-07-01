@@ -34738,7 +34738,10 @@ function expectedCodexMcpEntries() {
     ["perToolApprovalMode", "tool-policy", "catalog-only", "official-codex-mcp-docs"],
     ["oauthCallbackPortOption", "oauth", "catalog-only", "official-codex-mcp-docs"],
     ["oauthCallbackUrlOption", "oauth", "catalog-only", "official-codex-mcp-docs"],
+    ["oauthDerivedRedirectUri", "oauth", "catalog-only", "official-codex-mcp-docs"],
+    ["oauthCallbackBindAddress", "oauth", "catalog-only", "official-codex-mcp-docs"],
     ["oauthScopesSupported", "oauth", "catalog-only", "official-codex-mcp-docs"],
+    ["oauthScopeFallback", "oauth", "catalog-only", "official-codex-mcp-docs"],
     ["pluginProvidedServers", "plugins", "catalog-only", "official-codex-mcp-docs"],
     ["pluginMcpPolicyOverrides", "plugins", "catalog-only", "official-codex-mcp-docs"],
     ["usefulServerExamples", "examples", "catalog-only", "official-codex-mcp-docs"],
@@ -34767,10 +34770,10 @@ function assertCodexMcpCatalog(payload) {
   assert.equal(catalog?.returned, true);
   assert.equal(catalog.state, "partial");
   assert.equal(catalog.officialSource, "official-codex-mcp-docs");
-  assert.equal(catalog.entryCount, 56);
-  assert.equal(catalog.officialEntryCount, 39);
+  assert.equal(catalog.entryCount, 59);
+  assert.equal(catalog.officialEntryCount, 42);
   assert.equal(catalog.localBoundaryEntryCount, 17);
-  assert.equal(catalog.catalogOnlyEntryCount, 39);
+  assert.equal(catalog.catalogOnlyEntryCount, 42);
   assert.equal(catalog.blockedEntryCount, 17);
   assert.equal(catalog.enabledEntryCount, 0);
   assert.deepEqual(

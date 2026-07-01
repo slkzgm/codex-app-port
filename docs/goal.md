@@ -483,7 +483,8 @@ Target parity with the Codex desktop workflow:
   authentication, server instructions, config scoping, CLI/config/TUI
   management paths, STDIO and HTTP options, runtime timeouts, enablement and
   required flags, tool allow/deny lists, approval modes, OAuth callback/scopes
-  behavior, plugin-provided servers, plugin policy overrides, and example-server
+  behavior, derived redirect URI and callback binding guidance, OAuth scope
+  fallback behavior, plugin-provided servers, plugin policy overrides, and example-server
   concepts. It does not return server listings, server names or URLs, command
   text, arguments, env var names or values, bearer-token env vars, header names
   or values, OAuth URLs or tokens, callback ports or URLs, scopes, config.toml,
