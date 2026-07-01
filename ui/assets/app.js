@@ -35,6 +35,10 @@ const elements = {
   codexAdminSetupValuesText: document.querySelector("#codex-admin-setup-values-text"),
   codexGovernanceText: document.querySelector("#codex-governance-text"),
   codexGovernanceValuesText: document.querySelector("#codex-governance-values-text"),
+  codexManagedConfigurationText: document.querySelector("#codex-managed-configuration-text"),
+  codexManagedConfigurationValuesText: document.querySelector(
+    "#codex-managed-configuration-values-text",
+  ),
   codexEnvironmentVariablesText: document.querySelector("#codex-environment-variables-text"),
   codexEnvironmentVariablesValuesText: document.querySelector(
     "#codex-environment-variables-values-text",
@@ -442,6 +446,7 @@ const elements = {
   codexAccessTokensList: document.querySelector("#codex-access-tokens-list"),
   codexAdminSetupList: document.querySelector("#codex-admin-setup-list"),
   codexGovernanceList: document.querySelector("#codex-governance-list"),
+  codexManagedConfigurationList: document.querySelector("#codex-managed-configuration-list"),
   codexEnvironmentVariablesList: document.querySelector("#codex-environment-variables-list"),
   skillsPluginsCatalogList: document.querySelector("#skills-plugins-catalog-list"),
   codexPluginBuildList: document.querySelector("#codex-plugin-build-list"),
@@ -10500,6 +10505,7 @@ function renderSettingsIntegrations(payload) {
   const codexAccessTokens = payload.codexAccessTokens ?? {};
   const codexAdminSetup = payload.codexAdminSetup ?? {};
   const codexGovernance = payload.codexGovernance ?? {};
+  const codexManagedConfiguration = payload.codexManagedConfiguration ?? {};
   const codexEnvironmentVariables = payload.codexEnvironmentVariables ?? {};
   const skillsPluginsCatalog = payload.skillsPluginsCatalog ?? {};
   const codexPluginBuild = payload.codexPluginBuild ?? {};
@@ -10669,6 +10675,53 @@ function renderSettingsIntegrations(payload) {
     codexGovernance.secretsReturned ||
     codexGovernance.rawPayloadsReturned ||
     codexGovernance.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexManagedConfigurationText.textContent = codexManagedConfiguration.returned
+    ? `${codexManagedConfiguration.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexManagedConfiguration.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexManagedConfigurationValuesText.textContent =
+    codexManagedConfiguration.requirementNamesReturned ||
+    codexManagedConfiguration.requirementValuesReturned ||
+    codexManagedConfiguration.managedDefaultValuesReturned ||
+    codexManagedConfiguration.policyContentsReturned ||
+    codexManagedConfiguration.groupNamesReturned ||
+    codexManagedConfiguration.userIdentitiesReturned ||
+    codexManagedConfiguration.cacheEntriesReturned ||
+    codexManagedConfiguration.cacheSignaturesReturned ||
+    codexManagedConfiguration.profileNamesReturned ||
+    codexManagedConfiguration.permissionProfilesReturned ||
+    codexManagedConfiguration.sandboxModesReturned ||
+    codexManagedConfiguration.approvalPoliciesReturned ||
+    codexManagedConfiguration.reviewerPoliciesReturned ||
+    codexManagedConfiguration.featureKeysReturned ||
+    codexManagedConfiguration.featureValuesReturned ||
+    codexManagedConfiguration.hostnamePatternsReturned ||
+    codexManagedConfiguration.domainRulesReturned ||
+    codexManagedConfiguration.adminConsoleUrlsReturned ||
+    codexManagedConfiguration.localPathsReturned ||
+    codexManagedConfiguration.commandTextsReturned ||
+    codexManagedConfiguration.configFilesRead ||
+    codexManagedConfiguration.managedCachesRead ||
+    codexManagedConfiguration.policyFetchesStarted ||
+    codexManagedConfiguration.policiesWritten ||
+    codexManagedConfiguration.configsWritten ||
+    codexManagedConfiguration.featuresWritten ||
+    codexManagedConfiguration.networkRulesApplied ||
+    codexManagedConfiguration.autoReviewPoliciesApplied ||
+    codexManagedConfiguration.appshotsSettingsChanged ||
+    codexManagedConfiguration.remoteControlSettingsChanged ||
+    codexManagedConfiguration.filesystemReads ||
+    codexManagedConfiguration.filesystemWrites ||
+    codexManagedConfiguration.networkAccess ||
+    codexManagedConfiguration.mutationEnabled ||
+    codexManagedConfiguration.pathsReturned ||
+    codexManagedConfiguration.urlsReturned ||
+    codexManagedConfiguration.secretsReturned ||
+    codexManagedConfiguration.rawPayloadsReturned ||
+    codexManagedConfiguration.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexEnvironmentVariablesText.textContent = codexEnvironmentVariables.returned
@@ -11739,6 +11792,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexAccessTokensCatalog(codexAccessTokens);
   renderCodexAdminSetupCatalog(codexAdminSetup);
   renderCodexGovernanceCatalog(codexGovernance);
+  renderCodexManagedConfigurationCatalog(codexManagedConfiguration);
   renderCodexEnvironmentVariablesCatalog(codexEnvironmentVariables);
   renderSkillsPluginsCatalog(skillsPluginsCatalog);
   renderCodexPluginBuildCatalog(codexPluginBuild);
@@ -13640,6 +13694,98 @@ function renderCodexEnvironmentVariablesCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexEnvironmentVariablesList.append(row);
+  }
+}
+
+function renderCodexManagedConfigurationCatalog(summary) {
+  elements.codexManagedConfigurationList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexManagedConfigurationList.append(
+      emptyState("No Codex managed configuration catalog returned."),
+    );
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "managed-config";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.requirementNameReturned ? "requirement names returned" : "requirement names hidden",
+      entry.requirementValueReturned ? "requirement values returned" : "requirement values hidden",
+      entry.managedDefaultValueReturned
+        ? "managed defaults returned"
+        : "managed defaults hidden",
+      entry.policyContentReturned ? "policy content returned" : "policy content hidden",
+      entry.groupNameReturned ? "group names returned" : "group names hidden",
+      entry.userIdentityReturned ? "user identities returned" : "user identities hidden",
+      entry.cacheEntryReturned ? "cache entries returned" : "cache entries hidden",
+      entry.cacheSignatureReturned ? "cache signatures returned" : "cache signatures hidden",
+      entry.profileNameReturned ? "profile names returned" : "profile names hidden",
+      entry.permissionProfileReturned
+        ? "permission profiles returned"
+        : "permission profiles hidden",
+      entry.sandboxModeReturned ? "sandbox modes returned" : "sandbox modes hidden",
+      entry.approvalPolicyReturned ? "approval policies returned" : "approval policies hidden",
+      entry.reviewerPolicyReturned ? "reviewer policies returned" : "reviewer policies hidden",
+      entry.featureKeyReturned ? "feature keys returned" : "feature keys hidden",
+      entry.featureValueReturned ? "feature values returned" : "feature values hidden",
+      entry.hostnamePatternReturned ? "host patterns returned" : "host patterns hidden",
+      entry.domainRuleReturned ? "domain rules returned" : "domain rules hidden",
+      entry.adminConsoleUrlReturned ? "admin URLs returned" : "admin URLs hidden",
+      entry.localPathReturned ? "local paths returned" : "local paths hidden",
+      entry.commandTextReturned ? "command text returned" : "command text hidden",
+      entry.configFileRead ? "config file read" : "config file reads blocked",
+      entry.managedCacheRead ? "managed cache read" : "managed cache reads blocked",
+      entry.policyFetchStarted ? "policy fetch started" : "policy fetch blocked",
+      entry.policyWritten ? "policy written" : "policy writes blocked",
+      entry.configWritten ? "config written" : "config writes blocked",
+      entry.featureWritten ? "feature written" : "feature writes blocked",
+      entry.networkRuleApplied ? "network rule applied" : "network rules blocked",
+      entry.autoReviewPolicyApplied
+        ? "auto-review policy applied"
+        : "auto-review policy blocked",
+      entry.appshotsSettingChanged ? "Appshots changed" : "Appshots changes blocked",
+      entry.remoteControlSettingChanged
+        ? "remote control changed"
+        : "remote control changes blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexManagedConfigurationList.append(row);
   }
 }
 

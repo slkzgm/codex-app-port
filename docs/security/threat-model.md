@@ -488,6 +488,18 @@
   not open dashboards, call Analytics or Compliance APIs, start exports, read
   API keys, write warehouses or SIEM pipelines, access files or network, or
   mutate governance state. Its
+  Codex Managed configuration catalog may expose only static
+  official-documentation keys plus local boundary keys, groups, states,
+  sources, counts, and redaction flags; it must not return requirement names or
+  values, managed default values, policy content, group names, user identities,
+  cache entries or signatures, profile names, permission profiles, sandbox
+  modes, approval policies, reviewer policies, feature keys or values, host
+  patterns, domain rules, admin URLs, local paths, command text, paths, URLs,
+  secrets, raw payloads, app-server payloads, or app-server traffic, and must
+  not read local config or managed caches, fetch or write policies, write
+  config/features, apply network rules, apply auto-review policy, change
+  Appshots or remote-control settings, access files or network, or mutate
+  managed configuration state. Its
   Codex Environment variables catalog may expose only static
   official-documentation keys plus local boundary keys, groups, states,
   sources, counts, and redaction flags; it must not read `process.env`, return

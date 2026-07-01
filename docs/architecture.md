@@ -592,6 +592,22 @@ Current M1 status:
   Analytics/Compliance API requests, exports, API-key reads, warehouse/SIEM
   writes, filesystem access, network access, mutations, paths, URLs, secrets,
   raw payloads, and app-server traffic blocked
+- done: read-only Codex Managed configuration catalog in
+  `/api/settings-integrations`, exposing only static official Managed
+  configuration documentation keys plus local boundary keys/groups/states/
+  sources/counts/redaction flags for admin-enforced requirements, managed
+  defaults, requirements source precedence, cloud assignment, local cache
+  behavior, permission profiles, sandbox/web-search/network requirements,
+  feature pins, Appshots, remote control, locked Computer Use, and
+  automatic-review policy concepts, with requirement names/values, managed
+  default values, policy contents, group/user identities, cache entries and
+  signatures, profile names, permission profiles, sandbox modes, approval or
+  reviewer policies, feature keys/values, host patterns, domain rules, admin
+  URLs, local paths, command text, config reads, managed-cache reads, policy
+  fetches/writes, config/feature writes, network-rule application,
+  auto-review policy application, Appshots or remote-control setting changes,
+  filesystem access, network access, mutations, paths, URLs, secrets, raw
+  payloads, and app-server traffic blocked
 - done: read-only Codex Environment variables catalog in
   `/api/settings-integrations`, exposing only static official Environment
   variables documentation keys plus local boundary keys/groups/states/sources/

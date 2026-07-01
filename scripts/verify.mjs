@@ -33766,6 +33766,207 @@ function assertCodexGovernanceCatalog(payload) {
   }
 }
 
+function expectedCodexManagedConfigurationEntries() {
+  return [
+    ["requirementsAndDefaultsOverview", "overview", "catalog-only", "official-codex-managed-configuration-docs"],
+    ["adminEnforcedRequirementScope", "requirements", "catalog-only", "official-codex-managed-configuration-docs"],
+    ["managedDefaultLaunchScope", "managed-defaults", "catalog-only", "official-codex-managed-configuration-docs"],
+    ["requirementsSourcePrecedence", "requirements-sources", "catalog-only", "official-codex-managed-configuration-docs"],
+    ["cloudRequirementsSource", "requirements-sources", "catalog-only", "official-codex-managed-configuration-docs"],
+    ["deviceManagementRequirementsSource", "requirements-sources", "catalog-only", "official-codex-managed-configuration-docs"],
+    ["systemRequirementsSource", "requirements-sources", "catalog-only", "official-codex-managed-configuration-docs"],
+    ["groupAssignmentOrdering", "cloud-assignment", "catalog-only", "official-codex-managed-configuration-docs"],
+    ["localCacheResolution", "cloud-assignment", "catalog-only", "official-codex-managed-configuration-docs"],
+    ["legacyCompatibilityFallback", "compatibility", "catalog-only", "official-codex-managed-configuration-docs"],
+    ["permissionProfilesPreferred", "permissions", "catalog-only", "official-codex-managed-configuration-docs"],
+    ["permissionProfileAllowlist", "permissions", "catalog-only", "official-codex-managed-configuration-docs"],
+    ["customManagedProfiles", "permissions", "catalog-only", "official-codex-managed-configuration-docs"],
+    ["hostSandboxOverrides", "sandboxing", "catalog-only", "official-codex-managed-configuration-docs"],
+    ["webSearchConstraints", "web-search", "catalog-only", "official-codex-managed-configuration-docs"],
+    ["experimentalNetworkRequirements", "network", "catalog-only", "official-codex-managed-configuration-docs"],
+    ["featureFlagPins", "features", "catalog-only", "official-codex-managed-configuration-docs"],
+    ["appshotsDisableRequirement", "features", "catalog-only", "official-codex-managed-configuration-docs"],
+    ["remoteControlDisableRequirement", "remote-control", "catalog-only", "official-codex-managed-configuration-docs"],
+    ["lockedComputerUseRequirement", "computer-use", "catalog-only", "official-codex-managed-configuration-docs"],
+    ["automaticReviewRequirement", "auto-review", "catalog-only", "official-codex-managed-configuration-docs"],
+    ["guardianPolicyOverride", "auto-review", "catalog-only", "official-codex-managed-configuration-docs"],
+    ["requirementContentBoundary", "requirements", "blocked", "local-managed-configuration-boundary"],
+    ["managedDefaultValueBoundary", "managed-defaults", "blocked", "local-managed-configuration-boundary"],
+    ["policyContentBoundary", "auto-review", "blocked", "local-managed-configuration-boundary"],
+    ["assignmentIdentityBoundary", "cloud-assignment", "blocked", "local-managed-configuration-boundary"],
+    ["managedCacheBoundary", "cloud-assignment", "blocked", "local-managed-configuration-boundary"],
+    ["permissionProfileBoundary", "permissions", "blocked", "local-managed-configuration-boundary"],
+    ["hostPatternBoundary", "sandboxing", "blocked", "local-managed-configuration-boundary"],
+    ["domainRuleBoundary", "network", "blocked", "local-managed-configuration-boundary"],
+    ["featureValueBoundary", "features", "blocked", "local-managed-configuration-boundary"],
+    ["adminConsoleBoundary", "cloud-assignment", "blocked", "local-managed-configuration-boundary"],
+    ["localRequirementsReadBoundary", "requirements-sources", "blocked", "local-managed-configuration-boundary"],
+    ["requirementsMutationBoundary", "requirements", "blocked", "local-managed-configuration-boundary"],
+    ["managedDefaultsMutationBoundary", "managed-defaults", "blocked", "local-managed-configuration-boundary"],
+    ["networkPolicyMutationBoundary", "network", "blocked", "local-managed-configuration-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexManagedConfigurationCatalog(payload) {
+  const catalog = payload.codexManagedConfiguration;
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-managed-configuration-docs");
+  assert.equal(catalog.entryCount, 36);
+  assert.equal(catalog.officialEntryCount, 22);
+  assert.equal(catalog.localBoundaryEntryCount, 14);
+  assert.equal(catalog.catalogOnlyEntryCount, 22);
+  assert.equal(catalog.blockedEntryCount, 14);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({
+      key,
+      group,
+      state,
+      source,
+    })),
+    expectedCodexManagedConfigurationEntries(),
+  );
+
+  const entryRedactionFlags = [
+    "requirementNameReturned",
+    "requirementValueReturned",
+    "managedDefaultValueReturned",
+    "policyContentReturned",
+    "groupNameReturned",
+    "userIdentityReturned",
+    "cacheEntryReturned",
+    "cacheSignatureReturned",
+    "profileNameReturned",
+    "permissionProfileReturned",
+    "sandboxModeReturned",
+    "approvalPolicyReturned",
+    "reviewerPolicyReturned",
+    "featureKeyReturned",
+    "featureValueReturned",
+    "hostnamePatternReturned",
+    "domainRuleReturned",
+    "adminConsoleUrlReturned",
+    "localPathReturned",
+    "commandTextReturned",
+    "configFileRead",
+    "managedCacheRead",
+    "policyFetchStarted",
+    "policyWritten",
+    "configWritten",
+    "featureWritten",
+    "networkRuleApplied",
+    "autoReviewPolicyApplied",
+    "appshotsSettingChanged",
+    "remoteControlSettingChanged",
+    "filesystemRead",
+    "filesystemWrite",
+    "networkAccess",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.managedConfigurationCatalogReturned, true);
+  for (const flag of [
+    "requirementNamesReturned",
+    "requirementValuesReturned",
+    "managedDefaultValuesReturned",
+    "policyContentsReturned",
+    "groupNamesReturned",
+    "userIdentitiesReturned",
+    "cacheEntriesReturned",
+    "cacheSignaturesReturned",
+    "profileNamesReturned",
+    "permissionProfilesReturned",
+    "sandboxModesReturned",
+    "approvalPoliciesReturned",
+    "reviewerPoliciesReturned",
+    "featureKeysReturned",
+    "featureValuesReturned",
+    "hostnamePatternsReturned",
+    "domainRulesReturned",
+    "adminConsoleUrlsReturned",
+    "localPathsReturned",
+    "commandTextsReturned",
+    "configFilesRead",
+    "managedCachesRead",
+    "policyFetchesStarted",
+    "policiesWritten",
+    "configsWritten",
+    "featuresWritten",
+    "networkRulesApplied",
+    "autoReviewPoliciesApplied",
+    "appshotsSettingsChanged",
+    "remoteControlSettingsChanged",
+    "filesystemReads",
+    "filesystemWrites",
+    "networkAccess",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexManagedConfigurationReturned", true],
+    ["codexManagedConfigurationValuesReturned", false],
+    ["codexManagedConfigurationRequirementNamesReturned", false],
+    ["codexManagedConfigurationRequirementValuesReturned", false],
+    ["codexManagedConfigurationManagedDefaultValuesReturned", false],
+    ["codexManagedConfigurationPolicyContentsReturned", false],
+    ["codexManagedConfigurationGroupNamesReturned", false],
+    ["codexManagedConfigurationUserIdentitiesReturned", false],
+    ["codexManagedConfigurationCacheEntriesReturned", false],
+    ["codexManagedConfigurationCacheSignaturesReturned", false],
+    ["codexManagedConfigurationProfileNamesReturned", false],
+    ["codexManagedConfigurationPermissionProfilesReturned", false],
+    ["codexManagedConfigurationSandboxModesReturned", false],
+    ["codexManagedConfigurationApprovalPoliciesReturned", false],
+    ["codexManagedConfigurationReviewerPoliciesReturned", false],
+    ["codexManagedConfigurationFeatureKeysReturned", false],
+    ["codexManagedConfigurationFeatureValuesReturned", false],
+    ["codexManagedConfigurationHostnamePatternsReturned", false],
+    ["codexManagedConfigurationDomainRulesReturned", false],
+    ["codexManagedConfigurationAdminConsoleUrlsReturned", false],
+    ["codexManagedConfigurationLocalPathsReturned", false],
+    ["codexManagedConfigurationCommandTextsReturned", false],
+    ["codexManagedConfigurationConfigFileReadEnabled", false],
+    ["codexManagedConfigurationManagedCacheReadEnabled", false],
+    ["codexManagedConfigurationPolicyFetchEnabled", false],
+    ["codexManagedConfigurationPolicyWriteEnabled", false],
+    ["codexManagedConfigurationConfigWriteEnabled", false],
+    ["codexManagedConfigurationFeatureWriteEnabled", false],
+    ["codexManagedConfigurationNetworkRuleApplyEnabled", false],
+    ["codexManagedConfigurationAutoReviewPolicyApplyEnabled", false],
+    ["codexManagedConfigurationAppshotsSettingChangeEnabled", false],
+    ["codexManagedConfigurationRemoteControlSettingChangeEnabled", false],
+    ["codexManagedConfigurationFilesystemAccess", false],
+    ["codexManagedConfigurationNetworkAccess", false],
+    ["codexManagedConfigurationMutationsEnabled", false],
+    ["codexManagedConfigurationPathsReturned", false],
+    ["codexManagedConfigurationUrlsReturned", false],
+    ["codexManagedConfigurationSecretsReturned", false],
+    ["codexManagedConfigurationRawPayloadsReturned", false],
+    ["codexManagedConfigurationAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexEnvironmentVariablesEntries() {
   return [
     ["configTomlDurableSettings", "overview", "catalog-only", "official-codex-environment-variables-docs"],
@@ -37677,6 +37878,7 @@ function assertCodexAppSettingsParity(
   assertCodexAccessTokensCatalog(payload);
   assertCodexAdminSetupCatalog(payload);
   assertCodexGovernanceCatalog(payload);
+  assertCodexManagedConfigurationCatalog(payload);
   assertCodexEnvironmentVariablesCatalog(payload);
   assertSkillsPluginsCatalog(payload);
   assertCodexPluginBuildCatalog(payload);

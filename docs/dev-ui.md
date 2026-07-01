@@ -818,6 +818,21 @@ compliance URLs, warehouse/SIEM targets, paths, URLs, secrets, raw payloads, or
 app-server traffic, and it does not open dashboards, call Analytics or
 Compliance APIs, start exports, read API keys, write warehouses/SIEM pipelines,
 access files/network, or mutate governance state.
+The same response exposes `codexManagedConfiguration` as a static review-only
+catalog for official Codex managed-configuration behavior. The UI shows only
+catalog counts, entry keys, groups, state/source chips, and redaction chips for
+admin-enforced requirements, managed defaults, source precedence, cloud
+assignment, local cache behavior, permission profiles, sandbox/web-search/
+network requirements, feature pins, Appshots, remote control, locked Computer
+Use, and automatic-review policy concepts. It does not show requirement names
+or values, managed default values, policy content, group names, user identities,
+cache entries or signatures, profile names, permission profiles, sandbox modes,
+approval policies, reviewer policies, feature keys or values, host patterns,
+domain rules, admin URLs, local paths, command text, paths, URLs, secrets, raw
+payloads, or app-server traffic, and it does not read local config or managed
+caches, fetch or write policies, write config/features, apply network rules,
+apply auto-review policy, change Appshots or remote-control settings, access
+files/network, or mutate managed configuration state.
 The same response exposes `codexEnvironmentVariables` as a static review-only
 catalog for official Codex environment-variable behavior. The UI shows only
 catalog counts, entry keys, groups, state/source chips, and redaction chips for

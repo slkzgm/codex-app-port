@@ -177,6 +177,22 @@ Target parity with the Codex desktop workflow:
   open dashboards, call Analytics or Compliance APIs, start exports, read API
   keys, write warehouses/SIEM pipelines, access files/network, or mutate
   governance state.
+- `/api/settings-integrations` now also exposes a read-only Codex Managed
+  configuration catalog aligned to the official managed-configuration guide. It
+  returns only static keys, groups, states, sources, counts, and redaction flags
+  for admin-enforced requirements, managed defaults, source precedence, cloud
+  assignment, local cache behavior, permission profiles, sandbox/web-search/
+  network requirements, feature pins, Appshots, remote control, locked
+  Computer Use, and automatic-review policy concepts. It does not return
+  requirement names or values, managed default values, policy content, group
+  names, user identities, cache entries or signatures, profile names,
+  permission profiles, sandbox modes, approval policies, reviewer policies,
+  feature keys or values, host patterns, domain rules, admin URLs, local paths,
+  command text, paths, URLs, secrets, raw payloads, or app-server traffic, and
+  it does not read local config or managed caches, fetch or write policies,
+  write config/features, apply network rules, apply auto-review policy, change
+  Appshots or remote-control settings, access files/network, or mutate managed
+  configuration state.
 - `/api/settings-integrations` now also exposes a read-only Codex Environment
   variables catalog aligned to the official environment variables guide. It
   returns only static keys, groups, states, sources, counts, and redaction flags
