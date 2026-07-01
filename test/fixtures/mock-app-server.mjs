@@ -912,8 +912,25 @@ function handle(message) {
                 path: "/tmp/mock-workspace/.codex/skills/private/SKILL.md",
                 enabled: true,
                 scope: "repo",
+                interface: {
+                  displayName: "private skill display",
+                  shortDescription: "private short description",
+                  defaultPrompt: "private default prompt",
+                  iconSmall: "/tmp/mock-workspace/.codex/skills/private/small.png",
+                  iconLarge: "/tmp/mock-workspace/.codex/skills/private/large.png",
+                  brandColor: "#123456",
+                },
                 dependencies: {
-                  tools: ["private-tool"],
+                  tools: [
+                    {
+                      type: "mcp",
+                      value: "private-tool",
+                      command: "cat /tmp/mock-workspace/secret.txt",
+                      description: "private tool description",
+                      transport: "streamable_http",
+                      url: "https://example.test/private-tool",
+                    },
+                  ],
                 },
               },
             ],

@@ -22326,10 +22326,28 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
               disabledCount: 1,
               errorCount: 1,
               dependencyToolCount: 2,
+              dependencyToolCommandCount: 1,
+              dependencyToolUrlCount: 1,
+              dependencyToolTransportCount: 1,
+              dependencyToolDescriptionCount: 1,
+              displayNameCount: 2,
+              shortDescriptionCount: 3,
+              defaultPromptCount: 1,
+              iconCount: 2,
+              brandColorCount: 1,
               scopeCounts: {
                 user: 2,
                 repo: 2,
+                "private-scope": 1,
               },
+              displayNamesReturned: true,
+              defaultPromptsReturned: true,
+              iconsReturned: true,
+              brandColorsReturned: true,
+              dependencyToolValuesReturned: true,
+              dependencyToolCommandsReturned: true,
+              dependencyToolUrlsReturned: true,
+              dependencyToolDescriptionsReturned: true,
               path: "/tmp/default-workspace/.codex/skills/private",
             },
             plugins: {
@@ -22855,6 +22873,24 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
     assert.equal(payload.inventory.mcp.toolCount, 5);
     assert.deepEqual(payload.inventory.mcp.authStatusCounts, { bearerToken: 1, oAuth: 1 });
     assert.equal(payload.inventory.skills.skillCount, 4);
+    assert.deepEqual(payload.inventory.skills.scopeCounts, { repo: 2, user: 2 });
+    assert.equal(payload.inventory.skills.dependencyToolCommandCount, 1);
+    assert.equal(payload.inventory.skills.dependencyToolUrlCount, 1);
+    assert.equal(payload.inventory.skills.dependencyToolTransportCount, 1);
+    assert.equal(payload.inventory.skills.dependencyToolDescriptionCount, 1);
+    assert.equal(payload.inventory.skills.displayNameCount, 2);
+    assert.equal(payload.inventory.skills.shortDescriptionCount, 3);
+    assert.equal(payload.inventory.skills.defaultPromptCount, 1);
+    assert.equal(payload.inventory.skills.iconCount, 2);
+    assert.equal(payload.inventory.skills.brandColorCount, 1);
+    assert.equal(payload.inventory.skills.displayNamesReturned, false);
+    assert.equal(payload.inventory.skills.defaultPromptsReturned, false);
+    assert.equal(payload.inventory.skills.iconsReturned, false);
+    assert.equal(payload.inventory.skills.brandColorsReturned, false);
+    assert.equal(payload.inventory.skills.dependencyToolValuesReturned, false);
+    assert.equal(payload.inventory.skills.dependencyToolCommandsReturned, false);
+    assert.equal(payload.inventory.skills.dependencyToolUrlsReturned, false);
+    assert.equal(payload.inventory.skills.dependencyToolDescriptionsReturned, false);
     assert.equal(payload.inventory.plugins.pluginCount, 3);
     assert.equal(payload.inventory.plugins.localMarketplaceCount, 1);
     assert.equal(payload.inventory.plugins.remoteMarketplaceCount, 0);
@@ -23051,6 +23087,11 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
       "private-hook-key",
       "private-plugin-id",
       "private-auth-policy",
+      "private-scope",
+      "private skill display",
+      "private default prompt",
+      "private tool description",
+      "private-tool",
       "private-marketplace",
       "private marketplace display",
       "private-installed-plugin-id",
@@ -23361,24 +23402,51 @@ test("dev server returns integration display names only behind explicit opt-in",
               disabledCount: 1,
               errorCount: 0,
               dependencyToolCount: 1,
-              scopeCounts: { repo: 2 },
+              dependencyToolCommandCount: 1,
+              dependencyToolUrlCount: 1,
+              dependencyToolTransportCount: 1,
+              dependencyToolDescriptionCount: 1,
+              displayNameCount: 1,
+              shortDescriptionCount: 1,
+              defaultPromptCount: 1,
+              iconCount: 2,
+              brandColorCount: 1,
+              scopeCounts: { repo: 1, "private-scope": 1 },
               items: [
                 {
                   name: "safe-skill",
                   enabled: true,
                   scope: "repo",
                   dependencyToolCount: 1,
+                  hasDisplayName: true,
+                  hasShortDescription: true,
+                  hasDefaultPrompt: true,
+                  iconCount: 2,
+                  hasBrandColor: true,
                 },
                 {
                   name: "/tmp/default-workspace/.codex/skills/private",
                   enabled: false,
-                  scope: "repo",
+                  scope: "private-scope",
                   dependencyToolCount: 0,
+                  hasDisplayName: false,
+                  hasShortDescription: false,
+                  hasDefaultPrompt: false,
+                  iconCount: 0,
+                  hasBrandColor: false,
                 },
               ],
               namesReturned: true,
               pathsReturned: true,
               descriptionsReturned: true,
+              displayNamesReturned: true,
+              defaultPromptsReturned: true,
+              iconsReturned: true,
+              brandColorsReturned: true,
+              dependencyToolValuesReturned: true,
+              dependencyToolCommandsReturned: true,
+              dependencyToolUrlsReturned: true,
+              dependencyToolDescriptionsReturned: true,
             },
             plugins: {
               ok: true,
@@ -23606,8 +23674,29 @@ test("dev server returns integration display names only behind explicit opt-in",
     assert.equal(payload.inventory.skills.namesReturned, true);
     assert.equal(payload.inventory.skills.pathsReturned, false);
     assert.equal(payload.inventory.skills.descriptionsReturned, false);
+    assert.equal(payload.inventory.skills.displayNamesReturned, false);
+    assert.equal(payload.inventory.skills.defaultPromptsReturned, false);
+    assert.equal(payload.inventory.skills.iconsReturned, false);
+    assert.equal(payload.inventory.skills.brandColorsReturned, false);
+    assert.equal(payload.inventory.skills.dependencyToolValuesReturned, false);
+    assert.equal(payload.inventory.skills.dependencyToolCommandsReturned, false);
+    assert.equal(payload.inventory.skills.dependencyToolUrlsReturned, false);
+    assert.equal(payload.inventory.skills.dependencyToolDescriptionsReturned, false);
+    assert.deepEqual(payload.inventory.skills.scopeCounts, { repo: 1 });
+    assert.equal(payload.inventory.skills.displayNameCount, 1);
+    assert.equal(payload.inventory.skills.shortDescriptionCount, 1);
+    assert.equal(payload.inventory.skills.defaultPromptCount, 1);
+    assert.equal(payload.inventory.skills.iconCount, 2);
+    assert.equal(payload.inventory.skills.brandColorCount, 1);
     assert.equal(payload.inventory.skills.items[0].name, "safe-skill");
+    assert.equal(payload.inventory.skills.items[0].scope, "repo");
+    assert.equal(payload.inventory.skills.items[0].hasDisplayName, true);
+    assert.equal(payload.inventory.skills.items[0].hasShortDescription, true);
+    assert.equal(payload.inventory.skills.items[0].hasDefaultPrompt, true);
+    assert.equal(payload.inventory.skills.items[0].iconCount, 2);
+    assert.equal(payload.inventory.skills.items[0].hasBrandColor, true);
     assert.equal(payload.inventory.skills.items[1].name, null);
+    assert.equal(payload.inventory.skills.items[1].scope, "unknown");
     assert.equal(payload.inventory.plugins.namesReturned, true);
     assert.equal(payload.inventory.plugins.idsReturned, false);
     assert.equal(payload.inventory.plugins.pathsReturned, false);
@@ -23649,6 +23738,10 @@ test("dev server returns integration display names only behind explicit opt-in",
       "private-mode",
       "private-permission-profile",
       "private permission profile",
+      "private-scope",
+      "private skill display",
+      "private default prompt",
+      "private tool description",
       "private-external",
       "secret-tool",
       "sk-proj-private-secret",

@@ -1819,6 +1819,10 @@ callbacks, or tool invocations are returned.
 MCP auth status is reduced to documented enum buckets only
 (`unsupported`, `notLoggedIn`, `bearerToken`, `oAuth`, or `unknown`), with
 unknown upstream values dropped or normalized before reaching the browser.
+Skill UI metadata and tool dependencies are reduced to presence/count metadata
+only; skill display names, descriptions, default prompts, icon paths, brand
+colors, dependency values, dependency commands, and dependency URLs remain
+redacted.
 
 When `CODEX_APP_PORT_ALLOW_INTEGRATION_NAMES=1` is also set, the inventory may
 include bounded display names for models, collaboration modes, apps/connectors,

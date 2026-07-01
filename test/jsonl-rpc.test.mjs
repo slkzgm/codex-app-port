@@ -244,6 +244,25 @@ test("runIntegrationsInventoryProbe returns counts without integration secrets",
     assert.equal(inventory.mcp.serverCount, 1);
     assert.equal(inventory.mcp.toolCount, 1);
     assert.equal(inventory.skills.skillCount, 1);
+    assert.deepEqual(inventory.skills.scopeCounts, { repo: 1 });
+    assert.equal(inventory.skills.dependencyToolCount, 1);
+    assert.equal(inventory.skills.dependencyToolCommandCount, 1);
+    assert.equal(inventory.skills.dependencyToolUrlCount, 1);
+    assert.equal(inventory.skills.dependencyToolTransportCount, 1);
+    assert.equal(inventory.skills.dependencyToolDescriptionCount, 1);
+    assert.equal(inventory.skills.displayNameCount, 1);
+    assert.equal(inventory.skills.shortDescriptionCount, 1);
+    assert.equal(inventory.skills.defaultPromptCount, 1);
+    assert.equal(inventory.skills.iconCount, 2);
+    assert.equal(inventory.skills.brandColorCount, 1);
+    assert.equal(inventory.skills.displayNamesReturned, false);
+    assert.equal(inventory.skills.defaultPromptsReturned, false);
+    assert.equal(inventory.skills.iconsReturned, false);
+    assert.equal(inventory.skills.brandColorsReturned, false);
+    assert.equal(inventory.skills.dependencyToolValuesReturned, false);
+    assert.equal(inventory.skills.dependencyToolCommandsReturned, false);
+    assert.equal(inventory.skills.dependencyToolUrlsReturned, false);
+    assert.equal(inventory.skills.dependencyToolDescriptionsReturned, false);
     assert.equal(inventory.plugins.marketplaceCount, 1);
     assert.equal(inventory.plugins.localMarketplaceCount, 1);
     assert.equal(inventory.plugins.remoteMarketplaceCount, 0);
@@ -379,6 +398,11 @@ test("runIntegrationsInventoryProbe returns counts without integration secrets",
       "private-version",
       "private-mcp",
       "private-skill",
+      "private skill display",
+      "private short description",
+      "private default prompt",
+      "private tool description",
+      "private-tool",
       "private-plugin",
       "private-local-marketplace",
       "private local marketplace",
@@ -672,7 +696,19 @@ test("runIntegrationsInventoryProbe can return opt-in display names without path
     assert.equal(inventory.skills.namesReturned, true);
     assert.equal(inventory.skills.pathsReturned, false);
     assert.equal(inventory.skills.descriptionsReturned, false);
+    assert.equal(inventory.skills.displayNamesReturned, false);
+    assert.equal(inventory.skills.defaultPromptsReturned, false);
+    assert.equal(inventory.skills.iconsReturned, false);
+    assert.equal(inventory.skills.brandColorsReturned, false);
+    assert.equal(inventory.skills.dependencyToolCommandsReturned, false);
+    assert.equal(inventory.skills.dependencyToolUrlsReturned, false);
+    assert.equal(inventory.skills.dependencyToolDescriptionsReturned, false);
     assert.equal(inventory.skills.items[0].name, "private-skill");
+    assert.equal(inventory.skills.items[0].hasDisplayName, true);
+    assert.equal(inventory.skills.items[0].hasShortDescription, true);
+    assert.equal(inventory.skills.items[0].hasDefaultPrompt, true);
+    assert.equal(inventory.skills.items[0].iconCount, 2);
+    assert.equal(inventory.skills.items[0].hasBrandColor, true);
     assert.equal(inventory.plugins.namesReturned, true);
     assert.equal(inventory.plugins.idsReturned, false);
     assert.equal(inventory.plugins.pathsReturned, false);
@@ -715,6 +751,11 @@ test("runIntegrationsInventoryProbe can return opt-in display names without path
       "private-workspace-message-id",
       "private workspace message body",
       "private description",
+      "private skill display",
+      "private short description",
+      "private default prompt",
+      "private tool description",
+      "private-tool",
       "private-permission-profile",
       "private permission profile description",
       "private-permission-profile-cursor",

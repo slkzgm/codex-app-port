@@ -1517,6 +1517,9 @@ Current M1 status:
   MCP authentication state is exposed only as documented enum buckets
   (`unsupported`, `notLoggedIn`, `bearerToken`, `oAuth`, or `unknown`);
   arbitrary upstream auth status strings are dropped or normalized.
+  Skill UI metadata and tool dependencies are exposed only as counts/presence
+  flags, not display text, prompts, icon paths, brand colors, dependency
+  values, commands, descriptions, or URLs.
 - done: second-gate integration display inventory behind
   `CODEX_APP_PORT_ALLOW_INTEGRATION_NAMES=1`, returning bounded model display
   names, collaboration-mode names, app/connector, app plugin display, MCP

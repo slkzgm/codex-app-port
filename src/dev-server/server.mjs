@@ -139,6 +139,7 @@ const THREAD_MEMORY_MODES = new Set(["enabled", "disabled"]);
 const SAFE_WORKSPACE_MESSAGE_TYPES = ["headline", "announcement", "unknown"];
 const SAFE_REMOTE_CONTROL_STATUSES = ["disabled", "connecting", "connected", "errored", "unknown"];
 const SAFE_MCP_AUTH_STATUSES = ["unsupported", "notLoggedIn", "bearerToken", "oAuth", "unknown"];
+const SAFE_SKILL_SCOPES = ["user", "repo", "system", "admin", "unknown"];
 const SAFE_PLUGIN_SOURCE_TYPES = ["local", "git", "remote", "unknown"];
 const SAFE_PLUGIN_INSTALL_POLICIES = [
   "NOT_AVAILABLE",
@@ -67996,13 +67997,30 @@ function sanitizeSkillsInventory(skills, { namesEnabled = false } = {}) {
     disabledCount: safeCount(skills?.disabledCount),
     errorCount: safeCount(skills?.errorCount),
     dependencyToolCount: safeCount(skills?.dependencyToolCount),
-    scopeCounts: sanitizeCountMap(skills?.scopeCounts),
+    dependencyToolCommandCount: safeCount(skills?.dependencyToolCommandCount),
+    dependencyToolUrlCount: safeCount(skills?.dependencyToolUrlCount),
+    dependencyToolTransportCount: safeCount(skills?.dependencyToolTransportCount),
+    dependencyToolDescriptionCount: safeCount(skills?.dependencyToolDescriptionCount),
+    displayNameCount: safeCount(skills?.displayNameCount),
+    shortDescriptionCount: safeCount(skills?.shortDescriptionCount),
+    defaultPromptCount: safeCount(skills?.defaultPromptCount),
+    iconCount: safeCount(skills?.iconCount),
+    brandColorCount: safeCount(skills?.brandColorCount),
+    scopeCounts: sanitizeAllowedCountMap(skills?.scopeCounts, SAFE_SKILL_SCOPES),
     returnedSkillCount: items.length,
     items,
     namesReturned: namesEnabled && items.some((item) => item.name),
     nameRedactedCount: safeCount(skills?.nameRedactedCount),
     pathsReturned: false,
     descriptionsReturned: false,
+    displayNamesReturned: false,
+    defaultPromptsReturned: false,
+    iconsReturned: false,
+    brandColorsReturned: false,
+    dependencyToolValuesReturned: false,
+    dependencyToolCommandsReturned: false,
+    dependencyToolUrlsReturned: false,
+    dependencyToolDescriptionsReturned: false,
   };
 }
 
@@ -68247,8 +68265,13 @@ function sanitizeSkillInventoryItems(items) {
   return items.slice(0, MAX_INTEGRATION_DISPLAY_ITEMS).map((item) => ({
     name: sanitizeIntegrationDisplayName(item?.name),
     enabled: Boolean(item?.enabled),
-    scope: cleanDisplayText(item?.scope, 40) ?? "unknown",
+    scope: sanitizeSkillScope(item?.scope),
     dependencyToolCount: safeCount(item?.dependencyToolCount),
+    hasDisplayName: Boolean(item?.hasDisplayName),
+    hasShortDescription: Boolean(item?.hasShortDescription),
+    hasDefaultPrompt: Boolean(item?.hasDefaultPrompt),
+    iconCount: safeCount(item?.iconCount),
+    hasBrandColor: Boolean(item?.hasBrandColor),
   }));
 }
 
@@ -68318,6 +68341,11 @@ function sanitizePluginAuthPolicy(value) {
 function sanitizeMcpAuthStatus(value) {
   const clean = cleanDisplayText(value, 40);
   return SAFE_MCP_AUTH_STATUSES.includes(clean) ? clean : "unknown";
+}
+
+function sanitizeSkillScope(value) {
+  const clean = cleanDisplayText(value, 40);
+  return SAFE_SKILL_SCOPES.includes(clean) ? clean : "unknown";
 }
 
 function sanitizeCountMap(value) {

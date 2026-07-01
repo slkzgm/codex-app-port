@@ -18888,10 +18888,28 @@ async function checkSettingsIntegrationsInventoryApi() {
               disabledCount: 1,
               errorCount: 1,
               dependencyToolCount: 2,
+              dependencyToolCommandCount: 1,
+              dependencyToolUrlCount: 1,
+              dependencyToolTransportCount: 1,
+              dependencyToolDescriptionCount: 1,
+              displayNameCount: 2,
+              shortDescriptionCount: 3,
+              defaultPromptCount: 1,
+              iconCount: 2,
+              brandColorCount: 1,
               scopeCounts: {
                 user: 2,
                 repo: 3,
+                "verify-private-scope": 1,
               },
+              displayNamesReturned: true,
+              defaultPromptsReturned: true,
+              iconsReturned: true,
+              brandColorsReturned: true,
+              dependencyToolValuesReturned: true,
+              dependencyToolCommandsReturned: true,
+              dependencyToolUrlsReturned: true,
+              dependencyToolDescriptionsReturned: true,
               privatePath: "/tmp/codex-app-port-verify/.codex/skills/private",
             },
             plugins: {
@@ -19295,19 +19313,38 @@ async function checkSettingsIntegrationsNamesApi() {
               disabledCount: 1,
               errorCount: 0,
               dependencyToolCount: 1,
-              scopeCounts: { repo: 2 },
+              dependencyToolCommandCount: 1,
+              dependencyToolUrlCount: 1,
+              dependencyToolTransportCount: 1,
+              dependencyToolDescriptionCount: 1,
+              displayNameCount: 1,
+              shortDescriptionCount: 1,
+              defaultPromptCount: 1,
+              iconCount: 2,
+              brandColorCount: 1,
+              scopeCounts: { repo: 1, "verify-private-scope": 1 },
               items: [
                 {
                   name: "verify-safe-skill",
                   enabled: true,
                   scope: "repo",
                   dependencyToolCount: 1,
+                  hasDisplayName: true,
+                  hasShortDescription: true,
+                  hasDefaultPrompt: true,
+                  iconCount: 2,
+                  hasBrandColor: true,
                 },
                 {
                   name: "/tmp/codex-app-port-verify/.codex/skills/private",
                   enabled: false,
-                  scope: "repo",
+                  scope: "verify-private-scope",
                   dependencyToolCount: 0,
+                  hasDisplayName: false,
+                  hasShortDescription: false,
+                  hasDefaultPrompt: false,
+                  iconCount: 0,
+                  hasBrandColor: false,
                 },
               ],
             },
@@ -47916,6 +47953,11 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
     "verify-private-hook-key",
     "verify-private-plugin-id",
     "verify-private-auth-policy",
+    "verify-private-scope",
+    "verify private skill display",
+    "verify private default prompt",
+    "verify private tool description",
+    "verify-private-tool",
     "verify-private-marketplace",
     "verify private marketplace display",
     "verify private external config",
@@ -48096,6 +48138,26 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
     payload.inventory?.mcp?.authStatusCounts?.bearerToken !== 1 ||
     Object.hasOwn(payload.inventory?.mcp?.authStatusCounts ?? {}, "verify-private-auth-status") ||
     payload.inventory?.skills?.skillCount !== 5 ||
+    payload.inventory?.skills?.scopeCounts?.repo !== 3 ||
+    payload.inventory?.skills?.scopeCounts?.user !== 2 ||
+    Object.hasOwn(payload.inventory?.skills?.scopeCounts ?? {}, "verify-private-scope") ||
+    payload.inventory?.skills?.dependencyToolCommandCount !== 1 ||
+    payload.inventory?.skills?.dependencyToolUrlCount !== 1 ||
+    payload.inventory?.skills?.dependencyToolTransportCount !== 1 ||
+    payload.inventory?.skills?.dependencyToolDescriptionCount !== 1 ||
+    payload.inventory?.skills?.displayNameCount !== 2 ||
+    payload.inventory?.skills?.shortDescriptionCount !== 3 ||
+    payload.inventory?.skills?.defaultPromptCount !== 1 ||
+    payload.inventory?.skills?.iconCount !== 2 ||
+    payload.inventory?.skills?.brandColorCount !== 1 ||
+    payload.inventory?.skills?.displayNamesReturned !== false ||
+    payload.inventory?.skills?.defaultPromptsReturned !== false ||
+    payload.inventory?.skills?.iconsReturned !== false ||
+    payload.inventory?.skills?.brandColorsReturned !== false ||
+    payload.inventory?.skills?.dependencyToolValuesReturned !== false ||
+    payload.inventory?.skills?.dependencyToolCommandsReturned !== false ||
+    payload.inventory?.skills?.dependencyToolUrlsReturned !== false ||
+    payload.inventory?.skills?.dependencyToolDescriptionsReturned !== false ||
     payload.inventory?.plugins?.pluginCount !== 3 ||
     payload.inventory?.plugins?.localMarketplaceCount !== 1 ||
     payload.inventory?.plugins?.remoteMarketplaceCount !== 0 ||
@@ -48220,6 +48282,10 @@ function assertSanitizedSettingsIntegrationsNames(payload) {
     "private-mode",
     "private-permission-profile",
     "verify private permission profile",
+    "verify-private-scope",
+    "verify private skill display",
+    "verify private default prompt",
+    "verify private tool description",
     "verify-private-external",
     "secret-tool",
     "sk-proj-verifysecret",
@@ -48315,8 +48381,30 @@ function assertSanitizedSettingsIntegrationsNames(payload) {
     payload.inventory?.skills?.namesReturned !== true ||
     payload.inventory?.skills?.pathsReturned !== false ||
     payload.inventory?.skills?.descriptionsReturned !== false ||
+    payload.inventory?.skills?.displayNamesReturned !== false ||
+    payload.inventory?.skills?.defaultPromptsReturned !== false ||
+    payload.inventory?.skills?.iconsReturned !== false ||
+    payload.inventory?.skills?.brandColorsReturned !== false ||
+    payload.inventory?.skills?.dependencyToolValuesReturned !== false ||
+    payload.inventory?.skills?.dependencyToolCommandsReturned !== false ||
+    payload.inventory?.skills?.dependencyToolUrlsReturned !== false ||
+    payload.inventory?.skills?.dependencyToolDescriptionsReturned !== false ||
+    payload.inventory?.skills?.scopeCounts?.repo !== 1 ||
+    Object.hasOwn(payload.inventory?.skills?.scopeCounts ?? {}, "verify-private-scope") ||
+    payload.inventory?.skills?.displayNameCount !== 1 ||
+    payload.inventory?.skills?.shortDescriptionCount !== 1 ||
+    payload.inventory?.skills?.defaultPromptCount !== 1 ||
+    payload.inventory?.skills?.iconCount !== 2 ||
+    payload.inventory?.skills?.brandColorCount !== 1 ||
     payload.inventory?.skills?.items?.[0]?.name !== "verify-safe-skill" ||
+    payload.inventory?.skills?.items?.[0]?.scope !== "repo" ||
+    payload.inventory?.skills?.items?.[0]?.hasDisplayName !== true ||
+    payload.inventory?.skills?.items?.[0]?.hasShortDescription !== true ||
+    payload.inventory?.skills?.items?.[0]?.hasDefaultPrompt !== true ||
+    payload.inventory?.skills?.items?.[0]?.iconCount !== 2 ||
+    payload.inventory?.skills?.items?.[0]?.hasBrandColor !== true ||
     payload.inventory?.skills?.items?.[1]?.name !== null ||
+    payload.inventory?.skills?.items?.[1]?.scope !== "unknown" ||
     payload.inventory?.plugins?.namesReturned !== true ||
     payload.inventory?.plugins?.idsReturned !== false ||
     payload.inventory?.plugins?.pathsReturned !== false ||

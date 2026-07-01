@@ -1061,6 +1061,12 @@ Target parity with the Codex desktop workflow:
   `bearerToken`, `oAuth`, or `unknown`); arbitrary auth status values, server
   names, resource URIs, tool schemas, paths, URLs, tokens, and raw payloads
   remain hidden.
+- `skills/list` reports only workspace/skill/enabled/error/scope counts plus
+  UI-metadata and tool-dependency presence counts. Skill paths, descriptions,
+  display names, default prompts, icon paths, brand colors, dependency values,
+  dependency commands, dependency descriptions, dependency URLs, and raw
+  payloads remain hidden; opt-in names mode may return only bounded safe skill
+  names and boolean presence flags.
 - `externalAgentConfig/import/readHistories`, `plugin/list`, and
   `plugin/installed` also have opt-in inventory paths. Import histories remain
   counts-only; plugin inventories return only marketplace local/remote counts

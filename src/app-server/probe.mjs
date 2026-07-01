@@ -77,6 +77,7 @@ const PLUGIN_INSTALL_POLICIES = new Set([
 ]);
 const PLUGIN_AUTH_POLICIES = new Set(["ON_INSTALL", "ON_USE", "unknown"]);
 const MCP_AUTH_STATUSES = new Set(["unsupported", "notLoggedIn", "bearerToken", "oAuth"]);
+const SKILL_SCOPES = new Set(["user", "repo", "system", "admin"]);
 const REALTIME_VOICES = new Set([
   "alloy",
   "arbor",
@@ -6857,6 +6858,11 @@ function safeMcpAuthStatus(value) {
   return MCP_AUTH_STATUSES.has(clean) ? clean : "unknown";
 }
 
+function safeSkillScope(value) {
+  const clean = firstSafeString(value);
+  return SKILL_SCOPES.has(clean) ? clean : "unknown";
+}
+
 function summarizeSkillsInventory(section, { includeNames = false } = {}) {
   const entries = section.ok && Array.isArray(section.result?.data) ? section.result.data : [];
   const scopeCounts = {};
@@ -6865,6 +6871,15 @@ function summarizeSkillsInventory(section, { includeNames = false } = {}) {
   let disabledCount = 0;
   let errorCount = 0;
   let dependencyToolCount = 0;
+  let dependencyToolCommandCount = 0;
+  let dependencyToolUrlCount = 0;
+  let dependencyToolTransportCount = 0;
+  let dependencyToolDescriptionCount = 0;
+  let displayNameCount = 0;
+  let shortDescriptionCount = 0;
+  let defaultPromptCount = 0;
+  let iconCount = 0;
+  let brandColorCount = 0;
   let nameRedactedCount = 0;
   const items = [];
 
@@ -6879,11 +6894,27 @@ function summarizeSkillsInventory(section, { includeNames = false } = {}) {
       } else {
         disabledCount += 1;
       }
-      const scope = firstSafeString(skill?.scope) ?? "unknown";
+      const scope = safeSkillScope(skill?.scope);
       scopeCounts[scope] = (scopeCounts[scope] ?? 0) + 1;
-      if (Array.isArray(skill?.dependencies?.tools)) {
-        dependencyToolCount += skill.dependencies.tools.length;
+      const tools = Array.isArray(skill?.dependencies?.tools) ? skill.dependencies.tools : [];
+      dependencyToolCount += tools.length;
+      for (const tool of tools) {
+        if (firstSafeString(tool?.command)) dependencyToolCommandCount += 1;
+        if (firstSafeString(tool?.url)) dependencyToolUrlCount += 1;
+        if (firstSafeString(tool?.transport)) dependencyToolTransportCount += 1;
+        if (firstSafeString(tool?.description)) dependencyToolDescriptionCount += 1;
       }
+      const skillInterface = skill?.interface && typeof skill.interface === "object"
+        ? skill.interface
+        : {};
+      if (firstSafeString(skillInterface.displayName)) displayNameCount += 1;
+      if (firstSafeString(skillInterface.shortDescription) || firstSafeString(skill?.shortDescription)) {
+        shortDescriptionCount += 1;
+      }
+      if (firstSafeString(skillInterface.defaultPrompt)) defaultPromptCount += 1;
+      if (firstSafeString(skillInterface.iconSmall)) iconCount += 1;
+      if (firstSafeString(skillInterface.iconLarge)) iconCount += 1;
+      if (firstSafeString(skillInterface.brandColor)) brandColorCount += 1;
       if (includeNames && items.length < DEFAULT_INTEGRATION_ITEM_LIMIT) {
         const safeName = safeIntegrationDisplayName(skill?.name);
         if (!safeName && typeof skill?.name === "string") {
@@ -6893,9 +6924,17 @@ function summarizeSkillsInventory(section, { includeNames = false } = {}) {
           name: safeName,
           enabled: skill?.enabled === true,
           scope,
-          dependencyToolCount: Array.isArray(skill?.dependencies?.tools)
-            ? skill.dependencies.tools.length
-            : 0,
+          dependencyToolCount: tools.length,
+          hasDisplayName: Boolean(firstSafeString(skillInterface.displayName)),
+          hasShortDescription: Boolean(
+            firstSafeString(skillInterface.shortDescription) ||
+              firstSafeString(skill?.shortDescription),
+          ),
+          hasDefaultPrompt: Boolean(firstSafeString(skillInterface.defaultPrompt)),
+          iconCount:
+            (firstSafeString(skillInterface.iconSmall) ? 1 : 0) +
+            (firstSafeString(skillInterface.iconLarge) ? 1 : 0),
+          hasBrandColor: Boolean(firstSafeString(skillInterface.brandColor)),
         });
       }
     }
@@ -6909,6 +6948,15 @@ function summarizeSkillsInventory(section, { includeNames = false } = {}) {
     disabledCount,
     errorCount,
     dependencyToolCount,
+    dependencyToolCommandCount,
+    dependencyToolUrlCount,
+    dependencyToolTransportCount,
+    dependencyToolDescriptionCount,
+    displayNameCount,
+    shortDescriptionCount,
+    defaultPromptCount,
+    iconCount,
+    brandColorCount,
     scopeCounts,
     returnedSkillCount: items.length,
     items,
@@ -6916,6 +6964,14 @@ function summarizeSkillsInventory(section, { includeNames = false } = {}) {
     nameRedactedCount,
     pathsReturned: false,
     descriptionsReturned: false,
+    displayNamesReturned: false,
+    defaultPromptsReturned: false,
+    iconsReturned: false,
+    brandColorsReturned: false,
+    dependencyToolValuesReturned: false,
+    dependencyToolCommandsReturned: false,
+    dependencyToolUrlsReturned: false,
+    dependencyToolDescriptionsReturned: false,
   };
 }
 
