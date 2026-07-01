@@ -450,7 +450,12 @@
   app-server payloads, or app-server traffic, and must not materialize external
   code, install or uninstall plugins, write plugin enablement, write skill
   config, clear extra roots, mutate sharing, or mutate marketplaces. Static
-  plugin coverage may include only documentation keys for overview, app and
+  skill coverage may include only documentation keys for progressive
+  disclosure, initial context budget, explicit and implicit invocation,
+  description matching, creator/manual authoring, scope locations and
+  precedence, symlink support, plugin distribution, curated installation,
+  enablement config, optional app metadata, and best practices. Static plugin
+  coverage may include only documentation keys for overview, app and
   CLI directory browsing, marketplace sharing, install/auth timing,
   new-thread usage, direct-task and `@` invocation, bundled skills/apps/MCP
   setup, external app data terms, uninstall semantics, disable config, and

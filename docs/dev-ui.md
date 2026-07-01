@@ -1357,9 +1357,11 @@ config, or auth state.
 The same Settings & Integrations response also exposes `skillsPluginsCatalog`
 as a static review-only Skills & Plugins catalog. The UI shows only catalog
 counts, setting keys, groups, state/source chips, and redaction chips for
-official Skills runtime/discovery/config metadata, official Plugin overview,
-app and CLI directory, marketplace sharing, install/auth timing, usage,
-permission/data-sharing, uninstall/disable, and guide-reference surfaces, plus
+official Skills runtime, context-budget, invocation, authoring,
+discovery/precedence, symlink, distribution, installation, config, metadata,
+and best-practice surfaces, official Plugin overview, app and CLI directory,
+marketplace sharing, install/auth timing, usage, permission/data-sharing,
+uninstall/disable, and guide-reference surfaces, plus
 local preflight boundaries for plugin install/share/marketplace/read/content/
 uninstall/enablement/share checkout and skills config/extra-roots writes. It
 does not show skill names,

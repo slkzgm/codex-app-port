@@ -42714,8 +42714,68 @@ function expectedSkillsPluginsCatalogEntries(scope = {}) {
       source: "official-codex-skills-docs",
     },
     {
+      key: "skillInitialContextBudget",
+      group: "skills-runtime",
+      state: "catalog-only",
+      source: "official-codex-skills-docs",
+    },
+    {
+      key: "skillExplicitInvocation",
+      group: "skills-invocation",
+      state: "catalog-only",
+      source: "official-codex-skills-docs",
+    },
+    {
+      key: "skillImplicitInvocation",
+      group: "skills-invocation",
+      state: "catalog-only",
+      source: "official-codex-skills-docs",
+    },
+    {
+      key: "skillDescriptionMatching",
+      group: "skills-invocation",
+      state: "catalog-only",
+      source: "official-codex-skills-docs",
+    },
+    {
+      key: "skillCreatorWorkflow",
+      group: "skills-authoring",
+      state: "catalog-only",
+      source: "official-codex-skills-docs",
+    },
+    {
+      key: "skillManualAuthoring",
+      group: "skills-authoring",
+      state: "catalog-only",
+      source: "official-codex-skills-docs",
+    },
+    {
       key: "skillScopeLocations",
       group: "skills-discovery",
+      state: "catalog-only",
+      source: "official-codex-skills-docs",
+    },
+    {
+      key: "skillScopePrecedence",
+      group: "skills-discovery",
+      state: "catalog-only",
+      source: "official-codex-skills-docs",
+    },
+    {
+      key: "skillSymlinkSupport",
+      group: "skills-discovery",
+      state: "catalog-only",
+      source: "official-codex-skills-docs",
+    },
+    {
+      key: "skillPluginDistribution",
+      group: "skills-distribution",
+      state: "catalog-only",
+      source: "official-codex-skills-docs",
+    },
+    {
+      key: "skillInstallerCurated",
+      group: "skills-installation",
       state: "catalog-only",
       source: "official-codex-skills-docs",
     },
@@ -42728,6 +42788,12 @@ function expectedSkillsPluginsCatalogEntries(scope = {}) {
     {
       key: "skillOptionalAppMetadata",
       group: "skills-metadata",
+      state: "catalog-only",
+      source: "official-codex-skills-docs",
+    },
+    {
+      key: "skillBestPractices",
+      group: "skills-guidance",
       state: "catalog-only",
       source: "official-codex-skills-docs",
     },
@@ -42944,8 +43010,8 @@ function assertSkillsPluginsCatalog(payload) {
   const countState = (state) => expectedEntries.filter((entry) => entry.state === state).length;
   assert.equal(catalog?.returned, true);
   assert.equal(catalog.state, "partial");
-  assert.equal(catalog.settingCount, 35);
-  assert.equal(catalog.officialSettingCount, 25);
+  assert.equal(catalog.settingCount, 46);
+  assert.equal(catalog.officialSettingCount, 36);
   assert.equal(catalog.localBoundarySettingCount, 10);
   assert.equal(catalog.catalogOnlySettingCount, countState("catalog-only"));
   assert.equal(catalog.preflightOnlySettingCount, countState("preflight-only"));
