@@ -986,6 +986,11 @@ function handle(message) {
       result: {
         marketplaces: [
           {
+            name: "private-local-marketplace",
+            path: "/tmp/mock-workspace/.codex/plugins/private-marketplace.json",
+            interface: {
+              displayName: "private local marketplace",
+            },
             plugins: [
               {
                 id: "private-plugin-id",
@@ -993,10 +998,31 @@ function handle(message) {
                 installed: true,
                 enabled: true,
                 installPolicy: "AVAILABLE",
+                authPolicy: "ON_USE",
                 source: {
                   type: "local",
                   path: "/tmp/mock-workspace/.codex/plugins/private",
                   url: "https://example.test/private/plugin",
+                },
+              },
+            ],
+          },
+          {
+            name: "private-remote-marketplace",
+            path: null,
+            interface: {
+              displayName: "private remote marketplace",
+            },
+            plugins: [
+              {
+                id: "private-remote-plugin-id",
+                name: "https://example.test/private-remote-plugin",
+                installed: false,
+                enabled: false,
+                installPolicy: "NOT_AVAILABLE",
+                authPolicy: "ON_INSTALL",
+                source: {
+                  type: "remote",
                 },
               },
             ],
@@ -1020,6 +1046,8 @@ function handle(message) {
         marketplaces: [
           {
             displayName: "private-installed-marketplace",
+            name: "private-installed-marketplace",
+            path: "/tmp/mock-workspace/.codex/plugins/private-installed-marketplace.json",
             plugins: [
               {
                 id: "private-installed-plugin-id",

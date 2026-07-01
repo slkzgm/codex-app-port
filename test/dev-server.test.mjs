@@ -22333,6 +22333,9 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
             plugins: {
               ok: true,
               marketplaceCount: 1,
+              localMarketplaceCount: 1,
+              remoteMarketplaceCount: 0,
+              marketplaceDisplayNameCount: 1,
               pluginCount: 3,
               installedCount: 2,
               enabledCount: 1,
@@ -22345,11 +22348,23 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
               installPolicyCounts: {
                 AVAILABLE: 3,
               },
+              authPolicyCounts: {
+                ON_USE: 2,
+                ON_INSTALL: 1,
+                "private-auth-policy": 1,
+              },
+              marketplaceNamesReturned: true,
+              marketplaceDisplayNamesReturned: true,
+              privateMarketplaceName: "private-marketplace",
+              privateMarketplaceDisplayName: "private marketplace display",
               url: "https://example.test/private/plugin",
             },
             installedPlugins: {
               ok: true,
               marketplaceCount: 1,
+              localMarketplaceCount: 1,
+              remoteMarketplaceCount: 0,
+              marketplaceDisplayNameCount: 1,
               pluginCount: 2,
               installedCount: 2,
               enabledCount: 1,
@@ -22360,6 +22375,10 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
               },
               installPolicyCounts: {
                 AVAILABLE: 2,
+              },
+              authPolicyCounts: {
+                ON_USE: 1,
+                ON_INSTALL: 1,
               },
               namesReturned: true,
               idsReturned: true,
@@ -22830,7 +22849,17 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
     assert.equal(payload.inventory.mcp.toolCount, 5);
     assert.equal(payload.inventory.skills.skillCount, 4);
     assert.equal(payload.inventory.plugins.pluginCount, 3);
+    assert.equal(payload.inventory.plugins.localMarketplaceCount, 1);
+    assert.equal(payload.inventory.plugins.remoteMarketplaceCount, 0);
+    assert.equal(payload.inventory.plugins.marketplaceDisplayNameCount, 1);
+    assert.deepEqual(payload.inventory.plugins.authPolicyCounts, { ON_USE: 2, ON_INSTALL: 1 });
+    assert.equal(payload.inventory.plugins.marketplaceNamesReturned, false);
+    assert.equal(payload.inventory.plugins.marketplaceDisplayNamesReturned, false);
     assert.equal(payload.inventory.installedPlugins.pluginCount, 2);
+    assert.deepEqual(payload.inventory.installedPlugins.authPolicyCounts, {
+      ON_USE: 1,
+      ON_INSTALL: 1,
+    });
     assert.equal(payload.inventory.installedPlugins.installedCount, 2);
     assert.equal(payload.inventory.installedPlugins.enabledCount, 1);
     assert.equal(payload.inventory.installedPlugins.loadErrorCount, 1);
@@ -23011,6 +23040,9 @@ test("dev server exposes opt-in integration inventory as counts only", async () 
       "private.example.test",
       "private-hook-key",
       "private-plugin-id",
+      "private-auth-policy",
+      "private-marketplace",
+      "private marketplace display",
       "private-installed-plugin-id",
       "private-installed-plugin",
       "private installed prompt",
@@ -23272,6 +23304,9 @@ test("dev server returns integration display names only behind explicit opt-in",
             plugins: {
               ok: true,
               marketplaceCount: 1,
+              localMarketplaceCount: 1,
+              remoteMarketplaceCount: 0,
+              marketplaceDisplayNameCount: 1,
               pluginCount: 2,
               installedCount: 1,
               enabledCount: 1,
@@ -23279,6 +23314,7 @@ test("dev server returns integration display names only behind explicit opt-in",
               featuredCount: 0,
               sourceTypeCounts: { local: 2 },
               installPolicyCounts: { AVAILABLE: 2 },
+              authPolicyCounts: { ON_USE: 1, ON_INSTALL: 1 },
               items: [
                 {
                   name: "safe-plugin",
@@ -23286,6 +23322,7 @@ test("dev server returns integration display names only behind explicit opt-in",
                   enabled: true,
                   sourceType: "local",
                   installPolicy: "AVAILABLE",
+                  authPolicy: "ON_USE",
                   id: "private-plugin-id",
                   url: "https://example.test/plugin",
                 },
@@ -23295,6 +23332,7 @@ test("dev server returns integration display names only behind explicit opt-in",
                   enabled: false,
                   sourceType: "local",
                   installPolicy: "AVAILABLE",
+                  authPolicy: "ON_INSTALL",
                 },
               ],
               namesReturned: true,
@@ -23305,6 +23343,9 @@ test("dev server returns integration display names only behind explicit opt-in",
             installedPlugins: {
               ok: true,
               marketplaceCount: 1,
+              localMarketplaceCount: 1,
+              remoteMarketplaceCount: 0,
+              marketplaceDisplayNameCount: 1,
               pluginCount: 2,
               installedCount: 2,
               enabledCount: 1,
@@ -23312,6 +23353,7 @@ test("dev server returns integration display names only behind explicit opt-in",
               featuredCount: 0,
               sourceTypeCounts: { local: 2 },
               installPolicyCounts: { AVAILABLE: 2 },
+              authPolicyCounts: { ON_USE: 1, ON_INSTALL: 1 },
               items: [
                 {
                   name: "safe-installed-plugin",
@@ -23319,6 +23361,7 @@ test("dev server returns integration display names only behind explicit opt-in",
                   enabled: true,
                   sourceType: "local",
                   installPolicy: "AVAILABLE",
+                  authPolicy: "ON_USE",
                   id: "private-installed-plugin-id",
                   path: "/tmp/default-workspace/.codex/plugins/private-installed",
                 },
@@ -23328,6 +23371,7 @@ test("dev server returns integration display names only behind explicit opt-in",
                   enabled: false,
                   sourceType: "local",
                   installPolicy: "AVAILABLE",
+                  authPolicy: "ON_INSTALL",
                 },
               ],
               namesReturned: true,
@@ -23487,7 +23531,9 @@ test("dev server returns integration display names only behind explicit opt-in",
     assert.equal(payload.inventory.plugins.pathsReturned, false);
     assert.equal(payload.inventory.plugins.urlsReturned, false);
     assert.equal(payload.inventory.plugins.items[0].name, "safe-plugin");
+    assert.equal(payload.inventory.plugins.items[0].authPolicy, "ON_USE");
     assert.equal(payload.inventory.plugins.items[1].name, null);
+    assert.equal(payload.inventory.plugins.items[1].authPolicy, "ON_INSTALL");
     assert.equal(payload.inventory.installedPlugins.namesReturned, true);
     assert.equal(payload.inventory.installedPlugins.idsReturned, false);
     assert.equal(payload.inventory.installedPlugins.pathsReturned, false);
@@ -23500,7 +23546,9 @@ test("dev server returns integration display names only behind explicit opt-in",
     assert.equal(payload.inventory.installedPlugins.screenshotsReturned, false);
     assert.equal(payload.inventory.installedPlugins.rawPayloadReturned, false);
     assert.equal(payload.inventory.installedPlugins.items[0].name, "safe-installed-plugin");
+    assert.equal(payload.inventory.installedPlugins.items[0].authPolicy, "ON_USE");
     assert.equal(payload.inventory.installedPlugins.items[1].name, null);
+    assert.equal(payload.inventory.installedPlugins.items[1].authPolicy, "ON_INSTALL");
     assert.equal(payload.inventory.experimentalFeatures.namesReturned, true);
     assert.equal(payload.inventory.experimentalFeatures.descriptionsReturned, false);
     assert.equal(payload.inventory.experimentalFeatures.announcementsReturned, false);

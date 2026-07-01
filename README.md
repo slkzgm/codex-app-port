@@ -381,7 +381,8 @@ permission-profile counts, remote-control status buckets, account, account
 usage presence/counts, workspace message counts, account rate-limit buckets,
 apps/connectors, external agent
 configuration migration candidates, external agent import-history counts, MCP,
-skills, plugins, installed-plugin counts, experimental features, and hooks. It omits model ids, descriptions, upgrade copy,
+skills, plugin and installed-plugin marketplace/source/install/auth-policy
+counts, experimental features, and hooks. It omits model ids, descriptions, upgrade copy,
 availability messages, app ids, URLs, logos, descriptions, labels, screenshots,
 external config descriptions, cwd values, paths, names, marketplace names,
 plugin names, session titles, raw migration items, rate-limit plan types, limit
@@ -390,9 +391,9 @@ permission-profile descriptions, remote-control status strings, server names,
 installation ids, environment ids, token-usage values, usage bucket dates,
 workspace message ids, workspace message bodies, workspace message timestamps,
 external import ids, import timestamps, import paths, import messages, import
-failure stages, installed plugin ids, installed plugin names, installed plugin
-paths, installed plugin URLs, installed plugin prompts, installed plugin
-capabilities,
+failure stages, plugin and marketplace names/display names/sources, installed
+plugin ids, installed plugin names, installed plugin paths, installed plugin
+URLs, installed plugin prompts, installed plugin capabilities,
 experimental feature names, display text, descriptions, announcements, and cursors. Auth callbacks, app
 linking/installs,
 external config import mutations, ungated MCP tool/resource calls and server reloads,

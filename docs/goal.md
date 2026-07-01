@@ -1056,11 +1056,13 @@ Target parity with the Codex desktop workflow:
 - `account/usage/read` and `account/workspaceMessages/read` also have opt-in,
   counts-only inventory paths; they omit token usage values, bucket dates,
   workspace message ids, bodies, timestamps, and raw payloads.
-- `externalAgentConfig/import/readHistories` and `plugin/installed` also have
-  opt-in inventory paths. Import histories remain counts-only; installed
-  plugins are counts-only by default and may return bounded safe display names
-  only when `CODEX_APP_PORT_ALLOW_INTEGRATION_NAMES=1` is also set. They still
-  omit import ids, paths, messages, timestamps, plugin ids, plugin paths, URLs,
+- `externalAgentConfig/import/readHistories`, `plugin/list`, and
+  `plugin/installed` also have opt-in inventory paths. Import histories remain
+  counts-only; plugin inventories return only marketplace local/remote counts
+  plus source/install/auth-policy buckets by default, and may return bounded
+  safe plugin display names only when `CODEX_APP_PORT_ALLOW_INTEGRATION_NAMES=1`
+  is also set. They still omit import ids, paths, messages, timestamps,
+  marketplace names/display names/sources, plugin ids, plugin paths, URLs,
   prompts, capabilities, and raw payloads.
 - `remoteControl/status/read` has an opt-in, counts-only inventory path; it
   reports status buckets and identity-field presence only, not status strings,

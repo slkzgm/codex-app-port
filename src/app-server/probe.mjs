@@ -68,6 +68,14 @@ const THREAD_GOAL_STATUSES = new Set([
   "complete",
 ]);
 const THREAD_MEMORY_MODES = new Set(["enabled", "disabled"]);
+const PLUGIN_SOURCE_TYPES = new Set(["local", "git", "remote", "unknown"]);
+const PLUGIN_INSTALL_POLICIES = new Set([
+  "NOT_AVAILABLE",
+  "AVAILABLE",
+  "INSTALLED_BY_DEFAULT",
+  "unknown",
+]);
+const PLUGIN_AUTH_POLICIES = new Set(["ON_INSTALL", "ON_USE", "unknown"]);
 const REALTIME_VOICES = new Set([
   "alloy",
   "arbor",
@@ -6818,6 +6826,21 @@ function safeRemoteControlStatus(value) {
   return REMOTE_CONTROL_STATUSES.has(clean) ? clean : "unknown";
 }
 
+function safePluginSourceType(value) {
+  const clean = firstSafeString(value);
+  return PLUGIN_SOURCE_TYPES.has(clean) ? clean : "unknown";
+}
+
+function safePluginInstallPolicy(value) {
+  const clean = firstSafeString(value);
+  return PLUGIN_INSTALL_POLICIES.has(clean) ? clean : "unknown";
+}
+
+function safePluginAuthPolicy(value) {
+  const clean = firstSafeString(value);
+  return PLUGIN_AUTH_POLICIES.has(clean) ? clean : "unknown";
+}
+
 function summarizeSkillsInventory(section, { includeNames = false } = {}) {
   const entries = section.ok && Array.isArray(section.result?.data) ? section.result.data : [];
   const scopeCounts = {};
@@ -6891,6 +6914,10 @@ function summarizePluginsInventory(section, { includeNames = false } = {}) {
     : [];
   const sourceTypeCounts = {};
   const installPolicyCounts = {};
+  const authPolicyCounts = {};
+  let localMarketplaceCount = 0;
+  let remoteMarketplaceCount = 0;
+  let marketplaceDisplayNameCount = 0;
   let pluginCount = 0;
   let installedCount = 0;
   let enabledCount = 0;
@@ -6898,6 +6925,14 @@ function summarizePluginsInventory(section, { includeNames = false } = {}) {
   const items = [];
 
   for (const marketplace of marketplaces) {
+    if (firstSafeString(marketplace?.path)) {
+      localMarketplaceCount += 1;
+    } else {
+      remoteMarketplaceCount += 1;
+    }
+    if (firstSafeString(marketplace?.interface?.displayName)) {
+      marketplaceDisplayNameCount += 1;
+    }
     const plugins = Array.isArray(marketplace?.plugins) ? marketplace.plugins : [];
     pluginCount += plugins.length;
     for (const plugin of plugins) {
@@ -6907,10 +6942,12 @@ function summarizePluginsInventory(section, { includeNames = false } = {}) {
       if (plugin?.enabled === true) {
         enabledCount += 1;
       }
-      const sourceType = firstSafeString(plugin?.source?.type) ?? "unknown";
+      const sourceType = safePluginSourceType(plugin?.source?.type);
       sourceTypeCounts[sourceType] = (sourceTypeCounts[sourceType] ?? 0) + 1;
-      const installPolicy = firstSafeString(plugin?.installPolicy) ?? "unknown";
+      const installPolicy = safePluginInstallPolicy(plugin?.installPolicy);
       installPolicyCounts[installPolicy] = (installPolicyCounts[installPolicy] ?? 0) + 1;
+      const authPolicy = safePluginAuthPolicy(plugin?.authPolicy);
+      authPolicyCounts[authPolicy] = (authPolicyCounts[authPolicy] ?? 0) + 1;
       if (includeNames && items.length < DEFAULT_INTEGRATION_ITEM_LIMIT) {
         const safeName = safeIntegrationDisplayName(plugin?.name);
         if (!safeName && typeof plugin?.name === "string") {
@@ -6922,6 +6959,7 @@ function summarizePluginsInventory(section, { includeNames = false } = {}) {
           enabled: plugin?.enabled === true,
           sourceType,
           installPolicy,
+          authPolicy,
         });
       }
     }
@@ -6930,6 +6968,9 @@ function summarizePluginsInventory(section, { includeNames = false } = {}) {
   return {
     ok: section.ok,
     marketplaceCount: marketplaces.length,
+    localMarketplaceCount,
+    remoteMarketplaceCount,
+    marketplaceDisplayNameCount,
     pluginCount,
     installedCount,
     enabledCount,
@@ -6937,10 +6978,13 @@ function summarizePluginsInventory(section, { includeNames = false } = {}) {
     featuredCount: featuredPluginIds.length,
     sourceTypeCounts,
     installPolicyCounts,
+    authPolicyCounts,
     returnedPluginCount: items.length,
     items,
     namesReturned: includeNames && items.some((item) => item.name),
     nameRedactedCount,
+    marketplaceNamesReturned: false,
+    marketplaceDisplayNamesReturned: false,
     idsReturned: false,
     pathsReturned: false,
     urlsReturned: false,

@@ -1507,8 +1507,8 @@ Current M1 status:
   app ids/URLs/logos/descriptions/labels/screenshots, external config
   descriptions/cwds/paths/names/marketplaces/plugin names/session titles/raw
   migration items, rate-limit plan types, limit ids/names, balances, used
-  percentages, reset times, MCP names/schemas, skill paths/descriptions, plugin
-  ids/paths/URLs, experimental feature names/display text/descriptions/
+  percentages, reset times, MCP names/schemas, skill paths/descriptions,
+  marketplace names/display names/sources, plugin ids/paths/URLs, experimental feature names/display text/descriptions/
   announcements/cursors, hook commands/paths/keys/matchers/plugin IDs, or
   config requirement values/domains
 - done: second-gate integration display inventory behind
@@ -1519,8 +1519,8 @@ Current M1 status:
   token-like values are stripped, while still omitting model ids/descriptions/
   upgrade copy/availability messages, collaboration-mode model overrides,
   permission-profile ids/descriptions/cursors, app ids/URLs/descriptions/labels/
-  logos/screenshots, MCP schemas/resource URIs, skill descriptions/paths, plugin
-  ids/paths/URLs, installed plugin ids/paths/URLs/prompts/capabilities, hook details,
+  logos/screenshots, MCP schemas/resource URIs, skill descriptions/paths,
+  marketplace names/display names/sources, plugin ids/paths/URLs, installed plugin ids/paths/URLs/prompts/capabilities, hook details,
   external config descriptions/cwds/paths/names/plugin names/session titles/raw
   migration items, account emails/tokens, rate-limit details, and config
   requirement values/domains, plus experimental feature descriptions/

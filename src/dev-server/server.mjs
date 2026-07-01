@@ -138,6 +138,14 @@ const THREAD_GOAL_STATUSES = new Set([
 const THREAD_MEMORY_MODES = new Set(["enabled", "disabled"]);
 const SAFE_WORKSPACE_MESSAGE_TYPES = ["headline", "announcement", "unknown"];
 const SAFE_REMOTE_CONTROL_STATUSES = ["disabled", "connecting", "connected", "errored", "unknown"];
+const SAFE_PLUGIN_SOURCE_TYPES = ["local", "git", "remote", "unknown"];
+const SAFE_PLUGIN_INSTALL_POLICIES = [
+  "NOT_AVAILABLE",
+  "AVAILABLE",
+  "INSTALLED_BY_DEFAULT",
+  "unknown",
+];
+const SAFE_PLUGIN_AUTH_POLICIES = ["ON_INSTALL", "ON_USE", "unknown"];
 export const MAX_GIT_COMMIT_MESSAGE_CHARS = 2_000;
 export const MAX_GIT_WORKTREE_PATH_CHARS = 240;
 export const MAX_TRANSCRIPT_TEXT_CHARS = 20_000;
@@ -68093,17 +68101,26 @@ function sanitizePluginsInventory(plugins, { namesEnabled = false } = {}) {
   return {
     ok: Boolean(plugins?.ok),
     marketplaceCount: safeCount(plugins?.marketplaceCount),
+    localMarketplaceCount: safeCount(plugins?.localMarketplaceCount),
+    remoteMarketplaceCount: safeCount(plugins?.remoteMarketplaceCount),
+    marketplaceDisplayNameCount: safeCount(plugins?.marketplaceDisplayNameCount),
     pluginCount: safeCount(plugins?.pluginCount),
     installedCount: safeCount(plugins?.installedCount),
     enabledCount: safeCount(plugins?.enabledCount),
     loadErrorCount: safeCount(plugins?.loadErrorCount),
     featuredCount: safeCount(plugins?.featuredCount),
-    sourceTypeCounts: sanitizeCountMap(plugins?.sourceTypeCounts),
-    installPolicyCounts: sanitizeCountMap(plugins?.installPolicyCounts),
+    sourceTypeCounts: sanitizeAllowedCountMap(plugins?.sourceTypeCounts, SAFE_PLUGIN_SOURCE_TYPES),
+    installPolicyCounts: sanitizeAllowedCountMap(
+      plugins?.installPolicyCounts,
+      SAFE_PLUGIN_INSTALL_POLICIES,
+    ),
+    authPolicyCounts: sanitizeAllowedCountMap(plugins?.authPolicyCounts, SAFE_PLUGIN_AUTH_POLICIES),
     returnedPluginCount: items.length,
     items,
     namesReturned: namesEnabled && items.some((item) => item.name),
     nameRedactedCount: safeCount(plugins?.nameRedactedCount),
+    marketplaceNamesReturned: false,
+    marketplaceDisplayNamesReturned: false,
     idsReturned: false,
     pathsReturned: false,
     urlsReturned: false,
@@ -68227,8 +68244,9 @@ function sanitizePluginInventoryItems(items) {
     name: sanitizeIntegrationDisplayName(item?.name),
     installed: Boolean(item?.installed),
     enabled: Boolean(item?.enabled),
-    sourceType: cleanDisplayText(item?.sourceType, 40) ?? "unknown",
-    installPolicy: cleanDisplayText(item?.installPolicy, 80) ?? "unknown",
+    sourceType: sanitizePluginSourceType(item?.sourceType),
+    installPolicy: sanitizePluginInstallPolicy(item?.installPolicy),
+    authPolicy: sanitizePluginAuthPolicy(item?.authPolicy),
   }));
 }
 
@@ -68264,6 +68282,21 @@ function sanitizeIntegrationDisplayName(value) {
 function sanitizeCollaborationModeKind(value) {
   const clean = cleanDisplayText(value, 40);
   return SAFE_COLLABORATION_MODE_KINDS.includes(clean) ? clean : "unknown";
+}
+
+function sanitizePluginSourceType(value) {
+  const clean = cleanDisplayText(value, 40);
+  return SAFE_PLUGIN_SOURCE_TYPES.includes(clean) ? clean : "unknown";
+}
+
+function sanitizePluginInstallPolicy(value) {
+  const clean = cleanDisplayText(value, 80);
+  return SAFE_PLUGIN_INSTALL_POLICIES.includes(clean) ? clean : "unknown";
+}
+
+function sanitizePluginAuthPolicy(value) {
+  const clean = cleanDisplayText(value, 40);
+  return SAFE_PLUGIN_AUTH_POLICIES.includes(clean) ? clean : "unknown";
 }
 
 function sanitizeCountMap(value) {

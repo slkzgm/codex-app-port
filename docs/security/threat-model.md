@@ -1613,7 +1613,7 @@
   messages, collaboration-mode model overrides, permission-profile ids/
   descriptions/cursors, app ids, app URLs, logos, labels, descriptions,
   screenshots, external config descriptions, external config
-  cwd values, migration paths, migration names, marketplace names, plugin names,
+  cwd values, migration paths, migration names, marketplace names/display names/sources, plugin names,
   session titles, raw migration items, import ids/messages/failure stages,
   installed plugin ids/paths/URLs/prompts/capabilities, remote-control status
   strings, server names, installation ids, environment ids, hook commands, hook

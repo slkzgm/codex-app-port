@@ -1799,7 +1799,8 @@ the same endpoint may call `configRequirements/read`, `model/list`,
 `account/workspaceMessages/read`, `remoteControl/status/read`, `app/list`,
 `mcpServerStatus/list`, `skills/list`, `plugin/list`, `plugin/installed`,
 `experimentalFeature/list`, `hooks/list`, `externalAgentConfig/detect`, and
-`externalAgentConfig/import/readHistories`. The response is
+`externalAgentConfig/import/readHistories`. Plugin inventory includes only
+marketplace local/remote counts plus source/install/auth-policy buckets. The response is
 counts-only: no account email, tokens, model ids/descriptions/upgrade copy/
 availability messages, app ids/URLs/logos/descriptions/labels/screenshots,
 external config descriptions/cwds/paths/names/marketplaces/plugin names/
@@ -1807,7 +1808,8 @@ session titles/raw migration items, import ids/messages/paths/stages, remote
 control status strings/server names/installation ids/environment ids,
 rate-limit plan types, limit ids/names, balances, used percentages, reset
 times, MCP server names, MCP tool schemas, skill names/descriptions/paths,
-plugin names/ids/paths/URLs/prompts/capabilities, hook commands/paths/keys/
+plugin and marketplace names/display names/sources, plugin ids/paths/URLs/
+prompts/capabilities, hook commands/paths/keys/
 matchers/plugin IDs, experimental feature names/display text/descriptions/
 announcements/cursors, config requirement values/domains, imports, installs,
 callbacks, or tool invocations are returned.

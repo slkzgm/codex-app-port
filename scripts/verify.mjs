@@ -18896,6 +18896,9 @@ async function checkSettingsIntegrationsInventoryApi() {
             plugins: {
               ok: true,
               marketplaceCount: 1,
+              localMarketplaceCount: 1,
+              remoteMarketplaceCount: 0,
+              marketplaceDisplayNameCount: 1,
               pluginCount: 3,
               installedCount: 2,
               enabledCount: 1,
@@ -18908,6 +18911,15 @@ async function checkSettingsIntegrationsInventoryApi() {
               installPolicyCounts: {
                 AVAILABLE: 3,
               },
+              authPolicyCounts: {
+                ON_USE: 2,
+                ON_INSTALL: 1,
+                "verify-private-auth-policy": 1,
+              },
+              marketplaceNamesReturned: true,
+              marketplaceDisplayNamesReturned: true,
+              privateMarketplaceName: "verify-private-marketplace",
+              privateMarketplaceDisplayName: "verify private marketplace display",
               privateUrl: "https://verify.example.test/plugin",
             },
             experimentalFeatures: {
@@ -19297,6 +19309,9 @@ async function checkSettingsIntegrationsNamesApi() {
             plugins: {
               ok: true,
               marketplaceCount: 1,
+              localMarketplaceCount: 1,
+              remoteMarketplaceCount: 0,
+              marketplaceDisplayNameCount: 1,
               pluginCount: 2,
               installedCount: 1,
               enabledCount: 1,
@@ -19304,6 +19319,7 @@ async function checkSettingsIntegrationsNamesApi() {
               featuredCount: 0,
               sourceTypeCounts: { local: 2 },
               installPolicyCounts: { AVAILABLE: 2 },
+              authPolicyCounts: { ON_USE: 1, ON_INSTALL: 1 },
               items: [
                 {
                   name: "verify-safe-plugin",
@@ -19311,6 +19327,7 @@ async function checkSettingsIntegrationsNamesApi() {
                   enabled: true,
                   sourceType: "local",
                   installPolicy: "AVAILABLE",
+                  authPolicy: "ON_USE",
                   id: "verify-private-plugin-id",
                   url: "https://verify.example.test/plugin",
                 },
@@ -19320,12 +19337,16 @@ async function checkSettingsIntegrationsNamesApi() {
                   enabled: false,
                   sourceType: "local",
                   installPolicy: "AVAILABLE",
+                  authPolicy: "ON_INSTALL",
                 },
               ],
             },
             installedPlugins: {
               ok: true,
               marketplaceCount: 1,
+              localMarketplaceCount: 1,
+              remoteMarketplaceCount: 0,
+              marketplaceDisplayNameCount: 1,
               pluginCount: 2,
               installedCount: 2,
               enabledCount: 1,
@@ -19333,6 +19354,7 @@ async function checkSettingsIntegrationsNamesApi() {
               featuredCount: 0,
               sourceTypeCounts: { local: 2 },
               installPolicyCounts: { AVAILABLE: 2 },
+              authPolicyCounts: { ON_USE: 1, ON_INSTALL: 1 },
               items: [
                 {
                   name: "verify-safe-installed-plugin",
@@ -19340,6 +19362,7 @@ async function checkSettingsIntegrationsNamesApi() {
                   enabled: true,
                   sourceType: "local",
                   installPolicy: "AVAILABLE",
+                  authPolicy: "ON_USE",
                   id: "verify-private-installed-plugin-id",
                   path: "/tmp/codex-app-port-verify/.codex/plugins/private-installed",
                 },
@@ -19349,6 +19372,7 @@ async function checkSettingsIntegrationsNamesApi() {
                   enabled: false,
                   sourceType: "local",
                   installPolicy: "AVAILABLE",
+                  authPolicy: "ON_INSTALL",
                 },
               ],
               namesReturned: true,
@@ -47886,6 +47910,9 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
     "verify-private.example.test",
     "verify-private-hook-key",
     "verify-private-plugin-id",
+    "verify-private-auth-policy",
+    "verify-private-marketplace",
+    "verify private marketplace display",
     "verify private external config",
     "verify-private-external",
     "verify-private-experimental-feature",
@@ -48062,6 +48089,14 @@ function assertSanitizedSettingsIntegrationsInventory(payload) {
     payload.inventory?.mcp?.toolCount !== 4 ||
     payload.inventory?.skills?.skillCount !== 5 ||
     payload.inventory?.plugins?.pluginCount !== 3 ||
+    payload.inventory?.plugins?.localMarketplaceCount !== 1 ||
+    payload.inventory?.plugins?.remoteMarketplaceCount !== 0 ||
+    payload.inventory?.plugins?.marketplaceDisplayNameCount !== 1 ||
+    payload.inventory?.plugins?.authPolicyCounts?.ON_USE !== 2 ||
+    payload.inventory?.plugins?.authPolicyCounts?.ON_INSTALL !== 1 ||
+    Object.hasOwn(payload.inventory?.plugins?.authPolicyCounts ?? {}, "verify-private-auth-policy") ||
+    payload.inventory?.plugins?.marketplaceNamesReturned !== false ||
+    payload.inventory?.plugins?.marketplaceDisplayNamesReturned !== false ||
     payload.inventory?.experimentalFeatures?.featureCount !== 2 ||
     payload.inventory?.experimentalFeatures?.enabledCount !== 1 ||
     payload.inventory?.experimentalFeatures?.disabledCount !== 1 ||
@@ -48272,7 +48307,9 @@ function assertSanitizedSettingsIntegrationsNames(payload) {
     payload.inventory?.plugins?.pathsReturned !== false ||
     payload.inventory?.plugins?.urlsReturned !== false ||
     payload.inventory?.plugins?.items?.[0]?.name !== "verify-safe-plugin" ||
+    payload.inventory?.plugins?.items?.[0]?.authPolicy !== "ON_USE" ||
     payload.inventory?.plugins?.items?.[1]?.name !== null ||
+    payload.inventory?.plugins?.items?.[1]?.authPolicy !== "ON_INSTALL" ||
     payload.inventory?.installedPlugins?.namesReturned !== true ||
     payload.inventory?.installedPlugins?.idsReturned !== false ||
     payload.inventory?.installedPlugins?.pathsReturned !== false ||
@@ -48285,7 +48322,9 @@ function assertSanitizedSettingsIntegrationsNames(payload) {
     payload.inventory?.installedPlugins?.screenshotsReturned !== false ||
     payload.inventory?.installedPlugins?.rawPayloadReturned !== false ||
     payload.inventory?.installedPlugins?.items?.[0]?.name !== "verify-safe-installed-plugin" ||
+    payload.inventory?.installedPlugins?.items?.[0]?.authPolicy !== "ON_USE" ||
     payload.inventory?.installedPlugins?.items?.[1]?.name !== null ||
+    payload.inventory?.installedPlugins?.items?.[1]?.authPolicy !== "ON_INSTALL" ||
     payload.inventory?.experimentalFeatures?.namesReturned !== true ||
     payload.inventory?.experimentalFeatures?.descriptionsReturned !== false ||
     payload.inventory?.experimentalFeatures?.announcementsReturned !== false ||
