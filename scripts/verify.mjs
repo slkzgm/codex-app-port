@@ -87,6 +87,7 @@ async function main() {
   await checkConfigRequirementsApi();
   await checkMcpServerStatusApi();
   await checkPermissionProfilesApi();
+  await checkSkillsListApi();
   await checkRemoteControlStatusApi();
   await checkInstalledPluginsApi();
   await checkExternalAgentImportHistoriesApi();
@@ -18763,6 +18764,242 @@ async function checkPermissionProfilesApi() {
     await closeServer(server);
   }
   pass("dev server permission profiles exposes counts behind opt-in without returning profile details");
+}
+
+async function checkSkillsListApi() {
+  const blockedCalls = [];
+  const blockedServer = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    skillsListFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+  const blockedPort = await listenWithFallback(blockedServer, { host: "127.0.0.1", port: 0 });
+  const blockedBaseUrl = `http://127.0.0.1:${blockedPort}`;
+
+  try {
+    const token = await readUiSessionToken(blockedBaseUrl);
+    const settingsResponse = await fetch(`${blockedBaseUrl}/api/settings-integrations`, {
+      headers: apiHeaders(token),
+    });
+    if (!settingsResponse.ok) {
+      throw new Error(`settings integrations for blocked skills list returned HTTP ${settingsResponse.status}`);
+    }
+    const settingsPayload = await settingsResponse.json();
+    if (
+      settingsPayload.surfaces?.settings?.skillsListingAvailable !== false ||
+      settingsPayload.surfaces?.settings?.skillsListEnabled !== false ||
+      settingsPayload.integrationScope?.skillsListEnabled !== false
+    ) {
+      throw new Error("settings integrations did not expose the blocked skills list gate safely");
+    }
+
+    const response = await fetch(`${blockedBaseUrl}/api/skills-list`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`blocked skills list returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (
+      payload.appServer?.touched !== false ||
+      payload.settings?.skillsListEnabled !== false ||
+      payload.result?.status !== "blocked" ||
+      payload.policy?.appServerTraffic !== false
+    ) {
+      throw new Error("blocked skills list did not fail closed without app-server traffic");
+    }
+    if (blockedCalls.length !== 0) {
+      throw new Error("blocked skills list unexpectedly touched app-server");
+    }
+    assertNoMarkers(JSON.stringify(payload), ["/tmp/codex-app-port-verify"]);
+  } finally {
+    await closeServer(blockedServer);
+  }
+
+  const calls = [];
+  const server = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    skillsListEnabled: true,
+    skillsListFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-07-01T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/verify-private-home",
+          userAgent: "verify-private-agent",
+        },
+        probes: {
+          skills: {
+            ok: true,
+            workspaceCount: 1,
+            skillCount: 2,
+            enabledCount: 1,
+            disabledCount: 1,
+            errorCount: 1,
+            scopeCounts: {
+              repo: 1,
+              user: 1,
+              verifyPrivateScope: 1,
+            },
+            dependencyToolCount: 3,
+            dependencyToolCommandCount: 1,
+            dependencyToolUrlCount: 1,
+            dependencyToolTransportCount: 1,
+            dependencyToolDescriptionCount: 1,
+            displayNameCount: 1,
+            shortDescriptionCount: 1,
+            defaultPromptCount: 1,
+            iconCount: 2,
+            brandColorCount: 1,
+            returnedSkillCount: 2,
+            items: [
+              {
+                name: "verify-private-skill",
+                enabled: true,
+                scope: "repo",
+                dependencyToolCount: 1,
+                hasDisplayName: true,
+                hasShortDescription: true,
+                hasDefaultPrompt: true,
+                iconCount: 2,
+                hasBrandColor: true,
+              },
+            ],
+            namesReturned: true,
+            pathsReturned: true,
+            descriptionsReturned: true,
+            displayNamesReturned: true,
+            defaultPromptsReturned: true,
+            dependencyToolValuesReturned: true,
+            dependencyToolCommandsReturned: true,
+            dependencyToolUrlsReturned: true,
+            dependencyToolDescriptionsReturned: true,
+          },
+        },
+        rawSkills: {
+          name: "verify-private-skill",
+          description: "verify private skill description",
+          path: "/tmp/codex-app-port-verify/.codex/skills/private/SKILL.md",
+          command: "cat /tmp/codex-app-port-verify/secret.txt",
+          url: "https://verify.example.test/private-skill",
+          prompt: "verify private default prompt",
+        },
+        notifications: {},
+      };
+    },
+  });
+  const port = await listenWithFallback(server, { host: "127.0.0.1", port: 0 });
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  try {
+    const token = await readUiSessionToken(baseUrl);
+    const settingsResponse = await fetch(`${baseUrl}/api/settings-integrations`, {
+      headers: apiHeaders(token),
+    });
+    if (!settingsResponse.ok) {
+      throw new Error(`settings integrations for skills list returned HTTP ${settingsResponse.status}`);
+    }
+    const settingsPayload = await settingsResponse.json();
+    if (
+      settingsPayload.surfaces?.settings?.skillsListingAvailable !== true ||
+      settingsPayload.surfaces?.settings?.skillsListEnabled !== true ||
+      settingsPayload.surfaces?.skills?.skillsListEnabled !== true ||
+      settingsPayload.integrationScope?.skillsListEnabled !== true ||
+      !settingsPayload.integrationScope?.enabledReadMethods?.includes("skills/list")
+    ) {
+      throw new Error("settings integrations did not expose the skills list gate safely");
+    }
+
+    const wrongMethod = await fetch(`${baseUrl}/api/skills-list`, {
+      method: "POST",
+      headers: apiHeaders(token),
+    });
+    if (wrongMethod.status !== 405) {
+      throw new Error(`skills list POST returned HTTP ${wrongMethod.status}`);
+    }
+
+    const response = await fetch(`${baseUrl}/api/skills-list`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`skills list returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (
+      payload.appServer?.touched !== true ||
+      payload.appServer?.modelTraffic !== false ||
+      payload.settings?.skillsListEnabled !== true ||
+      payload.result?.status !== "available" ||
+      payload.result?.workspaceCount !== 1 ||
+      payload.result?.skillCount !== 2 ||
+      payload.result?.enabledCount !== 1 ||
+      payload.result?.disabledCount !== 1 ||
+      payload.result?.errorCount !== 1 ||
+      payload.result?.scopeCounts?.repo !== 1 ||
+      payload.result?.scopeCounts?.user !== 1 ||
+      payload.result?.scopeCounts?.verifyPrivateScope != null ||
+      payload.result?.dependencyToolCount !== 3 ||
+      payload.result?.dependencyToolCommandCount !== 1 ||
+      payload.result?.dependencyToolUrlCount !== 1 ||
+      payload.result?.displayNameCount !== 1 ||
+      payload.result?.shortDescriptionCount !== 1 ||
+      payload.result?.defaultPromptCount !== 1 ||
+      payload.result?.iconCount !== 2 ||
+      payload.result?.brandColorCount !== 1 ||
+      payload.result?.returnedSkillCount !== 0 ||
+      payload.result?.namesReturned !== false ||
+      payload.result?.pathsReturned !== false ||
+      payload.result?.descriptionsReturned !== false ||
+      payload.result?.promptsReturned !== false ||
+      payload.result?.dependencyCommandsReturned !== false ||
+      payload.result?.dependencyUrlsReturned !== false ||
+      payload.result?.rawPayloadReturned !== false ||
+      payload.policy?.readOnly !== true ||
+      payload.policy?.skillExecution !== false ||
+      payload.policy?.installsEnabled !== false ||
+      payload.policy?.namesReturned !== false ||
+      payload.policy?.pathsReturned !== false ||
+      payload.policy?.descriptionsReturned !== false ||
+      payload.policy?.dependencyCommandsReturned !== false ||
+      payload.policy?.dependencyUrlsReturned !== false ||
+      payload.policy?.rawPayloadReturned !== false
+    ) {
+      throw new Error("skills list did not return the safe counts-only summary shape");
+    }
+    if (calls.length !== 1 || calls[0].cwd !== "/tmp/codex-app-port-verify") {
+      throw new Error("skills list did not call the app-server read path once");
+    }
+    assertNoMarkers(JSON.stringify(payload), [
+      "/tmp/codex-app-port-verify",
+      "/tmp/verify-private-home",
+      "verify-private-agent",
+      "codexHome",
+      "userAgent",
+      "verifyPrivateScope",
+      "verify-private-skill",
+      "verify private skill description",
+      "SKILL.md",
+      "secret.txt",
+      "verify.example.test",
+      "verify private default prompt",
+      "\"namesReturned\":true",
+      "\"pathsReturned\":true",
+      "\"descriptionsReturned\":true",
+      "\"defaultPromptsReturned\":true",
+      "\"dependencyToolCommandsReturned\":true",
+      "\"dependencyToolUrlsReturned\":true",
+    ]);
+  } finally {
+    await closeServer(server);
+  }
+  pass("dev server skills list exposes counts behind opt-in without returning skill details");
 }
 
 async function checkRemoteControlStatusApi() {
@@ -58356,6 +58593,11 @@ async function readUiSessionToken(baseUrl) {
     !html.includes("permission-profiles-count-text") ||
     !html.includes("permission-profiles-allowed-text") ||
     !html.includes("permission-profiles-details-text") ||
+    !html.includes("skills-list-button") ||
+    !html.includes("skills-list-status") ||
+    !html.includes("skills-list-count-text") ||
+    !html.includes("skills-list-enabled-text") ||
+    !html.includes("skills-list-details-text") ||
     !html.includes("remote-control-status-button") ||
     !html.includes("remote-control-status-status") ||
     !html.includes("remote-control-status-count-text") ||
@@ -58392,6 +58634,9 @@ async function readUiSessionToken(baseUrl) {
     !appScript.includes("setMcpServerStatusLoading") ||
     !appScript.includes("runPermissionProfiles") ||
     !appScript.includes("renderPermissionProfiles") ||
+    !appScript.includes("runSkillsList") ||
+    !appScript.includes("renderSkillsList") ||
+    !appScript.includes("setSkillsListLoading") ||
     !appScript.includes("runRemoteControlStatus") ||
     !appScript.includes("renderRemoteControlStatus") ||
     !appScript.includes("runInstalledPlugins") ||

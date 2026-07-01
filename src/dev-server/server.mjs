@@ -51,6 +51,7 @@ import {
   runRemoteControlDisableProbe,
   runSkillsConfigWriteProbe,
   runSkillsExtraRootsClearProbe,
+  runSkillsListReadProbe,
   runTerminalCommandExecProbe,
   runThreadChangesProbe,
   runThreadArchiveProbe,
@@ -13163,6 +13164,7 @@ export function createDevServer({
   installedPluginsFn = runInstalledPluginsReadProbe,
   externalAgentImportHistoriesFn = runExternalAgentConfigImportHistoriesReadProbe,
   hooksListFn = runHooksListReadProbe,
+  skillsListFn = runSkillsListReadProbe,
   accountLoginCancelFn = runAccountLoginCancelProbe,
   accountLoginStartFn = runAccountLoginStartProbe,
   accountCreditsNudgeFn = runAccountCreditsNudgeProbe,
@@ -13241,6 +13243,7 @@ export function createDevServer({
   externalAgentImportHistoriesEnabled =
     process.env.CODEX_APP_PORT_ALLOW_EXTERNAL_AGENT_IMPORT_HISTORIES === "1",
   hooksListEnabled = process.env.CODEX_APP_PORT_ALLOW_HOOKS_LIST === "1",
+  skillsListEnabled = process.env.CODEX_APP_PORT_ALLOW_SKILLS_LIST === "1",
   accountLoginCancelEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN_CANCEL === "1",
   accountLoginEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN === "1",
   accountCreditsNudgeEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_CREDITS_NUDGE === "1",
@@ -13401,6 +13404,7 @@ export function createDevServer({
       installedPluginsFn,
       externalAgentImportHistoriesFn,
       hooksListFn,
+      skillsListFn,
       accountLoginCancelFn,
       accountLoginStartFn,
       accountCreditsNudgeFn,
@@ -13473,6 +13477,7 @@ export function createDevServer({
       installedPluginsEnabled,
       externalAgentImportHistoriesEnabled,
       hooksListEnabled,
+      skillsListEnabled,
       accountLoginCancelEnabled,
       accountLoginEnabled,
       accountCreditsNudgeEnabled,
@@ -15261,6 +15266,48 @@ export async function handleRequest(request, response, options) {
       sendJson(response, error.statusCode ?? 502, {
         ok: false,
         error: cleanDisplayText(error.message, 200) ?? "Invalid hooks list request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/skills-list") {
+    if (request.method !== "GET") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        url.searchParams.get("workspace"),
+      );
+      if (!options.skillsListEnabled) {
+        sendJson(response, 200, buildSkillsListBlockedPayload({ workspace }));
+        return;
+      }
+      const payload = await options.skillsListFn({
+        codexBin: options.codexBin,
+        cwd: workspace.cwd,
+        timeoutMs: options.timeoutMs,
+      });
+      sendJson(
+        response,
+        200,
+        sanitizeSkillsListPayload(payload, {
+          workspace,
+          enabled: true,
+        }),
+      );
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 502, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid skills list request",
       });
     }
     return;
@@ -19966,6 +20013,7 @@ export async function handleRequest(request, response, options) {
             externalAgentImportHistoriesEnabled:
               options.externalAgentImportHistoriesEnabled,
             hooksListEnabled: options.hooksListEnabled,
+            skillsListEnabled: options.skillsListEnabled,
             accountLoginCancelEnabled: options.accountLoginCancelEnabled,
             accountLoginEnabled: options.accountLoginEnabled,
             accountCreditsNudgeEnabled: options.accountCreditsNudgeEnabled,
@@ -20015,6 +20063,7 @@ export async function handleRequest(request, response, options) {
           installedPluginsEnabled: options.installedPluginsEnabled,
           externalAgentImportHistoriesEnabled: options.externalAgentImportHistoriesEnabled,
           hooksListEnabled: options.hooksListEnabled,
+          skillsListEnabled: options.skillsListEnabled,
           accountLoginCancelEnabled: options.accountLoginCancelEnabled,
           accountLoginEnabled: options.accountLoginEnabled,
           accountCreditsNudgeEnabled: options.accountCreditsNudgeEnabled,
@@ -52318,6 +52367,7 @@ export function sanitizeSettingsIntegrationsPayload(
     installedPluginsEnabled = false,
     externalAgentImportHistoriesEnabled = false,
     hooksListEnabled = false,
+    skillsListEnabled = false,
     accountLoginCancelEnabled = false,
     accountLoginEnabled = false,
     accountCreditsNudgeEnabled = false,
@@ -52363,6 +52413,7 @@ export function sanitizeSettingsIntegrationsPayload(
   const installedPluginReadEnabled = Boolean(installedPluginsEnabled);
   const importHistoriesEnabled = Boolean(externalAgentImportHistoriesEnabled);
   const hooksReadEnabled = Boolean(hooksListEnabled);
+  const skillsReadEnabled = Boolean(skillsListEnabled);
   const loginEnabled = Boolean(accountLoginEnabled);
   const loginCancelEnabled = Boolean(accountLoginCancelEnabled);
   const creditsNudgeEnabled = Boolean(accountCreditsNudgeEnabled);
@@ -52409,6 +52460,7 @@ export function sanitizeSettingsIntegrationsPayload(
     installedPluginsEnabled: installedPluginReadEnabled,
     externalAgentImportHistoriesEnabled: importHistoriesEnabled,
     hooksListEnabled: hooksReadEnabled,
+    skillsListEnabled: skillsReadEnabled,
     accountLoginCancelEnabled: loginCancelEnabled,
     accountLoginEnabled: loginEnabled,
     accountCreditsNudgeEnabled: creditsNudgeEnabled,
@@ -52475,6 +52527,8 @@ export function sanitizeSettingsIntegrationsPayload(
         environmentAddEnabled: Boolean(environmentAddEnabled),
         hookListingAvailable: inventory.hooks.ok || hooksReadEnabled,
         hooksListEnabled: hooksReadEnabled,
+        skillsListingAvailable: inventory.skills.ok || skillsReadEnabled,
+        skillsListEnabled: skillsReadEnabled,
         appListingAvailable: inventory.apps.ok,
         externalAgentConfigDetectionAvailable: inventory.externalAgentConfig.ok,
         experimentalFeatureListingAvailable: inventory.experimentalFeatures.ok,
@@ -52620,16 +52674,22 @@ export function sanitizeSettingsIntegrationsPayload(
       },
       skills: {
         state:
-          inventory.skills.ok || skillsConfigWriteEnabled || skillsExtraRootsClearEnabled
+          inventory.skills.ok ||
+          skillsReadEnabled ||
+          skillsConfigWriteEnabled ||
+          skillsExtraRootsClearEnabled
             ? "partial"
             : "blocked",
-        listingAvailable: inventory.skills.ok,
+        listingAvailable: inventory.skills.ok || skillsReadEnabled,
+        skillsListEnabled: skillsReadEnabled,
         configWriteEnabled: Boolean(skillsConfigWriteEnabled),
         extraRootsClearEnabled: Boolean(skillsExtraRootsClearEnabled),
         installEnabled: false,
         executionEnabled: false,
         mutationEnabled: Boolean(skillsConfigWriteEnabled || skillsExtraRootsClearEnabled),
-        reason: inventory.skills.ok
+        reason: skillsReadEnabled
+          ? "skills-list-counts-only"
+          : inventory.skills.ok
           ? inventory.skills.namesReturned
             ? "names-and-counts"
             : "counts-only"
@@ -58966,6 +59026,189 @@ export function sanitizeMcpServerStatusPayload(
   };
 }
 
+export function buildSkillsListBlockedPayload({ workspace } = {}) {
+  const skills = sanitizeSkillsInventory(null, { namesEnabled: false });
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["skills/list"],
+    },
+    settings: {
+      skillsListAvailable: true,
+      skillsListEnabled: false,
+      appServerTraffic: false,
+      namesReturned: false,
+      pathsReturned: false,
+      descriptionsReturned: false,
+      promptsReturned: false,
+      dependencyValuesReturned: false,
+      dependencyCommandsReturned: false,
+      dependencyUrlsReturned: false,
+      rawPayloadReturned: false,
+      reason: "skills-list-requires-opt-in",
+    },
+    probes: {
+      skills,
+    },
+    result: {
+      status: "blocked",
+      skillsListEnabled: false,
+      appServerTraffic: false,
+      workspaceCount: 0,
+      skillCount: 0,
+      enabledCount: 0,
+      disabledCount: 0,
+      errorCount: 0,
+      scopeCounts: {},
+      dependencyToolCount: 0,
+      dependencyToolCommandCount: 0,
+      dependencyToolUrlCount: 0,
+      dependencyToolTransportCount: 0,
+      dependencyToolDescriptionCount: 0,
+      displayNameCount: 0,
+      shortDescriptionCount: 0,
+      defaultPromptCount: 0,
+      iconCount: 0,
+      brandColorCount: 0,
+      returnedSkillCount: 0,
+      namesReturned: false,
+      pathsReturned: false,
+      descriptionsReturned: false,
+      promptsReturned: false,
+      dependencyValuesReturned: false,
+      dependencyCommandsReturned: false,
+      dependencyUrlsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      settingsWrites: false,
+      configWrites: false,
+      skillExecution: false,
+      installsEnabled: false,
+      filesystemReads: false,
+      filesystemWrites: false,
+      secretsReturned: false,
+      tokensReturned: false,
+      namesReturned: false,
+      pathsReturned: false,
+      descriptionsReturned: false,
+      promptsReturned: false,
+      dependencyValuesReturned: false,
+      dependencyCommandsReturned: false,
+      dependencyUrlsReturned: false,
+      rawPayloadReturned: false,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: true,
+      implemented: true,
+    },
+    notifications: sanitizeNotificationCounts(null),
+  };
+}
+
+export function sanitizeSkillsListPayload(
+  payload,
+  { workspace = null, enabled = false } = {},
+) {
+  const skills = sanitizeSkillsInventory(payload?.probes?.skills, { namesEnabled: false });
+  const status = enabled ? "available" : "blocked";
+  return {
+    ok: Boolean(payload?.ok),
+    generatedAt: payload?.generatedAt ?? new Date().toISOString(),
+    transport: cleanDisplayText(payload?.transport, 80),
+    protocol: cleanDisplayText(payload?.protocol, 80),
+    initialize: sanitizeInitialize(payload?.initialize),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: Boolean(enabled),
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["skills/list"],
+    },
+    settings: {
+      skillsListAvailable: true,
+      skillsListEnabled: Boolean(enabled),
+      appServerTraffic: Boolean(enabled),
+      namesReturned: false,
+      pathsReturned: false,
+      descriptionsReturned: false,
+      promptsReturned: false,
+      dependencyValuesReturned: false,
+      dependencyCommandsReturned: false,
+      dependencyUrlsReturned: false,
+      rawPayloadReturned: false,
+      reason: Boolean(enabled) ? "skills-list-counts-only" : "skills-list-requires-opt-in",
+    },
+    probes: {
+      skills,
+    },
+    result: {
+      status,
+      skillsListEnabled: Boolean(enabled),
+      appServerTraffic: Boolean(enabled),
+      workspaceCount: skills.workspaceCount,
+      skillCount: skills.skillCount,
+      enabledCount: skills.enabledCount,
+      disabledCount: skills.disabledCount,
+      errorCount: skills.errorCount,
+      scopeCounts: skills.scopeCounts,
+      dependencyToolCount: skills.dependencyToolCount,
+      dependencyToolCommandCount: skills.dependencyToolCommandCount,
+      dependencyToolUrlCount: skills.dependencyToolUrlCount,
+      dependencyToolTransportCount: skills.dependencyToolTransportCount,
+      dependencyToolDescriptionCount: skills.dependencyToolDescriptionCount,
+      displayNameCount: skills.displayNameCount,
+      shortDescriptionCount: skills.shortDescriptionCount,
+      defaultPromptCount: skills.defaultPromptCount,
+      iconCount: skills.iconCount,
+      brandColorCount: skills.brandColorCount,
+      returnedSkillCount: 0,
+      namesReturned: false,
+      pathsReturned: false,
+      descriptionsReturned: false,
+      promptsReturned: false,
+      dependencyValuesReturned: false,
+      dependencyCommandsReturned: false,
+      dependencyUrlsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: Boolean(enabled),
+      modelTraffic: false,
+      commandTraffic: false,
+      settingsWrites: false,
+      configWrites: false,
+      skillExecution: false,
+      installsEnabled: false,
+      filesystemReads: false,
+      filesystemWrites: false,
+      secretsReturned: false,
+      tokensReturned: false,
+      namesReturned: false,
+      pathsReturned: false,
+      descriptionsReturned: false,
+      promptsReturned: false,
+      dependencyValuesReturned: false,
+      dependencyCommandsReturned: false,
+      dependencyUrlsReturned: false,
+      rawPayloadReturned: false,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: true,
+      implemented: true,
+    },
+    notifications: sanitizeNotificationCounts(payload?.notifications),
+  };
+}
+
 export function buildPermissionProfilesBlockedPayload({ workspace } = {}) {
   const permissionProfiles = sanitizePermissionProfilesInventory(null);
   return {
@@ -64099,6 +64342,7 @@ export function buildSettingsIntegrations({
   installedPluginsEnabled = false,
   externalAgentImportHistoriesEnabled = false,
   hooksListEnabled = false,
+  skillsListEnabled = false,
   accountLoginCancelEnabled = false,
   accountLoginEnabled = false,
   accountCreditsNudgeEnabled = false,
@@ -64144,6 +64388,7 @@ export function buildSettingsIntegrations({
   const installedPluginReadEnabled = Boolean(installedPluginsEnabled);
   const importHistoriesEnabled = Boolean(externalAgentImportHistoriesEnabled);
   const hooksReadEnabled = Boolean(hooksListEnabled);
+  const skillsReadEnabled = Boolean(skillsListEnabled);
   const loginCancelEnabled = Boolean(accountLoginCancelEnabled);
   const loginEnabled = Boolean(accountLoginEnabled);
   const creditsNudgeEnabled = Boolean(accountCreditsNudgeEnabled);
@@ -64172,6 +64417,7 @@ export function buildSettingsIntegrations({
       installedPluginReadEnabled ? "plugin/installed" : null,
       importHistoriesEnabled ? "externalAgentConfig/import/readHistories" : null,
       hooksReadEnabled ? "hooks/list" : null,
+      skillsReadEnabled ? "skills/list" : null,
       readEnabled ? "account/read" : null,
       rateLimitsEnabled ? "account/rateLimits/read" : null,
       usageEnabled ? "account/usage/read" : null,
@@ -64188,6 +64434,7 @@ export function buildSettingsIntegrations({
     installedPluginsEnabled: installedPluginReadEnabled,
     externalAgentImportHistoriesEnabled: importHistoriesEnabled,
     hooksListEnabled: hooksReadEnabled,
+    skillsListEnabled: skillsReadEnabled,
     accountLoginCancelEnabled: loginCancelEnabled,
     accountLoginEnabled: loginEnabled,
     accountCreditsNudgeEnabled: creditsNudgeEnabled,
@@ -64228,6 +64475,7 @@ export function buildSettingsIntegrations({
         installedPluginReadEnabled ? "plugin/installed" : null,
         importHistoriesEnabled ? "externalAgentConfig/import/readHistories" : null,
         hooksReadEnabled ? "hooks/list" : null,
+        skillsReadEnabled ? "skills/list" : null,
         readEnabled ? "account/read" : null,
         rateLimitsEnabled ? "account/rateLimits/read" : null,
         usageEnabled ? "account/usage/read" : null,
@@ -64258,6 +64506,8 @@ export function buildSettingsIntegrations({
         remoteControlStatusEnabled: remoteStatusEnabled,
         hookListingAvailable: hooksReadEnabled,
         hooksListEnabled: hooksReadEnabled,
+        skillsListingAvailable: skillsReadEnabled,
+        skillsListEnabled: skillsReadEnabled,
         appListingAvailable: false,
         externalAgentConfigDetectionAvailable: false,
         experimentalFeatureListingAvailable: false,
@@ -64395,14 +64645,18 @@ export function buildSettingsIntegrations({
         reason: "external-config-import-preflight-local-only",
       },
       skills: {
-        state: skillsConfigWriteEnabled || skillsExtraRootsClearEnabled ? "partial" : "blocked",
-        listingAvailable: false,
+        state:
+          skillsReadEnabled || skillsConfigWriteEnabled || skillsExtraRootsClearEnabled
+            ? "partial"
+            : "blocked",
+        listingAvailable: skillsReadEnabled,
+        skillsListEnabled: skillsReadEnabled,
         configWriteEnabled: Boolean(skillsConfigWriteEnabled),
         extraRootsClearEnabled: Boolean(skillsExtraRootsClearEnabled),
         installEnabled: false,
         executionEnabled: false,
         mutationEnabled: Boolean(skillsConfigWriteEnabled || skillsExtraRootsClearEnabled),
-        reason: "requires-explicit-inventory-enable",
+        reason: skillsReadEnabled ? "skills-list-counts-only" : "requires-explicit-inventory-enable",
       },
       plugins: {
         state: "partial",
@@ -66926,6 +67180,7 @@ function buildIntegrationActionScope({
   installedPluginsEnabled = false,
   externalAgentImportHistoriesEnabled = false,
   hooksListEnabled = false,
+  skillsListEnabled = false,
   accountLoginCancelEnabled = false,
   accountLoginEnabled = false,
   accountCreditsNudgeEnabled = false,
@@ -67020,6 +67275,7 @@ function buildIntegrationActionScope({
     installedPluginsEnabled: Boolean(installedPluginsEnabled),
     externalAgentImportHistoriesEnabled: Boolean(externalAgentImportHistoriesEnabled),
     hooksListEnabled: Boolean(hooksListEnabled),
+    skillsListEnabled: Boolean(skillsListEnabled),
     accountLoginEnabled: Boolean(accountLoginEnabled),
     authDeviceCodeLoginEnabled: Boolean(accountLoginEnabled),
     accountLoginCancelEnabled: Boolean(accountLoginCancelEnabled),

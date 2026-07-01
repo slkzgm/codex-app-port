@@ -28,6 +28,7 @@ import {
   runRemoteControlDisableProbe,
   runSkillsConfigWriteProbe,
   runSkillsExtraRootsClearProbe,
+  runSkillsListReadProbe,
   runTerminalCommandExecProbe,
   runThreadArchiveProbe,
   runThreadChangesProbe,
@@ -2474,6 +2475,73 @@ test("runMcpServerStatusReadProbe returns MCP counts without server details", as
       delete process.env.CODEX_APP_PORT_ALLOW_MCP_SERVER_STATUS;
     } else {
       process.env.CODEX_APP_PORT_ALLOW_MCP_SERVER_STATUS = previous;
+    }
+  }
+});
+
+test("runSkillsListReadProbe returns skill counts without skill details", async () => {
+  const previous = process.env.CODEX_APP_PORT_ALLOW_SKILLS_LIST;
+  process.env.CODEX_APP_PORT_ALLOW_SKILLS_LIST = "1";
+  try {
+    const summary = await runSkillsListReadProbe({
+      codexBin: process.execPath,
+      codexArgs: [mockServer.pathname],
+      cwd: process.cwd(),
+      timeoutMs: 1_000,
+    });
+    const skills = summary.probes.skills;
+    const serialized = JSON.stringify(summary);
+    assert.equal(summary.ok, true);
+    assert.equal(skills.ok, true);
+    assert.equal(skills.workspaceCount, 1);
+    assert.equal(skills.skillCount, 1);
+    assert.equal(skills.enabledCount, 1);
+    assert.equal(skills.disabledCount, 0);
+    assert.equal(skills.errorCount, 1);
+    assert.deepEqual(skills.scopeCounts, { repo: 1 });
+    assert.equal(skills.dependencyToolCount, 1);
+    assert.equal(skills.dependencyToolCommandCount, 1);
+    assert.equal(skills.dependencyToolUrlCount, 1);
+    assert.equal(skills.dependencyToolTransportCount, 1);
+    assert.equal(skills.dependencyToolDescriptionCount, 1);
+    assert.equal(skills.displayNameCount, 1);
+    assert.equal(skills.shortDescriptionCount, 1);
+    assert.equal(skills.defaultPromptCount, 1);
+    assert.equal(skills.iconCount, 2);
+    assert.equal(skills.brandColorCount, 1);
+    assert.equal(skills.returnedSkillCount, 0);
+    assert.equal(skills.namesReturned, false);
+    assert.equal(skills.pathsReturned, false);
+    assert.equal(skills.descriptionsReturned, false);
+    assert.equal(skills.defaultPromptsReturned, false);
+    assert.equal(skills.dependencyToolValuesReturned, false);
+    assert.equal(skills.dependencyToolCommandsReturned, false);
+    assert.equal(skills.dependencyToolUrlsReturned, false);
+    for (const marker of [
+      "private-skill",
+      "private description",
+      "private skill display",
+      "private short description",
+      "private default prompt",
+      "/tmp/mock-workspace",
+      "private skill error",
+      "private-tool",
+      "private tool description",
+      "secret.txt",
+      "example.test",
+      "SKILL.md",
+      "small.png",
+      "large.png",
+      "codexHome",
+      "userAgent",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    if (previous === undefined) {
+      delete process.env.CODEX_APP_PORT_ALLOW_SKILLS_LIST;
+    } else {
+      process.env.CODEX_APP_PORT_ALLOW_SKILLS_LIST = previous;
     }
   }
 });

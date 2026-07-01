@@ -1949,6 +1949,17 @@ workspace `cwd`, and `limit:50`, and returns only profile counts plus
 allowed/blocked/description totals. Profile names, ids, descriptions, cursors,
 cwd, paths, and raw payloads are never returned by this dedicated route.
 
+`/api/skills-list` is a dedicated disabled-by-default GET route for
+`skills/list`. It requires `CODEX_APP_PORT_ALLOW_SKILLS_LIST=1`, accepts only
+the local session token and workspace selector, calls the app server with
+`cwds:[cwd]` and `forceReload:false`, and returns only workspace/skill/enabled/
+error/scope counts plus dependency-tool and UI-metadata presence counts. Skill
+names, paths, descriptions, display names, default prompts, icon paths, brand
+colors, dependency values, dependency commands, dependency URLs, skill execution,
+installs, cwd, filesystem access, and raw payloads are never returned by this
+dedicated route. The Skills Check control renders only sanitized
+count/detail-redaction fields.
+
 When `CODEX_APP_PORT_ALLOW_INTEGRATION_NAMES=1` is also set, the inventory may
 include bounded display names for models, collaboration modes, apps/connectors,
 app plugin labels, MCP servers/tools, skills, plugins, installed plugins,

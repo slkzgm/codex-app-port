@@ -390,6 +390,11 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /permission-profiles-count-text/);
     assert.match(html, /permission-profiles-allowed-text/);
     assert.match(html, /permission-profiles-details-text/);
+    assert.match(html, /skills-list-button/);
+    assert.match(html, /skills-list-status/);
+    assert.match(html, /skills-list-count-text/);
+    assert.match(html, /skills-list-enabled-text/);
+    assert.match(html, /skills-list-details-text/);
     assert.match(html, /remote-control-status-button/);
     assert.match(html, /remote-control-status-status/);
     assert.match(html, /remote-control-status-count-text/);
@@ -426,6 +431,9 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(appScript, /setMcpServerStatusLoading/);
     assert.match(appScript, /runPermissionProfiles/);
     assert.match(appScript, /renderPermissionProfiles/);
+    assert.match(appScript, /runSkillsList/);
+    assert.match(appScript, /renderSkillsList/);
+    assert.match(appScript, /setSkillsListLoading/);
     assert.match(appScript, /runRemoteControlStatus/);
     assert.match(appScript, /renderRemoteControlStatus/);
     assert.match(appScript, /runInstalledPlugins/);
@@ -15546,6 +15554,219 @@ test("dev server exposes permission profiles only behind explicit opt-in and red
       "\"idsReturned\":true",
       "\"descriptionsReturned\":true",
       "\"rawPayloadReturned\":true",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    await closeServer(enabledServer.server);
+  }
+});
+
+test("dev server exposes skills list only behind explicit opt-in and redacts skill details", async () => {
+  const blockedCalls = [];
+  const blockedServer = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    skillsListFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+
+  try {
+    const settingsResponse = await fetch(`${blockedServer.url}/api/settings-integrations`, {
+      headers: apiHeaders(blockedServer.server),
+    });
+    assert.equal(settingsResponse.status, 200);
+    const settingsPayload = await settingsResponse.json();
+    assert.equal(settingsPayload.surfaces.settings.skillsListingAvailable, false);
+    assert.equal(settingsPayload.surfaces.settings.skillsListEnabled, false);
+    assert.equal(settingsPayload.integrationScope.skillsListEnabled, false);
+
+    const blockedResponse = await fetch(`${blockedServer.url}/api/skills-list`, {
+      headers: apiHeaders(blockedServer.server),
+    });
+    assert.equal(blockedResponse.status, 200);
+    const blockedPayload = await blockedResponse.json();
+    const blockedSerialized = JSON.stringify(blockedPayload);
+    assert.equal(blockedPayload.ok, true);
+    assert.equal(blockedPayload.appServer.touched, false);
+    assert.deepEqual(blockedPayload.appServer.auditedMethods, ["skills/list"]);
+    assert.equal(blockedPayload.settings.skillsListEnabled, false);
+    assert.equal(blockedPayload.policy.appServerTraffic, false);
+    assert.equal(blockedPayload.result.status, "blocked");
+    assert.equal(blockedCalls.length, 0);
+    assert.equal(blockedSerialized.includes("/tmp/default-workspace"), false);
+  } finally {
+    await closeServer(blockedServer.server);
+  }
+
+  const calls = [];
+  const enabledServer = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    skillsListEnabled: true,
+    skillsListFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-07-01T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/private-home",
+          userAgent: "mock/0.0.0",
+        },
+        probes: {
+          skills: {
+            ok: true,
+            workspaceCount: 1,
+            skillCount: 2,
+            enabledCount: 1,
+            disabledCount: 1,
+            errorCount: 1,
+            scopeCounts: {
+              repo: 1,
+              user: 1,
+              privateScope: 1,
+            },
+            dependencyToolCount: 3,
+            dependencyToolCommandCount: 1,
+            dependencyToolUrlCount: 1,
+            dependencyToolTransportCount: 1,
+            dependencyToolDescriptionCount: 1,
+            displayNameCount: 1,
+            shortDescriptionCount: 1,
+            defaultPromptCount: 1,
+            iconCount: 2,
+            brandColorCount: 1,
+            returnedSkillCount: 2,
+            items: [
+              {
+                name: "private-skill",
+                enabled: true,
+                scope: "repo",
+                dependencyToolCount: 1,
+                hasDisplayName: true,
+                hasShortDescription: true,
+                hasDefaultPrompt: true,
+                iconCount: 2,
+                hasBrandColor: true,
+              },
+            ],
+            namesReturned: true,
+            nameRedactedCount: 1,
+            pathsReturned: true,
+            descriptionsReturned: true,
+            displayNamesReturned: true,
+            defaultPromptsReturned: true,
+            iconsReturned: true,
+            brandColorsReturned: true,
+            dependencyToolValuesReturned: true,
+            dependencyToolCommandsReturned: true,
+            dependencyToolUrlsReturned: true,
+            dependencyToolDescriptionsReturned: true,
+          },
+        },
+        rawSkills: {
+          name: "private-skill",
+          description: "private skill description",
+          path: "/tmp/default-workspace/.codex/skills/private/SKILL.md",
+          command: "cat /tmp/default-workspace/secret.txt",
+          url: "https://example.test/private-skill",
+          prompt: "private default prompt",
+        },
+        notifications: {},
+      };
+    },
+  });
+
+  try {
+    const settingsResponse = await fetch(`${enabledServer.url}/api/settings-integrations`, {
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(settingsResponse.status, 200);
+    const settingsPayload = await settingsResponse.json();
+    assert.equal(settingsPayload.surfaces.settings.skillsListingAvailable, true);
+    assert.equal(settingsPayload.surfaces.settings.skillsListEnabled, true);
+    assert.equal(settingsPayload.surfaces.skills.skillsListEnabled, true);
+    assert.equal(settingsPayload.integrationScope.skillsListEnabled, true);
+    assert.equal(settingsPayload.integrationScope.enabledReadMethods.includes("skills/list"), true);
+
+    const methodResponse = await fetch(`${enabledServer.url}/api/skills-list`, {
+      method: "POST",
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(methodResponse.status, 405);
+
+    const response = await fetch(`${enabledServer.url}/api/skills-list`, {
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, true);
+    assert.equal(payload.appServer.modelTraffic, false);
+    assert.deepEqual(payload.appServer.auditedMethods, ["skills/list"]);
+    assert.equal(payload.settings.skillsListEnabled, true);
+    assert.equal(payload.result.status, "available");
+    assert.equal(payload.result.workspaceCount, 1);
+    assert.equal(payload.result.skillCount, 2);
+    assert.equal(payload.result.enabledCount, 1);
+    assert.equal(payload.result.disabledCount, 1);
+    assert.equal(payload.result.errorCount, 1);
+    assert.deepEqual(payload.result.scopeCounts, { repo: 1, user: 1 });
+    assert.equal(payload.result.dependencyToolCount, 3);
+    assert.equal(payload.result.dependencyToolCommandCount, 1);
+    assert.equal(payload.result.dependencyToolUrlCount, 1);
+    assert.equal(payload.result.dependencyToolTransportCount, 1);
+    assert.equal(payload.result.dependencyToolDescriptionCount, 1);
+    assert.equal(payload.result.displayNameCount, 1);
+    assert.equal(payload.result.shortDescriptionCount, 1);
+    assert.equal(payload.result.defaultPromptCount, 1);
+    assert.equal(payload.result.iconCount, 2);
+    assert.equal(payload.result.brandColorCount, 1);
+    assert.equal(payload.result.returnedSkillCount, 0);
+    assert.equal(payload.result.namesReturned, false);
+    assert.equal(payload.result.pathsReturned, false);
+    assert.equal(payload.result.descriptionsReturned, false);
+    assert.equal(payload.result.promptsReturned, false);
+    assert.equal(payload.result.dependencyValuesReturned, false);
+    assert.equal(payload.result.dependencyCommandsReturned, false);
+    assert.equal(payload.result.dependencyUrlsReturned, false);
+    assert.equal(payload.result.rawPayloadReturned, false);
+    assert.equal(payload.probes.skills.returnedSkillCount, 0);
+    assert.deepEqual(payload.probes.skills.items, []);
+    assert.equal(payload.policy.readOnly, true);
+    assert.equal(payload.policy.skillExecution, false);
+    assert.equal(payload.policy.installsEnabled, false);
+    assert.equal(payload.policy.namesReturned, false);
+    assert.equal(payload.policy.pathsReturned, false);
+    assert.equal(payload.policy.descriptionsReturned, false);
+    assert.equal(payload.policy.dependencyCommandsReturned, false);
+    assert.equal(payload.policy.dependencyUrlsReturned, false);
+    assert.equal(payload.policy.rawPayloadReturned, false);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].cwd, "/tmp/default-workspace");
+    for (const marker of [
+      "/tmp/default-workspace",
+      "/tmp/private-home",
+      "codexHome",
+      "userAgent",
+      "privateScope",
+      "private-skill",
+      "private skill description",
+      "SKILL.md",
+      "secret.txt",
+      "example.test",
+      "private default prompt",
+      "\"namesReturned\":true",
+      "\"pathsReturned\":true",
+      "\"descriptionsReturned\":true",
+      "\"defaultPromptsReturned\":true",
+      "\"dependencyToolCommandsReturned\":true",
+      "\"dependencyToolUrlsReturned\":true",
     ]) {
       assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
     }

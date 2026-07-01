@@ -1119,6 +1119,11 @@ Target parity with the Codex desktop workflow:
   dependency commands, dependency descriptions, dependency URLs, and raw
   payloads remain hidden; opt-in names mode may return only bounded safe skill
   names and boolean presence flags.
+- `skills/list` also has a dedicated opt-in `/api/skills-list` route behind
+  `CODEX_APP_PORT_ALLOW_SKILLS_LIST=1`. The dedicated route is stricter than the
+  names inventory mode: it returns no skill names, no paths, no descriptions, no
+  prompts, no dependency values/commands/URLs, no cwd, no filesystem access, no
+  install or execution surface, and no raw payloads.
 - `hooks/list` has both a dedicated opt-in `/api/hooks-list` route behind
   `CODEX_APP_PORT_ALLOW_HOOKS_LIST=1` and an opt-in inventory path. It returns
   only workspace/hook/enabled/disabled/managed/error/warning counts plus

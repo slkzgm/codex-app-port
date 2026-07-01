@@ -71,6 +71,13 @@
   buckets; MCP server names, tool names, resource URIs, resource-template URIs,
   tool schemas, cwd, OAuth starts, tool invocation, resource reads, filesystem
   access, config writes, and raw app-server payloads must stay server-side.
+- Browser-facing skill inventory reads must be opt-in, narrow, and sanitized.
+  The dedicated `skills/list` bridge may report only workspace/skill/enabled/
+  error/scope counts plus dependency-tool and UI-metadata presence counts; skill
+  names, paths, descriptions, display names, default prompts, icon paths, brand
+  colors, dependency values, dependency commands, dependency URLs, cwd,
+  filesystem access, installs, execution, and raw app-server payloads must stay
+  server-side.
 - Browser-facing JSON `POST` routes must have a centralized audited body
   contract before side effects. Unsupported fields must be rejected before
   probes, app-server calls, filesystem access, token consumption, or audit-log
@@ -1679,6 +1686,14 @@
   only; profile names, ids, descriptions, cursors, cwd, paths, permission rules,
   filesystem/network grants, config values, and raw app-server payloads remain
   blocked.
+- `/api/skills-list` may call only `skills/list` behind
+  `CODEX_APP_PORT_ALLOW_SKILLS_LIST=1`. It is GET-only, local-token protected,
+  sends only `cwds:[cwd]` and `forceReload:false`, and returns workspace, skill,
+  enabled, disabled, error, scope, dependency-tool, and UI-metadata presence
+  counts only; skill names, paths, descriptions, display names, default prompts,
+  icon paths, brand colors, dependency values, dependency commands, dependency
+  URLs, cwd, filesystem reads, skill execution, installs, and raw app-server
+  payloads remain blocked.
 - `/api/remote-control-status` may call only `remoteControl/status/read` behind
   `CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_STATUS=1`. It is GET-only, local-token
   protected, and returns known status buckets plus identity-field presence

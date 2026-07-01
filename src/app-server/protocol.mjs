@@ -79,6 +79,7 @@ export const APP_SERVER_METHODS = Object.freeze({
   remoteControlClientRevoke: "remoteControl/client/revoke",
   remoteControlDisable: "remoteControl/disable",
   remoteControlStatusRead: "remoteControl/status/read",
+  skillsList: "skills/list",
   skillsConfigWrite: "skills/config/write",
   skillsExtraRootsSet: "skills/extraRoots/set",
   turnStart: "turn/start",

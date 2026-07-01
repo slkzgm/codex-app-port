@@ -1597,6 +1597,12 @@ Current M1 status:
   `CODEX_APP_PORT_ALLOW_PERMISSION_PROFILES=1`, returning only profile counts
   and allowed/blocked/description totals with profile names, ids, descriptions,
   cursors, cwd, paths, rules, config values, and raw payloads omitted.
+- done: dedicated `/api/skills-list` read route for `skills/list`, disabled by
+  default behind `CODEX_APP_PORT_ALLOW_SKILLS_LIST=1`, returning only workspace,
+  skill, enabled, error, scope, dependency-tool, and UI-metadata presence counts
+  while omitting skill names, paths, descriptions, display names, default
+  prompts, icon paths, brand colors, dependency values, commands, URLs, cwd,
+  filesystem access, installs, execution, and raw payloads.
 - done: MCP tool-call preflight with server/tool/argument count metadata only,
   no names returned, no argument echo, no schemas, no resource content, no tool
   invocation, no app-server traffic, and a local preflight token for mutation

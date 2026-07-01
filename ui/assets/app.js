@@ -271,6 +271,11 @@ const elements = {
   permissionProfilesCountText: document.querySelector("#permission-profiles-count-text"),
   permissionProfilesAllowedText: document.querySelector("#permission-profiles-allowed-text"),
   permissionProfilesDetailsText: document.querySelector("#permission-profiles-details-text"),
+  skillsListButton: document.querySelector("#skills-list-button"),
+  skillsListStatus: document.querySelector("#skills-list-status"),
+  skillsListCountText: document.querySelector("#skills-list-count-text"),
+  skillsListEnabledText: document.querySelector("#skills-list-enabled-text"),
+  skillsListDetailsText: document.querySelector("#skills-list-details-text"),
   remoteControlStatusButton: document.querySelector("#remote-control-status-button"),
   remoteControlStatusStatus: document.querySelector("#remote-control-status-status"),
   remoteControlStatusCountText: document.querySelector("#remote-control-status-count-text"),
@@ -1262,6 +1267,10 @@ elements.workspaceSelect.addEventListener("change", () => {
   elements.permissionProfilesCountText.textContent = "0";
   elements.permissionProfilesAllowedText.textContent = "0";
   elements.permissionProfilesDetailsText.textContent = "Hidden";
+  elements.skillsListStatus.textContent = "Skills read disabled by default.";
+  elements.skillsListCountText.textContent = "0";
+  elements.skillsListEnabledText.textContent = "0 / 0";
+  elements.skillsListDetailsText.textContent = "Hidden";
   elements.remoteControlStatusStatus.textContent = "Remote status disabled by default.";
   elements.remoteControlStatusCountText.textContent = "0";
   elements.remoteControlStatusIdentitiesText.textContent = "Hidden";
@@ -2269,6 +2278,10 @@ elements.permissionProfilesButton.addEventListener("click", () => {
   runPermissionProfiles();
 });
 
+elements.skillsListButton.addEventListener("click", () => {
+  runSkillsList();
+});
+
 elements.remoteControlStatusButton.addEventListener("click", () => {
   runRemoteControlStatus();
 });
@@ -2808,6 +2821,16 @@ function permissionProfilesEndpoint() {
   const params = new URLSearchParams();
   params.set("workspace", selectedWorkspaceId);
   return `/api/permission-profiles?${params.toString()}`;
+}
+
+function skillsListEndpoint() {
+  if (!selectedWorkspaceId) {
+    return "/api/skills-list";
+  }
+
+  const params = new URLSearchParams();
+  params.set("workspace", selectedWorkspaceId);
+  return `/api/skills-list?${params.toString()}`;
 }
 
 function remoteControlStatusEndpoint() {
@@ -5013,6 +5036,28 @@ async function runPermissionProfiles() {
     renderError(error);
   } finally {
     setPermissionProfilesLoading(false);
+  }
+}
+
+async function runSkillsList() {
+  setSkillsListLoading(true);
+  hideError();
+
+  try {
+    const response = await fetch(skillsListEndpoint(), {
+      headers: apiHeaders(),
+      cache: "no-store",
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderSkillsList(payload);
+  } catch (error) {
+    elements.skillsListStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    setSkillsListLoading(false);
   }
 }
 
@@ -14038,6 +14083,23 @@ function renderSettingsIntegrations(payload) {
     inventory.permissionProfiles?.rawPayloadReturned
       ? "Returned"
       : "Hidden";
+  elements.skillsListStatus.textContent = settings.skillsListEnabled
+    ? "Skills read enabled"
+    : "Skills read disabled";
+  elements.skillsListCountText.textContent = String(inventory.skills?.skillCount ?? 0);
+  elements.skillsListEnabledText.textContent = `${inventory.skills?.enabledCount ?? 0} / ${
+    inventory.skills?.disabledCount ?? 0
+  }`;
+  elements.skillsListDetailsText.textContent =
+    inventory.skills?.namesReturned ||
+    inventory.skills?.pathsReturned ||
+    inventory.skills?.descriptionsReturned ||
+    inventory.skills?.defaultPromptsReturned ||
+    inventory.skills?.dependencyToolValuesReturned ||
+    inventory.skills?.dependencyToolCommandsReturned ||
+    inventory.skills?.dependencyToolUrlsReturned
+      ? "Returned"
+      : "Hidden";
   elements.remoteControlStateText.textContent = settings.remoteControlStatusAvailable
     ? remoteControlStatusText(inventory.remoteControlStatus)
     : "Blocked";
@@ -14181,6 +14243,8 @@ function renderSettingsIntegrations(payload) {
       : "Blocked";
   elements.skillsStateText.textContent = skills.listingAvailable
     ? `${inventory.skills?.skillCount ?? 0} skills`
+    : skills.skillsListEnabled
+      ? "Read gate"
     : skills.configWriteEnabled
       ? "Config gate"
       : "Blocked";
@@ -15804,6 +15868,37 @@ function renderPermissionProfiles(payload) {
   elements.permissionProfilesStateText.textContent = blocked
     ? "Blocked"
     : `${profileCount} profiles / ${blockedCount} blocked`;
+}
+
+function renderSkillsList(payload) {
+  const settings = payload.settings ?? {};
+  const result = payload.result ?? {};
+  const blocked = settings.skillsListEnabled !== true || payload.appServer?.touched !== true;
+  const skillCount = result.skillCount ?? payload.probes?.skills?.skillCount ?? 0;
+  const enabledCount = result.enabledCount ?? payload.probes?.skills?.enabledCount ?? 0;
+  const disabledCount = result.disabledCount ?? payload.probes?.skills?.disabledCount ?? 0;
+  const errorCount = result.errorCount ?? payload.probes?.skills?.errorCount ?? 0;
+  const dependencyToolCount =
+    result.dependencyToolCount ?? payload.probes?.skills?.dependencyToolCount ?? 0;
+  const status = result.status ?? (blocked ? "blocked" : "available");
+  elements.skillsListStatus.textContent = blocked ? "Read blocked" : status;
+  elements.skillsListCountText.textContent = String(skillCount);
+  elements.skillsListEnabledText.textContent = `${enabledCount} / ${disabledCount}`;
+  elements.skillsListDetailsText.textContent =
+    result.namesReturned ||
+    result.pathsReturned ||
+    result.descriptionsReturned ||
+    result.promptsReturned ||
+    result.dependencyValuesReturned ||
+    result.dependencyCommandsReturned ||
+    result.dependencyUrlsReturned ||
+    result.rawPayloadReturned ||
+    settings.rawPayloadReturned
+      ? "Returned"
+      : "Hidden";
+  elements.skillsStateText.textContent = blocked
+    ? "Blocked"
+    : `${skillCount} skills / ${dependencyToolCount} tools / ${errorCount} errors`;
 }
 
 function renderRemoteControlStatus(payload) {
@@ -23871,6 +23966,14 @@ function setPermissionProfilesLoading(isLoading) {
   elements.permissionProfilesButton.textContent = isLoading ? "Checking" : "Profiles Check";
   if (isLoading) {
     elements.permissionProfilesStatus.textContent = "Checking";
+  }
+}
+
+function setSkillsListLoading(isLoading) {
+  elements.skillsListButton.disabled = isLoading;
+  elements.skillsListButton.textContent = isLoading ? "Checking" : "Skills Check";
+  if (isLoading) {
+    elements.skillsListStatus.textContent = "Checking";
   }
 }
 

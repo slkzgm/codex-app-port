@@ -160,12 +160,14 @@ model traffic, changes no elicitation counters, approves no guarded action, and
 returns only count/presence metadata with no full ids, thread content, guardian
 event details, paths, secrets, or raw payloads.
 
-Current local status: `permissionProfile/list`, `remoteControl/status/read`,
-`plugin/installed`, `externalAgentConfig/import/readHistories`,
-`hooks/list`, `account/usage/read`, `account/workspaceMessages/read`, and
+Current local status: `permissionProfile/list`, `skills/list`,
+`remoteControl/status/read`, `plugin/installed`,
+`externalAgentConfig/import/readHistories`, `hooks/list`,
+`account/usage/read`, `account/workspaceMessages/read`,
 `configRequirements/read`, and `mcpServerStatus/list` have dedicated
 disabled-by-default GET routes behind
 `CODEX_APP_PORT_ALLOW_PERMISSION_PROFILES=1`,
+`CODEX_APP_PORT_ALLOW_SKILLS_LIST=1`,
 `CODEX_APP_PORT_ALLOW_REMOTE_CONTROL_STATUS=1`,
 `CODEX_APP_PORT_ALLOW_INSTALLED_PLUGINS=1`,
 `CODEX_APP_PORT_ALLOW_EXTERNAL_AGENT_IMPORT_HISTORIES=1`,
@@ -182,10 +184,13 @@ failure stages, hook commands, hook paths, hook keys, hook matchers, hook plugin
 ids, hook status messages, hook timeouts, hook trust hashes, plugin ids, plugin
 names, plugin paths, plugin URLs, plugin prompts, plugin descriptions, plugin
 capabilities, plugin screenshots, install suggestion names, remote-control
-status strings, MCP server names, MCP tool names, MCP resource URIs, MCP
-resource-template URIs, MCP tool schemas, server names, installation ids,
-environment ids, cursors, hook execution, MCP tool invocation, MCP resource
-reads, config writes, import execution, filesystem access, or raw payloads.
+status strings, skill names, skill paths, skill descriptions, skill display
+names, skill prompts, skill icon paths, dependency values, dependency commands,
+dependency URLs, MCP server names, MCP tool names, MCP resource URIs,
+MCP resource-template URIs, MCP tool schemas, server names, installation ids,
+environment ids, cursors, hook execution, skill execution, installs, MCP tool
+invocation, MCP resource reads, config writes, import execution, filesystem
+access, or raw payloads.
 `thread/search` has a separate
 disabled-by-default
 `POST /api/thread-search` path behind `CODEX_APP_PORT_ALLOW_THREAD_SEARCH=1`;
