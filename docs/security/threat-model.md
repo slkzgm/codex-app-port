@@ -52,6 +52,12 @@
   daily bucket counts; lifetime token values, peak token values, streak values,
   bucket dates, account identifiers, cwd, paths, and raw app-server payloads
   must stay server-side.
+- Browser-facing account workspace-message reads must be opt-in, narrow, and
+  sanitized. The dedicated `account/workspaceMessages/read` bridge may report
+  only feature state, message counts, allowed message-type buckets, and
+  body/timestamp-presence counts; message ids, message bodies, timestamp values,
+  account identifiers, cwd, paths, and raw app-server payloads must stay
+  server-side.
 - Browser-facing JSON `POST` routes must have a centralized audited body
   contract before side effects. Unsupported fields must be rejected before
   probes, app-server calls, filesystem access, token consumption, or audit-log

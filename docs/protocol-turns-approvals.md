@@ -160,18 +160,20 @@ model traffic, changes no elicitation counters, approves no guarded action, and
 returns only count/presence metadata with no full ids, thread content, guardian
 event details, paths, secrets, or raw payloads.
 
-Current local status: `permissionProfile/list`, `account/workspaceMessages/read`,
+Current local status: `permissionProfile/list`,
 `externalAgentConfig/import/readHistories`, `plugin/installed`, and
 `remoteControl/status/read` are exposed only through the explicit
-integration-inventory opt-in. `account/usage/read` also has a dedicated
-disabled-by-default `GET /api/account-usage` route behind
-`CODEX_APP_PORT_ALLOW_ACCOUNT_USAGE=1`. These surfaces return counts plus
-bounded categorical totals only. They do not return permission profile ids,
-descriptions, usage values, bucket dates, workspace message ids, message bodies,
-message timestamps, import ids, import paths, import messages, import failure
-stages, plugin ids, plugin names, plugin paths, plugin URLs, plugin prompts,
-remote-control status strings, server names, installation ids, environment ids,
-cursors, or raw payloads. `thread/search` has a separate disabled-by-default
+integration-inventory opt-in. `account/usage/read` and
+`account/workspaceMessages/read` also have dedicated disabled-by-default GET
+routes behind `CODEX_APP_PORT_ALLOW_ACCOUNT_USAGE=1` and
+`CODEX_APP_PORT_ALLOW_ACCOUNT_WORKSPACE_MESSAGES=1`. These surfaces return
+counts plus bounded categorical totals only. They do not return permission
+profile ids, descriptions, usage values, bucket dates, workspace message ids,
+message bodies, message timestamps, import ids, import paths, import messages,
+import failure stages, plugin ids, plugin names, plugin paths, plugin URLs,
+plugin prompts, remote-control status strings, server names, installation ids,
+environment ids, cursors, or raw payloads. `thread/search` has a separate
+disabled-by-default
 `POST /api/thread-search` path behind `CODEX_APP_PORT_ALLOW_THREAD_SEARCH=1`;
 it accepts the search term only in the request body and returns only
 accepted-state, counts, cursor-presence booleans, and suffix/status/source

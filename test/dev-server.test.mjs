@@ -370,12 +370,19 @@ test("dev server serves static UI with security headers", async () => {
     assert.match(html, /account-usage-metrics-text/);
     assert.match(html, /account-usage-buckets-text/);
     assert.match(html, /account-usage-details-text/);
+    assert.match(html, /account-workspace-messages-button/);
+    assert.match(html, /account-workspace-messages-status/);
+    assert.match(html, /account-workspace-messages-count-text/);
+    assert.match(html, /account-workspace-messages-types-text/);
+    assert.match(html, /account-workspace-messages-details-text/);
     assert.match(appScript, /runAccountRead/);
     assert.match(appScript, /renderAccountRead/);
     assert.match(appScript, /runAccountRateLimits/);
     assert.match(appScript, /renderAccountRateLimits/);
     assert.match(appScript, /runAccountUsage/);
     assert.match(appScript, /renderAccountUsage/);
+    assert.match(appScript, /runAccountWorkspaceMessages/);
+    assert.match(appScript, /renderAccountWorkspaceMessages/);
     assert.match(html, /account-login-preflight-button/);
     assert.match(html, /account-login-button/);
     assert.match(html, /thread-delete-preflight-button/);
@@ -14797,6 +14804,163 @@ test("dev server exposes account usage only behind explicit opt-in and redacts u
       "2026-06-30",
       "\"usageValuesReturned\":true",
       "\"dailyBucketDatesReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]) {
+      assert.equal(serialized.includes(marker), false, `leaked ${marker}`);
+    }
+  } finally {
+    await closeServer(enabledServer.server);
+  }
+});
+
+test("dev server exposes account workspace messages only behind explicit opt-in and redacts messages", async () => {
+  const blockedCalls = [];
+  const blockedServer = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    accountWorkspaceMessagesFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+
+  try {
+    const settingsResponse = await fetch(`${blockedServer.url}/api/settings-integrations`, {
+      headers: apiHeaders(blockedServer.server),
+    });
+    assert.equal(settingsResponse.status, 200);
+    const settingsPayload = await settingsResponse.json();
+    assert.equal(settingsPayload.surfaces.auth.workspaceMessagesAvailable, false);
+    assert.equal(settingsPayload.surfaces.auth.accountWorkspaceMessagesEnabled, false);
+    assert.equal(settingsPayload.integrationScope.accountWorkspaceMessagesEnabled, false);
+
+    const blockedResponse = await fetch(`${blockedServer.url}/api/account-workspace-messages`, {
+      headers: apiHeaders(blockedServer.server),
+    });
+    assert.equal(blockedResponse.status, 200);
+    const blockedPayload = await blockedResponse.json();
+    const blockedSerialized = JSON.stringify(blockedPayload);
+    assert.equal(blockedPayload.ok, true);
+    assert.equal(blockedPayload.appServer.touched, false);
+    assert.equal(blockedPayload.auth.accountWorkspaceMessagesEnabled, false);
+    assert.equal(blockedPayload.policy.appServerTraffic, false);
+    assert.equal(blockedPayload.result.status, "blocked");
+    assert.equal(blockedCalls.length, 0);
+    assert.equal(blockedSerialized.includes("/tmp/default-workspace"), false);
+  } finally {
+    await closeServer(blockedServer.server);
+  }
+
+  const calls = [];
+  const enabledServer = await startTestServer({
+    cwd: "/tmp/default-workspace",
+    accountWorkspaceMessagesEnabled: true,
+    accountWorkspaceMessagesFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-07-01T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/private-home",
+          userAgent: "mock/0.0.0",
+        },
+        probes: {
+          workspaceMessages: {
+            method: "account/workspaceMessages/read",
+            ok: true,
+            featureEnabled: true,
+            messageCount: 2,
+            messageTypeCounts: {
+              headline: 1,
+              announcement: 1,
+              privateType: 1,
+            },
+            bodyCount: 2,
+            archivedTimestampCount: 1,
+            createdTimestampCount: 2,
+            messageId: "workspace-message-private-id",
+            messageBody: "private workspace message body",
+            createdAt: "2026-06-30T00:00:00.000Z",
+            messageIdsReturned: true,
+            messageBodiesReturned: true,
+            timestampsReturned: true,
+            rawPayloadReturned: true,
+          },
+        },
+        rawWorkspaceMessages: {
+          id: "workspace-message-private-id",
+          body: "private workspace message body",
+        },
+        notifications: {},
+      };
+    },
+  });
+
+  try {
+    const settingsResponse = await fetch(`${enabledServer.url}/api/settings-integrations`, {
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(settingsResponse.status, 200);
+    const settingsPayload = await settingsResponse.json();
+    assert.equal(settingsPayload.surfaces.auth.accountWorkspaceMessagesEnabled, true);
+    assert.equal(settingsPayload.integrationScope.accountWorkspaceMessagesEnabled, true);
+    assert.equal(
+      settingsPayload.integrationScope.enabledReadMethods.includes(
+        "account/workspaceMessages/read",
+      ),
+      true,
+    );
+
+    const methodResponse = await fetch(`${enabledServer.url}/api/account-workspace-messages`, {
+      method: "POST",
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(methodResponse.status, 405);
+
+    const response = await fetch(`${enabledServer.url}/api/account-workspace-messages`, {
+      headers: apiHeaders(enabledServer.server),
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    const serialized = JSON.stringify(payload);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.appServer.touched, true);
+    assert.equal(payload.appServer.modelTraffic, false);
+    assert.deepEqual(payload.appServer.auditedMethods, ["account/workspaceMessages/read"]);
+    assert.equal(payload.auth.accountWorkspaceMessagesEnabled, true);
+    assert.equal(payload.result.status, "available");
+    assert.equal(payload.result.featureEnabled, true);
+    assert.equal(payload.result.messageCount, 2);
+    assert.deepEqual(payload.result.messageTypeCounts, {
+      headline: 1,
+      announcement: 1,
+    });
+    assert.equal(payload.result.bodyCount, 2);
+    assert.equal(payload.result.archivedTimestampCount, 1);
+    assert.equal(payload.result.createdTimestampCount, 2);
+    assert.equal(payload.policy.readOnly, true);
+    assert.equal(payload.policy.authMutations, false);
+    assert.equal(payload.policy.messageIdsReturned, false);
+    assert.equal(payload.policy.messageBodiesReturned, false);
+    assert.equal(payload.policy.timestampsReturned, false);
+    assert.equal(payload.policy.rawPayloadReturned, false);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].cwd, "/tmp/default-workspace");
+    for (const marker of [
+      "/tmp/default-workspace",
+      "/tmp/private-home",
+      "codexHome",
+      "userAgent",
+      "workspace-message-private-id",
+      "private workspace message body",
+      "privateType",
+      "2026-06-30T00:00:00.000Z",
+      "\"messageIdsReturned\":true",
+      "\"messageBodiesReturned\":true",
+      "\"timestampsReturned\":true",
       "\"rawPayloadReturned\":true",
     ]) {
       assert.equal(serialized.includes(marker), false, `leaked ${marker}`);

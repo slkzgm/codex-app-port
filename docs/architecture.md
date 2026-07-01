@@ -1413,6 +1413,13 @@ Current M1 status:
   and daily bucket counts only; the local UI exposes it through Usage Check
   without lifetime token values, peak token values, streak values, bucket dates,
   account identifiers, cwd, paths, or raw app-server payloads
+- done: opt-in `/api/account-workspace-messages` path behind
+  `CODEX_APP_PORT_ALLOW_ACCOUNT_WORKSPACE_MESSAGES=1`, calling only
+  `account/workspaceMessages/read`, no model traffic or auth mutation, and
+  sanitized responses with feature/message/type/body/timestamp-presence counts
+  only; the local UI exposes it through Messages Check without message ids,
+  message bodies, timestamp values, account identifiers, cwd, paths, or raw
+  app-server payloads
 - done: opt-in `/api/account-login-start` path behind
   `CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN=1`, with matching one-time
   account-login-preflight token consumption, `account/login/start` device-code

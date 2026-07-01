@@ -83,6 +83,7 @@ async function main() {
   await checkAccountReadApi();
   await checkAccountRateLimitsApi();
   await checkAccountUsageApi();
+  await checkAccountWorkspaceMessagesApi();
   await checkAccountLoginApi();
   await checkAccountLoginCancelApi();
   await checkAccountCreditsNudgeApi();
@@ -17977,6 +17978,189 @@ async function checkAccountUsageApi() {
     await closeServer(server);
   }
   pass("dev server account usage exposes counts behind opt-in without returning usage values");
+}
+
+async function checkAccountWorkspaceMessagesApi() {
+  const blockedCalls = [];
+  const blockedServer = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    accountWorkspaceMessagesFn: async (options) => {
+      blockedCalls.push(options);
+      return { ok: true };
+    },
+  });
+  const blockedPort = await listenWithFallback(blockedServer, { host: "127.0.0.1", port: 0 });
+  const blockedBaseUrl = `http://127.0.0.1:${blockedPort}`;
+
+  try {
+    const token = await readUiSessionToken(blockedBaseUrl);
+    const settingsResponse = await fetch(`${blockedBaseUrl}/api/settings-integrations`, {
+      headers: apiHeaders(token),
+    });
+    if (!settingsResponse.ok) {
+      throw new Error(`settings integrations for blocked workspace messages returned HTTP ${settingsResponse.status}`);
+    }
+    const settingsPayload = await settingsResponse.json();
+    if (
+      settingsPayload.surfaces?.auth?.workspaceMessagesAvailable !== false ||
+      settingsPayload.surfaces?.auth?.accountWorkspaceMessagesEnabled !== false ||
+      settingsPayload.integrationScope?.accountWorkspaceMessagesEnabled !== false
+    ) {
+      throw new Error("settings integrations did not expose the blocked workspace messages gate safely");
+    }
+
+    const response = await fetch(`${blockedBaseUrl}/api/account-workspace-messages`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`blocked workspace messages returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (
+      payload.appServer?.touched !== false ||
+      payload.auth?.accountWorkspaceMessagesEnabled !== false ||
+      payload.result?.status !== "blocked" ||
+      payload.policy?.appServerTraffic !== false
+    ) {
+      throw new Error("blocked workspace messages did not fail closed without app-server traffic");
+    }
+    if (blockedCalls.length !== 0) {
+      throw new Error("blocked workspace messages unexpectedly touched app-server");
+    }
+    assertNoMarkers(JSON.stringify(payload), ["/tmp/codex-app-port-verify"]);
+  } finally {
+    await closeServer(blockedServer);
+  }
+
+  const calls = [];
+  const server = createDevServer({
+    cwd: "/tmp/codex-app-port-verify",
+    accountWorkspaceMessagesEnabled: true,
+    accountWorkspaceMessagesFn: async (options) => {
+      calls.push(options);
+      return {
+        ok: true,
+        generatedAt: "2026-07-01T00:00:00.000Z",
+        transport: "stdio-jsonl",
+        protocol: "json-rpc-2.0-without-jsonrpc-field",
+        initialize: {
+          platformFamily: "unix",
+          platformOs: "linux",
+          codexHome: "/tmp/verify-private-home",
+          userAgent: "verify-private-agent",
+        },
+        probes: {
+          workspaceMessages: {
+            method: "account/workspaceMessages/read",
+            ok: true,
+            featureEnabled: true,
+            messageCount: 2,
+            messageTypeCounts: {
+              headline: 1,
+              announcement: 1,
+              privateType: 1,
+            },
+            bodyCount: 2,
+            archivedTimestampCount: 1,
+            createdTimestampCount: 2,
+            messageId: "workspace-message-private-id",
+            messageBody: "private workspace message body",
+            createdAt: "2026-06-30T00:00:00.000Z",
+            messageIdsReturned: true,
+            messageBodiesReturned: true,
+            timestampsReturned: true,
+            rawPayloadReturned: true,
+          },
+        },
+        rawWorkspaceMessages: {
+          id: "workspace-message-private-id",
+          body: "private workspace message body",
+        },
+        notifications: {},
+      };
+    },
+  });
+  const port = await listenWithFallback(server, { host: "127.0.0.1", port: 0 });
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  try {
+    const token = await readUiSessionToken(baseUrl);
+    const settingsResponse = await fetch(`${baseUrl}/api/settings-integrations`, {
+      headers: apiHeaders(token),
+    });
+    if (!settingsResponse.ok) {
+      throw new Error(`settings integrations for workspace messages returned HTTP ${settingsResponse.status}`);
+    }
+    const settingsPayload = await settingsResponse.json();
+    if (
+      settingsPayload.surfaces?.auth?.accountWorkspaceMessagesEnabled !== true ||
+      settingsPayload.integrationScope?.accountWorkspaceMessagesEnabled !== true ||
+      !settingsPayload.integrationScope?.enabledReadMethods?.includes(
+        "account/workspaceMessages/read",
+      )
+    ) {
+      throw new Error("settings integrations did not expose the workspace messages gate safely");
+    }
+
+    const wrongMethod = await fetch(`${baseUrl}/api/account-workspace-messages`, {
+      method: "POST",
+      headers: apiHeaders(token),
+    });
+    if (wrongMethod.status !== 405) {
+      throw new Error(`workspace messages POST returned HTTP ${wrongMethod.status}`);
+    }
+
+    const response = await fetch(`${baseUrl}/api/account-workspace-messages`, {
+      headers: apiHeaders(token),
+    });
+    if (!response.ok) {
+      throw new Error(`workspace messages returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (
+      payload.appServer?.touched !== true ||
+      payload.appServer?.modelTraffic !== false ||
+      payload.auth?.accountWorkspaceMessagesEnabled !== true ||
+      payload.result?.status !== "available" ||
+      payload.result?.featureEnabled !== true ||
+      payload.result?.messageCount !== 2 ||
+      payload.result?.messageTypeCounts?.headline !== 1 ||
+      payload.result?.messageTypeCounts?.announcement !== 1 ||
+      payload.result?.messageTypeCounts?.privateType != null ||
+      payload.result?.bodyCount !== 2 ||
+      payload.result?.archivedTimestampCount !== 1 ||
+      payload.result?.createdTimestampCount !== 2 ||
+      payload.policy?.readOnly !== true ||
+      payload.policy?.authMutations !== false ||
+      payload.policy?.messageIdsReturned !== false ||
+      payload.policy?.messageBodiesReturned !== false ||
+      payload.policy?.timestampsReturned !== false ||
+      payload.policy?.rawPayloadReturned !== false
+    ) {
+      throw new Error("workspace messages did not return the safe counts-only summary shape");
+    }
+    if (calls.length !== 1 || calls[0].cwd !== "/tmp/codex-app-port-verify") {
+      throw new Error("workspace messages did not call the app-server read path once");
+    }
+    assertNoMarkers(JSON.stringify(payload), [
+      "/tmp/codex-app-port-verify",
+      "/tmp/verify-private-home",
+      "verify-private-agent",
+      "codexHome",
+      "userAgent",
+      "workspace-message-private-id",
+      "private workspace message body",
+      "privateType",
+      "2026-06-30T00:00:00.000Z",
+      "\"messageIdsReturned\":true",
+      "\"messageBodiesReturned\":true",
+      "\"timestampsReturned\":true",
+      "\"rawPayloadReturned\":true",
+    ]);
+  } finally {
+    await closeServer(server);
+  }
+  pass("dev server workspace messages exposes counts behind opt-in without returning messages");
 }
 
 async function checkAccountLoginApi() {
@@ -56665,12 +56849,19 @@ async function readUiSessionToken(baseUrl) {
     !html.includes("account-usage-metrics-text") ||
     !html.includes("account-usage-buckets-text") ||
     !html.includes("account-usage-details-text") ||
+    !html.includes("account-workspace-messages-button") ||
+    !html.includes("account-workspace-messages-status") ||
+    !html.includes("account-workspace-messages-count-text") ||
+    !html.includes("account-workspace-messages-types-text") ||
+    !html.includes("account-workspace-messages-details-text") ||
     !appScript.includes("runAccountRead") ||
     !appScript.includes("renderAccountRead") ||
     !appScript.includes("runAccountRateLimits") ||
     !appScript.includes("renderAccountRateLimits") ||
     !appScript.includes("runAccountUsage") ||
     !appScript.includes("renderAccountUsage") ||
+    !appScript.includes("runAccountWorkspaceMessages") ||
+    !appScript.includes("renderAccountWorkspaceMessages") ||
     !html.includes("account-login-button") ||
     !html.includes("account-login-cancel-button") ||
     !html.includes("account-reset-credit-button") ||

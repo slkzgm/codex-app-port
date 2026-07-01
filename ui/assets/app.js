@@ -247,6 +247,13 @@ const elements = {
   accountUsageMetricsText: document.querySelector("#account-usage-metrics-text"),
   accountUsageBucketsText: document.querySelector("#account-usage-buckets-text"),
   accountUsageDetailsText: document.querySelector("#account-usage-details-text"),
+  accountWorkspaceMessagesButton: document.querySelector("#account-workspace-messages-button"),
+  accountWorkspaceMessagesStatus: document.querySelector("#account-workspace-messages-status"),
+  accountWorkspaceMessagesCountText: document.querySelector("#account-workspace-messages-count-text"),
+  accountWorkspaceMessagesTypesText: document.querySelector("#account-workspace-messages-types-text"),
+  accountWorkspaceMessagesDetailsText: document.querySelector(
+    "#account-workspace-messages-details-text",
+  ),
   accountLoginPreflightButton: document.querySelector("#account-login-preflight-button"),
   accountLoginButton: document.querySelector("#account-login-button"),
   accountLoginStatus: document.querySelector("#account-login-status"),
@@ -1190,6 +1197,10 @@ elements.workspaceSelect.addEventListener("change", () => {
   elements.accountUsageMetricsText.textContent = "0";
   elements.accountUsageBucketsText.textContent = "0";
   elements.accountUsageDetailsText.textContent = "Hidden";
+  elements.accountWorkspaceMessagesStatus.textContent = "Messages read disabled by default.";
+  elements.accountWorkspaceMessagesCountText.textContent = "0";
+  elements.accountWorkspaceMessagesTypesText.textContent = "0";
+  elements.accountWorkspaceMessagesDetailsText.textContent = "Hidden";
   lastApprovalPayload = null;
   lastApprovalQueue = [];
   approvalQueueFilter = "all";
@@ -2164,6 +2175,10 @@ elements.accountUsageButton.addEventListener("click", () => {
   runAccountUsage();
 });
 
+elements.accountWorkspaceMessagesButton.addEventListener("click", () => {
+  runAccountWorkspaceMessages();
+});
+
 elements.accountLoginPreflightButton.addEventListener("click", () => {
   runAccountLoginPreflight();
 });
@@ -2647,6 +2662,16 @@ function accountUsageEndpoint() {
   const params = new URLSearchParams();
   params.set("workspace", selectedWorkspaceId);
   return `/api/account-usage?${params.toString()}`;
+}
+
+function accountWorkspaceMessagesEndpoint() {
+  if (!selectedWorkspaceId) {
+    return "/api/account-workspace-messages";
+  }
+
+  const params = new URLSearchParams();
+  params.set("workspace", selectedWorkspaceId);
+  return `/api/account-workspace-messages?${params.toString()}`;
 }
 
 function accountLoginPreflightEndpoint() {
@@ -4724,6 +4749,28 @@ async function runAccountUsage() {
     renderError(error);
   } finally {
     setAccountUsageLoading(false);
+  }
+}
+
+async function runAccountWorkspaceMessages() {
+  setAccountWorkspaceMessagesLoading(true);
+  hideError();
+
+  try {
+    const response = await fetch(accountWorkspaceMessagesEndpoint(), {
+      headers: apiHeaders(),
+      cache: "no-store",
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    renderAccountWorkspaceMessages(payload);
+  } catch (error) {
+    elements.accountWorkspaceMessagesStatus.textContent = "Failed";
+    renderError(error);
+  } finally {
+    setAccountWorkspaceMessagesLoading(false);
   }
 }
 
@@ -13679,6 +13726,16 @@ function renderSettingsIntegrations(payload) {
   elements.workspaceMessagesStateText.textContent = auth.workspaceMessagesAvailable
     ? `${inventory.workspaceMessages?.messageCount ?? 0} messages`
     : "Blocked";
+  elements.accountWorkspaceMessagesStatus.textContent = auth.accountWorkspaceMessagesEnabled
+    ? "Messages read enabled"
+    : "Messages read disabled";
+  elements.accountWorkspaceMessagesCountText.textContent = String(
+    inventory.workspaceMessages?.messageCount ?? 0,
+  );
+  elements.accountWorkspaceMessagesTypesText.textContent = String(
+    Object.keys(inventory.workspaceMessages?.messageTypeCounts ?? {}).length,
+  );
+  elements.accountWorkspaceMessagesDetailsText.textContent = "Hidden";
   elements.authCallbackText.textContent = auth.callbackHandlersEnabled ? "Enabled" : "Blocked";
   elements.accountLoginText.textContent = auth.loginEnabled ? "Enabled" : "Blocked";
   elements.accountLoginCancelText.textContent = auth.loginCancelEnabled ? "Enabled" : "Blocked";
@@ -15265,6 +15322,28 @@ function renderAccountUsage(payload) {
       ? "Returned"
       : "Hidden";
   elements.accountUsageStateText.textContent = blocked ? "Blocked" : `${metricCount} metrics`;
+}
+
+function renderAccountWorkspaceMessages(payload) {
+  const auth = payload.auth ?? {};
+  const result = payload.result ?? {};
+  const blocked =
+    auth.accountWorkspaceMessagesEnabled !== true || payload.appServer?.touched !== true;
+  const messageCount =
+    result.messageCount ?? payload.probes?.workspaceMessages?.messageCount ?? 0;
+  const messageTypeCount = Object.keys(result.messageTypeCounts ?? {}).length;
+  const status = result.status ?? (blocked ? "blocked" : "available");
+  elements.accountWorkspaceMessagesStatus.textContent = blocked ? "Read blocked" : status;
+  elements.accountWorkspaceMessagesCountText.textContent = String(messageCount);
+  elements.accountWorkspaceMessagesTypesText.textContent = String(messageTypeCount);
+  elements.accountWorkspaceMessagesDetailsText.textContent =
+    result.messageIdsReturned ||
+    result.messageBodiesReturned ||
+    result.timestampsReturned ||
+    auth.rawPayloadReturned
+      ? "Returned"
+      : "Hidden";
+  elements.workspaceMessagesStateText.textContent = blocked ? "Blocked" : `${messageCount} messages`;
 }
 
 function renderAccountLoginPreflight(payload) {
@@ -23172,6 +23251,14 @@ function setAccountUsageLoading(isLoading) {
   elements.accountUsageButton.textContent = isLoading ? "Checking" : "Usage Check";
   if (isLoading) {
     elements.accountUsageStatus.textContent = "Checking";
+  }
+}
+
+function setAccountWorkspaceMessagesLoading(isLoading) {
+  elements.accountWorkspaceMessagesButton.disabled = isLoading;
+  elements.accountWorkspaceMessagesButton.textContent = isLoading ? "Checking" : "Messages Check";
+  if (isLoading) {
+    elements.accountWorkspaceMessagesStatus.textContent = "Checking";
   }
 }
 

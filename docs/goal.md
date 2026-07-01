@@ -1085,8 +1085,10 @@ Target parity with the Codex desktop workflow:
 - `account/usage/read` has both a dedicated opt-in `/api/account-usage` route
   and an opt-in counts-only inventory path; both omit token usage values, bucket
   dates, account identifiers, paths, and raw payloads.
-- `account/workspaceMessages/read` has an opt-in counts-only inventory path; it
-  omits workspace message ids, bodies, timestamps, and raw payloads.
+- `account/workspaceMessages/read` has both a dedicated opt-in
+  `/api/account-workspace-messages` route and an opt-in counts-only inventory
+  path; both omit workspace message ids, bodies, timestamps, account
+  identifiers, paths, and raw payloads.
 - `mcpServerStatus/list` reports only server/tool/resource/resource-template
   counts and documented auth-status buckets (`unsupported`, `notLoggedIn`,
   `bearerToken`, `oAuth`, or `unknown`); arbitrary auth status values, server

@@ -19,6 +19,7 @@ import {
   runAccountReadProbe,
   runAccountRateLimitResetCreditConsumeProbe,
   runAccountUsageReadProbe,
+  runAccountWorkspaceMessagesReadProbe,
   runAppServerProbe,
   runConfigBatchWriteProbe,
   runConfigValueWriteProbe,
@@ -13107,6 +13108,7 @@ export function createDevServer({
   accountReadFn = runAccountReadProbe,
   accountRateLimitsFn = runAccountRateLimitsReadProbe,
   accountUsageFn = runAccountUsageReadProbe,
+  accountWorkspaceMessagesFn = runAccountWorkspaceMessagesReadProbe,
   accountLoginCancelFn = runAccountLoginCancelProbe,
   accountLoginStartFn = runAccountLoginStartProbe,
   accountCreditsNudgeFn = runAccountCreditsNudgeProbe,
@@ -13174,6 +13176,8 @@ export function createDevServer({
   accountReadEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_READ === "1",
   accountRateLimitsEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_RATE_LIMITS === "1",
   accountUsageEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_USAGE === "1",
+  accountWorkspaceMessagesEnabled =
+    process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_WORKSPACE_MESSAGES === "1",
   accountLoginCancelEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN_CANCEL === "1",
   accountLoginEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_LOGIN === "1",
   accountCreditsNudgeEnabled = process.env.CODEX_APP_PORT_ALLOW_ACCOUNT_CREDITS_NUDGE === "1",
@@ -13326,6 +13330,7 @@ export function createDevServer({
       accountReadFn,
       accountRateLimitsFn,
       accountUsageFn,
+      accountWorkspaceMessagesFn,
       accountLoginCancelFn,
       accountLoginStartFn,
       accountCreditsNudgeFn,
@@ -13390,6 +13395,7 @@ export function createDevServer({
       accountReadEnabled,
       accountRateLimitsEnabled,
       accountUsageEnabled,
+      accountWorkspaceMessagesEnabled,
       accountLoginCancelEnabled,
       accountLoginEnabled,
       accountCreditsNudgeEnabled,
@@ -14841,6 +14847,48 @@ export async function handleRequest(request, response, options) {
       sendJson(response, error.statusCode ?? 502, {
         ok: false,
         error: cleanDisplayText(error.message, 200) ?? "Invalid account usage request",
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/account-workspace-messages") {
+    if (request.method !== "GET") {
+      sendJson(response, 405, { ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    if (!hasValidApiToken(request, options.sessionToken)) {
+      sendJson(response, 403, { ok: false, error: "Invalid or missing local session token" });
+      return;
+    }
+
+    try {
+      const workspace = selectWorkspace(
+        options.workspaceAllowlist,
+        url.searchParams.get("workspace"),
+      );
+      if (!options.accountWorkspaceMessagesEnabled) {
+        sendJson(response, 200, buildAccountWorkspaceMessagesBlockedPayload({ workspace }));
+        return;
+      }
+      const payload = await options.accountWorkspaceMessagesFn({
+        codexBin: options.codexBin,
+        cwd: workspace.cwd,
+        timeoutMs: options.timeoutMs,
+      });
+      sendJson(
+        response,
+        200,
+        sanitizeAccountWorkspaceMessagesPayload(payload, {
+          workspace,
+          enabled: true,
+        }),
+      );
+    } catch (error) {
+      sendJson(response, error.statusCode ?? 502, {
+        ok: false,
+        error: cleanDisplayText(error.message, 200) ?? "Invalid account workspace messages request",
       });
     }
     return;
@@ -19537,6 +19585,7 @@ export async function handleRequest(request, response, options) {
             accountReadEnabled: options.accountReadEnabled,
             accountRateLimitsEnabled: options.accountRateLimitsEnabled,
             accountUsageEnabled: options.accountUsageEnabled,
+            accountWorkspaceMessagesEnabled: options.accountWorkspaceMessagesEnabled,
             accountLoginCancelEnabled: options.accountLoginCancelEnabled,
             accountLoginEnabled: options.accountLoginEnabled,
             accountCreditsNudgeEnabled: options.accountCreditsNudgeEnabled,
@@ -19578,6 +19627,7 @@ export async function handleRequest(request, response, options) {
           accountReadEnabled: options.accountReadEnabled,
           accountRateLimitsEnabled: options.accountRateLimitsEnabled,
           accountUsageEnabled: options.accountUsageEnabled,
+          accountWorkspaceMessagesEnabled: options.accountWorkspaceMessagesEnabled,
           accountLoginCancelEnabled: options.accountLoginCancelEnabled,
           accountLoginEnabled: options.accountLoginEnabled,
           accountCreditsNudgeEnabled: options.accountCreditsNudgeEnabled,
@@ -51873,6 +51923,7 @@ export function sanitizeSettingsIntegrationsPayload(
     accountReadEnabled = false,
     accountRateLimitsEnabled = false,
     accountUsageEnabled = false,
+    accountWorkspaceMessagesEnabled = false,
     accountLoginCancelEnabled = false,
     accountLoginEnabled = false,
     accountCreditsNudgeEnabled = false,
@@ -51910,6 +51961,7 @@ export function sanitizeSettingsIntegrationsPayload(
   const readEnabled = Boolean(accountReadEnabled);
   const rateLimitsEnabled = Boolean(accountRateLimitsEnabled);
   const usageEnabled = Boolean(accountUsageEnabled);
+  const workspaceMessagesEnabled = Boolean(accountWorkspaceMessagesEnabled);
   const loginEnabled = Boolean(accountLoginEnabled);
   const loginCancelEnabled = Boolean(accountLoginCancelEnabled);
   const creditsNudgeEnabled = Boolean(accountCreditsNudgeEnabled);
@@ -51947,6 +51999,7 @@ export function sanitizeSettingsIntegrationsPayload(
     accountReadEnabled: readEnabled,
     accountRateLimitsEnabled: rateLimitsEnabled,
     accountUsageEnabled: usageEnabled,
+    accountWorkspaceMessagesEnabled: workspaceMessagesEnabled,
     accountLoginCancelEnabled: loginCancelEnabled,
     accountLoginEnabled: loginEnabled,
     accountCreditsNudgeEnabled: creditsNudgeEnabled,
@@ -52056,7 +52109,9 @@ export function sanitizeSettingsIntegrationsPayload(
         accountRateLimitsEnabled: rateLimitsEnabled,
         rateLimitReached: Boolean(inventory.rateLimits.rateLimitReached),
         usageAvailable: inventory.accountUsage.ok,
+        accountUsageEnabled: usageEnabled,
         workspaceMessagesAvailable: inventory.workspaceMessages.ok,
+        accountWorkspaceMessagesEnabled: workspaceMessagesEnabled,
         workspaceMessagesFeatureEnabled: Boolean(inventory.workspaceMessages.featureEnabled),
         tokenAccess: false,
         callbackHandlersEnabled: false,
@@ -58013,6 +58068,152 @@ export function sanitizeAccountUsagePayload(
   };
 }
 
+export function buildAccountWorkspaceMessagesBlockedPayload({ workspace } = {}) {
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["account/workspaceMessages/read"],
+    },
+    auth: {
+      workspaceMessagesAvailable: true,
+      accountWorkspaceMessagesEnabled: false,
+      appServerTraffic: false,
+      messageIdsReturned: false,
+      messageBodiesReturned: false,
+      timestampsReturned: false,
+      rawPayloadReturned: false,
+      reason: "account-workspace-messages-requires-opt-in",
+    },
+    probes: {
+      workspaceMessages: sanitizeAccountWorkspaceMessagesProbe(null),
+    },
+    result: {
+      status: "blocked",
+      accountWorkspaceMessagesEnabled: false,
+      appServerTraffic: false,
+      featureEnabled: false,
+      messageCount: 0,
+      messageTypeCounts: {},
+      bodyCount: 0,
+      archivedTimestampCount: 0,
+      createdTimestampCount: 0,
+      messageIdsReturned: false,
+      messageBodiesReturned: false,
+      timestampsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: false,
+      modelTraffic: false,
+      commandTraffic: false,
+      settingsWrites: false,
+      authCallbacks: false,
+      authMutations: false,
+      toolInvocation: false,
+      installsEnabled: false,
+      secretsReturned: false,
+      tokensReturned: false,
+      accountIdentifiersReturned: false,
+      authUrlsReturned: false,
+      urlsReturned: false,
+      pathsReturned: false,
+      messageIdsReturned: false,
+      messageBodiesReturned: false,
+      timestampsReturned: false,
+      rawPayloadReturned: false,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: true,
+      implemented: true,
+    },
+    notifications: sanitizeNotificationCounts(null),
+  };
+}
+
+export function sanitizeAccountWorkspaceMessagesPayload(
+  payload,
+  { workspace = null, enabled = false } = {},
+) {
+  const workspaceMessages = sanitizeAccountWorkspaceMessagesProbe(
+    payload?.probes?.workspaceMessages,
+  );
+  const status = enabled ? "available" : "blocked";
+  return {
+    ok: Boolean(payload?.ok),
+    generatedAt: payload?.generatedAt ?? new Date().toISOString(),
+    transport: cleanDisplayText(payload?.transport, 80),
+    protocol: cleanDisplayText(payload?.protocol, 80),
+    initialize: sanitizeInitialize(payload?.initialize),
+    workspace: workspace ? publicWorkspaces([workspace])[0] : null,
+    appServer: {
+      touched: Boolean(enabled),
+      modelTraffic: false,
+      commandTraffic: false,
+      auditedMethods: ["account/workspaceMessages/read"],
+    },
+    auth: {
+      workspaceMessagesAvailable: true,
+      accountWorkspaceMessagesEnabled: Boolean(enabled),
+      appServerTraffic: Boolean(enabled),
+      messageIdsReturned: false,
+      messageBodiesReturned: false,
+      timestampsReturned: false,
+      rawPayloadReturned: false,
+      reason: Boolean(enabled)
+        ? "account-workspace-messages-counts-only"
+        : "account-workspace-messages-requires-opt-in",
+    },
+    probes: {
+      workspaceMessages,
+    },
+    result: {
+      status,
+      accountWorkspaceMessagesEnabled: Boolean(enabled),
+      appServerTraffic: Boolean(enabled),
+      featureEnabled: workspaceMessages.featureEnabled,
+      messageCount: workspaceMessages.messageCount,
+      messageTypeCounts: workspaceMessages.messageTypeCounts,
+      bodyCount: workspaceMessages.bodyCount,
+      archivedTimestampCount: workspaceMessages.archivedTimestampCount,
+      createdTimestampCount: workspaceMessages.createdTimestampCount,
+      messageIdsReturned: false,
+      messageBodiesReturned: false,
+      timestampsReturned: false,
+      rawPayloadReturned: false,
+    },
+    policy: {
+      readOnly: true,
+      appServerTraffic: Boolean(enabled),
+      modelTraffic: false,
+      commandTraffic: false,
+      settingsWrites: false,
+      authCallbacks: false,
+      authMutations: false,
+      toolInvocation: false,
+      installsEnabled: false,
+      secretsReturned: false,
+      tokensReturned: false,
+      accountIdentifiersReturned: false,
+      authUrlsReturned: false,
+      urlsReturned: false,
+      pathsReturned: false,
+      messageIdsReturned: false,
+      messageBodiesReturned: false,
+      timestampsReturned: false,
+      rawPayloadReturned: false,
+      requiresExplicitEnablement: true,
+      browserMethodCallsAccepted: true,
+      implemented: true,
+    },
+    notifications: sanitizeNotificationCounts(payload?.notifications),
+  };
+}
+
 export function buildAccountLoginCancelPreflight(
   body,
   { workspace, accountLoginCancelEnabled = false, accountLoginFlowRegistry = null } = {},
@@ -62244,6 +62445,7 @@ export function buildSettingsIntegrations({
   accountReadEnabled = false,
   accountRateLimitsEnabled = false,
   accountUsageEnabled = false,
+  accountWorkspaceMessagesEnabled = false,
   accountLoginCancelEnabled = false,
   accountLoginEnabled = false,
   accountCreditsNudgeEnabled = false,
@@ -62281,6 +62483,7 @@ export function buildSettingsIntegrations({
   const readEnabled = Boolean(accountReadEnabled);
   const rateLimitsEnabled = Boolean(accountRateLimitsEnabled);
   const usageEnabled = Boolean(accountUsageEnabled);
+  const workspaceMessagesEnabled = Boolean(accountWorkspaceMessagesEnabled);
   const loginCancelEnabled = Boolean(accountLoginCancelEnabled);
   const loginEnabled = Boolean(accountLoginEnabled);
   const creditsNudgeEnabled = Boolean(accountCreditsNudgeEnabled);
@@ -62305,10 +62508,12 @@ export function buildSettingsIntegrations({
       readEnabled ? "account/read" : null,
       rateLimitsEnabled ? "account/rateLimits/read" : null,
       usageEnabled ? "account/usage/read" : null,
+      workspaceMessagesEnabled ? "account/workspaceMessages/read" : null,
     ].filter(Boolean),
     accountReadEnabled: readEnabled,
     accountRateLimitsEnabled: rateLimitsEnabled,
     accountUsageEnabled: usageEnabled,
+    accountWorkspaceMessagesEnabled: workspaceMessagesEnabled,
     accountLoginCancelEnabled: loginCancelEnabled,
     accountLoginEnabled: loginEnabled,
     accountCreditsNudgeEnabled: creditsNudgeEnabled,
@@ -62345,6 +62550,7 @@ export function buildSettingsIntegrations({
         readEnabled ? "account/read" : null,
         rateLimitsEnabled ? "account/rateLimits/read" : null,
         usageEnabled ? "account/usage/read" : null,
+        workspaceMessagesEnabled ? "account/workspaceMessages/read" : null,
       ].filter(Boolean),
       auditedMutationMethods: [],
       blockedMutationMethods: blockedIntegrationMutationMethods(),
@@ -62400,6 +62606,7 @@ export function buildSettingsIntegrations({
           readEnabled ||
           rateLimitsEnabled ||
           usageEnabled ||
+          workspaceMessagesEnabled ||
           loginEnabled ||
           loginCancelEnabled ||
           creditsNudgeEnabled ||
@@ -62415,6 +62622,9 @@ export function buildSettingsIntegrations({
         rateLimitReached: false,
         usageAvailable: usageEnabled,
         accountUsageEnabled: usageEnabled,
+        workspaceMessagesAvailable: workspaceMessagesEnabled,
+        accountWorkspaceMessagesEnabled: workspaceMessagesEnabled,
+        workspaceMessagesFeatureEnabled: false,
         tokenAccess: false,
         callbackHandlersEnabled: false,
         loginAvailable: true,
@@ -62441,6 +62651,8 @@ export function buildSettingsIntegrations({
           ? "account-rate-limits-opt-in-only"
           : usageEnabled
           ? "account-usage-opt-in-only"
+          : workspaceMessagesEnabled
+          ? "account-workspace-messages-opt-in-only"
           : loginEnabled
           ? "account-login-device-code-opt-in-only"
           : loginCancelEnabled
@@ -65013,6 +65225,7 @@ function buildIntegrationActionScope({
   accountReadEnabled = false,
   accountRateLimitsEnabled = false,
   accountUsageEnabled = false,
+  accountWorkspaceMessagesEnabled = false,
   accountLoginCancelEnabled = false,
   accountLoginEnabled = false,
   accountCreditsNudgeEnabled = false,
@@ -65099,6 +65312,7 @@ function buildIntegrationActionScope({
     accountReadEnabled: Boolean(accountReadEnabled),
     accountRateLimitsEnabled: Boolean(accountRateLimitsEnabled),
     accountUsageEnabled: Boolean(accountUsageEnabled),
+    accountWorkspaceMessagesEnabled: Boolean(accountWorkspaceMessagesEnabled),
     accountLoginEnabled: Boolean(accountLoginEnabled),
     authDeviceCodeLoginEnabled: Boolean(accountLoginEnabled),
     accountLoginCancelEnabled: Boolean(accountLoginCancelEnabled),
@@ -68291,6 +68505,30 @@ function sanitizeAccountUsageProbe(accountUsage) {
     authMutation: false,
     usageValuesReturned: false,
     dailyBucketDatesReturned: false,
+    tokensReturned: false,
+    accountIdentifiersReturned: false,
+    rawPayloadReturned: false,
+  };
+}
+
+function sanitizeAccountWorkspaceMessagesProbe(workspaceMessages) {
+  return {
+    method: "account/workspaceMessages/read",
+    ok: Boolean(workspaceMessages?.ok),
+    featureEnabled: Boolean(workspaceMessages?.featureEnabled),
+    messageCount: safeCount(workspaceMessages?.messageCount),
+    messageTypeCounts: sanitizeAllowedCountMap(
+      workspaceMessages?.messageTypeCounts,
+      SAFE_WORKSPACE_MESSAGE_TYPES,
+    ),
+    bodyCount: safeCount(workspaceMessages?.bodyCount),
+    archivedTimestampCount: safeCount(workspaceMessages?.archivedTimestampCount),
+    createdTimestampCount: safeCount(workspaceMessages?.createdTimestampCount),
+    modelTraffic: false,
+    authMutation: false,
+    messageIdsReturned: false,
+    messageBodiesReturned: false,
+    timestampsReturned: false,
     tokensReturned: false,
     accountIdentifiersReturned: false,
     rawPayloadReturned: false,
