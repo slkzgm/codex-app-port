@@ -142,6 +142,23 @@ Target parity with the Codex desktop workflow:
   run `codex exec`, trigger workspace agents, open admin consoles, read
   environment variables, read auth storage, access files/network, or mutate
   auth state.
+- `/api/settings-integrations` now also exposes a read-only Codex Admin Setup
+  catalog aligned to the official enterprise admin setup guide. It returns only
+  static keys, groups, states, sources, counts, and redaction flags for
+  security/privacy posture, rollout owners, local/cloud surface selection,
+  workspace toggles, access-token and device-code setup, GitHub/Slack/cloud
+  prerequisites, RBAC, Codex Admin responsibilities, managed
+  `requirements.toml` policy rollout, Team Config, repository connection, and
+  least-privilege GitHub token guidance. It does not return workspace setting
+  values, enterprise policy values, owner/group/user/role/policy names, user
+  emails, policy contents, requirements snippets, admin or analytics URLs,
+  compliance API data, GitHub org/repo/token data, Slack workspace data,
+  allowlist domains, environment names, Team Config paths, config paths, URLs,
+  paths, secrets, raw payloads, or app-server traffic, and it does not open
+  admin consoles or analytics, call compliance APIs, start GitHub connectors,
+  look up user policies, read/write Team Config files, mutate RBAC, workspace
+  settings, managed policies, Slack settings, cloud environments, or internet
+  allowlists.
 - `/api/settings-integrations` now also exposes a read-only Skills & Plugins
   catalog aligned to the official Skills and Plugins documentation. It returns
   only static keys, groups, states, sources, counts, and redaction flags for

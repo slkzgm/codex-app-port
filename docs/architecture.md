@@ -562,6 +562,21 @@ Current M1 status:
   workspace-agent triggers, admin-console access, environment reads,
   auth-storage reads, filesystem access, network access, mutations, paths,
   URLs, secrets, raw payloads, and app-server traffic blocked
+- done: read-only Codex Admin Setup catalog in `/api/settings-integrations`,
+  exposing only static official Admin Setup documentation keys plus local
+  boundary keys/groups/states/sources/counts/redaction flags for enterprise
+  security/privacy posture, rollout ownership, local/cloud enablement, access
+  tokens, device-code auth, GitHub/Slack/cloud prerequisites, RBAC, Codex Admin
+  responsibilities, managed `requirements.toml` rollout, Team Config,
+  repository connection, and least-privilege GitHub token guidance, with
+  workspace setting values, enterprise policy values, owner/group/user/role/
+  policy names, user emails, policy contents, requirements snippets, admin or
+  analytics URLs, compliance API data, GitHub org/repo/token data, Slack
+  workspace data, allowlist domains, environment names, Team Config paths,
+  config paths, admin-console/analytics/compliance/GitHub connector activity,
+  policy lookups, Team Config filesystem access, RBAC/workspace/policy/Slack/
+  cloud-environment/internet-allowlist mutations, paths, URLs, secrets, raw
+  payloads, and app-server traffic blocked
 - done: read-only Codex Sites catalog in `/api/settings-integrations`,
   exposing only static official Sites plugin documentation keys plus local
   boundary keys/groups/states/sources/counts/redaction flags for hosted

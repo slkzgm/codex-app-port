@@ -465,6 +465,18 @@
   list, revoke, rotate, or persist tokens, run `codex login`, run `codex exec`,
   trigger workspace agents, open admin consoles, read environment variables,
   read auth storage, access files or network, or mutate access-token state. Its
+  Codex Admin Setup catalog may expose only static official-documentation keys
+  plus local boundary keys, groups, states, sources, counts, and redaction
+  flags; it must not return workspace setting values, enterprise policy values,
+  owner/group/user/role/policy names, user emails, policy contents,
+  requirements snippets, admin or analytics URLs, compliance API data, GitHub
+  org/repo/token data, Slack workspace data, allowlist domains, environment
+  names, Team Config paths, config paths, paths, URLs, secrets, raw payloads,
+  app-server payloads, or app-server traffic, and must not open admin consoles
+  or analytics, call compliance APIs, start GitHub connectors, look up user
+  policies, read or write Team Config files, mutate RBAC, workspace settings,
+  managed policies, Slack settings, cloud environments, or internet allowlists.
+  Its
   Codex Sites catalog may expose only static official-documentation keys plus
   local boundary keys, groups, states, sources, counts, and redaction flags; it
   must not return Sites projects, project ids, `.openai/hosting.json`, storage

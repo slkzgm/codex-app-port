@@ -31,6 +31,8 @@ const elements = {
   appIntegrationsMcpValuesText: document.querySelector("#app-integrations-mcp-values-text"),
   codexAccessTokensText: document.querySelector("#codex-access-tokens-text"),
   codexAccessTokensValuesText: document.querySelector("#codex-access-tokens-values-text"),
+  codexAdminSetupText: document.querySelector("#codex-admin-setup-text"),
+  codexAdminSetupValuesText: document.querySelector("#codex-admin-setup-values-text"),
   skillsPluginsCatalogText: document.querySelector("#skills-plugins-catalog-text"),
   skillsPluginsCatalogValuesText: document.querySelector("#skills-plugins-catalog-values-text"),
   codexPluginBuildText: document.querySelector("#codex-plugin-build-text"),
@@ -432,6 +434,7 @@ const elements = {
   appGitList: document.querySelector("#app-git-list"),
   appIntegrationsMcpList: document.querySelector("#app-integrations-mcp-list"),
   codexAccessTokensList: document.querySelector("#codex-access-tokens-list"),
+  codexAdminSetupList: document.querySelector("#codex-admin-setup-list"),
   skillsPluginsCatalogList: document.querySelector("#skills-plugins-catalog-list"),
   codexPluginBuildList: document.querySelector("#codex-plugin-build-list"),
   codexHooksList: document.querySelector("#codex-hooks-list"),
@@ -10487,6 +10490,7 @@ function renderSettingsIntegrations(payload) {
   const integrationLifecycle = payload.integrationLifecycle ?? {};
   const codexAppSettings = payload.codexAppSettings ?? {};
   const codexAccessTokens = payload.codexAccessTokens ?? {};
+  const codexAdminSetup = payload.codexAdminSetup ?? {};
   const skillsPluginsCatalog = payload.skillsPluginsCatalog ?? {};
   const codexPluginBuild = payload.codexPluginBuild ?? {};
   const codexHooks = payload.codexHooks ?? {};
@@ -10559,6 +10563,57 @@ function renderSettingsIntegrations(payload) {
     codexAccessTokens.secretsReturned ||
     codexAccessTokens.rawPayloadsReturned ||
     codexAccessTokens.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexAdminSetupText.textContent = codexAdminSetup.returned
+    ? `${codexAdminSetup.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexAdminSetup.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexAdminSetupValuesText.textContent =
+    codexAdminSetup.workspaceSettingValuesReturned ||
+    codexAdminSetup.enterpriseDataPolicyValuesReturned ||
+    codexAdminSetup.ownerNamesReturned ||
+    codexAdminSetup.groupNamesReturned ||
+    codexAdminSetup.userEmailsReturned ||
+    codexAdminSetup.roleNamesReturned ||
+    codexAdminSetup.policyNamesReturned ||
+    codexAdminSetup.policyContentsReturned ||
+    codexAdminSetup.requirementSnippetsReturned ||
+    codexAdminSetup.adminConsoleUrlsReturned ||
+    codexAdminSetup.analyticsUrlsReturned ||
+    codexAdminSetup.complianceApiDataReturned ||
+    codexAdminSetup.githubOrgNamesReturned ||
+    codexAdminSetup.githubRepoNamesReturned ||
+    codexAdminSetup.githubTokenDataReturned ||
+    codexAdminSetup.slackWorkspaceDataReturned ||
+    codexAdminSetup.allowlistDomainsReturned ||
+    codexAdminSetup.environmentNamesReturned ||
+    codexAdminSetup.teamConfigPathsReturned ||
+    codexAdminSetup.configPathsReturned ||
+    codexAdminSetup.workspaceSettingMutationsEnabled ||
+    codexAdminSetup.rbacMutationsEnabled ||
+    codexAdminSetup.policyMutationsEnabled ||
+    codexAdminSetup.githubConnectorMutationsEnabled ||
+    codexAdminSetup.slackMutationsEnabled ||
+    codexAdminSetup.cloudEnvironmentMutationsEnabled ||
+    codexAdminSetup.teamConfigFilesystemReads ||
+    codexAdminSetup.teamConfigFilesystemWrites ||
+    codexAdminSetup.policyLookupsStarted ||
+    codexAdminSetup.adminConsolesOpened ||
+    codexAdminSetup.analyticsOpened ||
+    codexAdminSetup.complianceApiAccessed ||
+    codexAdminSetup.githubConnectorsStarted ||
+    codexAdminSetup.internetAllowlistsWritten ||
+    codexAdminSetup.filesystemReads ||
+    codexAdminSetup.filesystemWrites ||
+    codexAdminSetup.networkAccess ||
+    codexAdminSetup.mutationEnabled ||
+    codexAdminSetup.pathsReturned ||
+    codexAdminSetup.urlsReturned ||
+    codexAdminSetup.secretsReturned ||
+    codexAdminSetup.rawPayloadsReturned ||
+    codexAdminSetup.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.skillsPluginsCatalogText.textContent = skillsPluginsCatalog.returned
@@ -11593,6 +11648,7 @@ function renderSettingsIntegrations(payload) {
   renderIntegrationDetails(inventory);
   renderCodexAppSettingsParity(codexAppSettings);
   renderCodexAccessTokensCatalog(codexAccessTokens);
+  renderCodexAdminSetupCatalog(codexAdminSetup);
   renderSkillsPluginsCatalog(skillsPluginsCatalog);
   renderCodexPluginBuildCatalog(codexPluginBuild);
   renderCodexHooksCatalog(codexHooks);
@@ -13224,6 +13280,108 @@ function renderCodexAccessTokensCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexAccessTokensList.append(row);
+  }
+}
+
+function renderCodexAdminSetupCatalog(summary) {
+  elements.codexAdminSetupList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexAdminSetupList.append(
+      emptyState("No Codex admin setup catalog returned."),
+    );
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "admin-setup";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.workspaceSettingValueReturned ? "workspace values returned" : "workspace values hidden",
+      entry.enterpriseDataPolicyValueReturned
+        ? "enterprise policy values returned"
+        : "enterprise policy values hidden",
+      entry.ownerNameReturned ? "owner names returned" : "owner names hidden",
+      entry.groupNameReturned ? "group names returned" : "group names hidden",
+      entry.userEmailReturned ? "user emails returned" : "user emails hidden",
+      entry.roleNameReturned ? "role names returned" : "role names hidden",
+      entry.policyNameReturned ? "policy names returned" : "policy names hidden",
+      entry.policyContentReturned ? "policy content returned" : "policy content hidden",
+      entry.requirementSnippetReturned
+        ? "requirements snippets returned"
+        : "requirements snippets hidden",
+      entry.adminConsoleUrlReturned ? "admin URLs returned" : "admin URLs hidden",
+      entry.analyticsUrlReturned ? "analytics URLs returned" : "analytics URLs hidden",
+      entry.complianceApiDataReturned
+        ? "compliance API data returned"
+        : "compliance API data hidden",
+      entry.githubOrgNameReturned ? "GitHub org names returned" : "GitHub org names hidden",
+      entry.githubRepoNameReturned ? "GitHub repo names returned" : "GitHub repo names hidden",
+      entry.githubTokenDataReturned ? "GitHub token data returned" : "GitHub token data hidden",
+      entry.slackWorkspaceDataReturned
+        ? "Slack workspace data returned"
+        : "Slack workspace data hidden",
+      entry.allowlistDomainReturned ? "allowlist domains returned" : "allowlist domains hidden",
+      entry.environmentNameReturned ? "environment names returned" : "environment names hidden",
+      entry.teamConfigPathReturned ? "team config paths returned" : "team config paths hidden",
+      entry.configPathReturned ? "config paths returned" : "config paths hidden",
+      entry.workspaceSettingMutationEnabled
+        ? "workspace settings mutable"
+        : "workspace settings blocked",
+      entry.rbacMutationEnabled ? "RBAC mutable" : "RBAC blocked",
+      entry.policyMutationEnabled ? "policies mutable" : "policy writes blocked",
+      entry.githubConnectorMutationEnabled
+        ? "GitHub connector mutable"
+        : "GitHub connector blocked",
+      entry.slackMutationEnabled ? "Slack mutable" : "Slack mutations blocked",
+      entry.cloudEnvironmentMutationEnabled
+        ? "cloud environments mutable"
+        : "cloud environment mutations blocked",
+      entry.teamConfigFilesystemRead ? "team config read" : "team config reads blocked",
+      entry.teamConfigFilesystemWrite ? "team config write" : "team config writes blocked",
+      entry.policyLookupStarted ? "policy lookup started" : "policy lookup blocked",
+      entry.adminConsoleOpened ? "admin console opened" : "admin console blocked",
+      entry.analyticsOpened ? "analytics opened" : "analytics blocked",
+      entry.complianceApiAccessed ? "compliance API accessed" : "compliance API blocked",
+      entry.githubConnectorStarted ? "GitHub connector started" : "GitHub connector blocked",
+      entry.internetAllowlistWritten ? "internet allowlist written" : "internet allowlist blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexAdminSetupList.append(row);
   }
 }
 

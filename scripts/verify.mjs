@@ -33342,6 +33342,227 @@ function assertCodexAccessTokensCatalog(payload) {
   }
 }
 
+function expectedCodexAdminSetupEntries() {
+  return [
+    ["enterpriseSecurityPrivacy", "security-privacy", "catalog-only", "official-codex-admin-setup-docs"],
+    ["rolloutOwners", "rollout", "catalog-only", "official-codex-admin-setup-docs"],
+    ["surfaceSelectionLocalCloudBoth", "rollout", "catalog-only", "official-codex-admin-setup-docs"],
+    ["workspaceSettingsEntryPoint", "workspace-settings", "catalog-only", "official-codex-admin-setup-docs"],
+    ["codexLocalWorkspaceToggle", "codex-local", "catalog-only", "official-codex-admin-setup-docs"],
+    ["localAccessTokenPermissions", "codex-local", "catalog-only", "official-codex-admin-setup-docs"],
+    ["deviceCodeAuthentication", "codex-local", "catalog-only", "official-codex-admin-setup-docs"],
+    ["codexCloudGithubPrerequisite", "codex-cloud", "catalog-only", "official-codex-admin-setup-docs"],
+    ["codexCloudWorkspaceToggle", "codex-cloud", "catalog-only", "official-codex-admin-setup-docs"],
+    ["slackAnswerPosting", "codex-cloud", "catalog-only", "official-codex-admin-setup-docs"],
+    ["cloudAgentInternetAccess", "codex-cloud", "catalog-only", "official-codex-admin-setup-docs"],
+    ["rbacCustomRoles", "rbac", "catalog-only", "official-codex-admin-setup-docs"],
+    ["rbacScimGroups", "rbac", "catalog-only", "official-codex-admin-setup-docs"],
+    ["codexAdminGroup", "codex-admin-role", "catalog-only", "official-codex-admin-setup-docs"],
+    ["codexAdminCapabilities", "codex-admin-role", "catalog-only", "official-codex-admin-setup-docs"],
+    ["codexAdminLeastPrivilege", "codex-admin-role", "catalog-only", "official-codex-admin-setup-docs"],
+    ["managedRequirementsPolicies", "managed-configuration", "catalog-only", "official-codex-admin-setup-docs"],
+    ["managedPolicyAssignment", "managed-configuration", "catalog-only", "official-codex-admin-setup-docs"],
+    ["managedPolicyRuleOrdering", "managed-configuration", "catalog-only", "official-codex-admin-setup-docs"],
+    ["managedPolicyCompleteProfiles", "managed-configuration", "catalog-only", "official-codex-admin-setup-docs"],
+    ["managedPolicyLocalSurfaces", "managed-configuration", "catalog-only", "official-codex-admin-setup-docs"],
+    ["requirementsExamplesPermissions", "requirements-examples", "catalog-only", "official-codex-admin-setup-docs"],
+    ["requirementsFeatureFlags", "requirements-examples", "catalog-only", "official-codex-admin-setup-docs"],
+    ["requirementsCommandRules", "requirements-examples", "catalog-only", "official-codex-admin-setup-docs"],
+    ["policyLookupTools", "managed-configuration", "catalog-only", "official-codex-admin-setup-docs"],
+    ["authRestrictionsReference", "authentication", "catalog-only", "official-codex-admin-setup-docs"],
+    ["teamConfigRepositoryDirectory", "team-config", "catalog-only", "official-codex-admin-setup-docs"],
+    ["teamConfigSupportedTypes", "team-config", "catalog-only", "official-codex-admin-setup-docs"],
+    ["cloudRepositoryConnection", "codex-cloud", "catalog-only", "official-codex-admin-setup-docs"],
+    ["githubEnterpriseManagedUsers", "codex-cloud", "catalog-only", "official-codex-admin-setup-docs"],
+    ["leastPrivilegeGithubTokens", "codex-cloud-security", "catalog-only", "official-codex-admin-setup-docs"],
+    ["adminConsoleBoundary", "workspace-settings", "blocked", "local-admin-setup-boundary"],
+    ["workspaceSettingsReadBoundary", "workspace-settings", "blocked", "local-admin-setup-boundary"],
+    ["workspaceSettingsMutationBoundary", "workspace-settings", "blocked", "local-admin-setup-boundary"],
+    ["rbacReadWriteBoundary", "rbac", "blocked", "local-admin-setup-boundary"],
+    ["managedPolicyContentBoundary", "managed-configuration", "blocked", "local-admin-setup-boundary"],
+    ["managedPolicyMutationBoundary", "managed-configuration", "blocked", "local-admin-setup-boundary"],
+    ["policyLookupBoundary", "managed-configuration", "blocked", "local-admin-setup-boundary"],
+    ["teamConfigFilesystemBoundary", "team-config", "blocked", "local-admin-setup-boundary"],
+    ["githubConnectorBoundary", "codex-cloud", "blocked", "local-admin-setup-boundary"],
+    ["githubRepositoryBoundary", "codex-cloud", "blocked", "local-admin-setup-boundary"],
+    ["slackAppConfigBoundary", "codex-cloud", "blocked", "local-admin-setup-boundary"],
+    ["internetAllowlistBoundary", "codex-cloud", "blocked", "local-admin-setup-boundary"],
+    ["analyticsComplianceBoundary", "governance", "blocked", "local-admin-setup-boundary"],
+    ["cloudEnvironmentManagementBoundary", "codex-cloud", "blocked", "local-admin-setup-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexAdminSetupCatalog(payload) {
+  const catalog = payload.codexAdminSetup;
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-admin-setup-docs");
+  assert.equal(catalog.entryCount, 45);
+  assert.equal(catalog.officialEntryCount, 31);
+  assert.equal(catalog.localBoundaryEntryCount, 14);
+  assert.equal(catalog.catalogOnlyEntryCount, 31);
+  assert.equal(catalog.blockedEntryCount, 14);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({
+      key,
+      group,
+      state,
+      source,
+    })),
+    expectedCodexAdminSetupEntries(),
+  );
+
+  const entryRedactionFlags = [
+    "workspaceSettingValueReturned",
+    "enterpriseDataPolicyValueReturned",
+    "ownerNameReturned",
+    "groupNameReturned",
+    "userEmailReturned",
+    "roleNameReturned",
+    "policyNameReturned",
+    "policyContentReturned",
+    "requirementSnippetReturned",
+    "adminConsoleUrlReturned",
+    "analyticsUrlReturned",
+    "complianceApiDataReturned",
+    "githubOrgNameReturned",
+    "githubRepoNameReturned",
+    "githubTokenDataReturned",
+    "slackWorkspaceDataReturned",
+    "allowlistDomainReturned",
+    "environmentNameReturned",
+    "teamConfigPathReturned",
+    "configPathReturned",
+    "workspaceSettingMutationEnabled",
+    "rbacMutationEnabled",
+    "policyMutationEnabled",
+    "githubConnectorMutationEnabled",
+    "slackMutationEnabled",
+    "cloudEnvironmentMutationEnabled",
+    "teamConfigFilesystemRead",
+    "teamConfigFilesystemWrite",
+    "policyLookupStarted",
+    "adminConsoleOpened",
+    "analyticsOpened",
+    "complianceApiAccessed",
+    "githubConnectorStarted",
+    "internetAllowlistWritten",
+    "filesystemRead",
+    "filesystemWrite",
+    "networkAccess",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.adminSetupCatalogReturned, true);
+  for (const flag of [
+    "workspaceSettingValuesReturned",
+    "enterpriseDataPolicyValuesReturned",
+    "ownerNamesReturned",
+    "groupNamesReturned",
+    "userEmailsReturned",
+    "roleNamesReturned",
+    "policyNamesReturned",
+    "policyContentsReturned",
+    "requirementSnippetsReturned",
+    "adminConsoleUrlsReturned",
+    "analyticsUrlsReturned",
+    "complianceApiDataReturned",
+    "githubOrgNamesReturned",
+    "githubRepoNamesReturned",
+    "githubTokenDataReturned",
+    "slackWorkspaceDataReturned",
+    "allowlistDomainsReturned",
+    "environmentNamesReturned",
+    "teamConfigPathsReturned",
+    "configPathsReturned",
+    "workspaceSettingMutationsEnabled",
+    "rbacMutationsEnabled",
+    "policyMutationsEnabled",
+    "githubConnectorMutationsEnabled",
+    "slackMutationsEnabled",
+    "cloudEnvironmentMutationsEnabled",
+    "teamConfigFilesystemReads",
+    "teamConfigFilesystemWrites",
+    "policyLookupsStarted",
+    "adminConsolesOpened",
+    "analyticsOpened",
+    "complianceApiAccessed",
+    "githubConnectorsStarted",
+    "internetAllowlistsWritten",
+    "filesystemReads",
+    "filesystemWrites",
+    "networkAccess",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexAdminSetupReturned", true],
+    ["codexAdminSetupValuesReturned", false],
+    ["codexAdminSetupWorkspaceSettingValuesReturned", false],
+    ["codexAdminSetupEnterpriseDataPolicyValuesReturned", false],
+    ["codexAdminSetupOwnerNamesReturned", false],
+    ["codexAdminSetupGroupNamesReturned", false],
+    ["codexAdminSetupUserEmailsReturned", false],
+    ["codexAdminSetupRoleNamesReturned", false],
+    ["codexAdminSetupPolicyNamesReturned", false],
+    ["codexAdminSetupPolicyContentsReturned", false],
+    ["codexAdminSetupRequirementSnippetsReturned", false],
+    ["codexAdminSetupAdminConsoleUrlsReturned", false],
+    ["codexAdminSetupAnalyticsUrlsReturned", false],
+    ["codexAdminSetupComplianceApiDataReturned", false],
+    ["codexAdminSetupGithubOrgNamesReturned", false],
+    ["codexAdminSetupGithubRepoNamesReturned", false],
+    ["codexAdminSetupGithubTokenDataReturned", false],
+    ["codexAdminSetupSlackWorkspaceDataReturned", false],
+    ["codexAdminSetupAllowlistDomainsReturned", false],
+    ["codexAdminSetupEnvironmentNamesReturned", false],
+    ["codexAdminSetupTeamConfigPathsReturned", false],
+    ["codexAdminSetupConfigPathsReturned", false],
+    ["codexAdminSetupWorkspaceSettingMutationsEnabled", false],
+    ["codexAdminSetupRbacMutationsEnabled", false],
+    ["codexAdminSetupPolicyMutationsEnabled", false],
+    ["codexAdminSetupGithubConnectorMutationsEnabled", false],
+    ["codexAdminSetupSlackMutationsEnabled", false],
+    ["codexAdminSetupCloudEnvironmentMutationsEnabled", false],
+    ["codexAdminSetupTeamConfigFilesystemAccess", false],
+    ["codexAdminSetupPolicyLookupEnabled", false],
+    ["codexAdminSetupAdminConsoleEnabled", false],
+    ["codexAdminSetupAnalyticsEnabled", false],
+    ["codexAdminSetupComplianceApiAccessEnabled", false],
+    ["codexAdminSetupGithubConnectorEnabled", false],
+    ["codexAdminSetupInternetAllowlistWriteEnabled", false],
+    ["codexAdminSetupFilesystemAccess", false],
+    ["codexAdminSetupNetworkAccess", false],
+    ["codexAdminSetupMutationsEnabled", false],
+    ["codexAdminSetupPathsReturned", false],
+    ["codexAdminSetupUrlsReturned", false],
+    ["codexAdminSetupSecretsReturned", false],
+    ["codexAdminSetupRawPayloadsReturned", false],
+    ["codexAdminSetupAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedSkillsPluginsCatalogEntries(scope = {}) {
   const entries = [
     {
@@ -37100,6 +37321,7 @@ function assertCodexAppSettingsParity(
     throw new Error("Codex app settings parity section mapping changed unexpectedly");
   }
   assertCodexAccessTokensCatalog(payload);
+  assertCodexAdminSetupCatalog(payload);
   assertSkillsPluginsCatalog(payload);
   assertCodexPluginBuildCatalog(payload);
   assertCodexHooksCatalog(payload);

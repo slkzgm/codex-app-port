@@ -786,6 +786,22 @@ app-server traffic, and it does not create/list/revoke/rotate/persist tokens,
 run `codex login`, run `codex exec`, trigger workspace agents, open admin
 consoles, read environment variables, read auth storage, access files/network,
 or mutate access-token state.
+The same response exposes `codexAdminSetup` as a static review-only catalog for
+official Codex Enterprise Admin Setup behavior. The UI shows only catalog
+counts, entry keys, groups, state/source chips, and redaction chips for
+security/privacy posture, rollout owners, local/cloud surface selection,
+workspace toggles, access-token and device-code setup, GitHub/Slack/cloud
+prerequisites, RBAC, Codex Admin responsibilities, managed `requirements.toml`
+policy rollout, Team Config, repository connection, and least-privilege GitHub
+token guidance. It does not show workspace setting values, enterprise policy
+values, owner/group/user/role/policy names, user emails, policy contents,
+requirements snippets, admin or analytics URLs, compliance API data, GitHub
+org/repo/token data, Slack workspace data, allowlist domains, environment
+names, Team Config paths, config paths, URLs, paths, secrets, raw payloads, or
+app-server traffic, and it does not open admin consoles or analytics, call
+compliance APIs, start GitHub connectors, look up user policies, read/write
+Team Config files, mutate RBAC, workspace settings, managed policies, Slack
+settings, cloud environments, or internet allowlists.
 The same Settings & Integrations response also exposes `skillsPluginsCatalog`
 as a static review-only Skills & Plugins catalog. The UI shows only catalog
 counts, setting keys, groups, state/source chips, and redaction chips for
