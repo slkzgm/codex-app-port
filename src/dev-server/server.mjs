@@ -36745,6 +36745,199 @@ function buildCodexSecurityCatalog() {
   };
 }
 
+const CODEX_OPEN_SOURCE_CATALOG = Object.freeze([
+  {
+    key: "openSourceOverview",
+    group: "overview",
+    state: "catalog-only",
+    source: "official-codex-open-source-docs",
+  },
+  {
+    key: "codexCliRepository",
+    group: "components",
+    state: "catalog-only",
+    source: "official-codex-open-source-docs",
+  },
+  {
+    key: "codexSdkSources",
+    group: "components",
+    state: "catalog-only",
+    source: "official-codex-open-source-docs",
+  },
+  {
+    key: "codexAppServerSources",
+    group: "components",
+    state: "catalog-only",
+    source: "official-codex-open-source-docs",
+  },
+  {
+    key: "skillsRepository",
+    group: "components",
+    state: "catalog-only",
+    source: "official-codex-open-source-docs",
+  },
+  {
+    key: "ideExtensionClosedSource",
+    group: "closed-surfaces",
+    state: "catalog-only",
+    source: "official-codex-open-source-docs",
+  },
+  {
+    key: "codexWebClosedSource",
+    group: "closed-surfaces",
+    state: "catalog-only",
+    source: "official-codex-open-source-docs",
+  },
+  {
+    key: "universalCloudEnvironmentRepository",
+    group: "components",
+    state: "catalog-only",
+    source: "official-codex-open-source-docs",
+  },
+  {
+    key: "codexForOssProgram",
+    group: "oss-program",
+    state: "catalog-only",
+    source: "official-codex-open-source-docs",
+  },
+  {
+    key: "bugReportIssueTracker",
+    group: "community",
+    state: "catalog-only",
+    source: "official-codex-open-source-docs",
+  },
+  {
+    key: "discussionForum",
+    group: "community",
+    state: "catalog-only",
+    source: "official-codex-open-source-docs",
+  },
+  {
+    key: "issueReportMetadataGuidance",
+    group: "community",
+    state: "catalog-only",
+    source: "official-codex-open-source-docs",
+  },
+  {
+    key: "repositoryUrlBoundary",
+    group: "repository-data",
+    state: "blocked",
+    source: "local-open-source-boundary",
+  },
+  {
+    key: "externalGithubFetchBoundary",
+    group: "repository-data",
+    state: "blocked",
+    source: "local-open-source-boundary",
+  },
+  {
+    key: "sourceCodeImportBoundary",
+    group: "repository-data",
+    state: "blocked",
+    source: "local-open-source-boundary",
+  },
+  {
+    key: "componentVersionBoundary",
+    group: "repository-data",
+    state: "blocked",
+    source: "local-open-source-boundary",
+  },
+  {
+    key: "issueCreationBoundary",
+    group: "community",
+    state: "blocked",
+    source: "local-open-source-boundary",
+  },
+  {
+    key: "discussionPostBoundary",
+    group: "community",
+    state: "blocked",
+    source: "local-open-source-boundary",
+  },
+  {
+    key: "contributionSubmissionBoundary",
+    group: "community",
+    state: "blocked",
+    source: "local-open-source-boundary",
+  },
+  {
+    key: "ossProgramApplicationBoundary",
+    group: "oss-program",
+    state: "blocked",
+    source: "local-open-source-boundary",
+  },
+]);
+
+function buildCodexOpenSourceCatalog() {
+  const entries = CODEX_OPEN_SOURCE_CATALOG.map((entry) => ({
+    ...entry,
+    componentNameReturned: false,
+    repositoryUrlReturned: false,
+    issueUrlReturned: false,
+    discussionUrlReturned: false,
+    programApplicationUrlReturned: false,
+    componentVersionReturned: false,
+    issueContentReturned: false,
+    discussionContentReturned: false,
+    contributionContentReturned: false,
+    externalCodeReturned: false,
+    repositoryFetched: false,
+    issueCreated: false,
+    discussionPosted: false,
+    contributionSubmitted: false,
+    programApplicationStarted: false,
+    filesystemRead: false,
+    filesystemWrite: false,
+    networkAccess: false,
+    mutationEnabled: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+    rawPayloadsReturned: false,
+    appServerTraffic: false,
+  }));
+  const catalogOnlyEntryCount = entries.filter((entry) => entry.state === "catalog-only").length;
+  const blockedEntryCount = entries.filter((entry) => entry.state === "blocked").length;
+
+  return {
+    returned: true,
+    state: blockedEntryCount > 0 ? "partial" : "complete",
+    officialSource: "official-codex-open-source-docs",
+    entryCount: entries.length,
+    officialEntryCount: entries.filter((entry) => entry.source.startsWith("official-")).length,
+    localBoundaryEntryCount: entries.filter((entry) => entry.source.startsWith("local-")).length,
+    catalogOnlyEntryCount,
+    blockedEntryCount,
+    enabledEntryCount: 0,
+    entries,
+    openSourceCatalogReturned: true,
+    componentNamesReturned: false,
+    repositoryUrlsReturned: false,
+    issueUrlsReturned: false,
+    discussionUrlsReturned: false,
+    programApplicationUrlsReturned: false,
+    componentVersionsReturned: false,
+    issueContentsReturned: false,
+    discussionContentsReturned: false,
+    contributionContentsReturned: false,
+    externalCodeReturned: false,
+    repositoriesFetched: false,
+    issuesCreated: false,
+    discussionsPosted: false,
+    contributionsSubmitted: false,
+    programApplicationsStarted: false,
+    filesystemReads: false,
+    filesystemWrites: false,
+    networkAccess: false,
+    mutationEnabled: false,
+    pathsReturned: false,
+    urlsReturned: false,
+    secretsReturned: false,
+    rawPayloadsReturned: false,
+    appServerTraffic: false,
+  };
+}
+
 const CODEX_GOVERNANCE_CATALOG = Object.freeze([
   {
     key: "governanceVisibilityAuditability",
@@ -43573,6 +43766,31 @@ export function sanitizeSettingsIntegrationsPayload(
       codexSecuritySecretsReturned: false,
       codexSecurityRawPayloadsReturned: false,
       codexSecurityAppServerTraffic: false,
+      codexOpenSourceReturned: true,
+      codexOpenSourceValuesReturned: false,
+      codexOpenSourceComponentNamesReturned: false,
+      codexOpenSourceRepositoryUrlsReturned: false,
+      codexOpenSourceIssueUrlsReturned: false,
+      codexOpenSourceDiscussionUrlsReturned: false,
+      codexOpenSourceProgramApplicationUrlsReturned: false,
+      codexOpenSourceComponentVersionsReturned: false,
+      codexOpenSourceIssueContentsReturned: false,
+      codexOpenSourceDiscussionContentsReturned: false,
+      codexOpenSourceContributionContentsReturned: false,
+      codexOpenSourceExternalCodeReturned: false,
+      codexOpenSourceRepositoryFetchEnabled: false,
+      codexOpenSourceIssueCreationEnabled: false,
+      codexOpenSourceDiscussionPostEnabled: false,
+      codexOpenSourceContributionSubmissionEnabled: false,
+      codexOpenSourceProgramApplicationEnabled: false,
+      codexOpenSourceFilesystemAccess: false,
+      codexOpenSourceNetworkAccess: false,
+      codexOpenSourceMutationsEnabled: false,
+      codexOpenSourcePathsReturned: false,
+      codexOpenSourceUrlsReturned: false,
+      codexOpenSourceSecretsReturned: false,
+      codexOpenSourceRawPayloadsReturned: false,
+      codexOpenSourceAppServerTraffic: false,
       codexGovernanceReturned: true,
       codexGovernanceValuesReturned: false,
       codexGovernanceDashboardValuesReturned: false,
@@ -43787,6 +44005,7 @@ export function sanitizeSettingsIntegrationsPayload(
   result.codexAutoReview = buildCodexAutoReviewCatalog();
   result.codexChronicle = buildCodexChronicleCatalog();
   result.codexSecurity = buildCodexSecurityCatalog();
+  result.codexOpenSource = buildCodexOpenSourceCatalog();
   result.codexGovernance = buildCodexGovernanceCatalog();
   result.codexManagedConfiguration = buildCodexManagedConfigurationCatalog();
   result.codexEnvironmentVariables = buildCodexEnvironmentVariablesCatalog();
@@ -52024,6 +52243,31 @@ export function buildSettingsIntegrations({
       codexSecuritySecretsReturned: false,
       codexSecurityRawPayloadsReturned: false,
       codexSecurityAppServerTraffic: false,
+      codexOpenSourceReturned: true,
+      codexOpenSourceValuesReturned: false,
+      codexOpenSourceComponentNamesReturned: false,
+      codexOpenSourceRepositoryUrlsReturned: false,
+      codexOpenSourceIssueUrlsReturned: false,
+      codexOpenSourceDiscussionUrlsReturned: false,
+      codexOpenSourceProgramApplicationUrlsReturned: false,
+      codexOpenSourceComponentVersionsReturned: false,
+      codexOpenSourceIssueContentsReturned: false,
+      codexOpenSourceDiscussionContentsReturned: false,
+      codexOpenSourceContributionContentsReturned: false,
+      codexOpenSourceExternalCodeReturned: false,
+      codexOpenSourceRepositoryFetchEnabled: false,
+      codexOpenSourceIssueCreationEnabled: false,
+      codexOpenSourceDiscussionPostEnabled: false,
+      codexOpenSourceContributionSubmissionEnabled: false,
+      codexOpenSourceProgramApplicationEnabled: false,
+      codexOpenSourceFilesystemAccess: false,
+      codexOpenSourceNetworkAccess: false,
+      codexOpenSourceMutationsEnabled: false,
+      codexOpenSourcePathsReturned: false,
+      codexOpenSourceUrlsReturned: false,
+      codexOpenSourceSecretsReturned: false,
+      codexOpenSourceRawPayloadsReturned: false,
+      codexOpenSourceAppServerTraffic: false,
       codexGovernanceReturned: true,
       codexGovernanceValuesReturned: false,
       codexGovernanceDashboardValuesReturned: false,
@@ -52237,6 +52481,7 @@ export function buildSettingsIntegrations({
   result.codexAutoReview = buildCodexAutoReviewCatalog();
   result.codexChronicle = buildCodexChronicleCatalog();
   result.codexSecurity = buildCodexSecurityCatalog();
+  result.codexOpenSource = buildCodexOpenSourceCatalog();
   result.codexGovernance = buildCodexGovernanceCatalog();
   result.codexManagedConfiguration = buildCodexManagedConfigurationCatalog();
   result.codexEnvironmentVariables = buildCodexEnvironmentVariablesCatalog();

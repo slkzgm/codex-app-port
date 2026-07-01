@@ -35996,6 +35996,141 @@ function assertCodexSecurityCatalog(payload) {
   }
 }
 
+function expectedCodexOpenSourceEntries() {
+  return [
+    ["openSourceOverview", "overview", "catalog-only", "official-codex-open-source-docs"],
+    ["codexCliRepository", "components", "catalog-only", "official-codex-open-source-docs"],
+    ["codexSdkSources", "components", "catalog-only", "official-codex-open-source-docs"],
+    ["codexAppServerSources", "components", "catalog-only", "official-codex-open-source-docs"],
+    ["skillsRepository", "components", "catalog-only", "official-codex-open-source-docs"],
+    ["ideExtensionClosedSource", "closed-surfaces", "catalog-only", "official-codex-open-source-docs"],
+    ["codexWebClosedSource", "closed-surfaces", "catalog-only", "official-codex-open-source-docs"],
+    ["universalCloudEnvironmentRepository", "components", "catalog-only", "official-codex-open-source-docs"],
+    ["codexForOssProgram", "oss-program", "catalog-only", "official-codex-open-source-docs"],
+    ["bugReportIssueTracker", "community", "catalog-only", "official-codex-open-source-docs"],
+    ["discussionForum", "community", "catalog-only", "official-codex-open-source-docs"],
+    ["issueReportMetadataGuidance", "community", "catalog-only", "official-codex-open-source-docs"],
+    ["repositoryUrlBoundary", "repository-data", "blocked", "local-open-source-boundary"],
+    ["externalGithubFetchBoundary", "repository-data", "blocked", "local-open-source-boundary"],
+    ["sourceCodeImportBoundary", "repository-data", "blocked", "local-open-source-boundary"],
+    ["componentVersionBoundary", "repository-data", "blocked", "local-open-source-boundary"],
+    ["issueCreationBoundary", "community", "blocked", "local-open-source-boundary"],
+    ["discussionPostBoundary", "community", "blocked", "local-open-source-boundary"],
+    ["contributionSubmissionBoundary", "community", "blocked", "local-open-source-boundary"],
+    ["ossProgramApplicationBoundary", "oss-program", "blocked", "local-open-source-boundary"],
+  ].map(([key, group, state, source]) => ({ key, group, state, source }));
+}
+
+function assertCodexOpenSourceCatalog(payload) {
+  const catalog = payload.codexOpenSource;
+  assert.equal(catalog?.returned, true);
+  assert.equal(catalog.state, "partial");
+  assert.equal(catalog.officialSource, "official-codex-open-source-docs");
+  assert.equal(catalog.entryCount, 20);
+  assert.equal(catalog.officialEntryCount, 12);
+  assert.equal(catalog.localBoundaryEntryCount, 8);
+  assert.equal(catalog.catalogOnlyEntryCount, 12);
+  assert.equal(catalog.blockedEntryCount, 8);
+  assert.equal(catalog.enabledEntryCount, 0);
+  assert.deepEqual(
+    (catalog.entries ?? []).map(({ key, group, state, source }) => ({ key, group, state, source })),
+    expectedCodexOpenSourceEntries(),
+  );
+
+  const entryRedactionFlags = [
+    "componentNameReturned",
+    "repositoryUrlReturned",
+    "issueUrlReturned",
+    "discussionUrlReturned",
+    "programApplicationUrlReturned",
+    "componentVersionReturned",
+    "issueContentReturned",
+    "discussionContentReturned",
+    "contributionContentReturned",
+    "externalCodeReturned",
+    "repositoryFetched",
+    "issueCreated",
+    "discussionPosted",
+    "contributionSubmitted",
+    "programApplicationStarted",
+    "filesystemRead",
+    "filesystemWrite",
+    "networkAccess",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ];
+  assert.equal(
+    catalog.entries.every((entry) =>
+      entryRedactionFlags.every((flag) => entry[flag] === false),
+    ),
+    true,
+  );
+
+  assert.equal(catalog.openSourceCatalogReturned, true);
+  for (const flag of [
+    "componentNamesReturned",
+    "repositoryUrlsReturned",
+    "issueUrlsReturned",
+    "discussionUrlsReturned",
+    "programApplicationUrlsReturned",
+    "componentVersionsReturned",
+    "issueContentsReturned",
+    "discussionContentsReturned",
+    "contributionContentsReturned",
+    "externalCodeReturned",
+    "repositoriesFetched",
+    "issuesCreated",
+    "discussionsPosted",
+    "contributionsSubmitted",
+    "programApplicationsStarted",
+    "filesystemReads",
+    "filesystemWrites",
+    "networkAccess",
+    "mutationEnabled",
+    "pathsReturned",
+    "urlsReturned",
+    "secretsReturned",
+    "rawPayloadsReturned",
+    "appServerTraffic",
+  ]) {
+    assert.equal(catalog[flag], false);
+  }
+
+  for (const [flag, expected] of [
+    ["codexOpenSourceReturned", true],
+    ["codexOpenSourceValuesReturned", false],
+    ["codexOpenSourceComponentNamesReturned", false],
+    ["codexOpenSourceRepositoryUrlsReturned", false],
+    ["codexOpenSourceIssueUrlsReturned", false],
+    ["codexOpenSourceDiscussionUrlsReturned", false],
+    ["codexOpenSourceProgramApplicationUrlsReturned", false],
+    ["codexOpenSourceComponentVersionsReturned", false],
+    ["codexOpenSourceIssueContentsReturned", false],
+    ["codexOpenSourceDiscussionContentsReturned", false],
+    ["codexOpenSourceContributionContentsReturned", false],
+    ["codexOpenSourceExternalCodeReturned", false],
+    ["codexOpenSourceRepositoryFetchEnabled", false],
+    ["codexOpenSourceIssueCreationEnabled", false],
+    ["codexOpenSourceDiscussionPostEnabled", false],
+    ["codexOpenSourceContributionSubmissionEnabled", false],
+    ["codexOpenSourceProgramApplicationEnabled", false],
+    ["codexOpenSourceFilesystemAccess", false],
+    ["codexOpenSourceNetworkAccess", false],
+    ["codexOpenSourceMutationsEnabled", false],
+    ["codexOpenSourcePathsReturned", false],
+    ["codexOpenSourceUrlsReturned", false],
+    ["codexOpenSourceSecretsReturned", false],
+    ["codexOpenSourceRawPayloadsReturned", false],
+    ["codexOpenSourceAppServerTraffic", false],
+  ]) {
+    assert.equal(payload.policy?.[flag], expected);
+  }
+}
+
 function expectedCodexGovernanceEntries() {
   return [
     ["governanceVisibilityAuditability", "overview", "catalog-only", "official-codex-governance-docs"],
@@ -40342,6 +40477,7 @@ function assertCodexAppSettingsParity(
   assertCodexAutoReviewCatalog(payload);
   assertCodexChronicleCatalog(payload);
   assertCodexSecurityCatalog(payload);
+  assertCodexOpenSourceCatalog(payload);
   assertCodexGovernanceCatalog(payload);
   assertCodexManagedConfigurationCatalog(payload);
   assertCodexEnvironmentVariablesCatalog(payload);

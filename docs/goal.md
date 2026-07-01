@@ -210,6 +210,17 @@ Target parity with the Codex desktop workflow:
   local/deep/cloud scans, export findings, track issues, create remediation,
   write threat models/config, create model traffic, access files/network, or
   mutate Codex Security state.
+- `/api/settings-integrations` now also exposes a read-only Codex Open Source
+  catalog aligned to the current official Open Source docs. It returns only
+  static keys, groups, states, sources, counts, and redaction flags for Codex
+  CLI, SDK, app-server, skills, universal cloud environment, closed IDE/web
+  surfaces, the Codex for OSS program, issue tracker, discussion forum, and
+  issue-report metadata guidance. It does not return component names,
+  repository URLs, issue URLs, discussion URLs, program application URLs,
+  component versions, issue/discussion/contribution content, external code,
+  paths, URLs, secrets, raw payloads, or app-server traffic, and it does not
+  fetch repositories, create issues, post discussions, submit contributions,
+  start OSS program applications, access files/network, or import code.
 - `/api/settings-integrations` now also exposes a read-only Codex Governance
   catalog aligned to the official enterprise governance guide. It returns only
   static keys, groups, states, sources, counts, and redaction flags for

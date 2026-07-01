@@ -626,6 +626,13 @@ Current M1 status:
   identifiers, model/reasoning values, filesystem access, network access,
   model traffic, mutations, paths, URLs, secrets, raw payloads, and app-server
   traffic blocked
+- done: read-only Codex Open Source catalog in `/api/settings-integrations`,
+  exposing only static official open-source component/status/community keys
+  plus local boundary keys/groups/states/sources/counts/redaction flags, with
+  repository URLs, component names/versions, issue/discussion/contribution
+  content, external code, repository fetches, issue/discussion/contribution
+  mutations, OSS program applications, filesystem access, network access,
+  paths, URLs, secrets, raw payloads, and app-server traffic blocked
 - done: read-only Codex Managed configuration catalog in
   `/api/settings-integrations`, exposing only static official Managed
   configuration documentation keys plus local boundary keys/groups/states/

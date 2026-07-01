@@ -39,6 +39,8 @@ const elements = {
   codexChronicleValuesText: document.querySelector("#codex-chronicle-values-text"),
   codexSecurityText: document.querySelector("#codex-security-text"),
   codexSecurityValuesText: document.querySelector("#codex-security-values-text"),
+  codexOpenSourceText: document.querySelector("#codex-open-source-text"),
+  codexOpenSourceValuesText: document.querySelector("#codex-open-source-values-text"),
   codexGovernanceText: document.querySelector("#codex-governance-text"),
   codexGovernanceValuesText: document.querySelector("#codex-governance-values-text"),
   codexManagedConfigurationText: document.querySelector("#codex-managed-configuration-text"),
@@ -454,6 +456,7 @@ const elements = {
   codexAutoReviewList: document.querySelector("#codex-auto-review-list"),
   codexChronicleList: document.querySelector("#codex-chronicle-list"),
   codexSecurityList: document.querySelector("#codex-security-list"),
+  codexOpenSourceList: document.querySelector("#codex-open-source-list"),
   codexGovernanceList: document.querySelector("#codex-governance-list"),
   codexManagedConfigurationList: document.querySelector("#codex-managed-configuration-list"),
   codexEnvironmentVariablesList: document.querySelector("#codex-environment-variables-list"),
@@ -10516,6 +10519,7 @@ function renderSettingsIntegrations(payload) {
   const codexAutoReview = payload.codexAutoReview ?? {};
   const codexChronicle = payload.codexChronicle ?? {};
   const codexSecurity = payload.codexSecurity ?? {};
+  const codexOpenSource = payload.codexOpenSource ?? {};
   const codexGovernance = payload.codexGovernance ?? {};
   const codexManagedConfiguration = payload.codexManagedConfiguration ?? {};
   const codexEnvironmentVariables = payload.codexEnvironmentVariables ?? {};
@@ -10781,6 +10785,38 @@ function renderSettingsIntegrations(payload) {
     codexSecurity.secretsReturned ||
     codexSecurity.rawPayloadsReturned ||
     codexSecurity.appServerTraffic
+      ? "Returned"
+      : "Hidden";
+  elements.codexOpenSourceText.textContent = codexOpenSource.returned
+    ? `${codexOpenSource.catalogOnlyEntryCount ?? 0} catalog / ${
+        codexOpenSource.entryCount ?? 0
+      } tracked`
+    : "Blocked";
+  elements.codexOpenSourceValuesText.textContent =
+    codexOpenSource.componentNamesReturned ||
+    codexOpenSource.repositoryUrlsReturned ||
+    codexOpenSource.issueUrlsReturned ||
+    codexOpenSource.discussionUrlsReturned ||
+    codexOpenSource.programApplicationUrlsReturned ||
+    codexOpenSource.componentVersionsReturned ||
+    codexOpenSource.issueContentsReturned ||
+    codexOpenSource.discussionContentsReturned ||
+    codexOpenSource.contributionContentsReturned ||
+    codexOpenSource.externalCodeReturned ||
+    codexOpenSource.repositoriesFetched ||
+    codexOpenSource.issuesCreated ||
+    codexOpenSource.discussionsPosted ||
+    codexOpenSource.contributionsSubmitted ||
+    codexOpenSource.programApplicationsStarted ||
+    codexOpenSource.filesystemReads ||
+    codexOpenSource.filesystemWrites ||
+    codexOpenSource.networkAccess ||
+    codexOpenSource.mutationEnabled ||
+    codexOpenSource.pathsReturned ||
+    codexOpenSource.urlsReturned ||
+    codexOpenSource.secretsReturned ||
+    codexOpenSource.rawPayloadsReturned ||
+    codexOpenSource.appServerTraffic
       ? "Returned"
       : "Hidden";
   elements.codexGovernanceText.textContent = codexGovernance.returned
@@ -11945,6 +11981,7 @@ function renderSettingsIntegrations(payload) {
   renderCodexAutoReviewCatalog(codexAutoReview);
   renderCodexChronicleCatalog(codexChronicle);
   renderCodexSecurityCatalog(codexSecurity);
+  renderCodexOpenSourceCatalog(codexOpenSource);
   renderCodexGovernanceCatalog(codexGovernance);
   renderCodexManagedConfigurationCatalog(codexManagedConfiguration);
   renderCodexEnvironmentVariablesCatalog(codexEnvironmentVariables);
@@ -14108,6 +14145,81 @@ function renderCodexSecurityCatalog(summary) {
     header.append(title, meta);
     row.append(header, chips);
     elements.codexSecurityList.append(row);
+  }
+}
+
+function renderCodexOpenSourceCatalog(summary) {
+  elements.codexOpenSourceList.replaceChildren();
+  const entries = Array.isArray(summary?.entries) ? summary.entries : [];
+  if (entries.length === 0) {
+    elements.codexOpenSourceList.append(emptyState("No Codex Open Source catalog returned."));
+    return;
+  }
+
+  for (const entry of entries) {
+    const row = document.createElement("article");
+    row.className = "boundary-row";
+    row.setAttribute("role", "listitem");
+
+    const header = document.createElement("div");
+    header.className = "boundary-row-header";
+
+    const title = document.createElement("strong");
+    title.textContent = entry.key ?? "unknown";
+
+    const meta = document.createElement("span");
+    meta.textContent = entry.group ?? "open-source";
+
+    const chips = document.createElement("div");
+    chips.className = "boundary-chip-list";
+    for (const value of [
+      entry.state ?? "blocked",
+      entry.source ?? null,
+      entry.componentNameReturned ? "component names returned" : "component names hidden",
+      entry.repositoryUrlReturned ? "repository URLs returned" : "repository URLs hidden",
+      entry.issueUrlReturned ? "issue URLs returned" : "issue URLs hidden",
+      entry.discussionUrlReturned ? "discussion URLs returned" : "discussion URLs hidden",
+      entry.programApplicationUrlReturned
+        ? "program application URLs returned"
+        : "program application URLs hidden",
+      entry.componentVersionReturned ? "component versions returned" : "component versions hidden",
+      entry.issueContentReturned ? "issue content returned" : "issue content hidden",
+      entry.discussionContentReturned
+        ? "discussion content returned"
+        : "discussion content hidden",
+      entry.contributionContentReturned
+        ? "contribution content returned"
+        : "contribution content hidden",
+      entry.externalCodeReturned ? "external code returned" : "external code hidden",
+      entry.repositoryFetched ? "repository fetched" : "repository fetch blocked",
+      entry.issueCreated ? "issue created" : "issue creation blocked",
+      entry.discussionPosted ? "discussion posted" : "discussion posting blocked",
+      entry.contributionSubmitted ? "contribution submitted" : "contribution blocked",
+      entry.programApplicationStarted
+        ? "program application started"
+        : "program application blocked",
+      entry.filesystemRead ? "filesystem read" : "filesystem reads blocked",
+      entry.filesystemWrite ? "filesystem write" : "filesystem writes blocked",
+      entry.networkAccess ? "network access" : "network blocked",
+      entry.mutationEnabled ? "mutation enabled" : "mutation blocked",
+      entry.pathsReturned ? "paths returned" : "paths hidden",
+      entry.urlsReturned ? "URLs returned" : "URLs hidden",
+      entry.secretsReturned ? "secrets returned" : "secrets hidden",
+      entry.rawPayloadsReturned ? "raw payloads returned" : "raw payloads hidden",
+      entry.appServerTraffic ? "app-server traffic" : "local catalog",
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const chip = document.createElement("span");
+      chip.className = "boundary-chip";
+      chip.textContent = value;
+      chips.append(chip);
+    }
+
+    header.append(title, meta);
+    row.append(header, chips);
+    elements.codexOpenSourceList.append(row);
   }
 }
 

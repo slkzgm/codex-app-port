@@ -858,6 +858,16 @@ or content, issue/PR payloads, GitHub/cloud/environment identifiers,
 model/reasoning values, paths, URLs, secrets, raw payloads, create model
 traffic, access files/network, or mutate Codex Security state.
 
+The same response exposes `codexOpenSource` as a static review-only catalog for
+official Codex Open Source guidance. The UI shows only catalog counts, entry
+keys, groups, state/source chips, and negative redaction chips for component
+names, repository URLs, issue/discussion/program URLs, versions,
+issue/discussion/contribution content, external code, repository fetches,
+community mutations, OSS program applications, filesystem/network access,
+paths, URLs, secrets, raw payloads, and app-server traffic. It must not fetch
+GitHub repositories, import code, create issues, post discussions, submit
+contributions, or start OSS program applications.
+
 The same response exposes `codexManagedConfiguration` as a static review-only
 catalog for official Codex managed-configuration behavior. The UI shows only
 catalog counts, entry keys, groups, state/source chips, and redaction chips for

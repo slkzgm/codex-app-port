@@ -522,6 +522,15 @@
   plugins, start local/deep/cloud scans, export findings, track issues, start
   remediation, write threat models or configuration, create model traffic,
   access filesystem or network, or mutate Codex Security state. Its
+  Codex Open Source catalog may expose only static official-documentation keys
+  plus local boundary keys, groups, states, sources, counts, and redaction
+  flags; it must not return component names, repository URLs, issue URLs,
+  discussion URLs, program application URLs, component versions, issue content,
+  discussion content, contribution content, external code, paths, URLs,
+  secrets, raw payloads, app-server payloads, or app-server traffic, and must
+  not fetch repositories, create issues, post discussions, submit
+  contributions, start OSS program applications, access filesystem or network,
+  or import external code. Its
   Codex Managed configuration catalog may expose only static
   official-documentation keys plus local boundary keys, groups, states,
   sources, counts, and redaction flags; it must not return requirement names or
